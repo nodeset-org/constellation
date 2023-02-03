@@ -1,0 +1,255 @@
+import { expect } from "chai";
+import { ethers, upgrades } from "hardhat";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
+import { protocolFixture, SetupData } from "./test";
+import { BigNumber as BN } from "ethers";
+import { yaspEthSol } from "../typechain-types/contracts/Token";
+import { IERC20 } from "../typechain-types";
+
+export async function depositEth(setupData: SetupData, from: SignerWithAddress, amount: BN) {
+	const { protocol } = setupData;	
+	let dpBalance = await ethers.provider.getBalance(protocol.depositPool.address);
+	let tvl = await protocol.depositPool.getTvlEth();
+	
+	let maxBalancePortion = BN.from(await protocol.depositPool.getMaxEthBalancePortion());
+	let maxBalancePortionDecimals = await protocol.depositPool.MAX_BALANCE_PORTION_DECIMALS();
+	let maxBalanceAfterDeposit = tvl.add(amount).mul(maxBalancePortion).div(BN.from(10).pow(maxBalancePortionDecimals));
+	
+	let dpBalanceChange, distributorBalanceChange;
+	let isBalanceOverMax = (dpBalance.add(amount) > maxBalanceAfterDeposit);
+	dpBalanceChange = isBalanceOverMax ? maxBalanceAfterDeposit.sub(dpBalance) : amount	
+	let leftover = dpBalance.add(amount).sub(maxBalanceAfterDeposit);
+	distributorBalanceChange = isBalanceOverMax ? leftover : 0;
+
+	console.log("\t\tDepositing " + ethers.utils.formatEther(amount) + " ether"
+		+ " ether...\n\t\t\tTVL at start: ", ethers.utils.formatEther(tvl) + " ether"
+		+ "\n\t\t\tDP balance at start: " + ethers.utils.formatEther(dpBalance) + " ether"
+		+ "\n\t\t\tmaxEthBalanceAfterDeposit: " + ethers.utils.formatEther(maxBalanceAfterDeposit)
+		+ "\n\t\t\tNew DP balance should be " + ethers.utils.formatEther(dpBalanceChange)
+		+ " ether + currentBalance = " + ethers.utils.formatEther(dpBalance.add(dpBalanceChange)) + " ether");
+
+	await expect(from.sendTransaction({ to: protocol.depositPool.address, value: amount, gasLimit: 1000000 }))
+		.to.changeEtherBalances(
+			[from, protocol.depositPool.address, protocol.operatorDistributor.address],
+			[amount.mul(-1), dpBalanceChange, distributorBalanceChange]
+		)
+		.and.to.emit(protocol.depositPool, "TotalValueUpdated").withArgs(tvl, tvl.add(amount));
+
+	await expect(maxBalanceAfterDeposit).to.equal(await protocol.depositPool.getMaxEthBalance());
+	
+	let currTvl = await protocol.depositPool.getTvlEth();
+
+	console.log("TVL after deposit: ", ethers.utils.formatEther(currTvl.toString()) + " ether");
+	console.log("DP balance after deposit: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.depositPool.address)));
+	expect(!currTvl.eq(0));
+	expect(tvl.lt(currTvl));
+	expect(currTvl.eq(await ethers.provider.getBalance(protocol.depositPool.address)));
+	expect(currTvl.eq(amount));
+}
+
+export async function depositRpl(setupData: SetupData, from: SignerWithAddress, amount: BN) {
+	const { protocol } = setupData;	
+	let dpBalance = await ethers.provider.getBalance(protocol.depositPool.address);
+	let tvl = await protocol.depositPool.getTvlRpl();
+	
+	let maxBalancePortion = BN.from(await protocol.depositPool.getMaxRplBalancePortion());
+	let maxBalancePortionDecimals = await protocol.depositPool.MAX_BALANCE_PORTION_DECIMALS();
+	let maxBalanceAfterDeposit = tvl.add(amount).mul(maxBalancePortion).div(BN.from(10).pow(maxBalancePortionDecimals));
+	
+	let dpBalanceChange, distributorBalanceChange;
+	let isBalanceOverMax = (dpBalance.add(amount) > maxBalanceAfterDeposit);
+	dpBalanceChange = isBalanceOverMax ? maxBalanceAfterDeposit.sub(dpBalance) : amount	
+	let leftover = dpBalance.add(amount).sub(maxBalanceAfterDeposit);
+	distributorBalanceChange = isBalanceOverMax ? leftover : 0;
+
+	let currAccountBalance = await setupData.rocketPool.rplContract.balanceOf(from.address);
+
+	console.log("\t\tDepositing " + ethers.utils.formatEther(amount) + " RPL"
+		+ "...\n\t\t\tFrom address balance at start: " + ethers.utils.formatEther(currAccountBalance) + " RPL"
+		+ "\n\t\t\tTVL at start: ", ethers.utils.formatEther(tvl) + " RPL"
+		+ "\n\t\t\tDP balance at start: " + ethers.utils.formatEther(dpBalance) + " RPL"
+		+ "\n\t\t\tmaxRplBalanceAfterDeposit: " + ethers.utils.formatEther(maxBalanceAfterDeposit)
+		+ "\n\t\t\tNew DP balance should be " + ethers.utils.formatEther(dpBalanceChange)
+		+ " RPL + currentBalance = " + ethers.utils.formatEther(dpBalance.add(dpBalanceChange)) + " RPL");
+
+	const rp = setupData.rocketPool;
+	
+	await expect(rp.rplContract.connect(from).approve(protocol.yaspRPL.address, amount))
+			.to.emit(rp.rplContract, "Approval")
+			.withArgs(from.address, protocol.yaspRPL.address, amount);
+
+	await expect(protocol.yaspRPL.connect(from).mint(from.address, amount))
+		.to.changeTokenBalance(
+			protocol.yaspRPL,
+			from,
+			amount
+		)
+		.and.to.changeTokenBalances(
+			rp.rplContract,
+			[from, protocol.depositPool, protocol.operatorDistributor],
+			[amount.mul(-1), dpBalanceChange, distributorBalanceChange]
+		)
+		.and.to.emit(protocol.depositPool, "TotalValueUpdated").withArgs(tvl, tvl.add(amount));
+	
+	let max = await protocol.depositPool.getMaxRplBalance();
+	
+	await expect(maxBalanceAfterDeposit).to.equal(await protocol.depositPool.getMaxRplBalance());
+	
+	let currTvl = await protocol.depositPool.getTvlRpl();
+
+	console.log("TVL after deposit: ", ethers.utils.formatEther(currTvl.toString()) + " RPL");
+	console.log("DP balance after deposit: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.depositPool.address)));
+	expect(!currTvl.eq(0));
+	expect(tvl.lt(currTvl));
+	expect(currTvl.eq(await ethers.provider.getBalance(protocol.depositPool.address)));
+	expect(currTvl.eq(amount)); // TODO: finish this function
+}
+
+describe("DepositPool", function () {
+
+	describe("Getters and Setters", function () {
+		it("Random address can get maxEthBalance and maxEthBalancePortion", async function () {
+			const setupData = await loadFixture(protocolFixture);
+			let maxBalance = await setupData.protocol.depositPool.getMaxEthBalance();
+			console.log("maxBalance is " + maxBalance);
+			
+		});
+		it("Random address cannot set maxEthBalancePortion and maxRplBalancePortion", async function () {
+			const setupData = await loadFixture(protocolFixture);
+			const { protocol, signers } = setupData;
+
+			await expect(protocol.depositPool.connect(signers.random).setMaxEthBalancePortion(1000))
+				.to.be.revertedWith(await protocol.depositPool.ADMIN_ONLY_ERROR());
+			
+			await expect(protocol.depositPool.connect(signers.random).setMaxRplBalancePortion(1000))
+				.to.be.revertedWith(await protocol.depositPool.ADMIN_ONLY_ERROR());
+		});
+
+		it("Admin cannot set maxEthBalancePortion or maxRplBalancePortion to out of range value", async function () {
+			const setupData = await loadFixture(protocolFixture);
+			const { protocol, signers } = setupData;
+
+			let maxEthBalancePortion = await protocol.depositPool.connect(signers.random).getMaxEthBalancePortion();
+			let maxRplBalancePortion = await protocol.depositPool.connect(signers.random).getMaxEthBalancePortion();
+			
+			expect(await protocol.depositPool.setMaxEthBalancePortion(maxEthBalancePortion + 1))
+				.to.be.revertedWith(await protocol.depositPool.MAX_BALANCE_PORTION_OUT_OF_RANGE_ERROR());
+		
+			expect(await protocol.depositPool.setMaxRplBalancePortion(maxRplBalancePortion + 1))
+				.to.be.revertedWith(await protocol.depositPool.MAX_BALANCE_PORTION_OUT_OF_RANGE_ERROR());
+		});
+
+		it("Admin address can set maxEthBalancePortion and maxRplBalancePortion", async function () {
+			const setupData = await loadFixture(protocolFixture);
+			const { protocol, signers } = setupData;
+
+			let maxEthBalancePortion = await protocol.depositPool.connect(signers.random).getMaxEthBalancePortion();
+			let maxRplBalancePortion = await protocol.depositPool.connect(signers.random).getMaxEthBalancePortion();
+			
+			expect(await protocol.depositPool.setMaxEthBalancePortion(1000))
+				.to.emit(protocol.depositPool, "NewMaxEthBalancePortion").withArgs(maxEthBalancePortion, 1000)
+				.and.to.not.be.revertedWith(await protocol.directory.ADMIN_ONLY_ERROR());
+		
+			expect(await protocol.depositPool.setMaxEthBalancePortion(1000))
+				.to.emit(protocol.depositPool, "NewMaxRplBalancePortion").withArgs(maxRplBalancePortion, 1000)
+				.and.to.not.be.revertedWith(await protocol.directory.ADMIN_ONLY_ERROR());
+		});
+		
+	});
+	
+	describe("ETH", function () {
+		it("State adjusts correctly on ETH deposit from yaspETH", async function () {
+			const setupData = await loadFixture(protocolFixture);
+
+			await depositEth(setupData, setupData.signers.random, BN.from(ethers.utils.parseEther("100")));
+		});
+
+		it("ETH TVL adjusts on withdrawal", async function () {
+			const { protocol, signers } = await loadFixture(protocolFixture);
+
+			let mintAmount = ethers.utils.parseEther("100");
+			await signers.random.sendTransaction({ to: protocol.yaspETH.address, value: mintAmount, gasLimit: 1000000 });
+		
+			const readTvl = async () => { return await protocol.depositPool.getTvlEth() };
+			let startTvl = await readTvl();
+
+			let burnAmount = (await protocol.depositPool.getMaxEthBalance()).sub(1);
+			await protocol.yaspETH.connect(signers.random).burn(burnAmount);
+
+			let finalTvl = await readTvl();
+
+			expect(BN.from(finalTvl) === BN.from(startTvl).sub(burnAmount));
+		});
+
+		it("Only ETH token address can send ETH from DP", async function () {
+			const setupData = await loadFixture(protocolFixture);
+			const { protocol, signers } = setupData;
+			await depositEth(setupData, setupData.signers.random, ethers.utils.parseEther("1"));
+
+			// random address
+			await expect(protocol.depositPool.connect(signers.random)
+				.sendEth(signers.random.address, await protocol.depositPool.signer.getBalance()))
+				.to.be.revertedWith(await protocol.depositPool.ONLY_ETH_TOKEN_ERROR());
+		
+			// admin address
+			await expect(protocol.depositPool
+				.sendEth(signers.random.address, await protocol.depositPool.signer.getBalance()))
+				.to.be.revertedWith(await protocol.depositPool.ONLY_ETH_TOKEN_ERROR());
+		});
+	});
+
+	describe("RPL", function () {
+		it("State adjusts correctly on RPL deposit from yaspRPL", async function () {
+			const setupData = await loadFixture(protocolFixture);
+
+			const rp = setupData.rocketPool;
+
+			// seed random address with rpl
+			rp.rplContract.connect(setupData.signers.rplWhale)
+				.transfer(setupData.signers.random.address, ethers.utils.parseEther("100"));
+
+			await depositRpl(setupData, setupData.signers.random, ethers.utils.parseEther("100"));
+		});
+
+		it("Only RPL token address can send RPL from DP externally", async function () {
+			const setupData = await loadFixture(protocolFixture);
+			const { protocol, signers } = setupData;
+
+			const rp = setupData.rocketPool;
+			// seed random address with rpl
+			rp.rplContract.connect(signers.rplWhale)
+				.transfer(setupData.signers.random.address, ethers.utils.parseEther("1000"));
+
+			await depositRpl(setupData, signers.random, ethers.utils.parseEther("1"));
+
+			// random address
+			await expect(protocol.depositPool.connect(signers.random)
+				.sendRpl(signers.random.address, await protocol.depositPool.signer.getBalance()))
+				.to.be.revertedWith(await protocol.depositPool.ONLY_RPL_TOKEN_ERROR());
+		
+			// admin address
+			await expect(protocol.depositPool
+				.sendRpl(signers.random.address, await protocol.depositPool.signer.getBalance()))
+				.to.be.revertedWith(await protocol.depositPool.ONLY_RPL_TOKEN_ERROR());
+		});
+
+		it("RPL TVL adjusts on withdrawal", async function () {
+			const { protocol, signers, rocketPool: rp } = await loadFixture(protocolFixture);
+
+			let mintAmount = ethers.utils.parseEther("100");
+			await rp.rplContract.connect(signers.rplWhale).approve(protocol.yaspRPL.address, mintAmount);
+			await protocol.yaspRPL.mint(signers.rplWhale.address, mintAmount);
+		
+			const readTvl = async () => { return await protocol.depositPool.getTvlRpl() };
+			let startTvl = await readTvl();
+
+			let burnAmount = (await protocol.depositPool.getMaxRplBalance()).sub(1);
+			protocol.yaspRPL.connect(signers.random).burn(burnAmount);
+
+			let finalTvl = await readTvl();
+
+			expect(BN.from(finalTvl) === BN.from(startTvl).sub(burnAmount));
+		});
+	});
+});

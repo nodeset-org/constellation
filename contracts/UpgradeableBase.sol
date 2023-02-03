@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: GPL v3
+pragma solidity ^0.8.9;
+
+import "./Directory.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
+abstract contract UpgradeableBase is Initializable {
+
+    Directory internal _directory;
+
+    string constant public ADMIN_ONLY_ERROR = "Can only be called by admin address!";
+
+    function initialize(address directoryAddress) initializer virtual public {
+        _directory = Directory(directoryAddress);
+    }
+
+    modifier onlyAdmin {
+        require(msg.sender == _directory.getAdminAddress(), ADMIN_ONLY_ERROR);
+        _;
+    }
+
+    function getDirectory() internal view returns (Directory) {
+        return _directory;
+    }
+}
