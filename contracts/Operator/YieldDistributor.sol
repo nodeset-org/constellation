@@ -15,7 +15,7 @@ struct Reward {
     uint rpl;
 }
 
-/// @custom:security-contact info@npsys.io
+/// @custom:security-contact info@nodeset.io
 /// @notice distributes rewards
 contract YieldDistributor is Base {
     
@@ -41,7 +41,7 @@ contract YieldDistributor is Base {
         "YieldDistributor: ETH fee portion must be between 0 and YIELD_FEE_MAX";
     string constant public ALREADY_DISTRIBUTING_ERROR = "YieldDistributor: Already distributing rewards";
 
-    event RewardsDistributed(Reward[]);
+    event RewardDistributed(Reward);
 
     constructor (address directory) Base(directory) {}
 
@@ -66,19 +66,13 @@ contract YieldDistributor is Base {
 
     /// @notice Gets the total protocol ETH fee rate as a fraction of one ether
     /// This is be further split into operator and admin fees in distributeFees()
-    function getEthFeeRate() public view returns(uint) { 
-        console.log("rpfee");
-        console.log(getRocketPoolFee());    
-        
+    function getEthFeeRate() public view returns(uint) {       
         int fee = int(getRocketPoolFee()) + _ethFeeModifier;
         
-        // constrain fee to 0->1 ether
+        // constrain to 0->1 ether
         int maxFee = 1 ether;
         fee = fee >= 0 ? fee : int(0);
         fee = fee > maxFee ? maxFee : fee;
-
-        console.log("_ethFeeModifier (signed int)");
-        console.log(uint(_ethFeeModifier));
         
         return uint(fee); 
     }
@@ -99,7 +93,7 @@ contract YieldDistributor is Base {
     bool _isDistributing; 
 
     /// @notice The main reward distribution function. Anyone can call it if they're willing to pay the gas costs.
-    /// @dev TODO: reimburse caller via keeper-style mechanism, e.g. 0xSplits 
+    /// @dev TODO: reimburse msg.sender via keeper-style mechanism, e.g. 0xSplits 
     /// 
     function distributeRewards() public {
         require(!_isDistributing, ALREADY_DISTRIBUTING_ERROR);
@@ -108,7 +102,6 @@ contract YieldDistributor is Base {
         
         // for all operators in good standing, mint yaspETH 
         Operator[] memory operators = getWhitelist().getOperatorList();
-        Reward[] memory rewards = new Reward[](operators.length + 1); // +1 for admin
         uint length = operators.length;
 
         uint perEthFee = getEthFeeRate();
@@ -119,31 +112,29 @@ contract YieldDistributor is Base {
             uint operatorRewardAmountEth = 
                 totalFee * (operators[i].feePortion / YIELD_FEE_MAX) * (1 - (_ethFeeAdminPortion / YIELD_FEE_MAX)) / length;
             YaspETH(getDirectory().getETHTokenAddress()).internalMint(operators[i].nodeAddress, operatorRewardAmountEth);
-            // record operator payment
-            rewards[i] = Reward(operators[i].nodeAddress, operatorRewardAmountEth, 0);
+            emit RewardDistributed(Reward(operators[i].nodeAddress, operatorRewardAmountEth, 0));
         }
 
         // mint yaspETH for admin
         uint adminRewardAmountEth = totalFee * (_ethFeeAdminPortion / YIELD_FEE_MAX);
         YaspETH(getDirectory().getETHTokenAddress()).internalMint(getDirectory().getAdminAddress(), adminRewardAmountEth);
         
-
         // mint yaspRPL for admin 
         RocketTokenRPLInterface rpl = RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS());
-        uint currentBalance = rpl.balanceOf(address(this));
 
-        uint adminRewardAmountRpl = currentBalance * _rplFeeAdminPortion / YIELD_FEE_MAX;        
+        uint adminRewardAmountRpl = rpl.balanceOf(address(this)) * _rplFeeAdminPortion / YIELD_FEE_MAX;        
         YaspRPL(getDirectory().getRPLTokenAddress())
             .mintYield(getDirectory().getAdminAddress(), adminRewardAmountRpl);
-        
-        // record admin payment
-        rewards[rewards.length-1] =Reward(getDirectory().getAdminAddress(), adminRewardAmountEth, adminRewardAmountRpl);
+        emit RewardDistributed(Reward(getDirectory().getAdminAddress(), adminRewardAmountEth, adminRewardAmountRpl));
 
         // send remaining RPL to DP
-        currentBalance = rpl.balanceOf(address(this));
-        rpl.transfer(getDirectory().getDepositPoolAddress(), currentBalance);
+        rpl.transfer(getDirectory().getDepositPoolAddress(), rpl.balanceOf(address(this)));
 
-        emit RewardsDistributed(rewards);
+        // TODO: reimburse msg.sender here 
+
+        // send remaining ETH to DP
+        (bool success, ) = getDirectory().getDepositPoolAddress().call{ value: address(this).balance }("");
+        require(success, "YieldDistributor: failed to send ETH to DepositPool");
 
         _isDistributing = false;
     }

@@ -195,34 +195,33 @@ describe("Yield Distributor", function () {
     // simulate yield from validator
     rp.rplContract.connect(signers.rplWhale)
       .transfer(protocol.yieldDistributor.address, yieldAmountRpl);
-    console.log("RPL yield simulated: " + ethers.utils.formatEther(yieldAmountRpl) + " RPL");
-    console.log("ETH yield simulated: " + ethers.utils.formatEther(yieldAmountEth) + " ether");
        
     const totalFee = yieldAmountEth.mul(await rp.networkFeesContract.getMaximumNodeFee());
     const operatorShare = totalFee.mul(
       ethers.utils.parseEther("1").sub(await protocol.yieldDistributor.getEthFeeAdminPortion())
     ).div(3); // 3 operators used in this test
     const adminShareEth = totalFee.mul(await protocol.yieldDistributor.getEthFeeAdminPortion());
-    const adminShareRpl = await protocol.yieldDistributor.getRplFeeRate();
+    const adminShareRpl = yieldAmountRpl.mul(await protocol.yieldDistributor.getRplFeeRate())
+      .div(ethers.utils.parseEther("1"));
 
-    const rewards = [
-      [signers.random.address, operatorShare, BigNumber.from(0)], // operator 1
-      [signers.random2.address, operatorShare, BigNumber.from(0)], // operator 2
-      [signers.random3.address, operatorShare, BigNumber.from(0)], // operator 3
-      [signers.admin.address, adminShareEth, adminShareRpl] // admin
-    ]
-
-    // protocol.yieldDistributor.on("RewardsDistributed", (args: RewardStruct[]) => {
-    //   console.log("rewards: \n" + args);
-    // });
-
-    // const tx = await protocol.yieldDistributor.distributeRewards();
-        
-    // const receipt = await tx.wait();
-  
     await expect(protocol.yieldDistributor.distributeRewards())
-      .to.emit(protocol.yieldDistributor, "RewardsDistributed")
-      .withArgs(rewards);
+      .to.emit(protocol.yieldDistributor, "RewardDistributed")
+      .withArgs([signers.random.address, operatorShare, BigNumber.from(0)])
+      .to.emit(protocol.yieldDistributor, "RewardDistributed")
+      .withArgs([signers.random2.address, operatorShare, BigNumber.from(0)])
+      .to.emit(protocol.yieldDistributor, "RewardDistributed")
+      .withArgs([signers.random3.address, operatorShare, BigNumber.from(0)])
+      .to.emit(protocol.yieldDistributor, "RewardDistributed")
+      .withArgs([signers.admin.address, adminShareEth, adminShareRpl])
+      .and.to.changeEtherBalances(
+        [signers.random.address, signers.random2.address, signers.random3.address, signers.admin.address],
+        [operatorShare, operatorShare, operatorShare, adminShareEth]
+      )
+      .and.to.changeTokenBalance(
+        protocol.yaspRPL, signers.admin.address, adminShareRpl
+      );
+    // should also send some amount to the DP (then OD), 
+    // but this functionality is tested in test - depositPool.ts
   });
   
 });
