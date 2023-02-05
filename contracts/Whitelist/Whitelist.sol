@@ -83,7 +83,7 @@ contract Whitelist is UpgradeableBase {
         
         _permissions[a] = true;
 
-        Operator memory operator = Operator(_numOperators, a, block.timestamp, 0, 1);
+        Operator memory operator = Operator(_numOperators, a, block.timestamp, 0, 10000);
         
         _operators.push(operator); // totally new operator
 

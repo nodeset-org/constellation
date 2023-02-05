@@ -105,27 +105,36 @@ contract YieldDistributor is Base {
         uint length = operators.length;
 
         uint perEthFee = getEthFeeRate();
-        uint totalFee = uint(address(this).balance) * perEthFee;
+        uint totalFee = (address(this).balance * (perEthFee)) / (1 ether);
+
+        console.log("total fee");
+        console.log(totalFee);
 
         // mint yaspETH for NOs
         for(uint i = 0; i < length; i++) {
-            uint operatorRewardAmountEth = 
+            uint operatorRewardEth = 
                 totalFee * (operators[i].feePortion / YIELD_FEE_MAX) * (1 - (_ethFeeAdminPortion / YIELD_FEE_MAX)) / length;
-            YaspETH(getDirectory().getETHTokenAddress()).internalMint(operators[i].nodeAddress, operatorRewardAmountEth);
-            emit RewardDistributed(Reward(operators[i].nodeAddress, operatorRewardAmountEth, 0));
+            YaspETH(getDirectory().getETHTokenAddress()).internalMint(operators[i].nodeAddress, operatorRewardEth);
+            console.log("operator eth fee");
+            console.log(operatorRewardEth);
+            emit RewardDistributed(Reward(operators[i].nodeAddress, operatorRewardEth, 0));
         }
 
         // mint yaspETH for admin
-        uint adminRewardAmountEth = totalFee * (_ethFeeAdminPortion / YIELD_FEE_MAX);
-        YaspETH(getDirectory().getETHTokenAddress()).internalMint(getDirectory().getAdminAddress(), adminRewardAmountEth);
+        uint adminRewardEth = totalFee * (_ethFeeAdminPortion / YIELD_FEE_MAX);
+        YaspETH(getDirectory().getETHTokenAddress()).internalMint(getDirectory().getAdminAddress(), adminRewardEth);
         
         // mint yaspRPL for admin 
         RocketTokenRPLInterface rpl = RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS());
 
-        uint adminRewardAmountRpl = rpl.balanceOf(address(this)) * _rplFeeAdminPortion / YIELD_FEE_MAX;        
+        uint adminRewardRpl = rpl.balanceOf(address(this)) * _rplFeeAdminPortion / YIELD_FEE_MAX;        
         YaspRPL(getDirectory().getRPLTokenAddress())
-            .mintYield(getDirectory().getAdminAddress(), adminRewardAmountRpl);
-        emit RewardDistributed(Reward(getDirectory().getAdminAddress(), adminRewardAmountEth, adminRewardAmountRpl));
+            .mintYield(getDirectory().getAdminAddress(), adminRewardRpl);
+        emit RewardDistributed(Reward(getDirectory().getAdminAddress(), adminRewardEth, adminRewardRpl));
+        console.log("admin ETH fee");
+        console.log(adminRewardEth);
+        console.log("admin RPL fee");
+        console.log(adminRewardRpl);
 
         // send remaining RPL to DP
         rpl.transfer(getDirectory().getDepositPoolAddress(), rpl.balanceOf(address(this)));

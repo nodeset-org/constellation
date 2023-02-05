@@ -33,7 +33,7 @@ contract YaspETH is Base, Ownable, ERC20Burnable, ERC20Permit, ERC20FlashMint {
     receive() payable external { mint(msg.sender, msg.value); }
 
     function internalMint(address to, uint amount) public onlyYieldDistributor {
-        mint(to, amount);
+        _mint(to, amount);
     }
 
     function mint(address to, uint amount) private {

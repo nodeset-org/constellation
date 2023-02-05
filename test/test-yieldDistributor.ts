@@ -189,12 +189,16 @@ describe("Yield Distributor", function () {
     await protocol.whitelist.addOperator(signers.random2.address);
     await protocol.whitelist.addOperator(signers.random3.address);
 
-    const yieldAmountEth = ethers.utils.parseEther("100");
-    const yieldAmountRpl = ethers.utils.parseEther("100");
+    const yieldAmountEth = ethers.utils.parseEther("1");
+    const yieldAmountRpl = ethers.utils.parseEther("1");
+
+    console.log("Simulating yield of " + ethers.utils.formatEther(yieldAmountEth) + " ETH and " +
+      ethers.utils.formatEther(yieldAmountRpl) + " RPL")
 
     // simulate yield from validator
     rp.rplContract.connect(signers.rplWhale)
       .transfer(protocol.yieldDistributor.address, yieldAmountRpl);
+    signers.random.sendTransaction({ to: protocol.yieldDistributor.address, value: yieldAmountEth, gasLimit: 1000000 });
        
     const totalFee = yieldAmountEth.mul(await rp.networkFeesContract.getMaximumNodeFee());
     const operatorShare = totalFee.mul(
@@ -222,6 +226,10 @@ describe("Yield Distributor", function () {
       );
     // should also send some amount to the DP (then OD), 
     // but this functionality is tested in test - depositPool.ts
+
+    console.log("Distributed " + ethers.utils.formatEther(operatorShare) + " ETH to 3 operators.");
+    console.log("Distributed " + ethers.utils.formatEther(adminShareEth) + " ETH and " +
+      ethers.utils.formatEther(adminShareRpl) + " RPL to the admin.");
   });
   
 });
