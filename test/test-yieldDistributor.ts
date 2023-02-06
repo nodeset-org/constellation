@@ -5,8 +5,8 @@ import { deployOnlyFixture, Protocol, protocolFixture, SetupData } from "./test"
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { initializeDirectory } from "./test-directory";
-import { mintYaspRpl } from "./test-yaspRpl";
-import { mintYaspEth } from "./test-yaspEth";
+import { mintNodeSetRpl } from "./test-xRpl";
+import { mint_xrEth } from "./test-xrEth";
 import { string } from "hardhat/internal/core/params/argumentTypes";
 import { operator } from "../typechain-types/contracts";
 import { RewardStruct } from "../typechain-types/contracts/Operator/YieldDistributor";
@@ -182,8 +182,8 @@ describe("Yield Distributor", function () {
     const { protocol, signers, rocketPool: rp} = setupData;
 
     let mintAmount = ethers.utils.parseEther("100");
-    await mintYaspRpl(setupData, signers.rplWhale, mintAmount);
-    await mintYaspEth(setupData, signers.rplWhale, mintAmount);
+    await mintNodeSetRpl(setupData, signers.rplWhale, mintAmount);
+    await mint_xrEth(setupData, signers.rplWhale, mintAmount);
 
     await protocol.whitelist.addOperator(signers.random.address);
     await protocol.whitelist.addOperator(signers.random2.address);
@@ -222,7 +222,7 @@ describe("Yield Distributor", function () {
         [operatorShare, operatorShare, operatorShare, adminShareEth]
       )
       .and.to.changeTokenBalance(
-        protocol.yaspRPL, signers.admin.address, adminShareRpl
+        protocol.xRPL, signers.admin.address, adminShareRpl
       );
     // should also send some amount to the DP (then OD), 
     // but this functionality is tested in test - depositPool.ts

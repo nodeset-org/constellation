@@ -6,7 +6,7 @@ import "./Interfaces/RocketTokenRPLInterface.sol";
 struct Protocol {
     address whitelist;
     address payable ethToken; // raspETH
-    address payable rplToken; // yaspRPL
+    address payable rplToken; // xRPL
     address payable depositPool;
     address payable operatorDistributor;
     address yieldDistributor;

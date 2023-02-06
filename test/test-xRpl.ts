@@ -5,36 +5,36 @@ import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 
-export async function mintYaspRpl(setupData: SetupData, from: SignerWithAddress, amount: BigNumber) {
+export async function mintNodeSetRpl(setupData: SetupData, from: SignerWithAddress, amount: BigNumber) {
   const { protocol, rocketPool: rp } = setupData;
   
-  await expect(rp.rplContract.connect(from).approve(protocol.yaspRPL.address, amount))
+  await expect(rp.rplContract.connect(from).approve(protocol.xRPL.address, amount))
     .to.emit(rp.rplContract, "Approval")
-    .withArgs(from.address, protocol.yaspRPL.address, amount);
+    .withArgs(from.address, protocol.xRPL.address, amount);
   
-  return protocol.yaspRPL.connect(from).mint(from.address, amount);
+  return protocol.xRPL.connect(from).mint(from.address, amount);
 }
 
-describe("yaspRPL", function () {
+describe("xRPL", function () {
 
   describe("Mints", function () {
 
     it("Revert mint below minimum amount", async function () {
       const setupData = await loadFixture(protocolFixture);
 
-      let amount = (await setupData.protocol.yaspETH.getMinimumStakeAmount()).sub(BigNumber.from(1));
+      let amount = (await setupData.protocol.xrETH.getMinimumStakeAmount()).sub(BigNumber.from(1));
 
-      await expect(mintYaspRpl(setupData, setupData.signers.rplWhale, amount))
-        .to.be.revertedWith(await setupData.protocol.yaspRPL.getMinimumStakeError());
+      await expect(mintNodeSetRpl(setupData, setupData.signers.rplWhale, amount))
+        .to.be.revertedWith(await setupData.protocol.xRPL.getMinimumStakeError());
     });
 
     it("Revert mint if sender doesn't send enough RPL", async function () {
       const setupData = await loadFixture(protocolFixture);
       const { protocol, signers } = setupData;
 
-      let amount = await protocol.yaspRPL.getMinimumStakeAmount();
+      let amount = await protocol.xRPL.getMinimumStakeAmount();
 
-      await expect(mintYaspRpl(setupData, signers.random, amount))
+      await expect(mintNodeSetRpl(setupData, signers.random, amount))
         .to.be.revertedWith("ERC20: transfer amount exceeds balance");
     });
 
@@ -42,12 +42,12 @@ describe("yaspRPL", function () {
       const setupData = await loadFixture(protocolFixture);
       const { protocol, signers } = setupData;
 
-      let amount = await protocol.yaspRPL.getMinimumStakeAmount();
+      let amount = await protocol.xRPL.getMinimumStakeAmount();
 
-      await expect(mintYaspRpl(setupData, signers.rplWhale, amount))
-        .to.emit(protocol.yaspRPL, "Transfer").withArgs("0x0000000000000000000000000000000000000000", signers.rplWhale, amount)
+      await expect(mintNodeSetRpl(setupData, signers.rplWhale, amount))
+        .to.emit(protocol.xRPL, "Transfer").withArgs("0x0000000000000000000000000000000000000000", signers.rplWhale, amount)
         .and.to.changeTokenBalance(
-          protocol.yaspRPL,
+          protocol.xRPL,
           signers.rplWhale.address,
           amount
         );
@@ -61,11 +61,11 @@ describe("yaspRPL", function () {
       const { protocol, signers, rocketPool: rp} = setupData;
   
       let amount = ethers.utils.parseEther("100");
-      await expect(mintYaspRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
+      await expect(mintNodeSetRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
   
-      await expect(protocol.yaspRPL.connect(signers.rplWhale).transfer(signers.random.address, amount))
-        .to.changeTokenBalances(protocol.yaspRPL, [signers.rplWhale, signers.random], [amount.mul(-1), amount])
-        .and.to.emit(protocol.yaspRPL, "Transfer").withArgs(signers.rplWhale.address, signers.random.address, amount);
+      await expect(protocol.xRPL.connect(signers.rplWhale).transfer(signers.random.address, amount))
+        .to.changeTokenBalances(protocol.xRPL, [signers.rplWhale, signers.random], [amount.mul(-1), amount])
+        .and.to.emit(protocol.xRPL, "Transfer").withArgs(signers.rplWhale.address, signers.random.address, amount);
     });
 
     it("Unapproved address cannot send token on behalf of other address", async function () {
@@ -73,9 +73,9 @@ describe("yaspRPL", function () {
       const { protocol, signers, rocketPool: rp} = setupData;
   
       let amount = ethers.utils.parseEther("100");
-      await expect(mintYaspRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
+      await expect(mintNodeSetRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
   
-      await expect(protocol.yaspRPL.connect(signers.random).transferFrom(signers.rplWhale.address, signers.random.address, amount))
+      await expect(protocol.xRPL.connect(signers.random).transferFrom(signers.rplWhale.address, signers.random.address, amount))
         .to.be.revertedWith("ERC20: insufficient allowance");
     });
 
@@ -84,13 +84,13 @@ describe("yaspRPL", function () {
       const { protocol, signers, rocketPool: rp} = setupData;
   
       let amount = ethers.utils.parseEther("100");
-      await expect(mintYaspRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
+      await expect(mintNodeSetRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
   
-      protocol.yaspRPL.connect(signers.rplWhale).approve(signers.random.address, amount);
+      protocol.xRPL.connect(signers.rplWhale).approve(signers.random.address, amount);
   
-      await expect(protocol.yaspRPL.connect(signers.random).transferFrom(signers.rplWhale.address, signers.random.address, amount))
-        .to.changeTokenBalances(protocol.yaspRPL, [signers.rplWhale, signers.random], [amount.mul(-1), amount])
-        .and.to.emit(protocol.yaspRPL, "Transfer").withArgs(signers.rplWhale.address, signers.random.address, amount);
+      await expect(protocol.xRPL.connect(signers.random).transferFrom(signers.rplWhale.address, signers.random.address, amount))
+        .to.changeTokenBalances(protocol.xRPL, [signers.rplWhale, signers.random], [amount.mul(-1), amount])
+        .and.to.emit(protocol.xRPL, "Transfer").withArgs(signers.rplWhale.address, signers.random.address, amount);
     });
   });
  
@@ -101,9 +101,9 @@ describe("yaspRPL", function () {
       const { protocol, signers } = setupData;
 
       let amount = ethers.utils.parseEther("100");
-      await expect(mintYaspRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
+      await expect(mintNodeSetRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
 
-      await expect(protocol.yaspRPL.connect(signers.rplWhale).burn(amount.add(1)))
+      await expect(protocol.xRPL.connect(signers.rplWhale).burn(amount.add(1)))
         .to.be.revertedWith("ERC20: burn amount exceeds balance");
     });
 
@@ -112,9 +112,9 @@ describe("yaspRPL", function () {
       const { protocol, signers, rocketPool: rp} = setupData;
 
       let amount = ethers.utils.parseEther("100");
-      await expect(mintYaspRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
+      await expect(mintNodeSetRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
 
-      await expect(protocol.yaspRPL.connect(signers.rplWhale).burn(amount))
+      await expect(protocol.xRPL.connect(signers.rplWhale).burn(amount))
         .to.be.revertedWith(await protocol.depositPool.NOT_ENOUGH_RPL_ERROR());
     });
     
@@ -123,14 +123,14 @@ describe("yaspRPL", function () {
       const { protocol, signers, rocketPool: rp} = setupData;
 
       let mintAmount = ethers.utils.parseEther("100");
-      await expect(mintYaspRpl(setupData, signers.rplWhale, mintAmount)).to.not.be.reverted;
+      await expect(mintNodeSetRpl(setupData, signers.rplWhale, mintAmount)).to.not.be.reverted;
 
       let burnAmount = (await protocol.depositPool.getMaxRplBalance()).sub(1);
 
-      await expect(protocol.yaspRPL.connect(signers.rplWhale).burn(burnAmount))
-        .to.changeTokenBalance(protocol.yaspRPL, signers.rplWhale, burnAmount.mul(-1))
+      await expect(protocol.xRPL.connect(signers.rplWhale).burn(burnAmount))
+        .to.changeTokenBalance(protocol.xRPL, signers.rplWhale, burnAmount.mul(-1))
         .to.changeTokenBalance(rp.rplContract, signers.rplWhale, burnAmount)
-        .and.to.emit(protocol.yaspRPL, "Transfer").withArgs(signers.rplWhale.address, "0x0000000000000000000000000000000000000000", burnAmount);
+        .and.to.emit(protocol.xRPL, "Transfer").withArgs(signers.rplWhale.address, "0x0000000000000000000000000000000000000000", burnAmount);
     });
 
     it("Unapproved address cannot burn on behalf of other address", async function () {
@@ -138,9 +138,9 @@ describe("yaspRPL", function () {
       const { protocol, signers, rocketPool: rp} = setupData;
   
       let amount = ethers.utils.parseEther("100");
-      await expect(mintYaspRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
+      await expect(mintNodeSetRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
   
-      await expect(protocol.yaspETH.connect(signers.random).burnFrom(signers.rplWhale.address, amount))
+      await expect(protocol.xrETH.connect(signers.random).burnFrom(signers.rplWhale.address, amount))
         .to.be.revertedWith("ERC20: insufficient allowance");
     });
 
@@ -149,15 +149,15 @@ describe("yaspRPL", function () {
       const { protocol, signers, rocketPool: rp} = setupData;
   
       let mintAmount = ethers.utils.parseEther("100");
-      await expect(mintYaspRpl(setupData, signers.rplWhale, mintAmount)).to.not.be.reverted;
+      await expect(mintNodeSetRpl(setupData, signers.rplWhale, mintAmount)).to.not.be.reverted;
   
       let burnAmount = (await protocol.depositPool.getMaxRplBalance()).sub(1);
-      protocol.yaspRPL.connect(signers.rplWhale).approve(signers.random.address, burnAmount);    
+      protocol.xRPL.connect(signers.rplWhale).approve(signers.random.address, burnAmount);    
   
-      await expect(protocol.yaspRPL.connect(signers.random).burnFrom(signers.rplWhale.address, burnAmount))
-        .to.changeTokenBalance(protocol.yaspRPL, signers.rplWhale, burnAmount.mul(-1))
+      await expect(protocol.xRPL.connect(signers.random).burnFrom(signers.rplWhale.address, burnAmount))
+        .to.changeTokenBalance(protocol.xRPL, signers.rplWhale, burnAmount.mul(-1))
         .to.changeTokenBalance(rp.rplContract, signers.rplWhale, burnAmount)
-        .and.to.emit(protocol.yaspRPL, "Transfer").withArgs(signers.rplWhale.address, "0x0000000000000000000000000000000000000000", burnAmount);
+        .and.to.emit(protocol.xRPL, "Transfer").withArgs(signers.rplWhale.address, "0x0000000000000000000000000000000000000000", burnAmount);
     });
   }); 
   
@@ -166,7 +166,7 @@ describe("yaspRPL", function () {
     const { protocol, signers, rocketPool: rp} = setupData;
 
     let mintAmount = ethers.utils.parseEther("100");
-    await mintYaspRpl(setupData, signers.rplWhale, mintAmount);
+    await mintNodeSetRpl(setupData, signers.rplWhale, mintAmount);
     
     // simulate yield from validator
     rp.rplContract.connect(signers.rplWhale)

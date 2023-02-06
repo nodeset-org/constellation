@@ -3,8 +3,8 @@ pragma solidity ^0.8.9;
 
 import "./Operator.sol";
 import "../Whitelist/Whitelist.sol";
-import "../Tokens/yaspETH.sol";
-import "../Tokens/yaspRPL.sol";
+import "../Tokens/xrETH.sol";
+import "../Tokens/xRPL.sol";
 import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";
 import "hardhat/console.sol";
@@ -48,7 +48,7 @@ contract YieldDistributor is Base {
     function initialize() public onlyAdmin {
         require(!_isInitialized, INITIALIZATION_ERROR);
         require(getDirectory().getIsInitialized(), DIRECTORY_NOT_INITIALIZED_ERROR);       
-        // approve infinite RPL spends for this address from yaspRPL
+        // approve infinite RPL spends for this address from xRPL
         RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS())
             .approve(getDirectory().getRPLTokenAddress(), type(uint).max);
         _isInitialized = true;
@@ -100,7 +100,7 @@ contract YieldDistributor is Base {
         _isDistributing = true;
         require(getIsInitialized(), NOT_INITIALIZED_ERROR);
         
-        // for all operators in good standing, mint yaspETH 
+        // for all operators in good standing, mint xrETH 
         Operator[] memory operators = getWhitelist().getOperatorList();
         uint length = operators.length;
 
@@ -110,25 +110,25 @@ contract YieldDistributor is Base {
         console.log("total fee");
         console.log(totalFee);
 
-        // mint yaspETH for NOs
+        // mint xrETH for NOs
         for(uint i = 0; i < length; i++) {
             uint operatorRewardEth = 
                 totalFee * (operators[i].feePortion / YIELD_FEE_MAX) * (1 - (_ethFeeAdminPortion / YIELD_FEE_MAX)) / length;
-            YaspETH(getDirectory().getETHTokenAddress()).internalMint(operators[i].nodeAddress, operatorRewardEth);
+            NodeSetETH(getDirectory().getETHTokenAddress()).internalMint(operators[i].nodeAddress, operatorRewardEth);
             console.log("operator eth fee");
             console.log(operatorRewardEth);
             emit RewardDistributed(Reward(operators[i].nodeAddress, operatorRewardEth, 0));
         }
 
-        // mint yaspETH for admin
+        // mint xrETH for admin
         uint adminRewardEth = totalFee * (_ethFeeAdminPortion / YIELD_FEE_MAX);
-        YaspETH(getDirectory().getETHTokenAddress()).internalMint(getDirectory().getAdminAddress(), adminRewardEth);
+        NodeSetETH(getDirectory().getETHTokenAddress()).internalMint(getDirectory().getAdminAddress(), adminRewardEth);
         
-        // mint yaspRPL for admin 
+        // mint xRPL for admin 
         RocketTokenRPLInterface rpl = RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS());
 
         uint adminRewardRpl = rpl.balanceOf(address(this)) * _rplFeeAdminPortion / YIELD_FEE_MAX;        
-        YaspRPL(getDirectory().getRPLTokenAddress())
+        NodeSetRPL(getDirectory().getRPLTokenAddress())
             .mintYield(getDirectory().getAdminAddress(), adminRewardRpl);
         emit RewardDistributed(Reward(getDirectory().getAdminAddress(), adminRewardEth, adminRewardRpl));
         console.log("admin ETH fee");

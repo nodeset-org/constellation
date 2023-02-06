@@ -5,13 +5,13 @@ import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 
-export async function mintYaspEth(setupData: SetupData, from: SignerWithAddress, amount: BigNumber) {
+export async function mint_xrEth(setupData: SetupData, from: SignerWithAddress, amount: BigNumber) {
   const { protocol, signers } = setupData;
     
-  return from.sendTransaction({ to: protocol.yaspETH.address, value: amount, gasLimit: 1000000 });
+  return from.sendTransaction({ to: protocol.xrETH.address, value: amount, gasLimit: 1000000 });
 }
 
-describe("yaspETH", function () {
+describe("xrETH", function () {
 
   describe("Mint", function () {
 
@@ -19,9 +19,9 @@ describe("yaspETH", function () {
       const setupData = await loadFixture(protocolFixture);
       const { protocol, signers } = setupData;
 
-      let amount = (await protocol.yaspETH.getMinimumStakeAmount()).sub(BigNumber.from(1));
-      await expect(mintYaspEth(setupData, signers.random, amount))
-        .to.be.revertedWith(await protocol.yaspETH.getMinimumStakeError());
+      let amount = (await protocol.xrETH.getMinimumStakeAmount()).sub(BigNumber.from(1));
+      await expect(mint_xrEth(setupData, signers.random, amount))
+        .to.be.revertedWith(await protocol.xrETH.getMinimumStakeError());
     });
 
     it("Mints >= minimum succeed", async function () {
@@ -29,10 +29,10 @@ describe("yaspETH", function () {
       const { protocol, signers } = setupData;
 
       let amount = ethers.utils.parseEther("100");
-      await expect(mintYaspEth(setupData, signers.random, amount))
+      await expect(mint_xrEth(setupData, signers.random, amount))
         .to.changeEtherBalance(signers.random, amount.mul(-1))
-        .to.changeTokenBalance(protocol.yaspETH, signers.random, amount)
-        .and.to.emit(protocol.yaspETH, "Transfer").withArgs("0x0000000000000000000000000000000000000000", signers.random.address, amount);
+        .to.changeTokenBalance(protocol.xrETH, signers.random, amount)
+        .and.to.emit(protocol.xrETH, "Transfer").withArgs("0x0000000000000000000000000000000000000000", signers.random.address, amount);
     });
   });
   
@@ -42,11 +42,11 @@ describe("yaspETH", function () {
       const { protocol, signers } = setupData;
   
       let amount = ethers.utils.parseEther("100");
-      await expect(mintYaspEth(setupData, signers.random, amount)).to.not.be.reverted;
+      await expect(mint_xrEth(setupData, signers.random, amount)).to.not.be.reverted;
   
-      await expect(protocol.yaspETH.connect(signers.random).transfer(signers.random2.address, amount))
-        .to.changeTokenBalances(protocol.yaspETH, [signers.random, signers.random2], [amount.mul(-1), amount])
-        .and.to.emit(protocol.yaspETH, "Transfer").withArgs(signers.random.address, signers.random2.address, amount);
+      await expect(protocol.xrETH.connect(signers.random).transfer(signers.random2.address, amount))
+        .to.changeTokenBalances(protocol.xrETH, [signers.random, signers.random2], [amount.mul(-1), amount])
+        .and.to.emit(protocol.xrETH, "Transfer").withArgs(signers.random.address, signers.random2.address, amount);
     });
   
     it("Unapproved address cannot send token on behalf of other address", async function () {
@@ -54,9 +54,9 @@ describe("yaspETH", function () {
       const { protocol, signers } = setupData;
   
       let amount = ethers.utils.parseEther("100");
-      await expect(mintYaspEth(setupData, signers.random, amount)).to.not.be.reverted;
+      await expect(mint_xrEth(setupData, signers.random, amount)).to.not.be.reverted;
   
-      await expect(protocol.yaspETH.connect(signers.random2).transferFrom(signers.random.address, signers.random2.address, amount))
+      await expect(protocol.xrETH.connect(signers.random2).transferFrom(signers.random.address, signers.random2.address, amount))
         .to.be.revertedWith("ERC20: insufficient allowance");
     });
 
@@ -65,13 +65,13 @@ describe("yaspETH", function () {
       const { protocol, signers } = setupData;
   
       let amount = ethers.utils.parseEther("100");
-      await expect(mintYaspEth(setupData, signers.random, amount)).to.not.be.reverted;
+      await expect(mint_xrEth(setupData, signers.random, amount)).to.not.be.reverted;
   
-      protocol.yaspETH.connect(signers.random).approve(signers.random2.address, amount);
+      protocol.xrETH.connect(signers.random).approve(signers.random2.address, amount);
   
-      await expect(protocol.yaspETH.connect(signers.random2).transferFrom(signers.random.address, signers.random2.address, amount))
-        .to.changeTokenBalances(protocol.yaspETH, [signers.random, signers.random2], [amount.mul(-1), amount])
-        .and.to.emit(protocol.yaspETH, "Transfer").withArgs(signers.random.address, signers.random2.address, amount);
+      await expect(protocol.xrETH.connect(signers.random2).transferFrom(signers.random.address, signers.random2.address, amount))
+        .to.changeTokenBalances(protocol.xrETH, [signers.random, signers.random2], [amount.mul(-1), amount])
+        .and.to.emit(protocol.xrETH, "Transfer").withArgs(signers.random.address, signers.random2.address, amount);
     });
   });
 
@@ -82,9 +82,9 @@ describe("yaspETH", function () {
 
       let amount = ethers.utils.parseEther("100");
 
-      await expect(mintYaspEth(setupData, signers.random, amount)).to.not.be.reverted;
+      await expect(mint_xrEth(setupData, signers.random, amount)).to.not.be.reverted;
 
-      await expect(protocol.yaspETH.connect(signers.random).burn(amount.add(1)))
+      await expect(protocol.xrETH.connect(signers.random).burn(amount.add(1)))
         .to.be.revertedWith("ERC20: burn amount exceeds balance");
     });
 
@@ -93,9 +93,9 @@ describe("yaspETH", function () {
       const { protocol, signers } = setupData;
 
       let amount = ethers.utils.parseEther("100");
-      await expect(mintYaspEth(setupData, signers.random, amount)).to.not.be.reverted;
+      await expect(mint_xrEth(setupData, signers.random, amount)).to.not.be.reverted;
     
-      await expect(protocol.yaspETH.connect(signers.random).burn(amount))
+      await expect(protocol.xrETH.connect(signers.random).burn(amount))
         .to.be.revertedWith(await protocol.depositPool.NOT_ENOUGH_ETH_ERROR());
     });
    
@@ -104,14 +104,14 @@ describe("yaspETH", function () {
       const { protocol, signers } = setupData;
 
       let mintAmount = ethers.utils.parseEther("100");
-      await expect(mintYaspEth(setupData, signers.random, mintAmount)).to.not.be.reverted;
+      await expect(mint_xrEth(setupData, signers.random, mintAmount)).to.not.be.reverted;
 
       let burnAmount = (await protocol.depositPool.getMaxEthBalance()).sub(1);
 
-      await expect(protocol.yaspETH.connect(signers.random).burn(burnAmount))
-        .to.changeTokenBalance(protocol.yaspETH, signers.random, burnAmount.mul(-1))
+      await expect(protocol.xrETH.connect(signers.random).burn(burnAmount))
+        .to.changeTokenBalance(protocol.xrETH, signers.random, burnAmount.mul(-1))
         .to.changeEtherBalance(signers.random, burnAmount)
-        .and.to.emit(protocol.yaspETH, "Transfer").withArgs(signers.random.address, "0x0000000000000000000000000000000000000000", burnAmount);
+        .and.to.emit(protocol.xrETH, "Transfer").withArgs(signers.random.address, "0x0000000000000000000000000000000000000000", burnAmount);
     });
 
     it("Unapproved address cannot burn on behalf of other address", async function () {
@@ -119,9 +119,9 @@ describe("yaspETH", function () {
       const { protocol, signers } = setupData;
   
       let amount = ethers.utils.parseEther("100");
-      await expect(mintYaspEth(setupData, signers.random, amount)).to.not.be.reverted;
+      await expect(mint_xrEth(setupData, signers.random, amount)).to.not.be.reverted;
   
-      await expect(protocol.yaspETH.connect(signers.random2).burnFrom(signers.random.address, amount))
+      await expect(protocol.xrETH.connect(signers.random2).burnFrom(signers.random.address, amount))
         .to.be.revertedWith("ERC20: insufficient allowance");
     });
 
@@ -130,15 +130,15 @@ describe("yaspETH", function () {
       const { protocol, signers } = setupData;
   
       let mintAmount = ethers.utils.parseEther("100");
-      await expect(mintYaspEth(setupData, signers.random, mintAmount)).to.not.be.reverted;
+      await expect(mint_xrEth(setupData, signers.random, mintAmount)).to.not.be.reverted;
   
       let burnAmount = (await protocol.depositPool.getMaxEthBalance()).sub(1);
-      protocol.yaspETH.connect(signers.random).approve(signers.random2.address, burnAmount);    
+      protocol.xrETH.connect(signers.random).approve(signers.random2.address, burnAmount);    
   
-      await expect(protocol.yaspETH.connect(signers.random2).burnFrom(signers.random.address, burnAmount))
-        .to.changeTokenBalance(protocol.yaspETH, signers.random, burnAmount.mul(-1))
+      await expect(protocol.xrETH.connect(signers.random2).burnFrom(signers.random.address, burnAmount))
+        .to.changeTokenBalance(protocol.xrETH, signers.random, burnAmount.mul(-1))
         .to.changeEtherBalance(signers.random, burnAmount)
-        .and.to.emit(protocol.yaspETH, "Transfer").withArgs(signers.random.address, "0x0000000000000000000000000000000000000000", burnAmount);
+        .and.to.emit(protocol.xrETH, "Transfer").withArgs(signers.random.address, "0x0000000000000000000000000000000000000000", burnAmount);
     });
   });  
 

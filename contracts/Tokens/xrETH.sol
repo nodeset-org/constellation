@@ -11,11 +11,11 @@ import "../DepositPool.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice LSD tracking the network's yield
-contract YaspETH is Base, Ownable, ERC20Burnable, ERC20Permit, ERC20FlashMint {
+contract NodeSetETH is Base, Ownable, ERC20Burnable, ERC20Permit, ERC20FlashMint {
 
     string constant NAME = "ETH in the Sky with Diamonds";
-    string constant SYMBOL = "yaspETH";
-    string constant BURN_TOO_SMALL_ERROR = "yaspETH: burn amount must be greater than 0";
+    string constant SYMBOL = "xrETH";
+    string constant BURN_TOO_SMALL_ERROR = "xrETH: burn amount must be greater than 0";
 
     uint private _minimumStakeAmount = 0.1 ether;
 
@@ -37,10 +37,10 @@ contract YaspETH is Base, Ownable, ERC20Burnable, ERC20Permit, ERC20FlashMint {
     }
 
     function mint(address to, uint amount) private {
-        //require(amount >= _minimumStakeAmount, getMinimumStakeError());
+        require(amount >= _minimumStakeAmount, getMinimumStakeError());
 
         (bool success, ) = getDirectory().getDepositPoolAddress().call{ value : amount }("");
-        require(success, "yaspETH: Failed to transfer ETH to Deposit Pool!");
+        require(success, "xrETH: Failed to transfer ETH to Deposit Pool!");
         _mint(to, amount * getRedemptionValuePerToken());
     }
 

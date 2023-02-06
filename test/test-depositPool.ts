@@ -75,13 +75,13 @@ export async function depositRpl(setupData: SetupData, from: SignerWithAddress, 
 
 	const rp = setupData.rocketPool;
 	
-	await expect(rp.rplContract.connect(from).approve(protocol.yaspRPL.address, amount))
+	await expect(rp.rplContract.connect(from).approve(protocol.xRPL.address, amount))
 			.to.emit(rp.rplContract, "Approval")
-			.withArgs(from.address, protocol.yaspRPL.address, amount);
+			.withArgs(from.address, protocol.xRPL.address, amount);
 
-	await expect(protocol.yaspRPL.connect(from).mint(from.address, amount))
+	await expect(protocol.xRPL.connect(from).mint(from.address, amount))
 		.to.changeTokenBalance(
-			protocol.yaspRPL,
+			protocol.xRPL,
 			from,
 			amount
 		)
@@ -159,7 +159,7 @@ describe("DepositPool", function () {
 	});
 	
 	describe("ETH", function () {
-		it("State adjusts correctly on ETH deposit from yaspETH", async function () {
+		it("State adjusts correctly on ETH deposit from xrETH", async function () {
 			const setupData = await loadFixture(protocolFixture);
 
 			await depositEth(setupData, setupData.signers.random, BN.from(ethers.utils.parseEther("100")));
@@ -169,13 +169,13 @@ describe("DepositPool", function () {
 			const { protocol, signers } = await loadFixture(protocolFixture);
 
 			let mintAmount = ethers.utils.parseEther("100");
-			await signers.random.sendTransaction({ to: protocol.yaspETH.address, value: mintAmount, gasLimit: 1000000 });
+			await signers.random.sendTransaction({ to: protocol.xrETH.address, value: mintAmount, gasLimit: 1000000 });
 		
 			const readTvl = async () => { return await protocol.depositPool.getTvlEth() };
 			let startTvl = await readTvl();
 
 			let burnAmount = (await protocol.depositPool.getMaxEthBalance()).sub(1);
-			await protocol.yaspETH.connect(signers.random).burn(burnAmount);
+			await protocol.xrETH.connect(signers.random).burn(burnAmount);
 
 			let finalTvl = await readTvl();
 
@@ -200,7 +200,7 @@ describe("DepositPool", function () {
 	});
 
 	describe("RPL", function () {
-		it("State adjusts correctly on RPL deposit from yaspRPL", async function () {
+		it("State adjusts correctly on RPL deposit from xRPL", async function () {
 			const setupData = await loadFixture(protocolFixture);
 
 			const rp = setupData.rocketPool;
@@ -238,14 +238,14 @@ describe("DepositPool", function () {
 			const { protocol, signers, rocketPool: rp } = await loadFixture(protocolFixture);
 
 			let mintAmount = ethers.utils.parseEther("100");
-			await rp.rplContract.connect(signers.rplWhale).approve(protocol.yaspRPL.address, mintAmount);
-			await protocol.yaspRPL.mint(signers.rplWhale.address, mintAmount);
+			await rp.rplContract.connect(signers.rplWhale).approve(protocol.xRPL.address, mintAmount);
+			await protocol.xRPL.mint(signers.rplWhale.address, mintAmount);
 		
 			const readTvl = async () => { return await protocol.depositPool.getTvlRpl() };
 			let startTvl = await readTvl();
 
 			let burnAmount = (await protocol.depositPool.getMaxRplBalance()).sub(1);
-			protocol.yaspRPL.connect(signers.random).burn(burnAmount);
+			protocol.xRPL.connect(signers.random).burn(burnAmount);
 
 			let finalTvl = await readTvl();
 

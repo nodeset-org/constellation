@@ -8,8 +8,8 @@ export async function initializeDirectory(protocol: Protocol, addressToUse: Sign
   return await protocol.directory.connect(addressToUse).initialize(
     {
       whitelist: protocol.whitelist.address,
-      ethToken: protocol.yaspETH.address,
-      rplToken: protocol.yaspRPL.address,
+      ethToken: protocol.xrETH.address,
+      rplToken: protocol.xRPL.address,
       depositPool: protocol.depositPool.address,
       operatorDistributor: protocol.operatorDistributor.address,
       yieldDistributor: protocol.yieldDistributor.address

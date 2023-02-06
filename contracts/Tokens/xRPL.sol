@@ -12,12 +12,12 @@ import "../Interfaces/RocketTokenRPLInterface.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice LSD tracking the network's yield
-contract YaspRPL is Base, Ownable, ERC20Burnable, ERC20Permit, ERC20FlashMint {
+contract NodeSetRPL is Base, Ownable, ERC20Burnable, ERC20Permit, ERC20FlashMint {
 
     string constant NAME = "RPL in the Sky with Diamonds";
-    string constant SYMBOL = "yaspRPL";
-    string constant BURN_TOO_SMALL_ERROR = "yaspRPL: burn amount must be greater than 0";
-    string constant MINT_NOT_PERMITTED_ERROR = "yaspRPL: only the YieldDistributor can mint without sending RPL";
+    string constant SYMBOL = "xRPL";
+    string constant BURN_TOO_SMALL_ERROR = "xRPL: burn amount must be greater than 0";
+    string constant MINT_NOT_PERMITTED_ERROR = "xRPL: only the YieldDistributor can mint without sending RPL";
 
     uint private _minimumStakeAmount = 0.1 ether; // rpl in this case
 
@@ -43,7 +43,7 @@ contract YaspRPL is Base, Ownable, ERC20Burnable, ERC20Permit, ERC20FlashMint {
         // send RPL to DP
         bool success = RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS())
             .transferFrom(to, getDirectory().getDepositPoolAddress(), amount);
-        require(success, "yaspRPL: Failed to transfer RPL to Deposit Pool!");
+        require(success, "xRPL: Failed to transfer RPL to Deposit Pool!");
 
         // notify DP that it has received RPL
         DepositPool(getDirectory().getDepositPoolAddress()).receiveRpl(amount);

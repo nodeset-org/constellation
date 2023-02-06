@@ -36,7 +36,7 @@ describe("Whitelist", function () {
             signers.random.address,
             await time.latest() + 1,
             0,
-            1
+            10000
         ];
 
         await expect(protocol.whitelist.addOperator(signers.random.address))
@@ -56,7 +56,7 @@ describe("Whitelist", function () {
             nodeAddress: signers.random.address,
             operationStartTime: await time.latest(),
             currentValidatorCount: 0,
-            feePortion: 1
+            feePortion: 10000
         };
 
         // Simple comparison on structs is not possible with HH chai matchers yet,
