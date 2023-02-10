@@ -230,6 +230,8 @@ describe("Yield Distributor", function () {
     console.log("Distributed " + ethers.utils.formatEther(operatorShare) + " ETH to 3 operators.");
     console.log("Distributed " + ethers.utils.formatEther(adminShareEth) + " ETH and " +
       ethers.utils.formatEther(adminShareRpl) + " RPL to the admin.");
+    
+    expect.fail(); // sanity checks with ETH distributions are broken
   });
   
 });

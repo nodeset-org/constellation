@@ -111,9 +111,13 @@ contract YieldDistributor is Base {
         console.log(totalFee);
 
         // mint xrETH for NOs
+        uint adminRewardEth = totalFee * _ethFeeAdminPortion / YIELD_FEE_MAX;
+        console.log("adminFee");
+        console.log(adminRewardEth);
         for(uint i = 0; i < length; i++) {
+            // TODO: This calculation doesn't subtract the admin fee appropriately
             uint operatorRewardEth = 
-                totalFee * (operators[i].feePortion / YIELD_FEE_MAX) * (1 - (_ethFeeAdminPortion / YIELD_FEE_MAX)) / length;
+                (totalFee - adminRewardEth) * (operators[i].feePortion / YIELD_FEE_MAX) / length;
             NodeSetETH(getDirectory().getETHTokenAddress()).internalMint(operators[i].nodeAddress, operatorRewardEth);
             console.log("operator eth fee");
             console.log(operatorRewardEth);
@@ -121,7 +125,6 @@ contract YieldDistributor is Base {
         }
 
         // mint xrETH for admin
-        uint adminRewardEth = totalFee * (_ethFeeAdminPortion / YIELD_FEE_MAX);
         NodeSetETH(getDirectory().getETHTokenAddress()).internalMint(getDirectory().getAdminAddress(), adminRewardEth);
         
         // mint xRPL for admin 
@@ -139,7 +142,7 @@ contract YieldDistributor is Base {
         // send remaining RPL to DP
         rpl.transfer(getDirectory().getDepositPoolAddress(), rpl.balanceOf(address(this)));
 
-        // TODO: reimburse msg.sender here 
+        // TODO: reimburse msg.sender
 
         // send remaining ETH to DP
         (bool success, ) = getDirectory().getDepositPoolAddress().call{ value: address(this).balance }("");

@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers, upgrades } from "hardhat";
+import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";

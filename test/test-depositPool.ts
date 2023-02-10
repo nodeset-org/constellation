@@ -1,11 +1,9 @@
 import { expect } from "chai";
-import { ethers, upgrades } from "hardhat";
+import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber as BN } from "ethers";
-import { yaspEthSol } from "../typechain-types/contracts/Token";
-import { IERC20 } from "../typechain-types";
 
 export async function depositEth(setupData: SetupData, from: SignerWithAddress, amount: BN) {
 	const { protocol } = setupData;	

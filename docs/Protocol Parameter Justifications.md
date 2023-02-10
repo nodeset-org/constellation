@@ -5,7 +5,7 @@
 
 **NO/Admin Fee split: 10%/90%**
 
-If one were to approximate investment into the protocol, the value is probably closer to 1%/99%, but we think it's worthwhile to incentivize network growth and community goodwill.
+If one were to approximate investment into the protocol, the value is probably closer to 1%/99%, but we think it's worthwhile to incentivize network growth and community goodwill by providing NOs a sizable chunk of the pie.
 
 Admin: Spends years of our lives building, maintaining, and upgrading this system
 NOs: Spends a few hours every few months maintaining a node
