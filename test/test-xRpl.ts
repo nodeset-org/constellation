@@ -5,7 +5,7 @@ import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 
-export async function mintNodeSetRpl(setupData: SetupData, from: SignerWithAddress, amount: BigNumber) {
+export async function mint_xRpl(setupData: SetupData, from: SignerWithAddress, amount: BigNumber) {
   const { protocol, rocketPool: rp } = setupData;
   
   await expect(rp.rplContract.connect(from).approve(protocol.xRPL.address, amount))
@@ -24,7 +24,7 @@ describe("xRPL", function () {
 
       let amount = (await setupData.protocol.xrETH.getMinimumStakeAmount()).sub(BigNumber.from(1));
 
-      await expect(mintNodeSetRpl(setupData, setupData.signers.rplWhale, amount))
+      await expect(mint_xRpl(setupData, setupData.signers.rplWhale, amount))
         .to.be.revertedWith(await setupData.protocol.xRPL.getMinimumStakeError());
     });
 
@@ -34,7 +34,7 @@ describe("xRPL", function () {
 
       let amount = await protocol.xRPL.getMinimumStakeAmount();
 
-      await expect(mintNodeSetRpl(setupData, signers.random, amount))
+      await expect(mint_xRpl(setupData, signers.random, amount))
         .to.be.revertedWith("ERC20: transfer amount exceeds balance");
     });
 
@@ -44,7 +44,7 @@ describe("xRPL", function () {
 
       let amount = await protocol.xRPL.getMinimumStakeAmount();
 
-      await expect(mintNodeSetRpl(setupData, signers.rplWhale, amount))
+      await expect(mint_xRpl(setupData, signers.rplWhale, amount))
         .to.emit(protocol.xRPL, "Transfer").withArgs("0x0000000000000000000000000000000000000000", signers.rplWhale, amount)
         .and.to.changeTokenBalance(
           protocol.xRPL,
@@ -61,7 +61,7 @@ describe("xRPL", function () {
       const { protocol, signers, rocketPool: rp} = setupData;
   
       let amount = ethers.utils.parseEther("100");
-      await expect(mintNodeSetRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
+      await expect(mint_xRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
   
       await expect(protocol.xRPL.connect(signers.rplWhale).transfer(signers.random.address, amount))
         .to.changeTokenBalances(protocol.xRPL, [signers.rplWhale, signers.random], [amount.mul(-1), amount])
@@ -73,7 +73,7 @@ describe("xRPL", function () {
       const { protocol, signers, rocketPool: rp} = setupData;
   
       let amount = ethers.utils.parseEther("100");
-      await expect(mintNodeSetRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
+      await expect(mint_xRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
   
       await expect(protocol.xRPL.connect(signers.random).transferFrom(signers.rplWhale.address, signers.random.address, amount))
         .to.be.revertedWith("ERC20: insufficient allowance");
@@ -84,7 +84,7 @@ describe("xRPL", function () {
       const { protocol, signers, rocketPool: rp} = setupData;
   
       let amount = ethers.utils.parseEther("100");
-      await expect(mintNodeSetRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
+      await expect(mint_xRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
   
       protocol.xRPL.connect(signers.rplWhale).approve(signers.random.address, amount);
   
@@ -101,7 +101,7 @@ describe("xRPL", function () {
       const { protocol, signers } = setupData;
 
       let amount = ethers.utils.parseEther("100");
-      await expect(mintNodeSetRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
+      await expect(mint_xRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
 
       await expect(protocol.xRPL.connect(signers.rplWhale).burn(amount.add(1)))
         .to.be.revertedWith("ERC20: burn amount exceeds balance");
@@ -112,7 +112,7 @@ describe("xRPL", function () {
       const { protocol, signers, rocketPool: rp} = setupData;
 
       let amount = ethers.utils.parseEther("100");
-      await expect(mintNodeSetRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
+      await expect(mint_xRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
 
       await expect(protocol.xRPL.connect(signers.rplWhale).burn(amount))
         .to.be.revertedWith(await protocol.depositPool.NOT_ENOUGH_RPL_ERROR());
@@ -123,7 +123,7 @@ describe("xRPL", function () {
       const { protocol, signers, rocketPool: rp} = setupData;
 
       let mintAmount = ethers.utils.parseEther("100");
-      await expect(mintNodeSetRpl(setupData, signers.rplWhale, mintAmount)).to.not.be.reverted;
+      await expect(mint_xRpl(setupData, signers.rplWhale, mintAmount)).to.not.be.reverted;
 
       let burnAmount = (await protocol.depositPool.getMaxRplBalance()).sub(1);
 
@@ -138,7 +138,7 @@ describe("xRPL", function () {
       const { protocol, signers, rocketPool: rp} = setupData;
   
       let amount = ethers.utils.parseEther("100");
-      await expect(mintNodeSetRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
+      await expect(mint_xRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
   
       await expect(protocol.xrETH.connect(signers.random).burnFrom(signers.rplWhale.address, amount))
         .to.be.revertedWith("ERC20: insufficient allowance");
@@ -149,7 +149,7 @@ describe("xRPL", function () {
       const { protocol, signers, rocketPool: rp} = setupData;
   
       let mintAmount = ethers.utils.parseEther("100");
-      await expect(mintNodeSetRpl(setupData, signers.rplWhale, mintAmount)).to.not.be.reverted;
+      await expect(mint_xRpl(setupData, signers.rplWhale, mintAmount)).to.not.be.reverted;
   
       let burnAmount = (await protocol.depositPool.getMaxRplBalance()).sub(1);
       protocol.xRPL.connect(signers.rplWhale).approve(signers.random.address, burnAmount);    
@@ -166,7 +166,7 @@ describe("xRPL", function () {
     const { protocol, signers, rocketPool: rp} = setupData;
 
     let mintAmount = ethers.utils.parseEther("100");
-    await mintNodeSetRpl(setupData, signers.rplWhale, mintAmount);
+    await mint_xRpl(setupData, signers.rplWhale, mintAmount);
     
     // simulate yield from validator
     rp.rplContract.connect(signers.rplWhale)

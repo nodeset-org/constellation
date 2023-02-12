@@ -1,4 +1,4 @@
-# NodeSet's 3 Dimensions
+# A NodeSet Module's 3 Roles
  - Depositors
  - Node Operators
  - [Administrator]("Admin Address.md")
