@@ -27,12 +27,13 @@ export async function depositEth(setupData: SetupData, from: SignerWithAddress, 
 		+ "\n\t\t\tNew DP balance should be " + ethers.utils.formatEther(dpBalanceChange)
 		+ " ether + currentBalance = " + ethers.utils.formatEther(dpBalance.add(dpBalanceChange)) + " ether");
 
-	await expect(from.sendTransaction({ to: protocol.depositPool.address, value: amount, gasLimit: 1000000 }))
+	const tx = from.sendTransaction({ to: protocol.depositPool.address, value: amount, gasLimit: 1000000 });
+	await expect(tx)
 		.to.changeEtherBalances(
 			[from, protocol.depositPool.address, protocol.operatorDistributor.address],
 			[amount.mul(-1), dpBalanceChange, distributorBalanceChange]
 		)
-		.and.to.emit(protocol.depositPool, "TotalValueUpdated").withArgs(tvl, tvl.add(amount));
+	await expect(tx).to.emit(protocol.depositPool, "TotalValueUpdated").withArgs(tvl, tvl.add(amount));
 
 	await expect(maxBalanceAfterDeposit).to.equal(await protocol.depositPool.getMaxEthBalance());
 	
@@ -77,18 +78,20 @@ export async function depositRpl(setupData: SetupData, from: SignerWithAddress, 
 			.to.emit(rp.rplContract, "Approval")
 			.withArgs(from.address, protocol.xRPL.address, amount);
 
-	await expect(protocol.xRPL.connect(from).mint(from.address, amount))
+	const tx = await protocol.xRPL.connect(from).mint(from.address, amount);
+	await expect(tx)
 		.to.changeTokenBalance(
 			protocol.xRPL,
 			from,
 			amount
-		)
-		.and.to.changeTokenBalances(
+		);
+	await expect(tx).to.changeTokenBalances(
 			rp.rplContract,
 			[from, protocol.depositPool, protocol.operatorDistributor],
 			[amount.mul(-1), dpBalanceChange, distributorBalanceChange]
-		)
-		.and.to.emit(protocol.depositPool, "TotalValueUpdated").withArgs(tvl, tvl.add(amount));
+		);
+	await expect(tx)
+		.to.emit(protocol.depositPool, "TotalValueUpdated").withArgs(tvl, tvl.add(amount));
 	
 	let max = await protocol.depositPool.getMaxRplBalance();
 	
@@ -101,7 +104,7 @@ export async function depositRpl(setupData: SetupData, from: SignerWithAddress, 
 	expect(!currTvl.eq(0));
 	expect(tvl.lt(currTvl));
 	expect(currTvl.eq(await ethers.provider.getBalance(protocol.depositPool.address)));
-	expect(currTvl.eq(amount)); // TODO: finish this function
+	expect(currTvl.eq(tvl.add(amount)));
 }
 
 describe("DepositPool", function () {
@@ -145,13 +148,13 @@ describe("DepositPool", function () {
 			let maxEthBalancePortion = await protocol.depositPool.connect(signers.random).getMaxEthBalancePortion();
 			let maxRplBalancePortion = await protocol.depositPool.connect(signers.random).getMaxEthBalancePortion();
 			
-			expect(await protocol.depositPool.setMaxEthBalancePortion(1000))
-				.to.emit(protocol.depositPool, "NewMaxEthBalancePortion").withArgs(maxEthBalancePortion, 1000)
-				.and.to.not.be.revertedWith(await protocol.directory.ADMIN_ONLY_ERROR());
+			const maxEthTx = protocol.depositPool.setMaxEthBalancePortion(1000);
+			await expect(maxEthTx).to.emit(protocol.depositPool, "NewMaxEthBalancePortion").withArgs(maxEthBalancePortion, 1000);
+			await expect(maxEthTx).to.not.be.revertedWith(await protocol.directory.ADMIN_ONLY_ERROR());
 		
-			expect(await protocol.depositPool.setMaxEthBalancePortion(1000))
-				.to.emit(protocol.depositPool, "NewMaxRplBalancePortion").withArgs(maxRplBalancePortion, 1000)
-				.and.to.not.be.revertedWith(await protocol.directory.ADMIN_ONLY_ERROR());
+			const maxRplTx = protocol.depositPool.setMaxRplBalancePortion(1000);
+			await expect(maxRplTx).to.emit(protocol.depositPool, "NewMaxRplBalancePortion").withArgs(maxRplBalancePortion, 1000);
+			await expect(maxRplTx).to.not.be.revertedWith(await protocol.directory.ADMIN_ONLY_ERROR());
 		});
 		
 	});

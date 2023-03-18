@@ -29,10 +29,10 @@ describe("xrETH", function () {
       const { protocol, signers } = setupData;
 
       let amount = ethers.utils.parseEther("100");
-      await expect(mint_xrEth(setupData, signers.random, amount))
-        .to.changeEtherBalance(signers.random, amount.mul(-1))
-        .to.changeTokenBalance(protocol.xrETH, signers.random, amount)
-        .and.to.emit(protocol.xrETH, "Transfer").withArgs("0x0000000000000000000000000000000000000000", signers.random.address, amount);
+      const tx = mint_xrEth(setupData, signers.random, amount);
+      await expect(tx).to.changeEtherBalance(signers.random, amount.mul(-1));
+      await expect(tx).to.changeTokenBalance(protocol.xrETH, signers.random, amount);
+      await expect(tx).to.emit(protocol.xrETH, "Transfer").withArgs("0x0000000000000000000000000000000000000000", signers.random.address, amount);
     });
   });
   
@@ -44,9 +44,9 @@ describe("xrETH", function () {
       let amount = ethers.utils.parseEther("100");
       await expect(mint_xrEth(setupData, signers.random, amount)).to.not.be.reverted;
   
-      await expect(protocol.xrETH.connect(signers.random).transfer(signers.random2.address, amount))
-        .to.changeTokenBalances(protocol.xrETH, [signers.random, signers.random2], [amount.mul(-1), amount])
-        .and.to.emit(protocol.xrETH, "Transfer").withArgs(signers.random.address, signers.random2.address, amount);
+      const tx = protocol.xrETH.connect(signers.random).transfer(signers.random2.address, amount);
+      await expect(tx).to.changeTokenBalances(protocol.xrETH, [signers.random, signers.random2], [amount.mul(-1), amount]);
+      await expect(tx).to.emit(protocol.xrETH, "Transfer").withArgs(signers.random.address, signers.random2.address, amount);
     });
   
     it("Unapproved address cannot send token on behalf of other address", async function () {
@@ -69,9 +69,10 @@ describe("xrETH", function () {
   
       protocol.xrETH.connect(signers.random).approve(signers.random2.address, amount);
   
-      await expect(protocol.xrETH.connect(signers.random2).transferFrom(signers.random.address, signers.random2.address, amount))
-        .to.changeTokenBalances(protocol.xrETH, [signers.random, signers.random2], [amount.mul(-1), amount])
-        .and.to.emit(protocol.xrETH, "Transfer").withArgs(signers.random.address, signers.random2.address, amount);
+      const tx = protocol.xrETH.connect(signers.random2).transferFrom(signers.random.address, signers.random2.address, amount);
+
+      await expect(tx).to.changeTokenBalances(protocol.xrETH, [signers.random, signers.random2], [amount.mul(-1), amount]);
+      await expect(tx).to.emit(protocol.xrETH, "Transfer").withArgs(signers.random.address, signers.random2.address, amount);
     });
   });
 
@@ -108,10 +109,10 @@ describe("xrETH", function () {
 
       let burnAmount = (await protocol.depositPool.getMaxEthBalance()).sub(1);
 
-      await expect(protocol.xrETH.connect(signers.random).burn(burnAmount))
-        .to.changeTokenBalance(protocol.xrETH, signers.random, burnAmount.mul(-1))
-        .to.changeEtherBalance(signers.random, burnAmount)
-        .and.to.emit(protocol.xrETH, "Transfer").withArgs(signers.random.address, "0x0000000000000000000000000000000000000000", burnAmount);
+      const tx = protocol.xrETH.connect(signers.random).burn(burnAmount);
+      await expect(tx).to.changeTokenBalance(protocol.xrETH, signers.random, burnAmount.mul(-1));
+      await expect(tx).to.changeEtherBalance(signers.random, burnAmount);
+      await expect(tx).to.emit(protocol.xrETH, "Transfer").withArgs(signers.random.address, "0x0000000000000000000000000000000000000000", burnAmount);
     });
 
     it("Unapproved address cannot burn on behalf of other address", async function () {
@@ -135,10 +136,10 @@ describe("xrETH", function () {
       let burnAmount = (await protocol.depositPool.getMaxEthBalance()).sub(1);
       protocol.xrETH.connect(signers.random).approve(signers.random2.address, burnAmount);    
   
-      await expect(protocol.xrETH.connect(signers.random2).burnFrom(signers.random.address, burnAmount))
-        .to.changeTokenBalance(protocol.xrETH, signers.random, burnAmount.mul(-1))
-        .to.changeEtherBalance(signers.random, burnAmount)
-        .and.to.emit(protocol.xrETH, "Transfer").withArgs(signers.random.address, "0x0000000000000000000000000000000000000000", burnAmount);
+      const tx = protocol.xrETH.connect(signers.random2).burnFrom(signers.random.address, burnAmount);
+      await expect(tx).to.changeTokenBalance(protocol.xrETH, signers.random, burnAmount.mul(-1));
+      await expect(tx).to.changeEtherBalance(signers.random, burnAmount)
+      await expect(tx).to.emit(protocol.xrETH, "Transfer").withArgs(signers.random.address, "0x0000000000000000000000000000000000000000", burnAmount);
     });
   });  
 

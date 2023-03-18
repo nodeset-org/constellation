@@ -44,9 +44,10 @@ describe("xRPL", function () {
 
       let amount = await protocol.xRPL.getMinimumStakeAmount();
 
-      await expect(mint_xRpl(setupData, signers.rplWhale, amount))
-        .to.emit(protocol.xRPL, "Transfer").withArgs("0x0000000000000000000000000000000000000000", signers.rplWhale, amount)
-        .and.to.changeTokenBalance(
+      const tx = mint_xRpl(setupData, signers.rplWhale, amount);
+      await expect(tx).to.emit(protocol.xRPL, "Transfer")
+        .withArgs("0x0000000000000000000000000000000000000000", signers.rplWhale.address, amount);
+      await expect(tx).to.changeTokenBalance(
           protocol.xRPL,
           signers.rplWhale.address,
           amount
@@ -63,9 +64,9 @@ describe("xRPL", function () {
       let amount = ethers.utils.parseEther("100");
       await expect(mint_xRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
   
-      await expect(protocol.xRPL.connect(signers.rplWhale).transfer(signers.random.address, amount))
-        .to.changeTokenBalances(protocol.xRPL, [signers.rplWhale, signers.random], [amount.mul(-1), amount])
-        .and.to.emit(protocol.xRPL, "Transfer").withArgs(signers.rplWhale.address, signers.random.address, amount);
+      const tx = protocol.xRPL.connect(signers.rplWhale).transfer(signers.random.address, amount);
+      await expect(tx).to.changeTokenBalances(protocol.xRPL, [signers.rplWhale, signers.random], [amount.mul(-1), amount]);
+      await expect(tx).to.emit(protocol.xRPL, "Transfer").withArgs(signers.rplWhale.address, signers.random.address, amount);
     });
 
     it("Unapproved address cannot send token on behalf of other address", async function () {
@@ -88,9 +89,9 @@ describe("xRPL", function () {
   
       protocol.xRPL.connect(signers.rplWhale).approve(signers.random.address, amount);
   
-      await expect(protocol.xRPL.connect(signers.random).transferFrom(signers.rplWhale.address, signers.random.address, amount))
-        .to.changeTokenBalances(protocol.xRPL, [signers.rplWhale, signers.random], [amount.mul(-1), amount])
-        .and.to.emit(protocol.xRPL, "Transfer").withArgs(signers.rplWhale.address, signers.random.address, amount);
+      const tx = protocol.xRPL.connect(signers.random).transferFrom(signers.rplWhale.address, signers.random.address, amount);
+      await expect(tx).to.changeTokenBalances(protocol.xRPL, [signers.rplWhale, signers.random], [amount.mul(-1), amount])
+      await expect(tx).to.emit(protocol.xRPL, "Transfer").withArgs(signers.rplWhale.address, signers.random.address, amount);
     });
   });
  
@@ -127,10 +128,11 @@ describe("xRPL", function () {
 
       let burnAmount = (await protocol.depositPool.getMaxRplBalance()).sub(1);
 
-      await expect(protocol.xRPL.connect(signers.rplWhale).burn(burnAmount))
-        .to.changeTokenBalance(protocol.xRPL, signers.rplWhale, burnAmount.mul(-1))
-        .to.changeTokenBalance(rp.rplContract, signers.rplWhale, burnAmount)
-        .and.to.emit(protocol.xRPL, "Transfer").withArgs(signers.rplWhale.address, "0x0000000000000000000000000000000000000000", burnAmount);
+      const tx = protocol.xRPL.connect(signers.rplWhale).burn(burnAmount);
+      await expect(tx).to.changeTokenBalance(protocol.xRPL, signers.rplWhale, burnAmount.mul(-1));
+      await expect(tx).to.changeTokenBalance(rp.rplContract, signers.rplWhale, burnAmount);
+      await expect(tx).to.emit(protocol.xRPL, "Transfer")
+        .withArgs(signers.rplWhale.address, "0x0000000000000000000000000000000000000000", burnAmount);
     });
 
     it("Unapproved address cannot burn on behalf of other address", async function () {
@@ -154,10 +156,11 @@ describe("xRPL", function () {
       let burnAmount = (await protocol.depositPool.getMaxRplBalance()).sub(1);
       protocol.xRPL.connect(signers.rplWhale).approve(signers.random.address, burnAmount);    
   
-      await expect(protocol.xRPL.connect(signers.random).burnFrom(signers.rplWhale.address, burnAmount))
-        .to.changeTokenBalance(protocol.xRPL, signers.rplWhale, burnAmount.mul(-1))
-        .to.changeTokenBalance(rp.rplContract, signers.rplWhale, burnAmount)
-        .and.to.emit(protocol.xRPL, "Transfer").withArgs(signers.rplWhale.address, "0x0000000000000000000000000000000000000000", burnAmount);
+      const tx = protocol.xRPL.connect(signers.random).burnFrom(signers.rplWhale.address, burnAmount);
+      await expect(tx).to.changeTokenBalance(protocol.xRPL, signers.rplWhale, burnAmount.mul(-1))
+      await expect(tx).to.changeTokenBalance(rp.rplContract, signers.rplWhale, burnAmount)
+      await expect(tx).to.emit(protocol.xRPL, "Transfer")
+        .withArgs(signers.rplWhale.address, "0x0000000000000000000000000000000000000000", burnAmount);
     });
   }); 
   

@@ -17,7 +17,7 @@
     "@nomicfoundation/hardhat-toolbox": "^2.0.0",
     "@openzeppelin/hardhat-upgrades": "^1.22.0",
     "chai": "^4.3.7",
-    "hardhat": "^2.12.5",
+    "hardhat": "^2.12.7",
     "mocha": "^10.2.0"
   },
   "dependencies": {

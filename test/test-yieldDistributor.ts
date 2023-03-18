@@ -59,7 +59,7 @@ describe("Yield Distributor", function () {
       const { protocol, signers } = setupData;
   
       await expect(await protocol.yieldDistributor.getRplCommissionRate())
-        .to.equal(BigNumber.from("150000000000000000"));
+        .to.equal(BigNumber.from("500000000000000000"));
     });
   });
 
@@ -214,23 +214,23 @@ describe("Yield Distributor", function () {
     const adminFeeEth = ethers.utils.parseEther("1");//totalFee.div(await yieldDistributor.getEthCommissionRate()); // admin gets 50% by default
     const operatorShare = ethers.utils.parseEther("1");//(totalFee.sub(adminFeeEth)).div(3); // 3 operators used in this test
     
-    const adminFeeRpl = .mul(await protocol.yieldDistributor.getRplCommissionRate())
+    const adminFeeRpl = totalFee.mul(await protocol.yieldDistributor.getRplCommissionRate())
       .div(ethers.utils.parseEther("1"));
 
-    await expect(protocol.yieldDistributor.distributeRewards())
-      // .to.emit(yieldDistributor, "RewardDistributed")
-      // .withArgs([signers.random.address, operatorShare, BigNumber.from(0)])
-      // .and.to.emit(yieldDistributor, "RewardDistributed")
-      // .withArgs([signers.random2.address, operatorShare, BigNumber.from(0)])
-      // .and.to.emit(yieldDistributor, "RewardDistributed")
-      // .withArgs([signers.random3.address, operatorShare, BigNumber.from(0)])
-      // .and.to.emit(yieldDistributor, "RewardDistributed")
-      // .withArgs([signers.admin.address, adminFeeEth, adminFeeRpl])
-      // .to.changeEtherBalances(
-      //   [signers.random.address, signers.random2.address, signers.random3.address, signers.admin.address],
-      //   [operatorShare, operatorShare, operatorShare, adminFeeEth]
-      // )
-      .and.changeTokenBalance(
+    const tx = protocol.yieldDistributor.distributeRewards();
+    await expect(tx).to.emit(yieldDistributor, "RewardDistributed")
+      .withArgs([signers.random.address, operatorShare, BigNumber.from(0)]);
+    await expect(tx).to.emit(yieldDistributor, "RewardDistributed")
+      .withArgs([signers.random2.address, operatorShare, BigNumber.from(0)]);
+    await expect(tx).to.emit(yieldDistributor, "RewardDistributed")
+      .withArgs([signers.random3.address, operatorShare, BigNumber.from(0)]);
+    await expect(tx).to.emit(yieldDistributor, "RewardDistributed")
+      .withArgs([signers.admin.address, adminFeeEth, adminFeeRpl]);
+    await expect(tx).to.changeEtherBalances(
+        [signers.random.address, signers.random2.address, signers.random3.address, signers.admin.address],
+        [operatorShare, operatorShare, operatorShare, adminFeeEth]
+      );
+    await expect(tx).to.changeTokenBalance(
         protocol.xRPL, signers.admin.address, adminFeeRpl
       );
     // should also send some amount to the DP (then OD), 
