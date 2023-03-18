@@ -211,8 +211,8 @@ describe("Yield Distributor", function () {
     simulateYield(setupData, totalEthYield, totalRplYield);
        
     const totalFee = ethers.utils.parseEther("0.15"); // RP network fee is currently 15%
-    const adminFeeEth = ethers.utils.parseEther("1");//totalFee.div(await yieldDistributor.getEthCommissionRate()); // admin gets 50% by default
-    const operatorShare = ethers.utils.parseEther("1");//(totalFee.sub(adminFeeEth)).div(3); // 3 operators used in this test
+    const adminFeeEth = totalFee.div(await yieldDistributor.getEthCommissionRate()); // admin gets 50% by default
+    const operatorShare = (totalFee.sub(adminFeeEth)).div(3); // 3 operators used in this test
     
     const adminFeeRpl = totalFee.mul(await protocol.yieldDistributor.getRplCommissionRate())
       .div(ethers.utils.parseEther("1"));
@@ -242,3 +242,13 @@ describe("Yield Distributor", function () {
   });
   
 });
+
+
+// describe("Yield Distributor", function () {
+//   it("Admin can adjust rewards rate", async function () {
+
+//   });
+//   it("Can claim reward", async function () {
+
+//   });
+// });

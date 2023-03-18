@@ -14,3 +14,18 @@ describe("Operator Distributor", function () {
 	});
 
 });
+
+// describe("Operator Distributor", function () {
+//   it("Admin can update contract", async function () {
+
+//   });
+//   it("Admin can adjust rewards split", async function () {
+
+//   });
+//   it("Rewards distribution distributes correct amounts of ETH to all NOs", async function () {
+//     // record all node balances
+//     // capture pending rewards
+//     // distribute rewards
+//     // verify rewards were distributed correctly
+//   });
+// });

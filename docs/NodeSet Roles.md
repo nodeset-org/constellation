@@ -21,6 +21,6 @@ The Admin Address is responsible for keeping the protocol stable. This most obvi
 
 Although the Depositor and Node Operator interactions with the protocol may be fully automated, Administrator duties cannot, and the protocol as a whole cannot be fully ossified.
 
-Currently, the Administrator duties cannot be automated on-chain, so Nodepoint Systems fills this role alongside key community members via a X/Y multi-sig. In the long term, developers may ossify parameter settings and/or replace the Admin Address with a DAO contract. Further research on two topics is necessary to remove the Admin Address and begin protocol ossification:
+Currently, the Administrator duties cannot be automated on-chain, so NodeSet fills this role alongside key community members via a X/Y multi-sig. In the long term, developers may ossify parameter settings and/or replace the Admin Address with another smart contract. Further research on two topics is necessary to remove the Admin Address and begin protocol ossification:
  • ZK-ID systems
  • EL/CL communication
