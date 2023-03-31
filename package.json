@@ -1,18 +1,19 @@
 {
-  "name": "noanetwork",
+  "name": "constellation",
   "version": "0.0.1",
-  "description": "Protocol for accessing the NODE Ethereum staking network",
+  "description": "Protocol for accessing NodeSet's Constellation Ethereum staking network",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "node",
-    "operator",
+    "nodeset",
+    "node operator",
     "ethereum",
     "staking",
-    "stake"
+    "stake",
+    "rocket pool"
   ],
-  "author": "Mike Leach AKA Wander <info@nodeoperator.org>",
+  "author": "Mike Leach (Wander) <info@nodeset.io>",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^2.0.0",
     "@openzeppelin/hardhat-upgrades": "^1.22.0",
