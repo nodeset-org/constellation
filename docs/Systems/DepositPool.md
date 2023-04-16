@@ -1,0 +1,6 @@
+## Deposit Pool
+An upgradeable holding system which keeps a dynamic portion of the protocol's total ETH and RPL assets in reserve to provide liquidity for depositors. 
+
+When the Deposit Pool receives ETH, it first adds this to the protocol's ETH TVL and either 1) reverts if the ETH value of the RPL TVL is less than 10% or more than 150% of the new ETH TVL or 2) keeps a dynamic portion in reserve and allows the rest to be used to reimburse the 8 ETH cost of valid new minipools created by NOs. The protocol then recalculates the target minipool count for the protocol, which is equal to the non-reserved ETH divided by 8 and then the total number of NOs, rounded down to a whole integer. 
+
+These minipools must have their withdrawal address set to Constellation's Yield Distributor to be considered valid. Requests to reimburse invalid minipools are reverted, while requests which provide evidence of a valid minipool which has passed the scrub check are reimbursed by Constellation's Deposit Pool. When xrETH or xRPL are burned, an appropriate amount of the Deposit Pool's ETH or RPL assets are sent to the address which burned the token and the TVL is adjusted accordingly.

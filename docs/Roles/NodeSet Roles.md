@@ -5,7 +5,7 @@
 
 ### Depositors
 
-Depositors are those who exchange their ETH or RPL for xrETH or xRPL respectively. They earn risk-minimized yield on their deposits and have full liquidity with the deposited asset at any time through the protocol or secondary markets.
+Depositors are those who exchange their ETH or RPL for xrETH or xRPL respectively. xrETH and xRPL earn risk-minimized yield in terms of the underlying asset while retaining liquidity through the protocol or secondary markets.
 
 ### Node Operators
 
@@ -17,10 +17,3 @@ Node Operators are paid in xrETH, meaning they are also Depositors.
 
 The Admin Address is responsible for keeping the protocol stable. This most obviously happens by adjusting parameters like fee splits and the Deposit Pool size. However, the [Admin Address]("Admin Address.md") is also responsible for growing and maintaining the Node Operator set. In extreme cases of Node Operator negligence, for example, Admin Address can kick a Node Operator from the network so the protocol can recover any assigned funds. The Admin Address receives a portion of protocol revenue as compensation for this role.
 
-### Protocol Ossification
-
-Although the Depositor and Node Operator interactions with the protocol may be fully automated, Administrator duties cannot, and the protocol as a whole cannot be fully ossified.
-
-Currently, the Administrator duties cannot be automated on-chain, so NodeSet fills this role alongside key community members via a X/Y multi-sig. In the long term, developers may ossify parameter settings and/or replace the Admin Address with another smart contract. Further research on two topics is necessary to remove the Admin Address and begin protocol ossification:
- • ZK-ID systems
- • EL/CL communication

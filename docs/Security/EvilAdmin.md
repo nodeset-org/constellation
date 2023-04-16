@@ -1,10 +1,13 @@
 
-# Admin Attack Analysis
+# Evil Admin Attack Analysis
 
-### Scenario: Admin takes over network
- 1. Admin removes all non-Admin NOs (rate-limited)
- 2. Admin sets all fees to 100%
- 3. Never exit validators, keep 100% of rewards forever?
+In these scenarios, the Admin's goal is to profit as much as possible through nefarious means. This generally means attempts to steal protocol funds.
+
+## Scenario: Admin replaces all NOs
+
+1. Admin removes all non-Admin NOs (rate-limited)
+2. Admin sets all fees to 100%
+3. Never exit validators, keep 100% of rewards forever?
 
 **Predicted Outcome:**
  - Depositors and NOs notice the Admin removing other operators. At 5% maximum operator removal, it takes ~20 days to remove all other operators.
@@ -29,6 +32,3 @@ Questions:
 Rate limiting NO removal causes extra harm during mass inactivity at linearly compared to the rate limit. I.e. with a higher rate limit, more funds are leaked from inactive validators that can't be force-exited due to the rate limit. Keeping in mind there will be a reasonable delay before it's appropriate to begin the removal process, a rate limit would exacerbate the damage if a large portion of NOs were to go down within the same few weeks. Is this an acceptable trade-off to provide an additional guard against the above attack? Or would the market accept the other mitigating factors as enough?
 
 A near-worst-case network state is a small tail risk which is very unlikely and may be disasterous regardless, so additional real risk may be negligble.
- 
-### Scenario: Incompetent Admin
-1. Admin exposes all the stored pre-signed validator withdrawal messages 

@@ -1,0 +1,3 @@
+# xrETH
+
+An immutable ERC20 token which users may mint and burn in exchange for ETH using a specific exchange rate as described by the xrETH Oracle. All ETH received by this contract is forwarded to the Deposit Pool, and when the burn function is called, the Deposit Pool should supply the ETH. If the Deposit Pool does not contain enough ETH for a depositor to redeem their xrETH for the appropriate quantity of ETH, then the burn function call should be reverted.

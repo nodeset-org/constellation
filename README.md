@@ -1,6 +1,14 @@
 # NodeSet Constellation
+------
+Made w/ <3 by {::}
+------
 
-README? More like TODOME. Look in `/docs/` for some info.
+[See the full documentation here](/docs/)
 
-- First-time setup: `npm install`, then `nvm use 18` to stop hardhat warnings
-- Testing: `npx hardhat test`
+We use the [Hardhat](https://github.com/NomicFoundation/hardhat) 
+
+## Dev Setup
+
+- Install dependencies via `npm install`
+- `nvm use 18` stops Hardhat's warnings about an unsupported NPM version
+- `npx hardhat test` runs the test suite. Mocha Test Explorer extension for VSCode is recommended for a better UX while developing.
