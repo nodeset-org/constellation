@@ -1,6 +1,28 @@
-## Deposit Pool
+# Deposit Pool
 An upgradeable holding system which keeps a dynamic portion of the protocol's total ETH and RPL assets in reserve to provide liquidity for depositors. 
 
-When the Deposit Pool receives ETH, it first adds this to the protocol's ETH TVL and either 1) reverts if the ETH value of the RPL TVL is less than 10% or more than 150% of the new ETH TVL or 2) keeps a dynamic portion in reserve and allows the rest to be used to reimburse the 8 ETH cost of valid new minipools created by NOs. The protocol then recalculates the target minipool count for the protocol, which is equal to the non-reserved ETH divided by 8 and then the total number of NOs, rounded down to a whole integer. 
+## Deposits and Withdrawals
 
-These minipools must have their withdrawal address set to Constellation's Yield Distributor to be considered valid. Requests to reimburse invalid minipools are reverted, while requests which provide evidence of a valid minipool which has passed the scrub check are reimbursed by Constellation's Deposit Pool. When xrETH or xRPL are burned, an appropriate amount of the Deposit Pool's ETH or RPL assets are sent to the address which burned the token and the TVL is adjusted accordingly.
+### ETH
+
+The pool is open for ETH deposits so long as new amount dedicated to staking would not put the total node out of range for RPL rewards (i.e. staked ETH is more than 10% and less than 150% of the amount of RPL staked).
+
+### RPL
+
+The pool is open for RPL deposits so long as new amount dedicated to staking would not put the total node out of range for RPL rewards fsdjklfsdakjlafdsljk
+
+## Dynamic Reserve
+
+The protocol keeps a dynamic portion of all deposits in reserve for the purpose of liquidity and allows the rest to be used for staking. 
+
+
+
+When a call to the `burn` function in either xrETH or xRPL is made, it will either revert if there is not enough assets in reserve or the caller is sent the appropriate amount of underlying assets and the TVL is adjusted accordingly.
+
+### RPL
+
+## Minipool Creation
+
+After a deposit or withdrawal, the Deposit Pool then recalculates the target minipool count, which is equal to `stakedETH / 8 / numOperators` and rounded down to the nearest whole integer. TODO: reconsider and expound upon the target minipool count to ensure withdrawals are incentivized (but not over-incentivized)
+
+Minipools must have their withdrawal address set to Constellation's Yield Distributor and have passed the CL's scrub check (~12 hours after deposit) to be considered valid. Requests to reimburse invalid minipools are reverted, while requests which provide evidence of a valid minipool are reimbursed and the operator's total validator count is updated.

@@ -64,6 +64,8 @@ contract NodeSetETH is Base, Ownable, ERC20Burnable, ERC20Permit, ERC20FlashMint
     function getRedemptionValuePerToken() public view returns (uint) {
         uint tvlEth = DepositPool(getDirectory().getDepositPoolAddress()).getTvlEth();
         assert(tvlEth > 0);
+
+        // TODO: add in tvl from yield oracle
         
         if(totalSupply() == 0)
             return 1;

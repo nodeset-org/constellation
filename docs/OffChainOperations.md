@@ -1,7 +1,7 @@
 # Off-Chain Operations
 
 smart node extension:
-- keeper for distributeFees()
+- optional protocol yield attester and fraud prover (requires additional ETH collateral)
 - arb bot for DP<->LPs
 - validator manager
   - creation
