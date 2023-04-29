@@ -3,13 +3,7 @@ An upgradeable holding system which keeps a dynamic portion of the protocol's to
 
 ## Deposits and Withdrawals
 
-### ETH
-
-The pool is open for ETH deposits so long as new amount dedicated to staking would not put the total node out of range for RPL rewards (i.e. staked ETH is more than 10% and less than 150% of the amount of RPL staked).
-
-### RPL
-
-The pool is open for RPL deposits so long as new amount dedicated to staking would not put the total node out of range for RPL rewards fsdjklfsdakjlafdsljk
+The pool is open for ETH and RPL deposits so long as new amount dedicated to staking would not put the total node out of range for RPL rewards (i.e. staked ETH is more than 10% and less than 150% of the amount of RPL staked). 
 
 ## Dynamic Reserve
 

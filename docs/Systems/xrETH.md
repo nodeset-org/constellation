@@ -4,6 +4,8 @@ An immutable ERC20 token which users may mint and burn in exchange for ETH using
 
 # xrETH Oracle
 
+NOTE: THIS IS OLD! This describes an implementation of an interactive optimistic fraud proof, but a zk proof is probably more gas efficient and requires no collateral
+
 ## TO DO
 - Calculate the appropriate level of the trie to maximize number of sum-hash pairs that can be submitted within the gas limit
 - Determine if the algorithm needs to take an arbitrary integer protocol parameter corresponding to this tree level (to account for more/less total minipools)
