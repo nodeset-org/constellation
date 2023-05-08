@@ -1,6 +1,6 @@
 # Constellation Design
 
-Constellation is a non-custodial Ethereum protocol which extends [Rocket Pool](https://github.com/rocket-pool/rocketpool) with two additioanl ERC20s: xrETH and xRPL. 
+Constellation is a non-custodial Ethereum protocol which extends [Rocket Pool](https://github.com/rocket-pool/rocketpool) with two additional ERC20s: xrETH and xRPL. 
 
 Thse tokens are backed by a decentralized group of high-quality Rocket Pool node operators which non-custodially stake on behalf of the protocol. This allows xrETH to provide the full ETH staking APR higher to depositors (zero commission). ield while adding minimal risk.
 
