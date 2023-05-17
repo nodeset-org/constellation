@@ -13,6 +13,7 @@ abstract contract UpgradeableBase is UUPSUpgradeable {
 
     function initialize(address directoryAddress) initializer virtual public {
         _directory = Directory(directoryAddress);
+        __UUPSUpgradeable_init();
     }
 
     modifier onlyAdmin {
