@@ -10,6 +10,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 /// @notice Controls operator access to the protocol. 
 /// Only modifiable by admin. Upgradeable and intended to be replaced by a ZK-ID check when possible.
 contract Whitelist is UpgradeableBase, UUPSUpgradeable {
+    // Initializeable is inherited twice. todo, fix this
 
     mapping(address => bool) private _permissions;
     Operator[] private _operators;
