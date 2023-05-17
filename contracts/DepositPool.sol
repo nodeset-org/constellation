@@ -27,8 +27,7 @@ contract DepositPool is Base {
     string constant public PROTOCOL_PAUSED_ERROR = "DepositPool: Protocol is paused and cannot accept deposits";
     string constant public ONLY_ETH_TOKEN_ERROR = "DepositPool: This function may only be called by the xrETH token contract";
     string constant public ONLY_RPL_TOKEN_ERROR = "DepositPool: This function may only be called by the xRPL token contract";
-    string constant public MAX_BALANCE_PORTION_OUT_OF_RANGE_ERROR = 
-        "DepositPool: Supplied maxBalancePortion is out of range. Must be >= 0 or <= MAX_BALANCE_PORTION_MAX.";
+    string constant public MAX_BALANCE_PORTION_OUT_OF_RANGE_ERROR = "DepositPool: Supplied maxBalancePortion is out of range. Must be >= 0 or <= MAX_BALANCE_PORTION_MAX.";
     string constant public NOT_ENOUGH_ETH_ERROR = "Deposit Pool: Not enough ETH";
     string constant public NOT_ENOUGH_RPL_ERROR = "Deposit Pool: Not enough RPL";
 
@@ -92,7 +91,7 @@ contract DepositPool is Base {
 
     /// @notice Sets the maximum percentage of TVL which is allowed to be in the Deposit Pool. 
     /// On deposit, if the DP would grow beyond this, it instead forwards the payment to the OperatorDistributor.
-    /// Allows any value between 0 an MAX_BALANCE_PORTION_MAX. 
+    /// Allows any value between 0 and MAX_BALANCE_PORTION_MAX.
     /// 0 would prevent withdrawals since all ETH sent to this contract is forwarded to the OperatorDistributor.
     /// Setting to MAX_BALANCE_PORTION_MAX effectively freezes new operator activity by keeping 100% in the DepositPool.
     function setMaxEthBalancePortion(uint16 newMaxBalancePortion) public onlyAdmin {

@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-
 import "../UpgradeableBase.sol";
 import "../Operator/Operator.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Controls operator access to the protocol. 
 /// Only modifiable by admin. Upgradeable and intended to be replaced by a ZK-ID check when possible.
-contract Whitelist is UpgradeableBase, UUPSUpgradeable {
+contract Whitelist is UpgradeableBase {
 
     mapping(address => bool) private _permissions;
     Operator[] private _operators;
@@ -58,10 +56,6 @@ contract Whitelist is UpgradeableBase, UUPSUpgradeable {
         require(_permissions[a], OPERATOR_NOT_FOUND_ERROR);
         Operator memory operator = _operators[getOperatorIndex(a)];
         return operator;
-    }
-
-    function getImplementation() public view returns (address) {
-        return _getImplementation();
     }
 
     //----
