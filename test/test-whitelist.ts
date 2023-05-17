@@ -6,24 +6,40 @@ import { OperatorStruct } from "../typechain-types/contracts/Whitelist/Whitelist
 import { protocolFixture } from "./test";
 import { BigNumber } from "ethers";
 
-describe("Whitelist (proxy)", function () {
+describe.only("Whitelist (proxy)", function () {
     it("Admin can update contract", async function () {
         const { protocol } = await loadFixture(protocolFixture);
 
         const initialAddress = protocol.whitelist.address;
 
-        const newWhitelist = await upgrades.upgradeProxy(
-            protocol.whitelist,
-            await ethers.getContractFactory("contracts/Whitelist/WhitelistV2.sol:Whitelist")
-        );
+        const initialImpl = await protocol.whitelist.getImplementation();
 
-        await expect(newWhitelist.address).to.not.equal(initialAddress);
+        const initialSlotValues = [];
+
+        for(let i = 0; i < 1000; i++) {
+            initialSlotValues.push(await ethers.provider.getStorageAt(initialAddress, i));
+        }
+
+        const WhitelistV2Logic = await ethers.getContractFactory("contracts/Whitelist/WhitelistV2.sol:Whitelist");
+
+        // upgrade protocol.whitelist to V2
+        const newWhitelist = await upgrades.upgradeProxy(protocol.whitelist.address, WhitelistV2Logic, {
+            kind: 'uups'
+        });
+
+        // check that the proxy address has not changed.
+        expect(newWhitelist.address).to.equal(initialAddress);
+
+        // check that the logic address has changed.
+        expect(await newWhitelist.getImplementation()).to.not.equal(initialImpl);
 
         // execute new function
-        await expect(newWhitelist.testUpgrade()).to.equal(0);
+        expect(await newWhitelist.testUpgrade()).to.equal(0);
 
-        // todo: read from new storage
-        expect.fail();
+        // read from new storage
+        for(let i = 0; i < 1000; i++) {
+            expect(await ethers.provider.getStorageAt(initialAddress, i)).to.equal(initialSlotValues[i]);
+        }
     }); 
 });
 
