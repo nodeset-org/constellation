@@ -207,23 +207,36 @@ describe("Yield Distributor", function () {
     const totalEthYield = 1;
     const totalRplYield = 1;
 
+    const beforeEthBalances = await Promise.all([
+      signers.random.getBalance(),
+      signers.random2.getBalance(),
+      signers.random3.getBalance(),
+      signers.admin.getBalance()
+    ]);
+
     await simulateYield(setupData, totalEthYield, totalRplYield);
+
+    const afterEthBalances = await Promise.all([
+      signers.random.getBalance(),
+      signers.random2.getBalance(),
+      signers.random3.getBalance(),
+      signers.admin.getBalance()
+    ]);
        
     const totalFee = ethers.utils.parseEther("0.15"); // RP network fee is currently 15%
-    const adminFeeEth = totalFee.div(await yieldDistributor.getEthCommissionRate()); // admin gets 50% by default
+    const yield_portion_max = await yieldDistributor.YIELD_PORTION_MAX();
+    const adminFeeEth = totalFee.mul(5000).div(yield_portion_max) // admin gets 50% by default
+    // TODO: getEthCommissionRate() seems to be failing as it returns totalFee
+    // TODO: do not use hardcoded 5k value
+
     const operatorShare = (totalFee.sub(adminFeeEth)).div(3); // 3 operators used in this test
-    
-    const adminFeeRpl = totalFee.mul(await protocol.yieldDistributor.getRplCommissionRate())
-      .div(ethers.utils.parseEther("1"));
+    const rpl = await ethers.getContractAt("IERC20", await protocol.directory.RPL_CONTRACT_ADDRESS());
+    const adminFeeRpl = (await rpl.balanceOf(yieldDistributor.address)).mul(5000).div(yield_portion_max);
 
     const tx = await protocol.yieldDistributor.distributeRewards();
 
-    const metaData = await tx.wait();
-
-    metaData.events?.forEach((event) => {
-      console.log(event.event);
-      console.log(event.args);
-    });
+    // we should expect each fee reward to follow the formula:
+    // uint operatorRewardEth = (totalEthFee - adminRewardEth) * (operators[i].feePortion / YIELD_PORTION_MAX) / length;
 
     await expect(tx).to.emit(yieldDistributor, "RewardDistributed")
       .withArgs([signers.random.address, operatorShare, BigNumber.from(0)]);
@@ -236,6 +249,13 @@ describe("Yield Distributor", function () {
 
     await expect(tx).to.emit(yieldDistributor, "RewardDistributed")
       .withArgs([signers.admin.address, adminFeeEth, adminFeeRpl]);
+
+
+    // check that balances have changed as expected
+    for (let i = 0; i < 3; i++) {
+      expect(afterEthBalances[i]).to.equal(beforeEthBalances[i].add(operatorShare));
+    }
+    expect(afterEthBalances[3]).to.equal(beforeEthBalances[3].add(adminFeeEth));
 
     await expect(tx).to.changeEtherBalances(
         [signers.random.address, signers.random2.address, signers.random3.address, signers.admin.address],
