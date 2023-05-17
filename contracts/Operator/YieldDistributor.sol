@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL v3
-pragma solidity ^0.8.9;
+pragma solidity 0.8.17;
+
 
 import "./Operator.sol";
 import "../Whitelist/Whitelist.sol";
@@ -18,7 +19,7 @@ struct Reward {
 /// @custom:security-contact info@nodeset.io
 /// @notice distributes rewards
 contract YieldDistributor is Base {
-    
+
     uint8 constant public YIELD_PORTION_DECIMALS = 4;
     uint16 constant public YIELD_PORTION_MAX = uint16(10) ** YIELD_PORTION_DECIMALS;
 
@@ -28,15 +29,15 @@ contract YieldDistributor is Base {
     uint16 private _rplRewardAdminPortion = 5000;
 
     bool private _isInitialized = false;
-    string constant public INITIALIZATION_ERROR = 
+    string constant public INITIALIZATION_ERROR =
         "YieldDistributor: may only initialized once";
-    string constant public DIRECTORY_NOT_INITIALIZED_ERROR = 
+    string constant public DIRECTORY_NOT_INITIALIZED_ERROR =
         "YieldDistributor: Directory must be initialized first";
-    string constant public NOT_INITIALIZED_ERROR = 
+    string constant public NOT_INITIALIZED_ERROR =
         "YieldDistributor: Must be initialized first";
-    string constant public ETH_COMMISSION_MODIFIER_OUT_OF_BOUNDS_ERROR = 
+    string constant public ETH_COMMISSION_MODIFIER_OUT_OF_BOUNDS_ERROR =
         "YieldDistributor: ETH fee modifier must be <= MAX_ETH_COMMISSION_MODIFIER and >= -MAX_ETH_COMMISSION_MODIFIER ";
-    string constant public ETH_REWARD_ADMIN_PORTION_OUT_OF_BOUNDS_ERROR = 
+    string constant public ETH_REWARD_ADMIN_PORTION_OUT_OF_BOUNDS_ERROR =
         "YieldDistributor: ETH fee portion must be between 0 and YIELD_PORTION_MAX";
     string constant public ALREADY_DISTRIBUTING_ERROR = "YieldDistributor: Already distributing rewards";
 
@@ -46,14 +47,14 @@ contract YieldDistributor is Base {
 
     function initialize() public onlyAdmin {
         require(!_isInitialized, INITIALIZATION_ERROR);
-        require(getDirectory().getIsInitialized(), DIRECTORY_NOT_INITIALIZED_ERROR);       
+        require(getDirectory().getIsInitialized(), DIRECTORY_NOT_INITIALIZED_ERROR);
         // approve infinite RPL spends for this address from xRPL
         RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS())
             .approve(getDirectory().getRPLTokenAddress(), type(uint).max);
         _isInitialized = true;
-    } 
+    }
 
-    // ETH withdrawals and rewards are done via gasless balance increases, not transactions, 
+    // ETH withdrawals and rewards are done via gasless balance increases, not transactions,
     // but if anyone wants to donate ETH to the protocol, they can do so by sending to this contract
     receive() external payable {}
 
@@ -65,23 +66,23 @@ contract YieldDistributor is Base {
 
     /// @notice Gets the total protocol ETH commission rate as a fraction of one ether
     /// This is further split into operator and admin rewards in distributeRewards()
-    function getEthCommissionRate() public view returns(uint) {       
+    function getEthCommissionRate() public view returns(uint) {
         int commission = int(getRocketPoolFee()) + _ethCommissionModifier;
         
         // constrain to 0->1 ether
         int maxCommission = 1 ether;
         commission = commission >= 0 ? commission : int(0);
         commission = commission > maxCommission ? maxCommission : commission;
-        
-        return uint(commission); 
+
+        return uint(commission);
     }
 
     /// @notice Gets the fee per RPL
-    function getRplCommissionRate() public view returns(uint) { 
-        return (_rplRewardAdminPortion * 10 ** (18-YIELD_PORTION_DECIMALS)); 
+    function getRplCommissionRate() public view returns(uint) {
+        return (_rplRewardAdminPortion * 10 ** (18-YIELD_PORTION_DECIMALS));
     }
 
-    /// @notice Gets the ETH commission portion which goes to the admin. 
+    /// @notice Gets the ETH commission portion which goes to the admin.
     /// Scales from 0 (0%) to YIELD_PORTION_MAX (100%)
     function getEthRewardAdminPortion() public view returns(uint16) { return _ethRewardAdminPortion; }
 
@@ -89,17 +90,17 @@ contract YieldDistributor is Base {
      * EXTERNAL
      */
 
-    bool _isDistributing; 
+    bool _isDistributing;
 
     /// @notice The main reward distribution function. Anyone can call it if they're willing to pay the gas costs.
-    /// @dev TODO: reimburse msg.sender via keeper-style mechanism, e.g. 0xSplits 
-    /// 
+    /// @dev TODO: reimburse msg.sender via keeper-style mechanism, e.g. 0xSplits
+    ///
     function distributeRewards() public {
         require(!_isDistributing, ALREADY_DISTRIBUTING_ERROR); // re-entrancy guard
         _isDistributing = true;
         require(getIsInitialized(), NOT_INITIALIZED_ERROR);
         
-        // for all operators in good standing, mint xrETH 
+        // for all operators in good standing, mint xrETH
         Operator[] memory operators = getWhitelist().getOperatorList();
         uint length = operators.length;
 
@@ -108,7 +109,7 @@ contract YieldDistributor is Base {
         // mint xrETH for NOs
         uint adminRewardEth = totalEthFee * _ethRewardAdminPortion / YIELD_PORTION_MAX;
         for(uint i = 0; i < length; i++) {
-            uint operatorRewardEth = 
+            uint operatorRewardEth =
                 (totalEthFee - adminRewardEth) * (operators[i].feePortion / YIELD_PORTION_MAX) / length;
             NodeSetETH(getDirectory().getETHTokenAddress()).internalMint(operators[i].nodeAddress, operatorRewardEth);
             emit RewardDistributed(Reward(operators[i].nodeAddress, operatorRewardEth, 0));
@@ -116,11 +117,11 @@ contract YieldDistributor is Base {
 
         // mint xrETH for admin
         NodeSetETH(getDirectory().getETHTokenAddress()).internalMint(getDirectory().getAdminAddress(), adminRewardEth);
-        
-        // mint xRPL for admin 
+
+        // mint xRPL for admin
         RocketTokenRPLInterface rpl = RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS());
 
-        uint adminRewardRpl = rpl.balanceOf(address(this)) * _rplRewardAdminPortion / YIELD_PORTION_MAX;        
+        uint adminRewardRpl = rpl.balanceOf(address(this)) * _rplRewardAdminPortion / YIELD_PORTION_MAX;
         NodeSetRPL(getDirectory().getRPLTokenAddress())
             .mintYield(getDirectory().getAdminAddress(), adminRewardRpl);
         emit RewardDistributed(Reward(getDirectory().getAdminAddress(), adminRewardEth, adminRewardRpl));
@@ -140,12 +141,12 @@ contract YieldDistributor is Base {
     /****
      * ADMIN
      */
-    
-    /// @notice Sets an extra fee on top of RP network comission, as a portion of 1 ether. 
+
+    /// @notice Sets an extra fee on top of RP network comission, as a portion of 1 ether.
     /// Can be negative to reduce RP commission by this amount instead.
     function setEthCommissionModifier(int ethCommissionModifier) public onlyAdmin {
         require(
-            ethCommissionModifier <= MAX_ETH_COMMISSION_MODIFIER && 
+            ethCommissionModifier <= MAX_ETH_COMMISSION_MODIFIER &&
                 ethCommissionModifier >= -MAX_ETH_COMMISSION_MODIFIER,
             ETH_COMMISSION_MODIFIER_OUT_OF_BOUNDS_ERROR
         );
@@ -159,7 +160,7 @@ contract YieldDistributor is Base {
     function setEthRewardAdminPortion(uint16 newPortion) public onlyAdmin {
         require(
             newPortion <= YIELD_PORTION_MAX,
-            ETH_REWARD_ADMIN_PORTION_OUT_OF_BOUNDS_ERROR 
+            ETH_REWARD_ADMIN_PORTION_OUT_OF_BOUNDS_ERROR
         );
         _ethRewardAdminPortion = newPortion;
     }

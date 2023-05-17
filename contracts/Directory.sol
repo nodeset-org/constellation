@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL v3
-pragma solidity ^0.8.9;
+pragma solidity 0.8.17;
+
 
 import "./Interfaces/RocketTokenRPLInterface.sol";
 
@@ -24,17 +25,17 @@ contract Directory {
     string constant public ADMIN_ONLY_ERROR = "Directory: may only be called by admin address!";
     string constant public INITIALIZATION_ERROR = "Directory: may only initialized once!";
 
-    address payable constant public RPL_CONTRACT_ADDRESS = payable(0xD33526068D116cE69F19A9ee46F0bd304F21A51f);    
-    address constant public RP_NETWORK_FEES_ADDRESS = payable(0x320f3aAB9405e38b955178BBe75c477dECBA0C27);    
+    address payable constant public RPL_CONTRACT_ADDRESS = payable(0xD33526068D116cE69F19A9ee46F0bd304F21A51f);
+    address constant public RP_NETWORK_FEES_ADDRESS = payable(0x320f3aAB9405e38b955178BBe75c477dECBA0C27);
 
     bool private _isInitialized = false;
 
     constructor() {
         _adminAddress = payable(msg.sender);
-    } 
+    }
 
     /// @notice Called once to initialize the protocol after all the contracts have been deployed
-    function initialize(Protocol calldata protocol) onlyAdmin public {        
+    function initialize(Protocol calldata protocol) onlyAdmin public {
         require(!_isInitialized, INITIALIZATION_ERROR);
         _protocol = protocol;
         _isInitialized = true;

@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL v3
-pragma solidity ^0.8.9;
+pragma solidity 0.8.17;
+
 
 import "../UpgradeableBase.sol";
 import "../Operator/Operator.sol";
 
 /// @custom:security-contact info@nodeoperator.org
-/// @notice Controls operator access to the protocol. 
+/// @notice Controls operator access to the protocol.
 /// Only modifiable by admin. Upgradeable and intended to be replaced by a ZK-ID check when possible.
 contract Whitelist is UpgradeableBase {
 
@@ -16,7 +17,7 @@ contract Whitelist is UpgradeableBase {
 
     uint _numOperators;
 
-    uint24 private _trustBuildPeriod;    
+    uint24 private _trustBuildPeriod;
     event TrustBuildPeriodUpdated(uint24 oldValue, uint24 newValue);
 
     string constant public OPERATOR_NOT_FOUND_ERROR  = "Whitelist: Provided address is not an allowed operator!";
@@ -68,7 +69,7 @@ contract Whitelist is UpgradeableBase {
 
     //----
     // ADMIN
-    //----        
+    //----
 
     function setTrustBuildPeriod(uint8 trustBuildPeriod) public onlyAdmin {
         uint24 old = _trustBuildPeriod;
@@ -78,7 +79,7 @@ contract Whitelist is UpgradeableBase {
 
     // TODO: Determine what happens if the operator already exists but isn't permissioned.
     // Currently, operators who leave the system are reset upon rejoining.
-    function addOperator(address a) public onlyAdmin {        
+    function addOperator(address a) public onlyAdmin {
         require(!_permissions[a], OPERATOR_DUPLICATE_ERROR);
         
         _permissions[a] = true;
