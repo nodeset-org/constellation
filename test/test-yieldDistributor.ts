@@ -194,13 +194,12 @@ describe("Yield Distributor", function () {
       ethers.utils.formatEther(yieldAmountRpl) + " RPL")
 
     // simulate yield from validator
-    rp.rplContract.connect(signers.rplWhale)
-      .transfer(protocol.yieldDistributor.address, yieldAmountRpl);
-    signers.random.sendTransaction({ to: protocol.yieldDistributor.address, value: yieldAmountEth, gasLimit: 1000000 });
+    await rp.rplContract.connect(signers.rplWhale).transfer(protocol.yieldDistributor.address, yieldAmountRpl);
+    await signers.random.sendTransaction({ to: protocol.yieldDistributor.address, value: yieldAmountEth, gasLimit: 1000000 });
   }
 
 
-  it("Distributes fees appropriately", async function () {
+  it.only("Distributes fees appropriately", async function () {
     const setupData = await loadFixture(protocolFixture)
     const { protocol, signers, rocketPool: rp} = setupData;
     const yieldDistributor = protocol.yieldDistributor;
@@ -208,7 +207,7 @@ describe("Yield Distributor", function () {
     const totalEthYield = 1;
     const totalRplYield = 1;
 
-    simulateYield(setupData, totalEthYield, totalRplYield);
+    await simulateYield(setupData, totalEthYield, totalRplYield);
        
     const totalFee = ethers.utils.parseEther("0.15"); // RP network fee is currently 15%
     const adminFeeEth = totalFee.div(await yieldDistributor.getEthCommissionRate()); // admin gets 50% by default
@@ -217,19 +216,32 @@ describe("Yield Distributor", function () {
     const adminFeeRpl = totalFee.mul(await protocol.yieldDistributor.getRplCommissionRate())
       .div(ethers.utils.parseEther("1"));
 
-    const tx = protocol.yieldDistributor.distributeRewards();
+    const tx = await protocol.yieldDistributor.distributeRewards();
+
+    const metaData = await tx.wait();
+
+    metaData.events?.forEach((event) => {
+      console.log(event.event);
+      console.log(event.args);
+    });
+
     await expect(tx).to.emit(yieldDistributor, "RewardDistributed")
       .withArgs([signers.random.address, operatorShare, BigNumber.from(0)]);
+
     await expect(tx).to.emit(yieldDistributor, "RewardDistributed")
       .withArgs([signers.random2.address, operatorShare, BigNumber.from(0)]);
+
     await expect(tx).to.emit(yieldDistributor, "RewardDistributed")
       .withArgs([signers.random3.address, operatorShare, BigNumber.from(0)]);
+
     await expect(tx).to.emit(yieldDistributor, "RewardDistributed")
       .withArgs([signers.admin.address, adminFeeEth, adminFeeRpl]);
+
     await expect(tx).to.changeEtherBalances(
         [signers.random.address, signers.random2.address, signers.random3.address, signers.admin.address],
         [operatorShare, operatorShare, operatorShare, adminFeeEth]
       );
+
     await expect(tx).to.changeTokenBalance(
         protocol.xRPL, signers.admin.address, adminFeeRpl
       );

@@ -6,7 +6,7 @@ import { OperatorStruct } from "../typechain-types/contracts/Whitelist/Whitelist
 import { protocolFixture } from "./test";
 import { BigNumber } from "ethers";
 
-describe.only("Whitelist (proxy)", function () {
+describe("Whitelist (proxy)", function () {
     it("Admin can update contract", async function () {
         const { protocol } = await loadFixture(protocolFixture);
 
