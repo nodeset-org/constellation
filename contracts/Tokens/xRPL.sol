@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL v3
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
+
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
@@ -26,9 +27,9 @@ contract NodeSetRPL is Base, Ownable, ERC20Burnable, ERC20Permit, ERC20FlashMint
     /// @notice Queue of depositors who wish to redeem their position
     address payable[] private redemptionQueue;
 
-    constructor(address directoryAddress) 
-        Base(directoryAddress) 
-        ERC20(NAME, SYMBOL) 
+    constructor(address directoryAddress)
+        Base(directoryAddress)
+        ERC20(NAME, SYMBOL)
         ERC20Permit(NAME) {}
 
     /***********
@@ -62,7 +63,7 @@ contract NodeSetRPL is Base, Ownable, ERC20Burnable, ERC20Permit, ERC20FlashMint
     function _burn(address account, uint256 amount) override internal {
         super._burn(account, amount);
         DepositPool(getDirectory().getDepositPoolAddress()).sendRpl(payable(account), amount);
-    } 
+    }
 
     /***********
      * GETTERS

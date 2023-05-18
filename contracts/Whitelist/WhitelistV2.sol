@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: GPL v3
-pragma solidity ^0.8.9;
+pragma solidity 0.8.17;
+
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import "../UpgradeableBase.sol";
 import "../Operator/Operator.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @custom:security-contact info@nodeoperator.org
-/// @notice Controls operator access to the protocol. 
+/// @notice Controls operator access to the protocol.
 /// Only modifiable by admin. Upgradeable and intended to be replaced by a ZK-ID check when possible.
 contract Whitelist is UpgradeableBase {
+    // Initializeable is inherited twice. todo, fix this
 
     mapping(address => bool) private _permissions;
     Operator[] private _operators;
@@ -17,7 +20,7 @@ contract Whitelist is UpgradeableBase {
 
     uint _numOperators;
 
-    uint24 private _trustBuildPeriod;    
+    uint24 private _trustBuildPeriod;
     event TrustBuildPeriodUpdated(uint24 oldValue, uint24 newValue);
 
     string constant public OPERATOR_NOT_FOUND_ERROR  = "Whitelist: provided address is not an operator!";
@@ -63,7 +66,7 @@ contract Whitelist is UpgradeableBase {
 
     //----
     // ADMIN
-    //----        
+    //----
 
     function setTrustBuildPeriod(uint8 trustBuildPeriod) public onlyAdmin {
         uint24 old = _trustBuildPeriod;
@@ -83,6 +86,9 @@ contract Whitelist is UpgradeableBase {
         _permissions[a] = false;
         emit OperatorRemoved(a);
     }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyAdmin {}
+
     //----
     // INTERNAL
     //----

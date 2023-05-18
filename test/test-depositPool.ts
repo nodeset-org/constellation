@@ -35,7 +35,7 @@ export async function depositEth(setupData: SetupData, from: SignerWithAddress, 
 		)
 	await expect(tx).to.emit(protocol.depositPool, "TotalValueUpdated").withArgs(tvl, tvl.add(amount));
 
-	await expect(maxBalanceAfterDeposit).to.equal(await protocol.depositPool.getMaxEthBalance());
+	expect(maxBalanceAfterDeposit).to.equal(await protocol.depositPool.getMaxEthBalance());
 	
 	let currTvl = await protocol.depositPool.getTvlEth();
 

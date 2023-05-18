@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL v3
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
+
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
@@ -21,9 +22,9 @@ contract NodeSetETH is Base, Ownable, ERC20Burnable, ERC20Permit, ERC20FlashMint
 
     event MinimumStakeAmountUpdated(uint oldMinimumAmount, uint newMinimumAmount);
 
-    constructor(address directoryAddress) 
-        Base(directoryAddress) 
-        ERC20(NAME, SYMBOL) 
+    constructor(address directoryAddress)
+        Base(directoryAddress)
+        ERC20(NAME, SYMBOL)
         ERC20Permit(NAME) {}
 
     /***********
@@ -51,7 +52,7 @@ contract NodeSetETH is Base, Ownable, ERC20Burnable, ERC20Permit, ERC20FlashMint
     function _burn(address account, uint256 amount) override internal {
         super._burn(account, amount);
         DepositPool(getDirectory().getDepositPoolAddress()).sendEth(payable(account), amount);
-    } 
+    }
 
     /***********
      * GETTERS
@@ -66,7 +67,7 @@ contract NodeSetETH is Base, Ownable, ERC20Burnable, ERC20Permit, ERC20FlashMint
         assert(tvlEth > 0);
 
         // TODO: add in tvl from yield oracle
-        
+
         if(totalSupply() == 0)
             return 1;
         return totalSupply() / tvlEth;
