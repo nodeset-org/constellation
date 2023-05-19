@@ -159,7 +159,7 @@ describe("DepositPool", function () {
 		
 	});
 	
-	describe.only("ETH", function () {
+	describe("ETH", function () {
 		it("State adjusts correctly on ETH deposit from xrETH", async function () {
 			const setupData = await loadFixture(protocolFixture);
 
