@@ -265,6 +265,12 @@ describe("DepositPool", function () {
 			const setupData = await loadFixture(protocolFixture);
 			const { protocol, signers } = setupData;
 			await protocol.directory.connect(signers.admin).emergencyPause();
+
+			const rp = setupData.rocketPool;
+			// seed random address with rpl
+			rp.rplContract.connect(signers.rplWhale)
+				.transfer(setupData.signers.random.address, ethers.utils.parseEther("1000"));
+
 			await expect(depositRpl(setupData, setupData.signers.random, ethers.utils.parseEther("1")))
 				.to.be.revertedWith(await protocol.depositPool.PROTOCOL_PAUSED_ERROR());
 		});
