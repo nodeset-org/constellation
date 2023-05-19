@@ -2,25 +2,19 @@
 
 pragma solidity 0.8.17;
 
+import "./MockRocketMinipoolManager.sol";
+
+/// @notice This contract is an oracle which reads and parses all the minipool data from the RocketMinipoolManager contract that belongs to the current protocol
 contract MockMinipoolOracle {
 
-    address[] public nodesetBackedMinipools;
+    MockRocketMinipoolManager public minipoolManager;
 
-    function addMinipool(address minipool) public {
-        nodesetBackedMinipools.push(minipool);
+    constructor(address minipoolManagerAddress) {
+        minipoolManager = MockRocketMinipoolManager(minipoolManagerAddress);
     }
 
-    function removeMinipool(address minipool) public {
-        for (uint i = 0; i < nodesetBackedMinipools.length; i++) {
-            if (nodesetBackedMinipools[i] == minipool) {
-                nodesetBackedMinipools[i] = nodesetBackedMinipools[nodesetBackedMinipools.length - 1];
-                nodesetBackedMinipools.pop();
-                break;
-            }
-        }
+    function getNodesetBackedMinipools() public view returns(address[] memory) {
+        return minipoolManager.getMinipools();
     }
 
-    function getMinipools() public view returns (address[] memory) {
-        return nodesetBackedMinipools;
-    }
 }
