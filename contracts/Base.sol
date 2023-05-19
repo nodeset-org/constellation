@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./Directory.sol";
 
-abstract contract Base {
+abstract contract Base is ReentrancyGuard {
 
     Directory internal _directory;
 
@@ -16,6 +17,11 @@ abstract contract Base {
 
     modifier onlyAdmin {
         require(msg.sender == _directory.getAdminAddress(), ADMIN_ONLY_ERROR);
+        _;
+    }
+
+    modifier whenNotPaused {
+        require(!_directory.paused());
         _;
     }
 

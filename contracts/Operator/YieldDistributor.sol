@@ -90,14 +90,11 @@ contract YieldDistributor is Base {
      * EXTERNAL
      */
 
-    bool _isDistributing;
 
     /// @notice The main reward distribution function. Anyone can call it if they're willing to pay the gas costs.
     /// @dev TODO: reimburse msg.sender via keeper-style mechanism, e.g. 0xSplits
     ///
-    function distributeRewards() public {
-        require(!_isDistributing, ALREADY_DISTRIBUTING_ERROR); // re-entrancy guard
-        _isDistributing = true;
+    function distributeRewards() public nonReentrant whenNotPaused {
         require(getIsInitialized(), NOT_INITIALIZED_ERROR);
         
         // for all operators in good standing, mint xrETH
@@ -135,7 +132,6 @@ contract YieldDistributor is Base {
         (bool success, ) = getDirectory().getDepositPoolAddress().call{ value: address(this).balance }("");
         require(success, "YieldDistributor: failed to send ETH to DepositPool");
 
-        _isDistributing = false;
     }
 
     /****

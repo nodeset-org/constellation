@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
+import "@openzeppelin/contracts/security/Pausable.sol";
 
 import "./Interfaces/RocketTokenRPLInterface.sol";
 
@@ -15,14 +16,16 @@ struct Protocol {
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Holds references to all protocol contracts
-contract Directory {
+contract Directory is Pausable {
 
     Protocol private _protocol;
 
     address payable _adminAddress;
+    address _pauserAddress;
 
     string constant public CONTRACT_NOT_FOUND_ERROR = "Directory: contract not found!";
     string constant public ADMIN_ONLY_ERROR = "Directory: may only be called by admin address!";
+    string constant public PAUSER_ONLY_ERROR = "Directory: may only be called by pauser address!";
     string constant public INITIALIZATION_ERROR = "Directory: may only initialized once!";
 
     address payable constant public RPL_CONTRACT_ADDRESS = payable(0xD33526068D116cE69F19A9ee46F0bd304F21A51f);
@@ -30,8 +33,9 @@ contract Directory {
 
     bool private _isInitialized = false;
 
-    constructor() {
+    constructor(address pauserAddress) {
         _adminAddress = payable(msg.sender);
+        _pauserAddress = pauserAddress;
     }
 
     /// @notice Called once to initialize the protocol after all the contracts have been deployed
@@ -84,5 +88,13 @@ contract Directory {
     modifier onlyAdmin {
         require(msg.sender == getAdminAddress(), ADMIN_ONLY_ERROR);
         _;
+    }
+
+    function emergencyPause() public onlyAdmin {
+        _pause();
+    }
+
+    function resumeOperations() public onlyAdmin {
+        _unpause();
     }
 }

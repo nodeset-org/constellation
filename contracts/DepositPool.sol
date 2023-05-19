@@ -17,6 +17,14 @@ contract DepositPool is Base {
 
     uint16 private _prevRplMaxBalancePortion = 100;
     uint16 private _maxRplBalancePortion = 100;
+
+    // TODO: remove these notes,
+    // _maxRplBalancePortion is staked at the node level, and needs to be a percentage of the TVL. This is to service large inflows and outflows of new minipool contracts.
+    // likewise, _maxEthBalancePortion needs to optimize yield for eth. eth in this contract is only reserved for creating stakers for minipool contracts
+    // the oracle is simple a TVL calculation of all the ETH in the system
+    // Total RPL is already on-chain and does not need to be an oracle
+
+
     event NewMaxEthBalancePortion(uint16 oldValue, uint16 newValue);
     event NewMaxRplBalancePortion(uint16 oldValue, uint16 newValue);
 
@@ -125,7 +133,7 @@ contract DepositPool is Base {
     ///------
 
     
-    receive() external payable {
+    receive() external payable whenNotPaused {
         // do not accept deposits if new operator activity is disabled
         require(_maxEthBalancePortion < MAX_BALANCE_PORTION_MAX, PROTOCOL_PAUSED_ERROR);
 
@@ -137,7 +145,7 @@ contract DepositPool is Base {
         sendExcessEthToOperatorDistributor();
     } 
 
-    function receiveRpl(uint amount) external onlyRplToken {
+    function receiveRpl(uint amount) external onlyRplToken whenNotPaused {
         // do not accept deposits if new operator activity is disabled
         require(_maxRplBalancePortion < MAX_BALANCE_PORTION_MAX, PROTOCOL_PAUSED_ERROR);
 
