@@ -159,7 +159,7 @@ describe("DepositPool", function () {
 		
 	});
 	
-	describe("ETH", function () {
+	describe.only("ETH", function () {
 		it("State adjusts correctly on ETH deposit from xrETH", async function () {
 			const setupData = await loadFixture(protocolFixture);
 
@@ -197,6 +197,14 @@ describe("DepositPool", function () {
 			await expect(protocol.depositPool
 				.sendEth(signers.random.address, await protocol.depositPool.signer.getBalance()))
 				.to.be.revertedWith(await protocol.depositPool.ONLY_ETH_TOKEN_ERROR());
+		});
+
+		it("Cannot deposit ETH if paused", async function () {
+			const setupData = await loadFixture(protocolFixture);
+			const { protocol, signers } = setupData;
+			await protocol.directory.connect(signers.admin).emergencyPause();
+			await expect(depositEth(setupData, setupData.signers.random, ethers.utils.parseEther("1")))
+				.to.be.revertedWith(await protocol.depositPool.PROTOCOL_PAUSED_ERROR());
 		});
 	});
 
@@ -251,6 +259,14 @@ describe("DepositPool", function () {
 			let finalTvl = await readTvl();
 
 			expect(BN.from(finalTvl) === BN.from(startTvl).sub(burnAmount));
+		});
+
+		it("Cannot deposit RPL if paused", async function () {
+			const setupData = await loadFixture(protocolFixture);
+			const { protocol, signers } = setupData;
+			await protocol.directory.connect(signers.admin).emergencyPause();
+			await expect(depositRpl(setupData, setupData.signers.random, ethers.utils.parseEther("1")))
+				.to.be.revertedWith(await protocol.depositPool.PROTOCOL_PAUSED_ERROR());
 		});
 	});
 });

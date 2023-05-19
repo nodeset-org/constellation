@@ -10,6 +10,7 @@ abstract contract Base is ReentrancyGuard {
     Directory internal _directory;
 
     string constant public ADMIN_ONLY_ERROR = "Can only be called by admin address!";
+    string constant public PROTOCOL_PAUSED_ERROR = "Protocol is paused and cannot accept deposits";
 
     constructor (address directory) {
         _directory = Directory(directory);
@@ -21,7 +22,7 @@ abstract contract Base is ReentrancyGuard {
     }
 
     modifier whenNotPaused {
-        require(!_directory.paused());
+        require(!_directory.paused(), PROTOCOL_PAUSED_ERROR);
         _;
     }
 

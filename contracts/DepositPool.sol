@@ -33,7 +33,6 @@ contract DepositPool is Base {
 
     string constant public SEND_ETH_TO_OPERATOR_DISTRIBUTOR_ERROR = "DepositPool: Send ETH to OperatorDistributor failed";
     string constant public SEND_RPL_TO_OPERATOR_DISTRIBUTOR_ERROR = "DepositPool: Send RPL to OperatorDistributor failed";
-    string constant public PROTOCOL_PAUSED_ERROR = "DepositPool: Protocol is paused and cannot accept deposits";
     string constant public ONLY_ETH_TOKEN_ERROR = "DepositPool: This function may only be called by the xrETH token contract";
     string constant public ONLY_RPL_TOKEN_ERROR = "DepositPool: This function may only be called by the xRPL token contract";
     string constant public MAX_BALANCE_PORTION_OUT_OF_RANGE_ERROR = "DepositPool: Supplied maxBalancePortion is out of range. Must be >= 0 or <= MAX_BALANCE_PORTION_MAX.";
