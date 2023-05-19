@@ -1,22 +1,21 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-
 import "./Directory.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 abstract contract UpgradeableBase is UUPSUpgradeable {
-
     Directory internal _directory;
 
-    string constant public ADMIN_ONLY_ERROR = "Can only be called by admin address!";
+    string public constant ADMIN_ONLY_ERROR =
+        "Can only be called by admin address!";
 
-    function initialize(address directoryAddress) initializer virtual public {
+    function initialize(address directoryAddress) public virtual initializer {
         _directory = Directory(directoryAddress);
         __UUPSUpgradeable_init();
     }
 
-    modifier onlyAdmin {
+    modifier onlyAdmin() {
         require(msg.sender == _directory.getAdminAddress(), ADMIN_ONLY_ERROR);
         _;
     }

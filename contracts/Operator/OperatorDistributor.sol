@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-
 import "../Base.sol";
 import "../Whitelist/Whitelist.sol";
 import "hardhat/console.sol";
 
-
 contract OperatorDistributor is Base {
-
     uint private _queuedEth;
 
     constructor(address directory) Base(directory) {}
@@ -33,5 +30,4 @@ contract OperatorDistributor is Base {
     // function getOperatorValidatorNumTarget() public view returns (uint) {
     //     return (balanceOf(this) % Whitelist(getDirectory().getWhitelistAddress()))
     // }
-
 }

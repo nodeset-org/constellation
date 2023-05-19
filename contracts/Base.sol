@@ -6,22 +6,23 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./Directory.sol";
 
 abstract contract Base is ReentrancyGuard {
-
     Directory internal _directory;
 
-    string constant public ADMIN_ONLY_ERROR = "Can only be called by admin address!";
-    string constant public PROTOCOL_PAUSED_ERROR = "Protocol is paused and cannot accept deposits";
+    string public constant ADMIN_ONLY_ERROR =
+        "Can only be called by admin address!";
+    string public constant PROTOCOL_PAUSED_ERROR =
+        "Protocol is paused and cannot accept deposits";
 
-    constructor (address directory) {
+    constructor(address directory) {
         _directory = Directory(directory);
     }
 
-    modifier onlyAdmin {
+    modifier onlyAdmin() {
         require(msg.sender == _directory.getAdminAddress(), ADMIN_ONLY_ERROR);
         _;
     }
 
-    modifier whenNotPaused {
+    modifier whenNotPaused() {
         require(!_directory.paused(), PROTOCOL_PAUSED_ERROR);
         _;
     }

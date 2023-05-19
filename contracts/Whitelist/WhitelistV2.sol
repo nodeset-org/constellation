@@ -23,9 +23,13 @@ contract Whitelist is UpgradeableBase {
     uint24 private _trustBuildPeriod;
     event TrustBuildPeriodUpdated(uint24 oldValue, uint24 newValue);
 
-    string constant public OPERATOR_NOT_FOUND_ERROR  = "Whitelist: provided address is not an operator!";
+    string public constant OPERATOR_NOT_FOUND_ERROR =
+        "Whitelist: provided address is not an operator!";
 
-    function initializeWhitelist(address directoryAddress, uint24 trustBuildPeriod) initializer public {
+    function initializeWhitelist(
+        address directoryAddress,
+        uint24 trustBuildPeriod
+    ) public initializer {
         super.initialize(directoryAddress);
         _trustBuildPeriod = trustBuildPeriod;
     }
@@ -34,24 +38,26 @@ contract Whitelist is UpgradeableBase {
     // GETTERS
     //----
 
-    function getIsAddressInWhitelist(address a) public view returns (bool){
+    function getIsAddressInWhitelist(address a) public view returns (bool) {
         return _permissions[a] != false;
     }
 
-    function getTrustBuildPeriod() public view returns(uint) {
+    function getTrustBuildPeriod() public view returns (uint) {
         return _trustBuildPeriod;
     }
 
-    function getRewardShare(Operator calldata operator) public view returns (uint) {
+    function getRewardShare(
+        Operator calldata operator
+    ) public view returns (uint) {
         uint timeSinceStart = (block.timestamp - operator.operationStartTime);
         uint portion = timeSinceStart / getTrustBuildPeriod();
-        if(portion < 1)
-            return portion;
-        else
-            return 100; // max percentage of rewards is 100%
+        if (portion < 1) return portion;
+        else return 100; // max percentage of rewards is 100%
     }
 
-    function getOperatorAtAddress(address a) public view returns (Operator memory){
+    function getOperatorAtAddress(
+        address a
+    ) public view returns (Operator memory) {
         return _operators[getOperatorIndex(a)];
     }
 
@@ -59,8 +65,9 @@ contract Whitelist is UpgradeableBase {
     // OPERTOR
     //----
 
-
-    function registerNewValidator(Operator calldata operator) public onlyOperatorDistributor {
+    function registerNewValidator(
+        Operator calldata operator
+    ) public onlyOperatorDistributor {
         _operators[operator.index].currentValidatorCount++;
     }
 
@@ -87,33 +94,37 @@ contract Whitelist is UpgradeableBase {
         emit OperatorRemoved(a);
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyAdmin {}
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyAdmin {}
 
     //----
     // INTERNAL
     //----
 
     function getOperatorIndex(address a) private view returns (uint) {
-        for(uint i = 0; i < _operators.length; i++) {
-            if(_operators[i].nodeAddress == a)
-                return i;
+        for (uint i = 0; i < _operators.length; i++) {
+            if (_operators[i].nodeAddress == a) return i;
         }
         revert(OPERATOR_NOT_FOUND_ERROR);
     }
 
-    modifier onlyOperator {
+    modifier onlyOperator() {
         require(getIsAddressInWhitelist(msg.sender));
         _;
     }
 
-    modifier onlyOperatorDistributor {
-        require(msg.sender == getDirectory().getOperatorDistributorAddress(), "Whitelist: only the OperatorDistributor may call this function!");
+    modifier onlyOperatorDistributor() {
+        require(
+            msg.sender == getDirectory().getOperatorDistributorAddress(),
+            "Whitelist: only the OperatorDistributor may call this function!"
+        );
         _;
     }
 
     /////// end of previous contract
 
-    function testUpgrade() public pure returns(uint) {
+    function testUpgrade() public pure returns (uint) {
         return 0;
     }
 }
