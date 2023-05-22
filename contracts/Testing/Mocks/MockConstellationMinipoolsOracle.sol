@@ -37,7 +37,7 @@ contract MockConstellationMinipoolsOracle is IConstellationMinipoolsOracle {
         delete _minipoolIndex[miniPool];
     }
 
-    function hasMiniPool(address miniPool) public view override returns (bool) {
+    function hasMinipool(address miniPool) public view override returns (bool) {
         return _minipoolIndex[miniPool] != 0;
     }
 }

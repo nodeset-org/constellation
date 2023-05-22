@@ -25,7 +25,7 @@ contract OperatorDistributor is Base {
                 getDirectory().getConstellationMinipoolsOracleAddress()
             );
         require(
-            minipoolsOracle.hasMiniPool(newMinipoolAdress),
+            minipoolsOracle.hasMinipool(newMinipoolAdress),
             "OperatorDistributor: minipool not in constellation"
         );
 

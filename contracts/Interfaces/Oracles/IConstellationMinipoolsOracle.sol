@@ -12,5 +12,5 @@ interface IConstellationMinipoolsOracle {
 
     function removeMiniPool(address miniPool) external;
 
-    function hasMiniPool(address miniPool) external view returns (bool);
+    function hasMinipool(address miniPool) external view returns (bool);
 }
