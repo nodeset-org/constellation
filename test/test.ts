@@ -110,7 +110,7 @@ export async function protocolFixture(): Promise<SetupData> {
 	const signers = await createSigners();
 	const rocketPool = await getRocketPool();
 
-	await expect(initializeDirectory(deployedProtocol, signers.admin)).to.not.be.reverted;
+	await expect(initializeDirectory(deployedProtocol, rocketPool, signers.admin)).to.not.be.reverted;
 	await expect(deployedProtocol.yieldDistributor.initialize())
 		.to.not.be.reverted;
 

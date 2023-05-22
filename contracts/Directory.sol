@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "./Interfaces/RocketTokenRPLInterface.sol";
 import "./Interfaces/Oracles/IRETHOracle.sol";
 import "./Interfaces/Oracles/IConstellationMinipoolsOracle.sol";
-
+import "./Interfaces/RocketPool/IRocketStorage.sol";
 
 struct Protocol {
     address whitelist;
@@ -17,6 +17,7 @@ struct Protocol {
     address yieldDistributor;
     address rethOracle;
     address constellationMinipoolsOracle;
+    address rocketStorage;
 }
 
 /// @custom:security-contact info@nodeoperator.org
@@ -93,6 +94,10 @@ contract Directory is Pausable {
         returns (address)
     {
         return _protocol.constellationMinipoolsOracle;
+    }
+
+    function getRocketStorageAddress() public view returns (address) {
+        return _protocol.rocketStorage;
     }
 
     function getOperatorDistributorAddress()
