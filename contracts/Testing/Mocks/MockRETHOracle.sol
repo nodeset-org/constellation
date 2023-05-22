@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import "../Interfaces/Oracles/IRETHOracle.sol";
+import "../../Interfaces/Oracles/IRETHOracle.sol";
 
 contract MockRETHOracle is IRETHOracle {
 

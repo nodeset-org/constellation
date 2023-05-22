@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.17;
 
-import "../Interfaces/RocketPool/IMinipool.sol";
+import "../../Interfaces/RocketPool/IMinipool.sol";
 
 contract MockMinipool is IMinipool {
     address internal _nodeAddress;
