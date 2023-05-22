@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { DepositPool, NodeSetETH, NodeSetRPL, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface } from "../typechain-types";
+import { DepositPool, NodeSetETH, NodeSetRPL, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IConstellationMinipoolsOracle, IRETHOracle, MockRocketMinipoolManager, IRocketStorage } from "../typechain-types";
 import { initializeDirectory } from "./test-directory";
 
 const protocolParams  = { trustBuildPeriod : ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
@@ -22,7 +22,9 @@ export type Protocol = {
 	xRPL: NodeSetRPL,
 	depositPool: DepositPool,
 	operatorDistributor: OperatorDistributor,
-	yieldDistributor: YieldDistributor
+	yieldDistributor: YieldDistributor,
+	constellationMinipoolsOracle: IConstellationMinipoolsOracle,
+	rETHOracle: IRETHOracle,
 }
 
 export type Signers = {
@@ -35,8 +37,10 @@ export type Signers = {
 }
 
 export type RocketPool = {
-	rplContract: RocketTokenRPLInterface //RocketTokenRPLInterface
-	networkFeesContract: RocketDAOProtocolSettingsNetworkInterface
+	rplContract: RocketTokenRPLInterface, //RocketTokenRPLInterface
+	networkFeesContract: RocketDAOProtocolSettingsNetworkInterface,
+	rockStorageContract: IRocketStorage,
+	mockRocketMinipoolManager: MockRocketMinipoolManager
 }
 
 async function getRocketPool(): Promise<RocketPool> {
@@ -48,7 +52,18 @@ async function getRocketPool(): Promise<RocketPool> {
 		"RocketDAOProtocolSettingsNetworkInterface",
 		"0x320f3aAB9405e38b955178BBe75c477dECBA0C27"
 	));
-	return { rplContract, networkFeesContract };
+
+	// deploy mock rocket storage
+	const rocketStorageFactory = await ethers.getContractFactory("contracts/Mocks/MockRocketStorage.sol:MockRocketStorage");
+	const rockStorageContract = (await rocketStorageFactory.deploy()) as IRocketStorage;
+	await rockStorageContract.deployed();
+
+	// deploy mock minipool manager
+	const MockRocketMinipoolManagerFactory = await ethers.getContractFactory("contracts/Mocks/MockRocketMinipoolManager.sol:MockRocketMinipoolManager");
+	const mockRocketMinipoolManager = (await MockRocketMinipoolManagerFactory.deploy()) as MockRocketMinipoolManager;
+	await mockRocketMinipoolManager.deployed();
+
+	return { rplContract, networkFeesContract, rockStorageContract, mockRocketMinipoolManager };
 }
 
 async function deployProtocol(): Promise<Protocol> {
@@ -61,7 +76,11 @@ async function deployProtocol(): Promise<Protocol> {
 	const operatorDistributor = await (await ethers.getContractFactory("OperatorDistributor")).deploy(directory.address);
 	const yieldDistributor = await (await ethers.getContractFactory("YieldDistributor")).deploy(directory.address);
 
-	return { directory, whitelist, xrETH, xRPL, depositPool, operatorDistributor, yieldDistributor};
+	// deploy mock constellation minipools oracle
+	const constellationMinipoolsOracle = (await (await ethers.getContractFactory("MockConstellationsMinipool")).deploy()) as IConstellationMinipoolsOracle;
+	const rETHOracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IRETHOracle;
+
+	return { directory, whitelist, xrETH, xRPL, depositPool, operatorDistributor, yieldDistributor, constellationMinipoolsOracle, rETHOracle};
 }
 
 async function createSigners(): Promise<Signers> {
@@ -81,10 +100,17 @@ async function createSigners(): Promise<Signers> {
 // doesn't allow parameters for fixtures
 // see https://github.com/NomicFoundation/hardhat/issues/3508
 export async function deployOnlyFixture(): Promise<SetupData> {
+	const deployedProtocol = await deployProtocol();
+	const signers = await createSigners();
+	const rocketPool = await getRocketPool();
+
+	// set MockConstellationMinipoolsOracle.setMinipoolManager to be rocketpool.minipoolManager.address
+	await deployedProtocol.constellationMinipoolsOracle.setMinipoolManager(rocketPool.mockRocketMinipoolManager.address);
+
 	return {
-		protocol: await deployProtocol(),
-		signers: await createSigners(),
-		rocketPool: await getRocketPool()
+		protocol: deployedProtocol,
+		signers,
+		rocketPool
 	};
 }
 

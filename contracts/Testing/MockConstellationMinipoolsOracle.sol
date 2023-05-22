@@ -10,8 +10,8 @@ contract MockConstellationMinipoolsOracle is IConstellationMinipoolsOracle {
 
     MockRocketMinipoolManager public minipoolManager;
 
-    constructor(address minipoolManagerAddress) {
-        minipoolManager = MockRocketMinipoolManager(minipoolManagerAddress);
+    function setMinipoolManager(address _minipoolManager) external {
+        minipoolManager = MockRocketMinipoolManager(_minipoolManager);
     }
 
     function getNodesetBackedMinipools() public view override returns(address[] memory) {
