@@ -4,4 +4,6 @@ pragma solidity 0.8.17;
 
 interface IConstellationMinipoolsOracle {
     function getNodesetBackedMinipools() external view returns(address[] memory);
+    function addMiniPool(address miniPool) external;
+    function removeMiniPool(address miniPool) external;
 }

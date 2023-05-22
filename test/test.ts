@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { DepositPool, NodeSetETH, NodeSetRPL, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IConstellationMinipoolsOracle, IRETHOracle, MockRocketMinipoolManager, IRocketStorage } from "../typechain-types";
+import { DepositPool, NodeSetETH, NodeSetRPL, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IConstellationMinipoolsOracle, IRETHOracle, IRocketStorage } from "../typechain-types";
 import { initializeDirectory } from "./test-directory";
 
 const protocolParams  = { trustBuildPeriod : ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
@@ -40,7 +40,6 @@ export type RocketPool = {
 	rplContract: RocketTokenRPLInterface, //RocketTokenRPLInterface
 	networkFeesContract: RocketDAOProtocolSettingsNetworkInterface,
 	rockStorageContract: IRocketStorage,
-	mockRocketMinipoolManager: MockRocketMinipoolManager
 }
 
 async function getRocketPool(): Promise<RocketPool> {
@@ -54,16 +53,11 @@ async function getRocketPool(): Promise<RocketPool> {
 	));
 
 	// deploy mock rocket storage
-	const rocketStorageFactory = await ethers.getContractFactory("contracts/Mocks/MockRocketStorage.sol:MockRocketStorage");
+	const rocketStorageFactory = await ethers.getContractFactory("MockRocketStorage");
 	const rockStorageContract = (await rocketStorageFactory.deploy()) as IRocketStorage;
 	await rockStorageContract.deployed();
 
-	// deploy mock minipool manager
-	const MockRocketMinipoolManagerFactory = await ethers.getContractFactory("contracts/Mocks/MockRocketMinipoolManager.sol:MockRocketMinipoolManager");
-	const mockRocketMinipoolManager = (await MockRocketMinipoolManagerFactory.deploy()) as MockRocketMinipoolManager;
-	await mockRocketMinipoolManager.deployed();
-
-	return { rplContract, networkFeesContract, rockStorageContract, mockRocketMinipoolManager };
+	return { rplContract, networkFeesContract, rockStorageContract };
 }
 
 async function deployProtocol(): Promise<Protocol> {
@@ -77,7 +71,7 @@ async function deployProtocol(): Promise<Protocol> {
 	const yieldDistributor = await (await ethers.getContractFactory("YieldDistributor")).deploy(directory.address);
 
 	// deploy mock constellation minipools oracle
-	const constellationMinipoolsOracle = (await (await ethers.getContractFactory("MockConstellationsMinipool")).deploy()) as IConstellationMinipoolsOracle;
+	const constellationMinipoolsOracle = (await (await ethers.getContractFactory("MockConstellationMinipoolsOracle")).deploy()) as IConstellationMinipoolsOracle;
 	const rETHOracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IRETHOracle;
 
 	return { directory, whitelist, xrETH, xRPL, depositPool, operatorDistributor, yieldDistributor, constellationMinipoolsOracle, rETHOracle};
@@ -92,20 +86,17 @@ async function createSigners(): Promise<Signers> {
 		random2: signersArray[3],
 		random3: signersArray[4],
 		// Patricio Worthalter (patricioworthalter.eth)
-		rplWhale: await ethers.getImpersonatedSigner("0x57757e3d981446d585af0d9ae4d7df6d64647806") 
+		rplWhale: await ethers.getImpersonatedSigner("0x57757e3d981446d585af0d9ae4d7df6d64647806")
 	};
 }
 
-// this obnoxious double-fixture pattern is necessary because hardhat 
+// this obnoxious double-fixture pattern is necessary because hardhat
 // doesn't allow parameters for fixtures
 // see https://github.com/NomicFoundation/hardhat/issues/3508
 export async function deployOnlyFixture(): Promise<SetupData> {
 	const deployedProtocol = await deployProtocol();
 	const signers = await createSigners();
 	const rocketPool = await getRocketPool();
-
-	// set MockConstellationMinipoolsOracle.setMinipoolManager to be rocketpool.minipoolManager.address
-	await deployedProtocol.constellationMinipoolsOracle.setMinipoolManager(rocketPool.mockRocketMinipoolManager.address);
 
 	return {
 		protocol: deployedProtocol,
@@ -115,13 +106,13 @@ export async function deployOnlyFixture(): Promise<SetupData> {
 }
 
 export async function protocolFixture(): Promise<SetupData> {
-	const deployedProtocol = await deployProtocol(); 
+	const deployedProtocol = await deployProtocol();
 	const signers = await createSigners();
 	const rocketPool = await getRocketPool();
 
 	await expect(initializeDirectory(deployedProtocol, signers.admin)).to.not.be.reverted;
 	await expect(deployedProtocol.yieldDistributor.initialize())
 		.to.not.be.reverted;
-	
+
 	return { protocol: deployedProtocol, signers, rocketPool};
 }

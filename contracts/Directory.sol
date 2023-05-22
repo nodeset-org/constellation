@@ -4,6 +4,9 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts/security/Pausable.sol";
 
 import "./Interfaces/RocketTokenRPLInterface.sol";
+import "./Interfaces/Oracles/IRETHOracle.sol";
+import "./Interfaces/Oracles/IConstellationMinipoolsOracle.sol";
+
 
 struct Protocol {
     address whitelist;
@@ -12,6 +15,8 @@ struct Protocol {
     address payable depositPool;
     address payable operatorDistributor;
     address yieldDistributor;
+    address rethOracle;
+    address constellationMinipoolsOracle;
 }
 
 /// @custom:security-contact info@nodeoperator.org
@@ -76,6 +81,18 @@ contract Directory is Pausable {
 
     function getDepositPoolAddress() public view returns (address payable) {
         return _protocol.depositPool;
+    }
+
+    function getRETHOracleAddress() public view returns (address) {
+        return _protocol.rethOracle;
+    }
+
+    function getConstellationMinipoolsOracleAddress()
+        public
+        view
+        returns (address)
+    {
+        return _protocol.constellationMinipoolsOracle;
     }
 
     function getOperatorDistributorAddress()
