@@ -26,14 +26,11 @@ contract Directory is Pausable {
     Protocol private _protocol;
 
     address payable _adminAddress;
-    address _pauserAddress;
 
     string public constant CONTRACT_NOT_FOUND_ERROR =
         "Directory: contract not found!";
     string public constant ADMIN_ONLY_ERROR =
         "Directory: may only be called by admin address!";
-    string public constant PAUSER_ONLY_ERROR =
-        "Directory: may only be called by pauser address!";
     string public constant INITIALIZATION_ERROR =
         "Directory: may only initialized once!";
 
@@ -44,9 +41,8 @@ contract Directory is Pausable {
 
     bool private _isInitialized = false;
 
-    constructor(address pauserAddress) {
+    constructor() {
         _adminAddress = payable(msg.sender);
-        _pauserAddress = pauserAddress;
     }
 
     /// @notice Called once to initialize the protocol after all the contracts have been deployed
@@ -119,13 +115,5 @@ contract Directory is Pausable {
     modifier onlyAdmin() {
         require(msg.sender == getAdminAddress(), ADMIN_ONLY_ERROR);
         _;
-    }
-
-    function emergencyPause() public onlyAdmin {
-        _pause();
-    }
-
-    function resumeOperations() public onlyAdmin {
-        _unpause();
     }
 }

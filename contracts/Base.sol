@@ -22,11 +22,6 @@ abstract contract Base is ReentrancyGuard {
         _;
     }
 
-    modifier whenNotPaused() {
-        require(!_directory.paused(), PROTOCOL_PAUSED_ERROR);
-        _;
-    }
-
     function getDirectory() internal view returns (Directory) {
         return _directory;
     }

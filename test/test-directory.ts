@@ -45,17 +45,4 @@ describe("Directory", function () {
     expect(await protocol.directory.getAdminAddress()).equal(signers.admin.address);
   });
 
-  it("Can be paused by admin", async function () {
-    const { protocol, signers } = await loadFixture(protocolFixture);
-    await expect(protocol.directory.connect(signers.admin).emergencyPause())
-      .to.not.be.reverted;
-    expect(await protocol.directory.paused()).equals(true);
-  });
-
-  it("Cannot be paused by random address", async function () {
-    const { protocol, signers } = await loadFixture(protocolFixture);
-    await expect(protocol.directory.connect(signers.random).emergencyPause())
-      .to.be.revertedWith(await protocol.directory.ADMIN_ONLY_ERROR());
-  });
-
 });
