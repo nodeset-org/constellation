@@ -7,7 +7,6 @@ import "../Tokens/xrETH.sol";
 import "../Tokens/xRPL.sol";
 import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";
-import "hardhat/console.sol";
 
 struct Reward {
     address recipient;
