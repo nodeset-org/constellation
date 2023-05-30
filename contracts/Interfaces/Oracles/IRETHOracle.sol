@@ -3,5 +3,7 @@
 pragma solidity 0.8.17;
 
 interface IRETHOracle {
-    function getPrice() external view returns (uint);
+    /// @dev Oracle data verified using cryptographic fraud proofs.
+    /// @return The total value locked in the protocol, in wei, for each minipool + rewards earned.
+    function getTVL() external view returns (uint);
 }
