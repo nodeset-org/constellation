@@ -6,7 +6,7 @@ import "../../Interfaces/Oracles/IRETHOracle.sol";
 contract MockRETHOracle is IRETHOracle {
     uint private _tvl = 410.59 ether;
 
-    function setTVL(uint tvl) public {
+    function setTVL(uint tvl) public override {
         _tvl = tvl;
     }
 
