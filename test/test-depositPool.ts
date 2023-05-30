@@ -199,13 +199,6 @@ describe("DepositPool", function () {
 				.to.be.revertedWith(await protocol.depositPool.ONLY_ETH_TOKEN_ERROR());
 		});
 
-		it("Cannot deposit ETH if paused", async function () {
-			const setupData = await loadFixture(protocolFixture);
-			const { protocol, signers } = setupData;
-			await protocol.directory.connect(signers.admin).emergencyPause();
-			await expect(depositEth(setupData, setupData.signers.random, ethers.utils.parseEther("1")))
-				.to.be.revertedWith(await protocol.depositPool.PROTOCOL_PAUSED_ERROR());
-		});
 	});
 
 	describe("RPL", function () {
@@ -261,18 +254,5 @@ describe("DepositPool", function () {
 			expect(BN.from(finalTvl) === BN.from(startTvl).sub(burnAmount));
 		});
 
-		it("Cannot deposit RPL if paused", async function () {
-			const setupData = await loadFixture(protocolFixture);
-			const { protocol, signers } = setupData;
-			await protocol.directory.connect(signers.admin).emergencyPause();
-
-			const rp = setupData.rocketPool;
-			// seed random address with rpl
-			rp.rplContract.connect(signers.rplWhale)
-				.transfer(setupData.signers.random.address, ethers.utils.parseEther("1000"));
-
-			await expect(depositRpl(setupData, setupData.signers.random, ethers.utils.parseEther("1")))
-				.to.be.revertedWith(await protocol.depositPool.PROTOCOL_PAUSED_ERROR());
-		});
 	});
 });

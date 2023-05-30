@@ -102,7 +102,7 @@ contract YieldDistributor is Base {
     /// @notice The main reward distribution function. Anyone can call it if they're willing to pay the gas costs.
     /// @dev TODO: reimburse msg.sender via keeper-style mechanism, e.g. 0xSplits
     ///
-    function distributeRewards() public nonReentrant whenNotPaused {
+    function distributeRewards() public nonReentrant {
         require(getIsInitialized(), NOT_INITIALIZED_ERROR);
 
         // for all operators in good standing, mint xrETH

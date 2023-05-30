@@ -53,7 +53,7 @@ async function getRocketPool(): Promise<RocketPool> {
 
 async function deployProtocol(): Promise<Protocol> {
 	const [admin] = await ethers.getSigners();
-	const directory = await (await ethers.getContractFactory("Directory")).deploy(admin.address);
+	const directory = await (await ethers.getContractFactory("Directory")).deploy();
 	const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directory.address, protocolParams.trustBuildPeriod], { 'initializer' : 'initializeWhitelist',  'kind' : 'uups', 'unsafeAllow': ['constructor'] });
 	const xrETH = await (await ethers.getContractFactory("NodeSetETH")).deploy(directory.address);
 	const xRPL = await (await ethers.getContractFactory("NodeSetRPL")).deploy(directory.address);

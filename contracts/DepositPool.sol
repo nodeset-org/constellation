@@ -161,7 +161,7 @@ contract DepositPool is Base {
     /// RECEIVE
     ///------
 
-    receive() external payable whenNotPaused {
+    receive() external payable {
         // do not accept deposits if new operator activity is disabled
         require(
             _maxEthBalancePortion < MAX_BALANCE_PORTION_MAX,
@@ -176,7 +176,7 @@ contract DepositPool is Base {
         sendExcessEthToOperatorDistributor();
     }
 
-    function receiveRpl(uint amount) external onlyRplToken whenNotPaused {
+    function receiveRpl(uint amount) external onlyRplToken {
         // do not accept deposits if new operator activity is disabled
         require(
             _maxRplBalancePortion < MAX_BALANCE_PORTION_MAX,
