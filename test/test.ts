@@ -12,7 +12,7 @@ const protocolParams  = { trustBuildPeriod : ethers.utils.parseUnits("1.5768", 7
 export type SetupData = {
 	protocol: Protocol,
 	signers: Signers,
-	rocketPool: RocketPool
+	rocketPool: RocketPool,
 }
 
 export type Protocol = {
@@ -99,6 +99,7 @@ async function createSigners(): Promise<Signers> {
 // doesn't allow parameters for fixtures
 // see https://github.com/NomicFoundation/hardhat/issues/3508
 export async function deployOnlyFixture(): Promise<SetupData> {
+
 	const deployedProtocol = await deployProtocol();
 	const signers = await createSigners();
 	const rocketPool = await getRocketPool();
@@ -106,18 +107,19 @@ export async function deployOnlyFixture(): Promise<SetupData> {
 	return {
 		protocol: deployedProtocol,
 		signers,
-		rocketPool
+		rocketPool,
 	};
 }
 
 export async function protocolFixture(): Promise<SetupData> {
+
 	const deployedProtocol = await deployProtocol();
 	const signers = await createSigners();
 	const rocketPool = await getRocketPool();
 
 	await expect(initializeDirectory(deployedProtocol, rocketPool, signers.admin)).to.not.be.reverted;
 	await expect(deployedProtocol.yieldDistributor.initialize())
-		.to.not.be.reverted;
+	.to.not.be.reverted;
 
 	return { protocol: deployedProtocol, signers, rocketPool};
 }

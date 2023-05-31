@@ -48,13 +48,17 @@ export async function depositEth(setupData: SetupData, from: SignerWithAddress, 
 }
 
 export async function depositRpl(setupData: SetupData, from: SignerWithAddress, amount: BN) {
-	const { protocol } = setupData;	
+	const { protocol } = setupData;
 	let dpBalance = await ethers.provider.getBalance(protocol.depositPool.address);
 	let tvl = await protocol.depositPool.getTvlRpl();
 	
 	let maxBalancePortion = BN.from(await protocol.depositPool.getMaxRplBalancePortion());
 	let maxBalancePortionDecimals = await protocol.depositPool.MAX_BALANCE_PORTION_DECIMALS();
 	let maxBalanceAfterDeposit = tvl.add(amount).mul(maxBalancePortion).div(BN.from(10).pow(maxBalancePortionDecimals));
+
+	console.log("Initial dpBalance: ", ethers.utils.formatEther(dpBalance));
+	console.log("Initial tvl: ", ethers.utils.formatEther(tvl));
+	console.log("Initial maxBalancePortion: ", ethers.utils.formatEther(maxBalancePortion));
 	
 	let dpBalanceChange, distributorBalanceChange;
 	let isBalanceOverMax = (dpBalance.add(amount) > maxBalanceAfterDeposit);
@@ -79,12 +83,24 @@ export async function depositRpl(setupData: SetupData, from: SignerWithAddress, 
 			.withArgs(from.address, protocol.xRPL.address, amount);
 
 	const tx = await protocol.xRPL.connect(from).mint(from.address, amount);
+	const receipt = await tx.wait();
+	if(receipt.status != 1){
+		throw new Error("Transaction failed");
+	  }
 	await expect(tx)
 		.to.changeTokenBalance(
 			protocol.xRPL,
 			from,
 			amount
 		);
+
+	console.log("Expected dpBalanceChange: ", ethers.utils.formatEther(dpBalanceChange));
+	console.log("Expected distributorBalanceChange: ", ethers.utils.formatEther(distributorBalanceChange));
+
+	console.log("Final dpBalance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.depositPool.address)));
+	console.log("Final tvl: ", ethers.utils.formatEther(await protocol.depositPool.getTvlRpl()));
+	console.log("Final maxBalancePortion: ", ethers.utils.formatEther(await protocol.depositPool.getMaxRplBalancePortion()));
+
 	await expect(tx).to.changeTokenBalances(
 			rp.rplContract,
 			[from, protocol.depositPool, protocol.operatorDistributor],
@@ -203,24 +219,31 @@ describe("DepositPool", function () {
 	describe("RPL", function () {
 
 		it("State adjusts correctly on RPL deposit from xRPL", async function () {
-			const setupData = await loadFixture(protocolFixture);
+
+			const setupData = await protocolFixture();
 
 			const rp = setupData.rocketPool;
 
+			// print state of signers
+			console.log("RPL whale balance: ", ethers.utils.formatEther(await rp.rplContract.balanceOf(setupData.signers.rplWhale.address)));
+			console.log("RPL random balance: ", ethers.utils.formatEther(await rp.rplContract.balanceOf(setupData.signers.random.address)));
+			console.log("RPL deposit pool balance: ", ethers.utils.formatEther(await rp.rplContract.balanceOf(setupData.protocol.depositPool.address)));
+			console.log("RPL op dist balance: ", ethers.utils.formatEther(await rp.rplContract.balanceOf(setupData.protocol.operatorDistributor.address)));
+
 			// seed random address with rpl
-			rp.rplContract.connect(setupData.signers.rplWhale)
+			await rp.rplContract.connect(setupData.signers.rplWhale)
 				.transfer(setupData.signers.random.address, ethers.utils.parseEther("100"));
 
 			await depositRpl(setupData, setupData.signers.random, ethers.utils.parseEther("100"));
 		});
 
 		it("Only RPL token address can send RPL from DP externally", async function () {
-			const setupData = await loadFixture(protocolFixture);
+			const setupData = await protocolFixture();
 			const { protocol, signers } = setupData;
 
 			const rp = setupData.rocketPool;
 			// seed random address with rpl
-			rp.rplContract.connect(signers.rplWhale)
+			await rp.rplContract.connect(signers.rplWhale)
 				.transfer(setupData.signers.random.address, ethers.utils.parseEther("1000"));
 
 			await depositRpl(setupData, signers.random, ethers.utils.parseEther("1"));
