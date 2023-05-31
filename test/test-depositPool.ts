@@ -56,10 +56,6 @@ export async function depositRpl(setupData: SetupData, from: SignerWithAddress, 
 	let maxBalancePortionDecimals = await protocol.depositPool.MAX_BALANCE_PORTION_DECIMALS();
 	let maxBalanceAfterDeposit = tvl.add(amount).mul(maxBalancePortion).div(BN.from(10).pow(maxBalancePortionDecimals));
 
-	console.log("Initial dpBalance: ", ethers.utils.formatEther(dpBalance));
-	console.log("Initial tvl: ", ethers.utils.formatEther(tvl));
-	console.log("Initial maxBalancePortion: ", ethers.utils.formatEther(maxBalancePortion));
-	
 	let dpBalanceChange, distributorBalanceChange;
 	let isBalanceOverMax = (dpBalance.add(amount) > maxBalanceAfterDeposit);
 	dpBalanceChange = isBalanceOverMax ? maxBalanceAfterDeposit.sub(dpBalance) : amount	
@@ -93,13 +89,6 @@ export async function depositRpl(setupData: SetupData, from: SignerWithAddress, 
 			from,
 			amount
 		);
-
-	console.log("Expected dpBalanceChange: ", ethers.utils.formatEther(dpBalanceChange));
-	console.log("Expected distributorBalanceChange: ", ethers.utils.formatEther(distributorBalanceChange));
-
-	console.log("Final dpBalance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.depositPool.address)));
-	console.log("Final tvl: ", ethers.utils.formatEther(await protocol.depositPool.getTvlRpl()));
-	console.log("Final maxBalancePortion: ", ethers.utils.formatEther(await protocol.depositPool.getMaxRplBalancePortion()));
 
 	await expect(tx).to.changeTokenBalances(
 			rp.rplContract,
@@ -223,12 +212,6 @@ describe("DepositPool", function () {
 			const setupData = await protocolFixture();
 
 			const rp = setupData.rocketPool;
-
-			// print state of signers
-			console.log("RPL whale balance: ", ethers.utils.formatEther(await rp.rplContract.balanceOf(setupData.signers.rplWhale.address)));
-			console.log("RPL random balance: ", ethers.utils.formatEther(await rp.rplContract.balanceOf(setupData.signers.random.address)));
-			console.log("RPL deposit pool balance: ", ethers.utils.formatEther(await rp.rplContract.balanceOf(setupData.protocol.depositPool.address)));
-			console.log("RPL op dist balance: ", ethers.utils.formatEther(await rp.rplContract.balanceOf(setupData.protocol.operatorDistributor.address)));
 
 			// seed random address with rpl
 			await rp.rplContract.connect(setupData.signers.rplWhale)
