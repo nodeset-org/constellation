@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { DepositPool, NodeSetETH, NodeSetRPL, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IConstellationMinipoolsOracle, IRETHOracle, IRocketStorage } from "../typechain-types";
+import { DepositPool, NodeSetETH, NodeSetRPL, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IConstellationMinipoolsOracle, IRETHOracle, IRocketStorage, IRocketNodeManager } from "../typechain-types";
 import { initializeDirectory } from "./test-directory";
 
 const protocolParams  = { trustBuildPeriod : ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
@@ -40,6 +40,7 @@ export type RocketPool = {
 	rplContract: RocketTokenRPLInterface, //RocketTokenRPLInterface
 	networkFeesContract: RocketDAOProtocolSettingsNetworkInterface,
 	rockStorageContract: IRocketStorage,
+	rocketNodeManagerContract: IRocketNodeManager
 }
 
 async function getRocketPool(): Promise<RocketPool> {
@@ -57,7 +58,11 @@ async function getRocketPool(): Promise<RocketPool> {
 	const rockStorageContract = (await rocketStorageFactory.deploy()) as IRocketStorage;
 	await rockStorageContract.deployed();
 
-	return { rplContract, networkFeesContract, rockStorageContract };
+	const rocketNodeManagerFactory = await ethers.getContractFactory("MockRocketNodeManager");
+	const rocketNodeManagerContract = (await rocketNodeManagerFactory.deploy()) as IRocketNodeManager;
+	await rocketNodeManagerContract.deployed();
+
+	return { rplContract, networkFeesContract, rockStorageContract, rocketNodeManagerContract };
 }
 
 async function deployProtocol(): Promise<Protocol> {

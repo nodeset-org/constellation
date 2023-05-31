@@ -16,6 +16,7 @@ export async function initializeDirectory(protocol: Protocol, rocketPool: Rocket
       constellationMinipoolsOracle: protocol.constellationMinipoolsOracle.address,
       rethOracle: protocol.rETHOracle.address,
       rocketStorage: rocketPool.rockStorageContract.address,
+      rocketNodeManager: rocketPool.rocketNodeManagerContract.address,
     });
 }
 

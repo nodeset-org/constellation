@@ -2,6 +2,10 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import '@openzeppelin/hardhat-upgrades';
 
+// init dotenv
+import dotenv from "dotenv";
+dotenv.config();
+
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.17",
@@ -15,8 +19,8 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       forking: {
-        url: "https://eth-mainnet.alchemyapi.io/v2/corzgOuIDH87dxZm8NkllrQEsJFUKxCU",
-        blockNumber: 16394176
+        url: process.env.MAINNET_URL as string,
+        blockNumber: parseInt(process.env.MAINNET_FORK_NUMBER as string),
       }
     }
   }

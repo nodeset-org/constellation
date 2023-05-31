@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { protocolFixture, SetupData } from "./test";
@@ -93,9 +93,8 @@ export async function depositRpl(setupData: SetupData, from: SignerWithAddress, 
 	await expect(tx)
 		.to.emit(protocol.depositPool, "TotalValueUpdated").withArgs(tvl, tvl.add(amount));
 	
-	let max = await protocol.depositPool.getMaxRplBalance();
 	
-	await expect(maxBalanceAfterDeposit).to.equal(await protocol.depositPool.getMaxRplBalance());
+	expect(maxBalanceAfterDeposit).to.equal(await protocol.depositPool.getMaxRplBalance());
 	
 	let currTvl = await protocol.depositPool.getTvlRpl();
 
@@ -202,6 +201,7 @@ describe("DepositPool", function () {
 	});
 
 	describe("RPL", function () {
+
 		it("State adjusts correctly on RPL deposit from xRPL", async function () {
 			const setupData = await loadFixture(protocolFixture);
 
@@ -256,3 +256,4 @@ describe("DepositPool", function () {
 
 	});
 });
+
