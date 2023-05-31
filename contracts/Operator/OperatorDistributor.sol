@@ -6,6 +6,7 @@ import "../Whitelist/Whitelist.sol";
 import "../Interfaces/RocketPool/IRocketStorage.sol";
 import "../Interfaces/RocketPool/IMinipool.sol";
 import "../Interfaces/RocketPool/IRocketNodeManager.sol";
+import "../Interfaces/RocketPool/IRocketNodeStaking.sol";
 
 contract OperatorDistributor is Base {
 
@@ -45,8 +46,10 @@ contract OperatorDistributor is Base {
 
         IMinipool minipool = IMinipool(newMinipoolAdress);
 
+        address nodeAddress = minipool.getNodeAddress();
+
         address withdrawlAddress = rocketStorage.getNodeWithdrawalAddress(
-            minipool.getNodeAddress()
+            nodeAddress
         );
 
         require(
@@ -60,7 +63,7 @@ contract OperatorDistributor is Base {
 
         require(
             nodeManager.getSmoothingPoolRegistrationState(
-                minipool.getNodeAddress()
+                nodeAddress
             ),
             "OperatorDistributor: minipool must be registered in smoothing pool"
         );
@@ -72,12 +75,24 @@ contract OperatorDistributor is Base {
             "OperatorDistributor: insufficient ETH in queue"
         );
 
+        uint256 minimumRplStake = IRocketNodeStaking(
+            getDirectory().getRocketNodeStakingAddress()
+        ).getNodeMinimumRPLStake(nodeAddress);
 
-        /**
-         * - must have withdrawal address set to our DP
-         * - must be in smoothing pool
-         * - NO is reimbursed from staging balance
-         */
+        require(
+            _queuedRpl >= minimumRplStake,
+            "OperatorDistributor: insufficient RPL in queue"
+        );
+
+
+        // transfer out eth and rpl
+
+        _queuedEth -= bond;
+        _queuedRpl -= minimumRplStake;
+
+        payable(nodeAddress).transfer(bond);
+        IERC20 rpl = IERC20(getDirectory().getRPLTokenAddress());
+        rpl.transfer(nodeAddress, minimumRplStake);
     }
 
     // function getOperatorValidatorNumTarget() public view returns (uint) {
