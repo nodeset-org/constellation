@@ -5,6 +5,7 @@ import "../Base.sol";
 import "../Whitelist/Whitelist.sol";
 import "../Interfaces/RocketPool/IRocketStorage.sol";
 import "../Interfaces/RocketPool/IMinipool.sol";
+import "../Interfaces/RocketPool/IRocketNodeManager.sol";
 
 contract OperatorDistributor is Base {
     uint private _queuedEth;
@@ -43,6 +44,18 @@ contract OperatorDistributor is Base {
             withdrawlAddress == getDirectory().getDepositPoolAddress(),
             "OperatorDistributor: minipool must delegate control to deposit pool"
         );
+
+        IRocketNodeManager nodeManager = IRocketNodeManager(
+            getDirectory().getRocketNodeManagerAddress()
+        );
+
+        require(
+            nodeManager.getSmoothingPoolRegistrationState(
+                minipool.getNodeAddress()
+            ),
+            "OperatorDistributor: minipool must be registered in smoothing pool"
+        );
+
 
         /**
          * - must have withdrawal address set to our DP

@@ -37,8 +37,19 @@ describe("Directory", function () {
   it("Can only be initialized once by admin", async function () {
     const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
 
-    await expect(initializeDirectory(protocol, rocketPool, signers.admin))
-      .to.be.revertedWith(await protocol.directory.INITIALIZATION_ERROR());
+    await expect(protocol.directory.initialize(
+      {
+        whitelist: protocol.whitelist.address,
+        ethToken: protocol.xrETH.address,
+        rplToken: protocol.xRPL.address,
+        depositPool: protocol.depositPool.address,
+        operatorDistributor: protocol.operatorDistributor.address,
+        yieldDistributor: protocol.yieldDistributor.address,
+        constellationMinipoolsOracle: protocol.constellationMinipoolsOracle.address,
+        rethOracle: protocol.rETHOracle.address,
+        rocketStorage: rocketPool.rockStorageContract.address,
+        rocketNodeManager: rocketPool.rocketNodeManagerContract.address,
+      })).to.be.revertedWith(await protocol.directory.INITIALIZATION_ERROR());
   });
 
   it("Returns correct admin address", async function () {
