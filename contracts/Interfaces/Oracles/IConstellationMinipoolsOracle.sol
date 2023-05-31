@@ -21,6 +21,6 @@ interface IConstellationMinipoolsOracle {
 
     /// @notice oracle data does not do smoothing pool registration check
     /// @param miniPool The minipool address to check
-    /// @return isRegistered returns true if the minipool has withdrawal address set to our DP, is not slashed, past scrubbing period.
+    /// @return isRegistered returns true if the minipool has withdrawal address set to our DP, is not slashed, past scrubbing period (aka is reimbersable).
     function hasMinipool(address miniPool) external view returns (bool);
 }
