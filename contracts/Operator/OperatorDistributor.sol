@@ -8,17 +8,26 @@ import "../Interfaces/RocketPool/IMinipool.sol";
 import "../Interfaces/RocketPool/IRocketNodeManager.sol";
 
 contract OperatorDistributor is Base {
-    uint private _queuedEth;
+
+    uint public _queuedEth;
+    uint public _queuedRpl;
 
     constructor(address directory) Base(directory) {}
 
     receive() external payable {
-        addToQueue(msg.value);
+        _queuedEth += msg.value;
     }
 
-    //function addToQueue(uint value) private {
-    function addToQueue(uint value) public {
-        _queuedEth += value;
+    /// @notice requires that the caller approve the contract to transfer RPL
+    /// @param amount The amount of RPL to queue
+    function queueRpl(uint amount) public {
+        IERC20 rpl = IERC20(getDirectory().getRPLTokenAddress());
+        require(
+            rpl.allowance(msg.sender, address(this)) >= amount,
+            "OperatorDistributor: must approve RPL transfer"
+        );
+        rpl.transferFrom(msg.sender, address(this), amount);
+        _queuedRpl += amount;
     }
 
     function reimburseNodeForMinipool(address newMinipoolAdress) public {
@@ -54,6 +63,13 @@ contract OperatorDistributor is Base {
                 minipool.getNodeAddress()
             ),
             "OperatorDistributor: minipool must be registered in smoothing pool"
+        );
+
+        uint256 bond = minipool.getNodeDepositBalance();
+
+        require(
+            _queuedEth >= bond,
+            "OperatorDistributor: insufficient ETH in queue"
         );
 
 

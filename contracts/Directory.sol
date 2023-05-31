@@ -17,6 +17,7 @@ struct Protocol {
     address constellationMinipoolsOracle;
     address rocketStorage;
     address rocketNodeManager;
+    address rocketNodeStaking;
 }
 
 /// @custom:security-contact info@nodeoperator.org
@@ -109,6 +110,10 @@ contract Directory {
 
     function getRocketNodeManagerAddress() public view returns (address) {
         return _protocol.rocketNodeManager;
+    }
+
+    function getRocketNodeStakingAddress() public view returns (address) {
+        return _protocol.rocketNodeStaking;
     }
 
     //----

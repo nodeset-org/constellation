@@ -10,7 +10,7 @@ describe("Operator Distributor", function () {
 	it("Receieves ETH", async function () {
 		const { protocol, signers } = await loadFixture(protocolFixture);
 
-		protocol.operatorDistributor.addToQueue(BN.from(5));
+		// protocol.operatorDistributor.addToQueue(BN.from(5));
 	});
 
 });
