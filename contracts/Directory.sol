@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/security/Pausable.sol";
-
 import "./Interfaces/RocketTokenRPLInterface.sol";
 import "./Interfaces/Oracles/IRETHOracle.sol";
 import "./Interfaces/Oracles/IConstellationMinipoolsOracle.sol";
@@ -22,7 +20,7 @@ struct Protocol {
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Holds references to all protocol contracts
-contract Directory is Pausable {
+contract Directory {
     Protocol private _protocol;
 
     address payable _adminAddress;
