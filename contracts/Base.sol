@@ -12,6 +12,8 @@ abstract contract Base is ReentrancyGuard {
         "Can only be called by admin address!";
     string public constant PROTOCOL_PAUSED_ERROR =
         "Protocol is paused and cannot accept deposits";
+    string public constant DP_ONLY_ERROR =
+        "Can only be called by Deposit Pool!";
 
     constructor(address directory) {
         _directory = Directory(directory);
@@ -19,6 +21,14 @@ abstract contract Base is ReentrancyGuard {
 
     modifier onlyAdmin() {
         require(msg.sender == _directory.getAdminAddress(), ADMIN_ONLY_ERROR);
+        _;
+    }
+
+    modifier onlyDepositPool() {
+        require(
+            msg.sender == _directory.getDepositPoolAddress(),
+            DP_ONLY_ERROR
+        );
         _;
     }
 

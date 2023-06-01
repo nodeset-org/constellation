@@ -8,6 +8,6 @@ contract MockRocketNodeStaking is IRocketNodeStaking {
     function getNodeMinimumRPLStake(
         address
     ) external view override returns (uint256) {
-        return 100e18;
+        return 3.1415 ether;
     }
 }

@@ -30,6 +30,12 @@ contract OperatorDistributor is Base {
         _queuedRpl += amount;
     }
 
+    /// @notice only callable from the deposit pool
+    /// @param amount The amount of RPL received from the deposit pool
+    function queueRplProtocolOnly(uint amount) external onlyDepositPool {
+        _queuedRpl += amount;
+    }
+
     function reimburseNodeForMinipool(address newMinipoolAdress) public {
         IConstellationMinipoolsOracle minipoolsOracle = IConstellationMinipoolsOracle(
                 getDirectory().getConstellationMinipoolsOracleAddress()

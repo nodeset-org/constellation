@@ -7,6 +7,7 @@ import { BigNumber as BN } from "ethers";
 import { Protocol } from "../test";
 import { Signers } from "../test";
 import { RocketPool } from "../test";
+import { IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager } from "../../typechain-types";
 
 export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: RocketPool) {
     const mockMinipoolFactory = await ethers.getContractFactory("MockMinipool");
@@ -21,12 +22,13 @@ export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: 
 }
 
 
-describe("Node Operator Onboarding", function () {
+describe.only("Node Operator Onboarding", function () {
 
     let setupData: SetupData;
     let protocol: Protocol;
     let signers: Signers;
     let rocketPool: RocketPool;
+    let mockMinipool: MockMinipool;
 
     before(async function () {
         setupData = await protocolFixture();
@@ -43,8 +45,9 @@ describe("Node Operator Onboarding", function () {
         const mockValidatorPubkey = ethers.utils.randomBytes(128);
         const mockValidatorSignature = ethers.utils.randomBytes(96);
         const mockDepositDataRoot = ethers.utils.randomBytes(32);
-        const mockMinipool = await deployMockMinipool(signers.hyperdriver, rocketPool);
+        mockMinipool = await deployMockMinipool(signers.hyperdriver, rocketPool);
 
+        // mock pretends any sender is rocketNodeDeposit
         await mockMinipool.preDeposit(
             bondValue,
             mockValidatorPubkey,
@@ -55,9 +58,55 @@ describe("Node Operator Onboarding", function () {
             }
         )
 
+        expect(await mockMinipool.getNodeAddress()).to.equal(signers.hyperdriver.address);
+        expect(await mockMinipool.getNodeDepositBalance()).to.equal(bondValue);
+        expect(await mockMinipool.getStatus()).to.equal(1);
+
+        // hyperdriver sets withdrawal address to be Nodeset's deposit pool
+        await rocketPool.rockStorageContract.setWithdrawalAddress(signers.hyperdriver.address, protocol.depositPool.address, true);
+        expect(await rocketPool.rockStorageContract.getNodeWithdrawalAddress(signers.hyperdriver.address)).to.equal(protocol.depositPool.address);
+
+        // NO sets smoothing pool registration state to true
+        const rocketNodeManagerContract = await ethers.getContractAt("MockRocketNodeManager", rocketPool.rocketNodeManagerContract.address);
+        await rocketNodeManagerContract.mockSetNodeOperatorToMinipool(signers.hyperdriver.address, mockMinipool.address);
+        await rocketPool.rocketNodeManagerContract.connect(signers.hyperdriver).setSmoothingPoolRegistrationState(true);
+        expect(await rocketPool.rocketNodeManagerContract.getSmoothingPoolRegistrationState(signers.hyperdriver.address)).to.equal(true);
+
+        // waiting to be funded remaining eth by rocket pool...
 
     });
 
+    it("admin oracle sees minipool as a valid Nodeset minipool", async function () {
+        await protocol.constellationMinipoolsOracle.addMiniPool(mockMinipool.address);
+        expect(await protocol.constellationMinipoolsOracle.hasMinipool(mockMinipool.address)).to.equal(true);
+    });
+
+    it("eth whale supplies Nodeset deposit pool with eth and rpl", async function () {
+
+        await signers.ethWhale.sendTransaction({
+            to: protocol.xrETH.address,
+            value: ethers.utils.parseEther("100")
+        });
+
+        await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.xRPL.address, ethers.utils.parseEther("100"));
+        await protocol.xRPL.connect(signers.rplWhale).mint(signers.rplWhale.address, ethers.utils.parseEther("100"));
+
+        // print balances of deposit pool and operator distribution pool
+        console.log("deposit pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.depositPool.address)));
+        console.log("deposit pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.depositPool.address)));
+        console.log("operator distribution pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)));
+        console.log("operator distribution pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)));
+
+        expect(await ethers.provider.getBalance(protocol.depositPool.address)).to.equal(ethers.utils.parseEther("1"));
+        expect(await rocketPool.rplContract.balanceOf(protocol.depositPool.address)).to.equal(ethers.utils.parseEther("1"));
+        expect(await ethers.provider.getBalance(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("99"));
+        expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("99"));
+
+    });
+
+    it("node operator applies for reimbursement", async function () {
+        await protocol.operatorDistributor.reimburseNodeForMinipool(mockMinipool.address);
+    });
 
 
 });

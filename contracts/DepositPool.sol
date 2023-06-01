@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import "./Base.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "./Base.sol";
+import "./Operator/OperatorDistributor.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
@@ -207,15 +208,16 @@ contract DepositPool is Base {
     /// @notice If the DP would grow above `_maxRplBalancePortion`, it instead forwards the payment to the OperatorDistributor.
     function sendExcessRplToOperatorDistributor() private {
         uint leftover = getRplBalanceOf(address(this)) - getMaxRplBalance();
+        OperatorDistributor nodeOperator = OperatorDistributor(
+            getDirectory().getOperatorDistributorAddress()
+        );
         if (leftover > 0) {
-            bool success = sendRPLTo(
-                getDirectory().getOperatorDistributorAddress(),
-                leftover
-            );
+            bool success = sendRPLTo(address(nodeOperator), leftover);
             require(
                 success,
                 "DepositPool: Send RPL to OperatorDistributor failed"
             );
+            nodeOperator.queueRplProtocolOnly(leftover);
         }
     }
 
