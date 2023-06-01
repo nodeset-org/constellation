@@ -3,7 +3,6 @@
 pragma solidity 0.8.17;
 
 interface IConstellationMinipoolsOracle {
-
     /// @notice do not on-chain for-loop over this array as it will be too expensive
     /// @return array of minipool addresses
     function getNodesetBackedMinipools()

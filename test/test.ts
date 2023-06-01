@@ -33,7 +33,8 @@ export type Signers = {
 	operator: SignerWithAddress,
 	random2: SignerWithAddress,
 	random3: SignerWithAddress,
-	rplWhale: SignerWithAddress
+	rplWhale: SignerWithAddress,
+	hyperdriver: SignerWithAddress,
 }
 
 export type RocketPool = {
@@ -96,7 +97,8 @@ async function createSigners(): Promise<Signers> {
 		random2: signersArray[3],
 		random3: signersArray[4],
 		// Patricio Worthalter (patricioworthalter.eth)
-		rplWhale: await ethers.getImpersonatedSigner("0x57757e3d981446d585af0d9ae4d7df6d64647806")
+		rplWhale: await ethers.getImpersonatedSigner("0x57757e3d981446d585af0d9ae4d7df6d64647806"),
+		hyperdriver: signersArray[5],
 	};
 }
 

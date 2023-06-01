@@ -3,7 +3,7 @@
 pragma solidity 0.8.17;
 
 interface IRocketNodeStaking {
-
-    function getNodeMinimumRPLStake(address _nodeAddress) external view returns (uint256);
-
+    function getNodeMinimumRPLStake(
+        address _nodeAddress
+    ) external view returns (uint256);
 }

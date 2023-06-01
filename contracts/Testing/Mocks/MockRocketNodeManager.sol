@@ -8,12 +8,16 @@ import "../../Interfaces/RocketPool/IRocketNodeManager.sol";
 contract MockRocketNodeManager is IRocketNodeManager {
     mapping(address => bool) private smoothingPoolRegistrationStates;
 
-    function setSmoothingPoolRegistrationState(bool _state) public override returns (bool) {
+    function setSmoothingPoolRegistrationState(
+        bool _state
+    ) public override returns (bool) {
         smoothingPoolRegistrationStates[msg.sender] = _state;
         return _state;
     }
 
-    function getSmoothingPoolRegistrationState(address _nodeAddress) public view override returns (bool) {
+    function getSmoothingPoolRegistrationState(
+        address _nodeAddress
+    ) public view override returns (bool) {
         return smoothingPoolRegistrationStates[_nodeAddress];
     }
 }

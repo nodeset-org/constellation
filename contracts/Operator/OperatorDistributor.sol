@@ -9,7 +9,6 @@ import "../Interfaces/RocketPool/IRocketNodeManager.sol";
 import "../Interfaces/RocketPool/IRocketNodeStaking.sol";
 
 contract OperatorDistributor is Base {
-
     uint public _queuedEth;
     uint public _queuedRpl;
 
@@ -62,9 +61,7 @@ contract OperatorDistributor is Base {
         );
 
         require(
-            nodeManager.getSmoothingPoolRegistrationState(
-                nodeAddress
-            ),
+            nodeManager.getSmoothingPoolRegistrationState(nodeAddress),
             "OperatorDistributor: minipool must be registered in smoothing pool"
         );
 
@@ -84,7 +81,6 @@ contract OperatorDistributor is Base {
             "OperatorDistributor: insufficient RPL in queue"
         );
 
-
         // transfer out eth and rpl
 
         _queuedEth -= bond;
@@ -94,5 +90,4 @@ contract OperatorDistributor is Base {
         IERC20 rpl = IERC20(getDirectory().getRPLTokenAddress());
         rpl.transfer(nodeAddress, minimumRplStake);
     }
-
 }
