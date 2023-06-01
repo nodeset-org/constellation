@@ -95,7 +95,4 @@ contract OperatorDistributor is Base {
         rpl.transfer(nodeAddress, minimumRplStake);
     }
 
-    // function getOperatorValidatorNumTarget() public view returns (uint) {
-    //     return (balanceOf(this) % Whitelist(getDirectory().getWhitelistAddress()))
-    // }
 }
