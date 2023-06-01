@@ -2,7 +2,6 @@
 pragma solidity 0.8.17;
 
 import "./Base.sol";
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @custom:security-contact info@nodeoperator.org
