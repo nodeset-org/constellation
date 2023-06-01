@@ -45,7 +45,7 @@ describe("Whitelist (proxy)", function () {
 
 describe("Whitelist", function () { 
     it("Admin can add address to whitelist", async function () {
-        const { protocol, signers } = await loadFixture(protocolFixture);
+        const { protocol, signers } = await protocolFixture();
 
         const operator = [
             BigNumber.from(0),

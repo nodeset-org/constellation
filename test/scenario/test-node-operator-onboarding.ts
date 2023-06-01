@@ -33,6 +33,9 @@ describe("Node Operator Onboarding", function () {
         protocol = setupData.protocol;
         signers = setupData.signers;
         rocketPool = setupData.rocketPool;
+
+        await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.hyperdriver.address, ethers.utils.parseEther("100"));
+
     });
 
     it("node operator creates minipool", async function () {
@@ -54,5 +57,7 @@ describe("Node Operator Onboarding", function () {
 
 
     });
+
+
 
 });
