@@ -104,8 +104,27 @@ describe.only("Node Operator Onboarding", function () {
 
     });
 
-    it("node operator applies for reimbursement", async function () {
+    it("node operator gets reimbursement", async function () {
+        const initialRPLBalanceNO = await rocketPool.rplContract.balanceOf(signers.hyperdriver.address);
+        const initialEthBalanceNO = await ethers.provider.getBalance(signers.hyperdriver.address);
+        const initialRPLBalanceOD = await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address);
+        const initialEthBalanceOD = await ethers.provider.getBalance(protocol.operatorDistributor.address);
+
         await protocol.operatorDistributor.reimburseNodeForMinipool(mockMinipool.address);
+
+        const finalRPLBalanceNO = await rocketPool.rplContract.balanceOf(signers.hyperdriver.address);
+        const finalEthBalanceNO = await ethers.provider.getBalance(signers.hyperdriver.address);
+        const finalRPLBalanceOD = await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address);
+        const finalEthBalanceOD = await ethers.provider.getBalance(protocol.operatorDistributor.address);
+
+        const expectedReimbursementRPL = await rocketPool.rocketNodeStakingContract.getNodeMinimumRPLStake(signers.hyperdriver.address);
+        const expectedReimbursementEth = await mockMinipool.getPreLaunchValue();
+
+        expect(finalRPLBalanceNO.sub(initialRPLBalanceNO)).to.equal(expectedReimbursementRPL);
+        expect(finalEthBalanceNO.sub(initialEthBalanceNO)).to.equal(expectedReimbursementEth);
+        expect(initialRPLBalanceOD.sub(finalRPLBalanceOD)).to.equal(expectedReimbursementRPL);
+        expect(initialEthBalanceOD.sub(finalEthBalanceOD)).to.equal(expectedReimbursementEth);
+
     });
 
 
