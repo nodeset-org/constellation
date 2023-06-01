@@ -93,7 +93,7 @@ contract OperatorDistributor is Base {
         _queuedRpl -= minimumRplStake;
 
         payable(nodeAddress).transfer(bond);
-        IERC20 rpl = IERC20(getDirectory().getRPLTokenAddress());
+        RocketTokenRPLInterface rpl = RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS());
         rpl.transfer(nodeAddress, minimumRplStake);
     }
 }
