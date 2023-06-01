@@ -8,6 +8,7 @@ import { Protocol } from "../test";
 import { Signers } from "../test";
 import { RocketPool } from "../test";
 import { IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager } from "../../typechain-types";
+import { OperatorStruct } from "../protocol-types/types";
 
 export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: RocketPool) {
     const mockMinipoolFactory = await ethers.getContractFactory("MockMinipool");
@@ -74,6 +75,10 @@ describe.only("Node Operator Onboarding", function () {
 
         // waiting to be funded remaining eth by rocket pool...
 
+    });
+
+    it("admin needs to kyc the node operator and register them in the whitelist", async function () {
+        await protocol.whitelist.connect(signers.admin).addOperator(signers.hyperdriver.address);
     });
 
     it("admin oracle sees minipool as a valid Nodeset minipool", async function () {

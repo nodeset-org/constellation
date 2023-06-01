@@ -51,6 +51,15 @@ contract OperatorDistributor is Base {
 
         IMinipool minipool = IMinipool(newMinipoolAdress);
 
+        // check that the node operator is registered via whitelist
+        Whitelist whitelist = Whitelist(
+            getDirectory().getWhitelistAddress()
+        );
+        require(
+            whitelist.getIsAddressInWhitelist(minipool.getNodeAddress()),
+            "OperatorDistributor: minipool node operator not in whitelist"
+        );
+
         address nodeAddress = minipool.getNodeAddress();
 
         address withdrawlAddress = rocketStorage.getNodeWithdrawalAddress(
