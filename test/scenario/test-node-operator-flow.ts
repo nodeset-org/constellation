@@ -96,17 +96,17 @@ describe.only("Node Operator Onboarding", function () {
         await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.xRPL.address, ethers.utils.parseEther("100"));
         await protocol.xRPL.connect(signers.rplWhale).mint(signers.rplWhale.address, ethers.utils.parseEther("100"));
 
-        // print balances of deposit pool and operator distribution pool
-        console.log("deposit pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.depositPool.address)));
-        console.log("deposit pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.depositPool.address)));
-        console.log("operator distribution pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)));
-        console.log("operator distribution pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)));
 
         expect(await ethers.provider.getBalance(protocol.depositPool.address)).to.equal(ethers.utils.parseEther("1"));
         expect(await rocketPool.rplContract.balanceOf(protocol.depositPool.address)).to.equal(ethers.utils.parseEther("1"));
         expect(await ethers.provider.getBalance(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("99"));
         expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("99"));
 
+        // print balances of deposit pool and operator distribution pool
+        console.log("deposit pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.depositPool.address)));
+        console.log("deposit pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.depositPool.address)));
+        console.log("operator distribution pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)));
+        console.log("operator distribution pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)));
     });
 
     it("node operator gets reimbursement", async function () {
@@ -129,6 +129,22 @@ describe.only("Node Operator Onboarding", function () {
         expect(finalEthBalanceNO.sub(initialEthBalanceNO)).to.equal(expectedReimbursementEth);
         expect(initialRPLBalanceOD.sub(finalRPLBalanceOD)).to.equal(expectedReimbursementRPL);
         expect(initialEthBalanceOD.sub(finalEthBalanceOD)).to.equal(expectedReimbursementEth);
+
+        // print balances of deposit pool and operator distribution pool
+        console.log("deposit pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.depositPool.address)));
+        console.log("deposit pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.depositPool.address)));
+        console.log("operator distribution pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)));
+        console.log("operator distribution pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)));
+
+    });
+
+    it("someone calls for yield distribution", async function () {
+        await protocol.yieldDistributor.distributeRewards();
+
+        console.log("deposit pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.depositPool.address)));
+        console.log("deposit pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.depositPool.address)));
+        console.log("operator distribution pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)));
+        console.log("operator distribution pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)));
 
     });
 
