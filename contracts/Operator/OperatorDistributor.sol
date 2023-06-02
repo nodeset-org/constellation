@@ -51,7 +51,7 @@ contract OperatorDistributor is Base {
 
         IMinipool minipool = IMinipool(newMinipoolAdress);
 
-        // check that the node operator is registered via whitelist
+        // check that the node operator has been added to the whitelist
         Whitelist whitelist = Whitelist(
             getDirectory().getWhitelistAddress()
         );
@@ -59,6 +59,9 @@ contract OperatorDistributor is Base {
             whitelist.getIsAddressInWhitelist(minipool.getNodeAddress()),
             "OperatorDistributor: minipool node operator not in whitelist"
         );
+
+        // register the operator in the whitelist if they are not already
+
 
         address nodeAddress = minipool.getNodeAddress();
 

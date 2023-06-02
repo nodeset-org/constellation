@@ -105,7 +105,7 @@ contract YieldDistributor is Base {
         require(getIsInitialized(), NOT_INITIALIZED_ERROR);
 
         // for all operators in good standing, mint xrETH
-        Operator[] memory operators = getWhitelist().getOperatorList();
+        Operator[] memory operators = getWhitelist().getOperatorsAsList();
         uint length = operators.length;
 
         uint totalEthFee = (address(this).balance * (getEthCommissionRate())) /
@@ -117,12 +117,16 @@ contract YieldDistributor is Base {
         for (uint i = 0; i < length; i++) {
             uint operatorRewardEth = ((totalEthFee - adminRewardEth) *
                 (operators[i].feePortion / YIELD_PORTION_MAX)) / length;
+
+
+            address nodeOperatorAddr = getWhitelist().getOperatorAddress(i);
+
             NodeSetETH(getDirectory().getETHTokenAddress()).internalMint(
-                operators[i].nodeAddress,
+                nodeOperatorAddr,
                 operatorRewardEth
             );
             emit RewardDistributed(
-                Reward(operators[i].nodeAddress, operatorRewardEth, 0)
+                Reward(nodeOperatorAddr, operatorRewardEth, 0)
             );
         }
 

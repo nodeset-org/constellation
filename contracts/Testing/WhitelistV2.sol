@@ -68,7 +68,6 @@ contract WhitelistV2 is UpgradeableBase {
     function registerNewValidator(
         Operator calldata operator
     ) public onlyOperatorDistributor {
-        _operators[operator.index].currentValidatorCount++;
     }
 
     //----
@@ -84,8 +83,6 @@ contract WhitelistV2 is UpgradeableBase {
     function addOperator(address a) public onlyAdmin {
         _permissions[a] = true;
 
-        _operators.push(Operator(_numOperators, a, block.timestamp, 0, 0));
-        _numOperators++;
         emit OperatorAdded(a);
     }
 
@@ -104,7 +101,6 @@ contract WhitelistV2 is UpgradeableBase {
 
     function getOperatorIndex(address a) private view returns (uint) {
         for (uint i = 0; i < _operators.length; i++) {
-            if (_operators[i].nodeAddress == a) return i;
         }
         revert(OPERATOR_NOT_FOUND_ERROR);
     }
