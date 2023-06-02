@@ -67,8 +67,7 @@ contract WhitelistV2 is UpgradeableBase {
 
     function registerNewValidator(
         Operator calldata operator
-    ) public onlyOperatorDistributor {
-    }
+    ) public onlyOperatorDistributor {}
 
     //----
     // ADMIN
@@ -100,8 +99,7 @@ contract WhitelistV2 is UpgradeableBase {
     //----
 
     function getOperatorIndex(address a) private view returns (uint) {
-        for (uint i = 0; i < _operators.length; i++) {
-        }
+        for (uint i = 0; i < _operators.length; i++) {}
         revert(OPERATOR_NOT_FOUND_ERROR);
     }
 

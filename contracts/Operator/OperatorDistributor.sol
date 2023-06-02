@@ -52,16 +52,13 @@ contract OperatorDistributor is Base {
         IMinipool minipool = IMinipool(newMinipoolAdress);
 
         // check that the node operator has been added to the whitelist
-        Whitelist whitelist = Whitelist(
-            getDirectory().getWhitelistAddress()
-        );
+        Whitelist whitelist = Whitelist(getDirectory().getWhitelistAddress());
         require(
             whitelist.getIsAddressInWhitelist(minipool.getNodeAddress()),
             "OperatorDistributor: minipool node operator not in whitelist"
         );
 
         // register the operator in the whitelist if they are not already
-
 
         address nodeAddress = minipool.getNodeAddress();
 
@@ -105,7 +102,9 @@ contract OperatorDistributor is Base {
         _queuedRpl -= minimumRplStake;
 
         payable(nodeAddress).transfer(bond);
-        RocketTokenRPLInterface rpl = RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS());
+        RocketTokenRPLInterface rpl = RocketTokenRPLInterface(
+            getDirectory().RPL_CONTRACT_ADDRESS()
+        );
         rpl.transfer(nodeAddress, minimumRplStake);
     }
 }

@@ -118,7 +118,6 @@ contract YieldDistributor is Base {
             uint operatorRewardEth = ((totalEthFee - adminRewardEth) *
                 (operators[i].feePortion / YIELD_PORTION_MAX)) / length;
 
-
             address nodeOperatorAddr = getWhitelist().getOperatorAddress(i);
 
             NodeSetETH(getDirectory().getETHTokenAddress()).internalMint(
