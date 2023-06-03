@@ -146,6 +146,9 @@ describe.only("Node Operator Onboarding", function () {
         console.log("operator distribution pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)));
         console.log("operator distribution pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)));
 
+
+        // TOOD: print balances of xrETH and xRPL for all parties
+
     });
 
 
