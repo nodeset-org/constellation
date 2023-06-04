@@ -8,6 +8,8 @@ import "../Tokens/xRPL.sol";
 import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";
 
+import "hardhat/console.sol";
+
 struct Reward {
     address recipient;
     uint eth;
@@ -108,8 +110,12 @@ contract YieldDistributor is Base {
         Operator[] memory operators = getWhitelist().getOperatorsAsList();
         uint length = operators.length;
 
+        console.log("distributing rewards to %s operators", length);
+
         uint totalEthFee = (address(this).balance * (getEthCommissionRate())) /
             (1 ether);
+
+        console.log("totalEthFee: %s", totalEthFee);
 
         // mint xrETH for NOs
         uint adminRewardEth = (totalEthFee * _ethRewardAdminPortion) /
