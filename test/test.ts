@@ -46,6 +46,20 @@ export type RocketPool = {
 	rocketNodeStakingContract: IRocketNodeStaking,
 }
 
+export function getAllAddresses(Signers: Signers, Protocol: Protocol, RocketPool: RocketPool) {
+	const allAddresses = [];
+	for (const [key, value] of Object.entries(Signers)) {
+		allAddresses.push({name: key, address: value.address});
+	}
+	for (const [key, value] of Object.entries(Protocol)) {
+		allAddresses.push({name: key, address: value.address});
+	}
+	for (const [key, value] of Object.entries(RocketPool)) {
+		allAddresses.push({name: key, address: value.address});
+	}
+	return allAddresses;
+}
+
 async function getRocketPool(): Promise<RocketPool> {
 	const rplContract = (await ethers.getContractAt(
 		"RocketTokenRPLInterface",

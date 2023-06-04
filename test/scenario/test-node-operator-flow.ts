@@ -2,13 +2,14 @@ import { expect } from "chai";
 import { ethers, network } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { protocolFixture, SetupData } from "../test";
+import { getAllAddresses, getAllAddresses, getAllAddresses, protocolFixture, SetupData } from "../test";
 import { BigNumber as BN } from "ethers";
 import { Protocol } from "../test";
 import { Signers } from "../test";
 import { RocketPool } from "../test";
-import { IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager } from "../../typechain-types";
+import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, NodeSetETH, NodeSetRPL } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
+import { xrEthSol } from "../../typechain-types/contracts/Tokens";
 
 export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: RocketPool) {
     const mockMinipoolFactory = await ethers.getContractFactory("MockMinipool");
@@ -31,6 +32,10 @@ describe.only("Node Operator Onboarding", function () {
     let rocketPool: RocketPool;
     let mockMinipool: MockMinipool;
 
+    let xrETH: NodeSetETH;
+    let xRPL: NodeSetRPL;
+    let rpl: IERC20;
+
     before(async function () {
         setupData = await protocolFixture();
         protocol = setupData.protocol;
@@ -38,6 +43,10 @@ describe.only("Node Operator Onboarding", function () {
         rocketPool = setupData.rocketPool;
 
         await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.hyperdriver.address, ethers.utils.parseEther("100"));
+
+        xrETH = protocol.xrETH;
+        xRPL = protocol.xRPL;
+        rpl = await ethers.getContractAt("IERC20", await protocol.directory.RPL_CONTRACT_ADDRESS());
 
     });
 
@@ -139,6 +148,22 @@ describe.only("Node Operator Onboarding", function () {
     });
 
     it("someone calls for yield distribution", async function () {
+
+        const xrETHBalancesBefore = [];
+        const xRPLBalancesBefore = [];
+
+        const ETHbalancesBefore = [];
+        const RPLbalancesBefore = [];
+
+        const allAddresses = getAllAddresses(signers, protocol, rocketPool);
+
+        for (let i = 0; i < allAddresses.length; i++) {
+            xrETHBalancesBefore.push(allAddresses[i].name + " - " + await protocol.xrETH.balanceOf(allAddresses[i].address));
+            xRPLBalancesBefore.push(allAddresses[i].name + " - " + await protocol.xRPL.balanceOf(allAddresses[i].address));
+            ETHbalancesBefore.push(allAddresses[i].name + " - " + await ethers.provider.getBalance(allAddresses[i].address));
+            RPLbalancesBefore.push(allAddresses[i].name + " - " + await rocketPool.rplContract.balanceOf(allAddresses[i].address));
+        }
+
         await protocol.yieldDistributor.distributeRewards();
 
         console.log("deposit pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.depositPool.address)));
@@ -147,7 +172,39 @@ describe.only("Node Operator Onboarding", function () {
         console.log("operator distribution pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)));
 
 
-        // TOOD: print balances of xrETH and xRPL for all parties
+
+        const xrETHBalancesAfter = [];
+        const xRPLBalancesAfter = [];
+        const ETHbalancesAfter = [];
+        const RPLbalancesAfter = [];
+
+        for (let i = 0; i < allAddresses.length; i++) {
+            xrETHBalancesAfter.push(allAddresses[i].name + " - " + await protocol.xrETH.balanceOf(allAddresses[i].address));
+            xRPLBalancesAfter.push(allAddresses[i].name + " - " + await protocol.xRPL.balanceOf(allAddresses[i].address));
+            ETHbalancesAfter.push(allAddresses[i].name + " - " + await ethers.provider.getBalance(allAddresses[i].address));
+            RPLbalancesAfter.push(allAddresses[i].name + " - " + await rocketPool.rplContract.balanceOf(allAddresses[i].address));
+        }
+
+        // print before - after balances if delta is not 0
+        console.log("printing delta balances")
+        for (let i = 0; i < allAddresses.length; i++) {
+            if (xrETHBalancesBefore[i] != xrETHBalancesAfter[i]) {
+                console.log("xrETH balance before: ", xrETHBalancesBefore[i]);
+                console.log("xrETH balance after: ", xrETHBalancesAfter[i]);
+            }
+            if (xRPLBalancesBefore[i] != xRPLBalancesAfter[i]) {
+                console.log("xRPL balance before: ", xRPLBalancesBefore[i]);
+                console.log("xRPL balance after: ", xRPLBalancesAfter[i]);
+            }
+            if (ETHbalancesBefore[i] != ETHbalancesAfter[i]) {
+                console.log("ETH balance before: ", ETHbalancesBefore[i]);
+                console.log("ETH balance after: ", ETHbalancesAfter[i]);
+            }
+            if (RPLbalancesBefore[i] != RPLbalancesAfter[i]) {
+                console.log("RPL balance before: ", RPLbalancesBefore[i]);
+                console.log("RPL balance after: ", RPLbalancesAfter[i]);
+            }
+        }
 
     });
 
