@@ -35,7 +35,7 @@ export async function depositEth(setupData: SetupData, from: SignerWithAddress, 
 		)
 	await expect(tx).to.emit(protocol.depositPool, "TotalValueUpdated").withArgs(tvl, tvl.add(amount));
 
-	await expect(maxBalanceAfterDeposit).to.equal(await protocol.depositPool.getMaxEthBalance());
+	expect(maxBalanceAfterDeposit).to.equal(await protocol.depositPool.getMaxEthBalance());
 	
 	let currTvl = await protocol.depositPool.getTvlEth();
 
@@ -198,6 +198,7 @@ describe("DepositPool", function () {
 				.sendEth(signers.random.address, await protocol.depositPool.signer.getBalance()))
 				.to.be.revertedWith(await protocol.depositPool.ONLY_ETH_TOKEN_ERROR());
 		});
+
 	});
 
 	describe("RPL", function () {
@@ -252,5 +253,6 @@ describe("DepositPool", function () {
 
 			expect(BN.from(finalTvl) === BN.from(startTvl).sub(burnAmount));
 		});
+
 	});
 });

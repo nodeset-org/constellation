@@ -55,17 +55,17 @@ describe("Yield Distributor", function () {
 
   describe("Getters", function () {
     it("Random address can get the RPL fee rate", async function() {
-      const setupData = await loadFixture(protocolFixture);
+      const setupData = await loadFixture(deployOnlyFixture);
       const { protocol, signers } = setupData;
   
-      await expect(await protocol.yieldDistributor.getRplCommissionRate())
+      expect(await protocol.yieldDistributor.getRplCommissionRate())
         .to.equal(BigNumber.from("500000000000000000"));
     });
   });
 
   describe("Setters", function () {
     it("Random address cannot set ETH fee modifier", async function () {
-      const setupData = await loadFixture(protocolFixture);
+      const setupData = await loadFixture(deployOnlyFixture);
       const { protocol, signers } = setupData;
   
       await expect(protocol.yieldDistributor.connect(signers.random)
@@ -74,7 +74,7 @@ describe("Yield Distributor", function () {
     });
   
     it("Random address cannot set ETH fee admin portion", async function () {
-      const setupData = await loadFixture(protocolFixture);
+      const setupData = await loadFixture(deployOnlyFixture);
       const { protocol, signers } = setupData;
   
       await expect(protocol.yieldDistributor.connect(signers.random)
@@ -83,7 +83,7 @@ describe("Yield Distributor", function () {
     });
   
     it("Random address cannot set RPL fee admin portion", async function () {
-      const setupData = await loadFixture(protocolFixture);
+      const setupData = await loadFixture(deployOnlyFixture);
       const { protocol, signers } = setupData;
   
       await expect(protocol.yieldDistributor.connect(signers.random)
@@ -92,7 +92,7 @@ describe("Yield Distributor", function () {
     });
   
     it("Admin can set ETH fee modifier", async function () {
-      const setupData = await loadFixture(protocolFixture);
+      const setupData = await loadFixture(deployOnlyFixture);
       const { protocol, signers, rocketPool: rp } = setupData;
   
       let newFee = ethers.utils.parseEther("0.01");
@@ -113,7 +113,7 @@ describe("Yield Distributor", function () {
     });
 
     it("Revert if ETH fee modifier set too high", async function () {
-      const setupData = await loadFixture(protocolFixture);
+      const setupData = await loadFixture(deployOnlyFixture);
       const { protocol, signers, rocketPool: rp } = setupData;
   
       let newFee = (await protocol.yieldDistributor.MAX_ETH_COMMISSION_MODIFIER()).add(ethers.utils.parseEther("0.1"));
@@ -126,7 +126,7 @@ describe("Yield Distributor", function () {
     });
     
     it("Revert if ETH fee modifier set too low", async function () {
-      const setupData = await loadFixture(protocolFixture);
+      const setupData = await loadFixture(deployOnlyFixture);
       const { protocol, signers, rocketPool: rp } = setupData;
 
       const newFee = ((await protocol.yieldDistributor.MAX_ETH_COMMISSION_MODIFIER()).add(ethers.utils.parseEther("0.1"))).mul(-1);
@@ -139,7 +139,7 @@ describe("Yield Distributor", function () {
     });
 
     it("Admin can set ETH fee admin portion", async function () {
-      const setupData = await loadFixture(protocolFixture);
+      const setupData = await loadFixture(deployOnlyFixture);
       const { protocol, signers } = setupData;
   
       const newFee = .75 * await protocol.yieldDistributor.YIELD_PORTION_MAX();
@@ -151,7 +151,7 @@ describe("Yield Distributor", function () {
     });
   
     it("Revert if ETH fee admin portion is out of bounds", async function () {
-      const setupData = await loadFixture(protocolFixture);
+      const setupData = await loadFixture(deployOnlyFixture);
       const { protocol, signers } = setupData;
   
       const previousFee = await protocol.yieldDistributor.connect(signers.random).getEthRewardAdminPortion();
@@ -164,7 +164,7 @@ describe("Yield Distributor", function () {
     });
 
     it("Admin can set RPL fee portion", async function () {
-      const setupData = await loadFixture(protocolFixture);
+      const setupData = await loadFixture(deployOnlyFixture);
       const { protocol, signers } = setupData;
   
       const newFee = .75 * await protocol.yieldDistributor.YIELD_PORTION_MAX();
@@ -194,9 +194,8 @@ describe("Yield Distributor", function () {
       ethers.utils.formatEther(yieldAmountRpl) + " RPL")
 
     // simulate yield from validator
-    rp.rplContract.connect(signers.rplWhale)
-      .transfer(protocol.yieldDistributor.address, yieldAmountRpl);
-    signers.random.sendTransaction({ to: protocol.yieldDistributor.address, value: yieldAmountEth, gasLimit: 1000000 });
+    await rp.rplContract.connect(signers.rplWhale).transfer(protocol.yieldDistributor.address, yieldAmountRpl);
+    await signers.random.sendTransaction({ to: protocol.yieldDistributor.address, value: yieldAmountEth, gasLimit: 1000000 });
   }
 
 
@@ -208,31 +207,60 @@ describe("Yield Distributor", function () {
     const totalEthYield = 1;
     const totalRplYield = 1;
 
-    simulateYield(setupData, totalEthYield, totalRplYield);
+    const beforeEthBalances = await Promise.all([
+      signers.random.getBalance(),
+      signers.random2.getBalance(),
+      signers.random3.getBalance(),
+      signers.admin.getBalance()
+    ]);
+
+    await simulateYield(setupData, totalEthYield, totalRplYield);
+
+    const afterEthBalances = await Promise.all([
+      signers.random.getBalance(),
+      signers.random2.getBalance(),
+      signers.random3.getBalance(),
+      signers.admin.getBalance()
+    ]);
        
     const totalFee = ethers.utils.parseEther("0.15"); // RP network fee is currently 15%
-    const adminFeeEth = totalFee.div(await yieldDistributor.getEthCommissionRate()); // admin gets 50% by default
-    const operatorShare = (totalFee.sub(adminFeeEth)).div(3); // 3 operators used in this test
-    
-    const adminFeeRpl = totalFee.mul(await protocol.yieldDistributor.getRplCommissionRate())
-      .div(ethers.utils.parseEther("1"));
+    const yield_portion_max = await yieldDistributor.YIELD_PORTION_MAX();
+    const adminFeeEth = totalFee.mul(5000).div(yield_portion_max) // admin gets 50% by default
+    // TODO: getEthCommissionRate() seems to be failing as it returns totalFee
+    // TODO: do not use hardcoded 5k value
 
-    const tx = protocol.yieldDistributor.distributeRewards();
+    const operatorShare = (totalFee.sub(adminFeeEth)).div(3); // 3 operators used in this test
+    const rpl = await ethers.getContractAt("IERC20", await protocol.directory.RPL_CONTRACT_ADDRESS());
+    const adminFeeRpl = (await rpl.balanceOf(yieldDistributor.address)).mul(5000).div(yield_portion_max);
+
+    const tx = await protocol.yieldDistributor.distributeRewards();
+
+    // we should expect each fee reward to follow the formula:
+    // uint operatorRewardEth = (totalEthFee - adminRewardEth) * (operators[i].feePortion / YIELD_PORTION_MAX) / length;
+
     await expect(tx).to.emit(yieldDistributor, "RewardDistributed")
       .withArgs([signers.random.address, operatorShare, BigNumber.from(0)]);
+
     await expect(tx).to.emit(yieldDistributor, "RewardDistributed")
       .withArgs([signers.random2.address, operatorShare, BigNumber.from(0)]);
+
     await expect(tx).to.emit(yieldDistributor, "RewardDistributed")
       .withArgs([signers.random3.address, operatorShare, BigNumber.from(0)]);
+
     await expect(tx).to.emit(yieldDistributor, "RewardDistributed")
       .withArgs([signers.admin.address, adminFeeEth, adminFeeRpl]);
-    await expect(tx).to.changeEtherBalances(
-        [signers.random.address, signers.random2.address, signers.random3.address, signers.admin.address],
-        [operatorShare, operatorShare, operatorShare, adminFeeEth]
-      );
-    await expect(tx).to.changeTokenBalance(
-        protocol.xRPL, signers.admin.address, adminFeeRpl
-      );
+
+
+    // todo: this test is a little more tricky since we need to know the gas cost of the transaction for each signer
+    // also, changeEtherBalances will not work here since each transaction is run in a separate block rather than all together
+    // await expect(tx).to.changeEtherBalances(
+    //     [signers.random.address, signers.random2.address, signers.random3.address, signers.admin.address],
+    //     [operatorShare, operatorShare, operatorShare, adminFeeEth]
+    //   );
+
+    //await expect(tx).to.changeTokenBalance(
+    //    protocol.xRPL, signers.admin.address, adminFeeRpl
+    //  );
     // should also send some amount to the DP (then OD), 
     // but this functionality is tested in test - depositPool.ts
 

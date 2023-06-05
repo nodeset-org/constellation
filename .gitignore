@@ -3,6 +3,9 @@ node_modules
 coverage.json
 typechain
 typechain-types
+tsconfig.tsbuildinfo
+.vscode
+coverage/*
 
 #Hardhat files
 cache
