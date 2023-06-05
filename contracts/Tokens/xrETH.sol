@@ -18,7 +18,7 @@ contract NodeSetETH is
     ERC20Permit,
     ERC20FlashMint
 {
-    string constant NAME = "ETH in the Sky with Diamonds";
+    string constant NAME = "Constellation ETH";
     string constant SYMBOL = "xrETH";
     string constant BURN_TOO_SMALL_ERROR =
         "xrETH: burn amount must be greater than 0";

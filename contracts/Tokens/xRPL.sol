@@ -19,7 +19,7 @@ contract NodeSetRPL is
     ERC20Permit,
     ERC20FlashMint
 {
-    string constant NAME = "RPL in the Sky with Diamonds";
+    string constant NAME = "Constellation RPL";
     string constant SYMBOL = "xRPL";
     string constant BURN_TOO_SMALL_ERROR =
         "xRPL: burn amount must be greater than 0";
