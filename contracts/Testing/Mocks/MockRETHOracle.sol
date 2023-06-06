@@ -4,13 +4,13 @@ pragma solidity 0.8.17;
 import "../../Interfaces/Oracles/IRETHOracle.sol";
 
 contract MockRETHOracle is IRETHOracle {
-    uint private _tvl = 410.59 ether;
+    uint private _yield = 410.59 ether;
 
-    function setTVL(uint tvl) public override {
-        _tvl = tvl;
+    function setTotalYieldAccrued(uint yield) public override {
+        _yield = yield;
     }
 
-    function getTVL() public view override returns (uint) {
-        return _tvl;
+    function getTotalYieldAccrued() public view override returns (uint) {
+        return _yield;
     }
 }
