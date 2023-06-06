@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers, network } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { getAllAddresses, getAllAddresses, getAllAddresses, protocolFixture, SetupData } from "../test";
+import { getAllAddresses, protocolFixture, SetupData } from "../test";
 import { BigNumber as BN } from "ethers";
 import { Protocol } from "../test";
 import { Signers } from "../test";
@@ -90,10 +90,6 @@ describe.only("Node Operator Onboarding", function () {
         await protocol.whitelist.connect(signers.admin).addOperator(signers.hyperdriver.address);
     });
 
-    it("admin oracle sees minipool as a valid Nodeset minipool", async function () {
-        await protocol.constellationMinipoolsOracle.addMiniPool(mockMinipool.address);
-        expect(await protocol.constellationMinipoolsOracle.hasMinipool(mockMinipool.address)).to.equal(true);
-    });
 
     it("eth whale supplies Nodeset deposit pool with eth and rpl", async function () {
 
@@ -124,7 +120,13 @@ describe.only("Node Operator Onboarding", function () {
         const initialRPLBalanceOD = await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address);
         const initialEthBalanceOD = await ethers.provider.getBalance(protocol.operatorDistributor.address);
 
-        await protocol.operatorDistributor.reimburseNodeForMinipool(mockMinipool.address);
+        // admin will sign mockMinipool's address via signMessage
+        const mockMinipoolAddressHash = ethers.utils.keccak256(mockMinipool.address);
+        const mockMinipoolAddressHashBytes = ethers.utils.arrayify(mockMinipoolAddressHash);
+        const sig = await signers.admin.signMessage(mockMinipoolAddressHashBytes);
+
+
+        await protocol.operatorDistributor.reimburseNodeForMinipool(sig, mockMinipool.address);
 
         const finalRPLBalanceNO = await rocketPool.rplContract.balanceOf(signers.hyperdriver.address);
         const finalEthBalanceNO = await ethers.provider.getBalance(signers.hyperdriver.address);

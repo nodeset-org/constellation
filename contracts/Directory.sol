@@ -3,7 +3,6 @@ pragma solidity 0.8.17;
 
 import "./Interfaces/RocketTokenRPLInterface.sol";
 import "./Interfaces/Oracles/IRETHOracle.sol";
-import "./Interfaces/Oracles/IConstellationMinipoolsOracle.sol";
 import "./Interfaces/RocketPool/IRocketStorage.sol";
 
 struct Protocol {
@@ -14,7 +13,6 @@ struct Protocol {
     address payable operatorDistributor;
     address yieldDistributor;
     address rethOracle;
-    address constellationMinipoolsOracle;
     address rocketStorage;
     address rocketNodeManager;
     address rocketNodeStaking;
@@ -82,14 +80,6 @@ contract Directory {
 
     function getRETHOracleAddress() public view returns (address) {
         return _protocol.rethOracle;
-    }
-
-    function getConstellationMinipoolsOracleAddress()
-        public
-        view
-        returns (address)
-    {
-        return _protocol.constellationMinipoolsOracle;
     }
 
     function getRocketStorageAddress() public view returns (address) {

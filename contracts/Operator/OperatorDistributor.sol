@@ -8,6 +8,8 @@ import "../Interfaces/RocketPool/IMinipool.sol";
 import "../Interfaces/RocketPool/IRocketNodeManager.sol";
 import "../Interfaces/RocketPool/IRocketNodeStaking.sol";
 
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+
 contract OperatorDistributor is Base {
     uint public _queuedEth;
     uint public _queuedRpl;
@@ -36,14 +38,13 @@ contract OperatorDistributor is Base {
         _queuedRpl += amount;
     }
 
-    function reimburseNodeForMinipool(address newMinipoolAdress) public {
-        IConstellationMinipoolsOracle minipoolsOracle = IConstellationMinipoolsOracle(
-                getDirectory().getConstellationMinipoolsOracleAddress()
-            );
-        require(
-            minipoolsOracle.hasMinipool(newMinipoolAdress),
-            "OperatorDistributor: minipool not in constellation"
-        );
+    function reimburseNodeForMinipool(bytes memory sig, address newMinipoolAdress) public {
+
+        // validate that the newMinipoolAdress was signed by the admin address
+        bytes32 signedMessageHash = keccak256(abi.encode(newMinipoolAdress, "address"));
+        address signer = ECDSAUpgradeable.recover(signedMessageHash, sig);
+        require(signer == getDirectory().getAdminAddress(), "OperatorDistributor: invalid signature");
+
 
         IMinipool minipool = IMinipool(newMinipoolAdress);
         address nodeAddress = minipool.getNodeAddress();

@@ -23,7 +23,6 @@ export type Protocol = {
 	depositPool: DepositPool,
 	operatorDistributor: OperatorDistributor,
 	yieldDistributor: YieldDistributor,
-	constellationMinipoolsOracle: IConstellationMinipoolsOracle,
 	rETHOracle: IRETHOracle,
 }
 
@@ -96,11 +95,9 @@ async function deployProtocol(): Promise<Protocol> {
 	const operatorDistributor = await (await ethers.getContractFactory("OperatorDistributor")).deploy(directory.address);
 	const yieldDistributor = await (await ethers.getContractFactory("YieldDistributor")).deploy(directory.address);
 
-	// deploy mock constellation minipools oracle
-	const constellationMinipoolsOracle = (await (await ethers.getContractFactory("MockConstellationMinipoolsOracle")).deploy()) as IConstellationMinipoolsOracle;
 	const rETHOracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IRETHOracle;
 
-	return { directory, whitelist, xrETH, xRPL, depositPool, operatorDistributor, yieldDistributor, constellationMinipoolsOracle, rETHOracle};
+	return { directory, whitelist, xrETH, xRPL, depositPool, operatorDistributor, yieldDistributor, rETHOracle};
 }
 
 async function createSigners(): Promise<Signers> {
