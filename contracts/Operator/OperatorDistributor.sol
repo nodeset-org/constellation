@@ -45,22 +45,22 @@ contract OperatorDistributor is Base {
             "OperatorDistributor: minipool not in constellation"
         );
 
-        IRocketStorage rocketStorage = IRocketStorage(
-            getDirectory().getRocketStorageAddress()
-        );
-
         IMinipool minipool = IMinipool(newMinipoolAdress);
-
-        // check that the node operator has been added to the whitelist
+        address nodeAddress = minipool.getNodeAddress();
         Whitelist whitelist = Whitelist(getDirectory().getWhitelistAddress());
         require(
-            whitelist.getIsAddressInWhitelist(minipool.getNodeAddress()),
+            whitelist.getIsAddressInWhitelist(nodeAddress),
             "OperatorDistributor: minipool node operator not in whitelist"
         );
 
+
+        IRocketStorage rocketStorage = IRocketStorage(
+            getDirectory().getRocketStorageAddress()
+        );
+        // check that the node operator has been added to the whitelist
+
         // register the operator in the whitelist if they are not already
 
-        address nodeAddress = minipool.getNodeAddress();
 
         address withdrawlAddress = rocketStorage.getNodeWithdrawalAddress(
             nodeAddress
