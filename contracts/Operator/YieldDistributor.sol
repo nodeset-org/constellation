@@ -7,6 +7,7 @@ import "../Tokens/xrETH.sol";
 import "../Tokens/xRPL.sol";
 import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";
+import "../Interfaces/Oracles/IRETHOracle.sol";
 
 import "hardhat/console.sol";
 
@@ -27,6 +28,8 @@ contract YieldDistributor is Base {
     int public constant MAX_ETH_COMMISSION_MODIFIER = 1 ether;
     uint16 private _ethRewardAdminPortion = 5000;
     uint16 private _rplRewardAdminPortion = 5000;
+
+    uint256 public totalEthDistributed;
 
     bool private _isInitialized = false;
     string public constant INITIALIZATION_ERROR =
@@ -96,6 +99,13 @@ contract YieldDistributor is Base {
         return _ethRewardAdminPortion;
     }
 
+    // @notice Gets the total tvl of non-distributed yield
+    function getDistributableYield() public view returns (uint256) {
+        // get yield accrued from oracle
+        IRETHOracle oracle = IRETHOracle(getDirectory().getRETHOracleAddress());
+        return oracle.getTotalYieldAccrued() - totalEthDistributed;
+    }
+
     /****
      * EXTERNAL
      */
@@ -159,6 +169,8 @@ contract YieldDistributor is Base {
                 adminRewardRpl
             )
         );
+
+        totalEthDistributed += totalEthFee;
 
         // TODO: reimburse msg.sender
 
