@@ -8,7 +8,6 @@ import "../Operator/Operator.sol";
 /// @notice Controls operator access to the protocol.
 /// Only modifiable by admin. Upgradeable and intended to be replaced by a ZK-ID check when possible.
 contract Whitelist is UpgradeableBase {
-
     mapping(address => bool) private _permissions;
     mapping(address => Operator) public operatorMap;
     mapping(uint => address) public operatorIndexMap;

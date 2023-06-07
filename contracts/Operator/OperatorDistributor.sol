@@ -40,14 +40,20 @@ contract OperatorDistributor is Base {
         _queuedRpl += amount;
     }
 
-    function reimburseNodeForMinipool(bytes memory sig, address newMinipoolAdress) public {
-
+    function reimburseNodeForMinipool(
+        bytes memory sig,
+        address newMinipoolAdress
+    ) public {
         // validate that the newMinipoolAdress was signed by the admin address
         bytes32 messageHash = keccak256(abi.encode(newMinipoolAdress));
-        bytes32 ethSignedMessageHash = ECDSAUpgradeable.toEthSignedMessageHash(messageHash);
+        bytes32 ethSignedMessageHash = ECDSAUpgradeable.toEthSignedMessageHash(
+            messageHash
+        );
         address signer = ECDSAUpgradeable.recover(ethSignedMessageHash, sig);
-        require(signer == getDirectory().getAdminAddress(), "OperatorDistributor: invalid signature");
-
+        require(
+            signer == getDirectory().getAdminAddress(),
+            "OperatorDistributor: invalid signature"
+        );
 
         IMinipool minipool = IMinipool(newMinipoolAdress);
         address nodeAddress = minipool.getNodeAddress();
@@ -57,14 +63,12 @@ contract OperatorDistributor is Base {
             "OperatorDistributor: minipool node operator not in whitelist"
         );
 
-
         IRocketStorage rocketStorage = IRocketStorage(
             getDirectory().getRocketStorageAddress()
         );
         // check that the node operator has been added to the whitelist
 
         // register the operator in the whitelist if they are not already
-
 
         address withdrawlAddress = rocketStorage.getNodeWithdrawalAddress(
             nodeAddress

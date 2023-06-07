@@ -110,7 +110,8 @@ contract YieldDistributor is Base {
     function getShortfall() public view returns (uint256) {
         uint256 distributableYield = getDistributableYield();
         uint256 totalEth = address(this).balance;
-        return totalEth > distributableYield ? 0 : distributableYield - totalEth;
+        return
+            totalEth > distributableYield ? 0 : distributableYield - totalEth;
     }
 
     /****
@@ -127,7 +128,8 @@ contract YieldDistributor is Base {
         Operator[] memory operators = getWhitelist().getOperatorsAsList();
         uint length = operators.length;
 
-        uint totalEthFee = (address(this).balance * getEthCommissionRate()) / (1 ether);
+        uint totalEthFee = (address(this).balance * getEthCommissionRate()) /
+            (1 ether);
 
         // mint xrETH for NOs
         uint adminRewardEth = (totalEthFee * _ethRewardAdminPortion) /
