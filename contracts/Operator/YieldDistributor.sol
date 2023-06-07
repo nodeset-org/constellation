@@ -99,11 +99,18 @@ contract YieldDistributor is Base {
         return _ethRewardAdminPortion;
     }
 
-    // @notice Gets the total tvl of non-distributed yield
+    /// @notice Gets the total tvl of non-distributed yield
     function getDistributableYield() public view returns (uint256) {
         // get yield accrued from oracle
         IRETHOracle oracle = IRETHOracle(getDirectory().getRETHOracleAddress());
         return oracle.getTotalYieldAccrued() - totalEthDistributed;
+    }
+
+    /// @notice Gets the amount of ETH that the contract needs to receive before it can distribute full rewards again
+    function getShortfall() public view returns (uint256) {
+        uint256 distributableYield = getDistributableYield();
+        uint256 totalEth = address(this).balance;
+        return totalEth > distributableYield ? 0 : distributableYield - totalEth;
     }
 
     /****
@@ -120,12 +127,7 @@ contract YieldDistributor is Base {
         Operator[] memory operators = getWhitelist().getOperatorsAsList();
         uint length = operators.length;
 
-        console.log("distributing rewards to %s operators", length);
-
-        uint totalEthFee = (address(this).balance * (getEthCommissionRate())) /
-            (1 ether);
-
-        console.log("totalEthFee: %s", totalEthFee);
+        uint totalEthFee = (address(this).balance * getEthCommissionRate()) / (1 ether);
 
         // mint xrETH for NOs
         uint adminRewardEth = (totalEthFee * _ethRewardAdminPortion) /
