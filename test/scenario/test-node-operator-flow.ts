@@ -121,7 +121,8 @@ describe.only("Node Operator Onboarding", function () {
         const initialEthBalanceOD = await ethers.provider.getBalance(protocol.operatorDistributor.address);
 
         // admin will sign mockMinipool's address via signMessage
-        const mockMinipoolAddressHash = ethers.utils.keccak256(mockMinipool.address);
+        const encodedMinipoolAddress = ethers.utils.defaultAbiCoder.encode(["address"], [mockMinipool.address]);
+        const mockMinipoolAddressHash = ethers.utils.keccak256(encodedMinipoolAddress);
         const mockMinipoolAddressHashBytes = ethers.utils.arrayify(mockMinipoolAddressHash);
         const sig = await signers.admin.signMessage(mockMinipoolAddressHashBytes);
 

@@ -10,6 +10,8 @@ import "../Interfaces/RocketPool/IRocketNodeStaking.sol";
 
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
+import "hardhat/console.sol";
+
 contract OperatorDistributor is Base {
     uint public _queuedEth;
     uint public _queuedRpl;
@@ -41,8 +43,9 @@ contract OperatorDistributor is Base {
     function reimburseNodeForMinipool(bytes memory sig, address newMinipoolAdress) public {
 
         // validate that the newMinipoolAdress was signed by the admin address
-        bytes32 signedMessageHash = keccak256(abi.encode(newMinipoolAdress, "address"));
-        address signer = ECDSAUpgradeable.recover(signedMessageHash, sig);
+        bytes32 messageHash = keccak256(abi.encode(newMinipoolAdress));
+        bytes32 ethSignedMessageHash = ECDSAUpgradeable.toEthSignedMessageHash(messageHash);
+        address signer = ECDSAUpgradeable.recover(ethSignedMessageHash, sig);
         require(signer == getDirectory().getAdminAddress(), "OperatorDistributor: invalid signature");
 
 
