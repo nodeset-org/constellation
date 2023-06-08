@@ -174,7 +174,7 @@ contract YieldDistributor is Base {
             )
         );
 
-        totalEthDistributed += totalEthFee;
+        totalEthDistributed += address(this).balance;
 
         // TODO: reimburse msg.sender
 

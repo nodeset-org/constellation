@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./Base.sol";
 import "./Operator/OperatorDistributor.sol";
+import "./Operator/YieldDistributor.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
@@ -132,7 +133,7 @@ contract DepositPool is Base {
 
         uint16 oldValue = _maxEthBalancePortion;
         _maxEthBalancePortion = newMaxBalancePortion;
-        sendExcessEthToOperatorDistributor();
+        sendExcessEthToDistributors();
 
         emit NewMaxEthBalancePortion(oldValue, _maxEthBalancePortion);
     }
@@ -173,7 +174,7 @@ contract DepositPool is Base {
         _tvlEth += msg.value;
         emit TotalValueUpdated(old, _tvlEth);
 
-        sendExcessEthToOperatorDistributor();
+        sendExcessEthToDistributors();
     }
 
     function receiveRpl(uint amount) external onlyRplToken {
@@ -191,15 +192,34 @@ contract DepositPool is Base {
         sendExcessRplToOperatorDistributor();
     }
 
-    /// @notice If the DP would grow above `_maxEthBalancePortion`, it instead forwards the payment to the OperatorDistributor.
-    function sendExcessEthToOperatorDistributor() private {
+    /// @notice If the DP would grow above `_maxEthBalancePortion`, it instead forwards the payment to the OperatorDistributor / YieldDistributor.
+    function sendExcessEthToDistributors() private {
         uint leftover = address(this).balance - getMaxEthBalance();
         if (leftover > 0) {
-            (bool success, ) = getDirectory()
+            // get shortfall from yield distributor
+            YieldDistributor yieldDistributor = YieldDistributor(
+                payable(getDirectory().getYieldDistributorAddress())
+            );
+            uint yieldDistributorShortfall = yieldDistributor.getShortfall();
+            if(yieldDistributorShortfall > 0) {
+                if(yieldDistributorShortfall > leftover) {
+                    yieldDistributorShortfall = leftover;
+                }
+                leftover -= yieldDistributorShortfall;
+                (bool successYield, ) = getDirectory()
+                    .getYieldDistributorAddress()
+                    .call{value: yieldDistributorShortfall}("");
+                require(
+                    successYield,
+                    "DepositPool: Send ETH to YieldDistributor failed"
+                );
+            }
+
+            (bool successOperator, ) = getDirectory()
                 .getOperatorDistributorAddress()
                 .call{value: leftover}("");
             require(
-                success,
+                successOperator,
                 "DepositPool: Send ETH to OperatorDistributor failed"
             );
         }
