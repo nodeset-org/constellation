@@ -11,7 +11,7 @@ import "../DepositPool.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice LSD tracking the network's yield
-contract NodeSetETH is
+contract xETH is
     Base,
     Ownable,
     ERC20Burnable,

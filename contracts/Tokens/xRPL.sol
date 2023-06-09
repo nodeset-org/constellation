@@ -12,7 +12,7 @@ import "../Interfaces/RocketTokenRPLInterface.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice LSD tracking the network's yield
-contract NodeSetRPL is
+contract xRPL is
     Base,
     Ownable,
     ERC20Burnable,

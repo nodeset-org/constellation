@@ -143,7 +143,7 @@ contract YieldDistributor is Base {
 
             address nodeOperatorAddr = getWhitelist().getOperatorAddress(i);
 
-            NodeSetETH(getDirectory().getETHTokenAddress()).internalMint(
+            xETH(getDirectory().getETHTokenAddress()).internalMint(
                 nodeOperatorAddr,
                 operatorRewardEth
             );
@@ -153,7 +153,7 @@ contract YieldDistributor is Base {
         }
 
         // mint xrETH for admin
-        NodeSetETH(getDirectory().getETHTokenAddress()).internalMint(
+        xETH(getDirectory().getETHTokenAddress()).internalMint(
             getDirectory().getAdminAddress(),
             adminRewardEth
         );
@@ -165,7 +165,7 @@ contract YieldDistributor is Base {
 
         uint adminRewardRpl = (rpl.balanceOf(address(this)) *
             _rplRewardAdminPortion) / YIELD_PORTION_MAX;
-        NodeSetRPL(getDirectory().getRPLTokenAddress()).mintYield(
+        xRPL(getDirectory().getRPLTokenAddress()).mintYield(
             getDirectory().getAdminAddress(),
             adminRewardRpl
         );

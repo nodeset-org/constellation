@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { DepositPool, NodeSetETH, NodeSetRPL, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IConstellationMinipoolsOracle, IRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking } from "../typechain-types";
+import { DepositPool, xETH, xRPL, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IConstellationMinipoolsOracle, IRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking } from "../typechain-types";
 import { initializeDirectory } from "./test-directory";
 
 const protocolParams  = { trustBuildPeriod : ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
@@ -18,8 +18,8 @@ export type SetupData = {
 export type Protocol = {
 	directory: Directory,
 	whitelist: Contract,
-	xrETH: NodeSetETH,
-	xRPL: NodeSetRPL,
+	xrETH: xETH,
+	xRPL: xRPL,
 	depositPool: DepositPool,
 	operatorDistributor: OperatorDistributor,
 	yieldDistributor: YieldDistributor,
@@ -89,8 +89,8 @@ async function deployProtocol(): Promise<Protocol> {
 	const [admin] = await ethers.getSigners();
 	const directory = await (await ethers.getContractFactory("Directory")).deploy();
 	const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directory.address, protocolParams.trustBuildPeriod], { 'initializer' : 'initializeWhitelist',  'kind' : 'uups', 'unsafeAllow': ['constructor'] });
-	const xrETH = await (await ethers.getContractFactory("NodeSetETH")).deploy(directory.address);
-	const xRPL = await (await ethers.getContractFactory("NodeSetRPL")).deploy(directory.address);
+	const xrETH = await (await ethers.getContractFactory("xETH")).deploy(directory.address);
+	const xRPL = await (await ethers.getContractFactory("xRPL")).deploy(directory.address);
 	const depositPool = await (await ethers.getContractFactory("DepositPool")).deploy(directory.address);
 	const operatorDistributor = await (await ethers.getContractFactory("OperatorDistributor")).deploy(directory.address);
 	const yieldDistributor = await (await ethers.getContractFactory("YieldDistributor")).deploy(directory.address);

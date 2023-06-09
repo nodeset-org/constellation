@@ -7,7 +7,7 @@ import { BigNumber as BN } from "ethers";
 import { Protocol } from "../test";
 import { Signers } from "../test";
 import { RocketPool } from "../test";
-import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, NodeSetETH, NodeSetRPL } from "../../typechain-types";
+import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, xETH, xRPL } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
 import { xrEthSol } from "../../typechain-types/contracts/Tokens";
 
@@ -32,8 +32,8 @@ describe("Node Operator Onboarding", function () {
     let rocketPool: RocketPool;
     let mockMinipool: MockMinipool;
 
-    let xrETH: NodeSetETH;
-    let xRPL: NodeSetRPL;
+    let xrETH: xETH;
+    let xRPL: xRPL;
     let rpl: IERC20;
 
     before(async function () {
