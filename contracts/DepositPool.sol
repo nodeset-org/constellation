@@ -27,7 +27,7 @@ contract DepositPool is Base {
     event NewMaxRplBalancePortion(uint16 oldValue, uint16 newValue);
 
     uint16 public constant MAX_BALANCE_PORTION_DECIMALS = 4;
-    uint16 public constant MAX_BALANCE_PORTION_MAX =
+    uint16 public constant MAX_BALANCE_PORTION =
         uint16(10) ** MAX_BALANCE_PORTION_DECIMALS;
 
     string public constant SEND_ETH_TO_OPERATOR_DISTRIBUTOR_ERROR =
@@ -39,7 +39,7 @@ contract DepositPool is Base {
     string public constant ONLY_RPL_TOKEN_ERROR =
         "DepositPool: This function may only be called by the xRPL token contract";
     string public constant MAX_BALANCE_PORTION_OUT_OF_RANGE_ERROR =
-        "DepositPool: Supplied maxBalancePortion is out of range. Must be >= 0 or <= MAX_BALANCE_PORTION_MAX.";
+        "DepositPool: Supplied maxBalancePortion is out of range. Must be >= 0 or <= MAX_BALANCE_PORTION.";
     string public constant NOT_ENOUGH_ETH_ERROR =
         "Deposit Pool: Not enough ETH";
     string public constant NOT_ENOUGH_RPL_ERROR =
@@ -78,12 +78,12 @@ contract DepositPool is Base {
     }
 
     function getMaxEthBalance() public view returns (uint) {
-        return (getTvlEth() * _maxEthBalancePortion) / MAX_BALANCE_PORTION_MAX;
+        return (getTvlEth() * _maxEthBalancePortion) / MAX_BALANCE_PORTION;
     }
 
     function getMaxRplBalance() public view returns (uint) {
         return ((getTvlRpl() * _maxRplBalancePortion) /
-            MAX_BALANCE_PORTION_MAX);
+            MAX_BALANCE_PORTION);
     }
 
     ///--------
@@ -120,15 +120,15 @@ contract DepositPool is Base {
 
     /// @notice Sets the maximum percentage of TVL which is allowed to be in the Deposit Pool.
     /// On deposit, if the DP would grow beyond this, it instead forwards the payment to the OperatorDistributor.
-    /// Allows any value between 0 and MAX_BALANCE_PORTION_MAX.
+    /// Allows any value between 0 and MAX_BALANCE_PORTION.
     /// 0 would prevent withdrawals since all ETH sent to this contract is forwarded to the OperatorDistributor.
-    /// Setting to MAX_BALANCE_PORTION_MAX effectively freezes new operator activity by keeping 100% in the DepositPool.
+    /// Setting to MAX_BALANCE_PORTION effectively freezes new operator activity by keeping 100% in the DepositPool.
     function setMaxEthBalancePortion(
         uint16 newMaxBalancePortion
     ) public onlyAdmin {
         require(
             newMaxBalancePortion >= 0 &&
-                newMaxBalancePortion <= MAX_BALANCE_PORTION_MAX
+                newMaxBalancePortion <= MAX_BALANCE_PORTION
         );
 
         uint16 oldValue = _maxEthBalancePortion;
@@ -140,15 +140,15 @@ contract DepositPool is Base {
 
     /// @notice Sets the maximum percentage of TVL which is allowed to be in the Deposit Pool.
     /// On deposit, if the DP would grow beyond this, it instead forwards the payment to the OperatorDistributor.
-    /// Allows any value between 0 an MAX_BALANCE_PORTION_MAX.
+    /// Allows any value between 0 an MAX_BALANCE_PORTION.
     /// 0 would prevent withdrawals since all ETH sent to this contract is forwarded to the OperatorDistributor.
-    /// Setting to MAX_BALANCE_PORTION_MAX effectively freezes new operator activity by keeping 100% in the DepositPool.
+    /// Setting to MAX_BALANCE_PORTION effectively freezes new operator activity by keeping 100% in the DepositPool.
     function setMaxRplBalancePortion(
         uint16 newMaxBalancePortion
     ) public onlyAdmin {
         require(
             newMaxBalancePortion >= 0 &&
-                newMaxBalancePortion <= MAX_BALANCE_PORTION_MAX
+                newMaxBalancePortion <= MAX_BALANCE_PORTION
         );
 
         uint16 oldValue = _maxRplBalancePortion;
@@ -165,8 +165,8 @@ contract DepositPool is Base {
     receive() external payable {
         // do not accept deposits if new operator activity is disabled
         require(
-            _maxEthBalancePortion < MAX_BALANCE_PORTION_MAX,
-            MAX_BALANCE_PORTION_MAX
+            _maxEthBalancePortion < MAX_BALANCE_PORTION,
+            MAX_BALANCE_PORTION
         );
 
         uint old = getTvlEth();
@@ -180,8 +180,8 @@ contract DepositPool is Base {
     function receiveRpl(uint amount) external onlyRplToken {
         // do not accept deposits if new operator activity is disabled
         require(
-            _maxRplBalancePortion < MAX_BALANCE_PORTION_MAX,
-            MAX_BALANCE_PORTION_MAX
+            _maxRplBalancePortion < MAX_BALANCE_PORTION,
+            MAX_BALANCE_PORTION
         );
 
         uint old = getTvlRpl();
