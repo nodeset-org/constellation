@@ -166,7 +166,7 @@ contract DepositPool is Base {
         // do not accept deposits if new operator activity is disabled
         require(
             _maxEthBalancePortion < MAX_BALANCE_PORTION_MAX,
-            PROTOCOL_PAUSED_ERROR
+            MAX_BALANCE_PORTION_MAX
         );
 
         uint old = getTvlEth();
@@ -181,7 +181,7 @@ contract DepositPool is Base {
         // do not accept deposits if new operator activity is disabled
         require(
             _maxRplBalancePortion < MAX_BALANCE_PORTION_MAX,
-            PROTOCOL_PAUSED_ERROR
+            MAX_BALANCE_PORTION_MAX
         );
 
         uint old = getTvlRpl();
