@@ -165,7 +165,7 @@ describe("DepositPool", function () {
 	
 	describe("ETH", function () {
 		it("State adjusts correctly on ETH deposit from xrETH", async function () {
-			const setupData = await loadFixture(protocolFixture);
+			const setupData = await protocolFixture();
 
 			await depositEth(setupData, setupData.signers.random, BN.from(ethers.utils.parseEther("100")));
 		});
@@ -188,7 +188,7 @@ describe("DepositPool", function () {
 		});
 
 		it("Only ETH token address can send ETH from DP", async function () {
-			const setupData = await loadFixture(protocolFixture);
+			const setupData = await protocolFixture();
 			const { protocol, signers } = setupData;
 			await depositEth(setupData, setupData.signers.random, ethers.utils.parseEther("1"));
 

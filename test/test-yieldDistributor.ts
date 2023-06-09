@@ -200,7 +200,7 @@ describe("Yield Distributor", function () {
 
 
   it("Distributes fees appropriately", async function () {
-    const setupData = await loadFixture(protocolFixture)
+    const setupData = await protocolFixture()
     const { protocol, signers, rocketPool: rp} = setupData;
     const yieldDistributor = protocol.yieldDistributor;
 
