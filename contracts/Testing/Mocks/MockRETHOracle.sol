@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import "../../Interfaces/Oracles/IRETHOracle.sol";
+import "../../Interfaces/Oracles/IXRETHOracle.sol";
 
-contract MockRETHOracle is IRETHOracle {
+contract MockRETHOracle is IXRETHOracle {
     uint private _yield = 0.041059 ether;
 
     function setTotalYieldAccrued(uint yield) public override {

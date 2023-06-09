@@ -44,6 +44,14 @@ contract OperatorDistributor is Base {
         bytes memory sig,
         address newMinipoolAdress
     ) public {
+        IMinipool minipool = IMinipool(newMinipoolAdress);
+        address nodeAddress = minipool.getNodeAddress();
+        Whitelist whitelist = Whitelist(getDirectory().getWhitelistAddress());
+        require(
+            whitelist.getIsAddressInWhitelist(nodeAddress),
+            "OperatorDistributor: minipool node operator not in whitelist"
+        );
+
         // validate that the newMinipoolAdress was signed by the admin address
         bytes32 messageHash = keccak256(abi.encode(newMinipoolAdress));
         bytes32 ethSignedMessageHash = ECDSAUpgradeable.toEthSignedMessageHash(
@@ -55,13 +63,6 @@ contract OperatorDistributor is Base {
             "OperatorDistributor: invalid signature"
         );
 
-        IMinipool minipool = IMinipool(newMinipoolAdress);
-        address nodeAddress = minipool.getNodeAddress();
-        Whitelist whitelist = Whitelist(getDirectory().getWhitelistAddress());
-        require(
-            whitelist.getIsAddressInWhitelist(nodeAddress),
-            "OperatorDistributor: minipool node operator not in whitelist"
-        );
 
         IRocketStorage rocketStorage = IRocketStorage(
             getDirectory().getRocketStorageAddress()

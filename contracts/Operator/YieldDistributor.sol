@@ -7,7 +7,7 @@ import "../Tokens/xrETH.sol";
 import "../Tokens/xRPL.sol";
 import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";
-import "../Interfaces/Oracles/IRETHOracle.sol";
+import "../Interfaces/Oracles/IXRETHOracle.sol";
 
 import "hardhat/console.sol";
 
@@ -101,7 +101,7 @@ contract YieldDistributor is Base {
     /// @notice Gets the total tvl of non-distributed yield
     function getDistributableYield() public view returns (uint256) {
         // get yield accrued from oracle
-        IRETHOracle oracle = IRETHOracle(getDirectory().getRETHOracleAddress());
+        IXRETHOracle oracle = IXRETHOracle(getDirectory().getRETHOracleAddress());
         uint ethYieldOwed = oracle.getTotalYieldAccrued();
         return
             ethYieldOwed > totalEthDistributed

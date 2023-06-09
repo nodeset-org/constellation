@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { DepositPool, xrETH, xRPL, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IConstellationMinipoolsOracle, IRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking } from "../typechain-types";
+import { DepositPool, xrETH, xRPL, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IConstellationMinipoolsOracle, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking } from "../typechain-types";
 import { initializeDirectory } from "./test-directory";
 
 const protocolParams  = { trustBuildPeriod : ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
@@ -23,7 +23,7 @@ export type Protocol = {
 	depositPool: DepositPool,
 	operatorDistributor: OperatorDistributor,
 	yieldDistributor: YieldDistributor,
-	rETHOracle: IRETHOracle,
+	rETHOracle: IXRETHOracle,
 }
 
 export type Signers = {
@@ -95,7 +95,7 @@ async function deployProtocol(): Promise<Protocol> {
 	const operatorDistributor = await (await ethers.getContractFactory("OperatorDistributor")).deploy(directory.address);
 	const yieldDistributor = await (await ethers.getContractFactory("YieldDistributor")).deploy(directory.address);
 
-	const rETHOracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IRETHOracle;
+	const rETHOracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
 
 	return { directory, whitelist, xrETH, xRPL, depositPool, operatorDistributor, yieldDistributor, rETHOracle};
 }

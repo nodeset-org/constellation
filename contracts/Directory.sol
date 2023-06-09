@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import "./Interfaces/RocketTokenRPLInterface.sol";
-import "./Interfaces/Oracles/IRETHOracle.sol";
+import "./Interfaces/Oracles/IXRETHOracle.sol";
 import "./Interfaces/RocketPool/IRocketStorage.sol";
 
 struct Protocol {
