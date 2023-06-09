@@ -104,7 +104,13 @@ describe.only("Node Operator Onboarding", function () {
 
         expect(await ethers.provider.getBalance(protocol.depositPool.address)).to.equal(ethers.utils.parseEther("1"));
         expect(await rocketPool.rplContract.balanceOf(protocol.depositPool.address)).to.equal(ethers.utils.parseEther("1"));
-        expect(await ethers.provider.getBalance(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("99"));
+
+        const oracleYield = await protocol.rETHOracle.getTotalYieldAccrued();
+        console.log("oracle yield: ", ethers.utils.formatEther(oracleYield));
+
+        const expectedOperatorDistribution = ethers.utils.parseEther("99").sub(oracleYield);
+
+        expect(await ethers.provider.getBalance(protocol.operatorDistributor.address)).to.equal(expectedOperatorDistribution);
         expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("99"));
 
         // print balances of deposit pool and operator distribution pool

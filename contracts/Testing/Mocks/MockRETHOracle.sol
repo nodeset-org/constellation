@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import "../../Interfaces/Oracles/IRETHOracle.sol";
 
 contract MockRETHOracle is IRETHOracle {
-    uint private _yield = 410.59 ether;
+    uint private _yield = 0.041059 ether;
 
     function setTotalYieldAccrued(uint yield) public override {
         _yield = yield;
