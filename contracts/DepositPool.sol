@@ -12,18 +12,18 @@ import "./Operator/YieldDistributor.sol";
 contract DepositPool is Base {
     /// @notice Keeps track of the previous _maxBalancePortion for easy reversion (e.g. unpausing)
     uint16 private _prevEthMaxBalancePortion = 100;
-    uint16 private _maxEthBalancePortion = 100;
+    uint16 private _maxrETHBalancePortion = 100;
 
     uint16 private _prevRplMaxBalancePortion = 100;
     uint16 private _maxRplBalancePortion = 100;
 
     // TODO: remove these notes,
     // _maxRplBalancePortion is staked at the node level, and needs to be a percentage of the TVL. This is to service large inflows and outflows of new minipool contracts.
-    // likewise, _maxEthBalancePortion needs to optimize yield for eth. eth in this contract is only reserved for creating stakers for minipool contracts
+    // likewise, _maxrETHBalancePortion needs to optimize yield for eth. eth in this contract is only reserved for creating stakers for minipool contracts
     // the oracle is simple a TVL calculation of all the ETH in the system
     // Total RPL is already on-chain and does not need to be an oracle
 
-    event NewMaxEthBalancePortion(uint16 oldValue, uint16 newValue);
+    event NewMaxrETHBalancePortion(uint16 oldValue, uint16 newValue);
     event NewMaxRplBalancePortion(uint16 oldValue, uint16 newValue);
 
     uint16 public constant MAX_BALANCE_PORTION_DECIMALS = 4;
@@ -69,16 +69,16 @@ contract DepositPool is Base {
         return _tvlRpl;
     }
 
-    function getMaxEthBalancePortion() public view returns (uint16) {
-        return _maxEthBalancePortion;
+    function getMaxrETHBalancePortion() public view returns (uint16) {
+        return _maxrETHBalancePortion;
     }
 
     function getMaxRplBalancePortion() public view returns (uint16) {
         return _maxRplBalancePortion;
     }
 
-    function getMaxEthBalance() public view returns (uint) {
-        return (getTvlEth() * _maxEthBalancePortion) / MAX_BALANCE_PORTION;
+    function getMaxrETHBalance() public view returns (uint) {
+        return (getTvlEth() * _maxrETHBalancePortion) / MAX_BALANCE_PORTION;
     }
 
     function getMaxRplBalance() public view returns (uint) {
@@ -92,7 +92,7 @@ contract DepositPool is Base {
 
     /// @notice only the token contract can spend DP funds
     function sendEth(address payable to, uint amount) public onlyEthToken {
-        require(amount <= getMaxEthBalance(), NOT_ENOUGH_ETH_ERROR);
+        require(amount <= getMaxrETHBalance(), NOT_ENOUGH_ETH_ERROR);
 
         uint old = getTvlEth();
 
@@ -123,7 +123,7 @@ contract DepositPool is Base {
     /// Allows any value between 0 and MAX_BALANCE_PORTION.
     /// 0 would prevent withdrawals since all ETH sent to this contract is forwarded to the OperatorDistributor.
     /// Setting to MAX_BALANCE_PORTION effectively freezes new operator activity by keeping 100% in the DepositPool.
-    function setMaxEthBalancePortion(
+    function setMaxrETHBalancePortion(
         uint16 newMaxBalancePortion
     ) public onlyAdmin {
         require(
@@ -131,11 +131,11 @@ contract DepositPool is Base {
                 newMaxBalancePortion <= MAX_BALANCE_PORTION
         );
 
-        uint16 oldValue = _maxEthBalancePortion;
-        _maxEthBalancePortion = newMaxBalancePortion;
+        uint16 oldValue = _maxrETHBalancePortion;
+        _maxrETHBalancePortion = newMaxBalancePortion;
         sendExcessEthToDistributors();
 
-        emit NewMaxEthBalancePortion(oldValue, _maxEthBalancePortion);
+        emit NewMaxrETHBalancePortion(oldValue, _maxrETHBalancePortion);
     }
 
     /// @notice Sets the maximum percentage of TVL which is allowed to be in the Deposit Pool.
@@ -155,7 +155,7 @@ contract DepositPool is Base {
         _maxRplBalancePortion = newMaxBalancePortion;
         sendExcessRplToOperatorDistributor();
 
-        emit NewMaxRplBalancePortion(oldValue, _maxEthBalancePortion);
+        emit NewMaxRplBalancePortion(oldValue, _maxrETHBalancePortion);
     }
 
     ///------
@@ -165,8 +165,8 @@ contract DepositPool is Base {
     receive() external payable {
         // do not accept deposits if new operator activity is disabled
         require(
-            _maxEthBalancePortion < MAX_BALANCE_PORTION,
-            MAX_BALANCE_PORTION
+            _maxrETHBalancePortion < MAX_BALANCE_PORTION,
+            MAX_BALANCE_PORTION_ERROR
         );
 
         uint old = getTvlEth();
@@ -181,7 +181,7 @@ contract DepositPool is Base {
         // do not accept deposits if new operator activity is disabled
         require(
             _maxRplBalancePortion < MAX_BALANCE_PORTION,
-            MAX_BALANCE_PORTION
+            MAX_BALANCE_PORTION_ERROR
         );
 
         uint old = getTvlRpl();
@@ -192,9 +192,9 @@ contract DepositPool is Base {
         sendExcessRplToOperatorDistributor();
     }
 
-    /// @notice If the DP would grow above `_maxEthBalancePortion`, it instead forwards the payment to the OperatorDistributor / YieldDistributor.
+    /// @notice If the DP would grow above `_maxrETHBalancePortion`, it instead forwards the payment to the OperatorDistributor / YieldDistributor.
     function sendExcessEthToDistributors() private {
-        uint leftover = address(this).balance - getMaxEthBalance();
+        uint leftover = address(this).balance - getMaxrETHBalance();
         if (leftover > 0) {
             // get shortfall from yield distributor
             YieldDistributor yieldDistributor = YieldDistributor(

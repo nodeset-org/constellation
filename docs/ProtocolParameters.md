@@ -13,7 +13,7 @@ NOs: Spends a handful of hours per year maintaining a node
 
 **Trust Build Period: ?? weeks/months**
 
-A slow increase of payments over several weeks/months encourages NOs to develop sustainable operations while allowing for  
+A slow increase of payments over several weeks/months encourages NOs to develop sustainable operations while allowing for
 
 **Trust Build Period: 0**
 
@@ -30,4 +30,4 @@ The number of blocks allowed for the attester to repond to a challenge.
 ## Deposit Pool Parameters
 See [Deposit Pool](Systems/DepositPool.md) for more details.
 
-**maxEthBalancePortion** and **maxRplBalancePortion** determine the portion of the protocol's ETH and RPL TVL kept in reserve by instead of being used to create new minipools.
+**maxrETHBalancePortion** and **maxRplBalancePortion** determine the portion of the protocol's ETH and RPL TVL kept in reserve by instead of being used to create new minipools.

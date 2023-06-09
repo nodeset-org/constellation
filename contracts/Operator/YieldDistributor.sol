@@ -143,7 +143,7 @@ contract YieldDistributor is Base {
 
             address nodeOperatorAddr = getWhitelist().getOperatorAddress(i);
 
-            xETH(getDirectory().getETHTokenAddress()).internalMint(
+            xrETH(getDirectory().getETHTokenAddress()).internalMint(
                 nodeOperatorAddr,
                 operatorRewardEth
             );
@@ -153,7 +153,7 @@ contract YieldDistributor is Base {
         }
 
         // mint xrETH for admin
-        xETH(getDirectory().getETHTokenAddress()).internalMint(
+        xrETH(getDirectory().getETHTokenAddress()).internalMint(
             getDirectory().getAdminAddress(),
             adminRewardEth
         );

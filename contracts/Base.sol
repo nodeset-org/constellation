@@ -10,7 +10,7 @@ abstract contract Base is ReentrancyGuard {
 
     string public constant ADMIN_ONLY_ERROR =
         "Can only be called by admin address!";
-    string public constant MAX_BALANCE_PORTION =
+    string public constant MAX_BALANCE_PORTION_ERROR =
         "Protocol is at max balance and cannot accept deposits";
     string public constant DP_ONLY_ERROR =
         "Can only be called by Deposit Pool!";
