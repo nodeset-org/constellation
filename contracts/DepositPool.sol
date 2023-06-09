@@ -200,11 +200,9 @@ contract DepositPool is Base {
             YieldDistributor yieldDistributor = YieldDistributor(
                 payable(getDirectory().getYieldDistributorAddress())
             );
-            console.log("b 1", address(this).balance);
             uint yieldDistributorShortfall = yieldDistributor.getShortfall();
-            console.log("b 1.1", yieldDistributorShortfall);
-            if(yieldDistributorShortfall > 0) {
-                if(yieldDistributorShortfall > leftover) {
+            if (yieldDistributorShortfall > 0) {
+                if (yieldDistributorShortfall > leftover) {
                     yieldDistributorShortfall = leftover;
                 }
                 leftover -= yieldDistributorShortfall;
@@ -216,7 +214,6 @@ contract DepositPool is Base {
                     "DepositPool: Send ETH to YieldDistributor failed"
                 );
             }
-            console.log("b 2", address(this).balance);
 
             (bool successOperator, ) = getDirectory()
                 .getOperatorDistributorAddress()
@@ -225,8 +222,6 @@ contract DepositPool is Base {
                 successOperator,
                 "DepositPool: Send ETH to OperatorDistributor failed"
             );
-            console.log("b 3", address(this).balance);
-
         }
     }
 

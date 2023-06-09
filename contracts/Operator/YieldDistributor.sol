@@ -79,10 +79,6 @@ contract YieldDistributor is Base {
     /// This is further split into operator and admin rewards in distributeRewards()
     function getEthCommissionRate() public view returns (uint) {
         int commission = int(getRocketPoolFee()) + _ethCommissionModifier;
-        console.log("commissionModifier: %s", uint(_ethCommissionModifier));
-        console.log("commission: %s", uint(commission));
-        console.log("rocketPoolFee: %s", getRocketPoolFee());
-
         // constrain to 0->1 ether
         int maxCommission = 1 ether;
         commission = commission >= 0 ? commission : int(0);
@@ -107,11 +103,10 @@ contract YieldDistributor is Base {
         // get yield accrued from oracle
         IRETHOracle oracle = IRETHOracle(getDirectory().getRETHOracleAddress());
         uint ethYieldOwed = oracle.getTotalYieldAccrued();
-        console.log("ethYieldOwed: %s", ethYieldOwed);
-        console.log("totalEthDistributed: %s", totalEthDistributed);
-        return ethYieldOwed > totalEthDistributed
-            ? ethYieldOwed - totalEthDistributed
-            : 0;
+        return
+            ethYieldOwed > totalEthDistributed
+                ? ethYieldOwed - totalEthDistributed
+                : 0;
     }
 
     /// @notice Gets the amount of ETH that the contract needs to receive before it can distribute full rewards again
@@ -138,10 +133,6 @@ contract YieldDistributor is Base {
 
         uint totalEthFee = (address(this).balance * getEthCommissionRate()) /
             (1 ether);
-
-        console.log("total balance: %s", address(this).balance);
-        console.log("totalEthFee: %s", totalEthFee);
-        console.log("ethCommissionRate: %s", getEthCommissionRate());
 
         // mint xrETH for NOs
         uint adminRewardEth = (totalEthFee * _ethRewardAdminPortion) /
