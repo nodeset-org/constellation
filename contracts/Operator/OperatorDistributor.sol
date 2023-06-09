@@ -71,12 +71,12 @@ contract OperatorDistributor is Base {
 
         // register the operator in the whitelist if they are not already
 
-        address withdrawlAddress = rocketStorage.getNodeWithdrawalAddress(
+        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(
             nodeAddress
         );
 
         require(
-            withdrawlAddress == getDirectory().getDepositPoolAddress(),
+            withdrawalAddress == getDirectory().getDepositPoolAddress(),
             "OperatorDistributor: minipool must delegate control to deposit pool"
         );
 
