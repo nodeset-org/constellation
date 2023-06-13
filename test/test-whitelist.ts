@@ -43,16 +43,17 @@ describe("Whitelist (proxy)", function () {
     }); 
 });
 
-describe("Whitelist", function () { 
+describe.only("Whitelist", function () {
     it("Admin can add address to whitelist", async function () {
-        const { protocol, signers } = await protocolFixture();
+        const { protocol, signers } = await loadFixture(protocolFixture);
+
+        const currentBlock = await ethers.provider.getBlockNumber();
+        const timestamp = (await ethers.provider.getBlock(currentBlock)).timestamp;
 
         const operator = [
-            BigNumber.from(0),
-            signers.random.address,
-            await time.latest() + 1,
+            timestamp + 1,
             0,
-            10000
+            10000,
         ];
 
         await expect(protocol.whitelist.addOperator(signers.random.address))

@@ -111,7 +111,7 @@ export async function depositRpl(setupData: SetupData, from: SignerWithAddress, 
 	expect(currTvl.eq(tvl.add(amount)));
 }
 
-describe("DepositPool", function () {
+describe(`DepositPool`, function () {
 
 	describe("Getters and Setters", function () {
 		it("Random address can get maxrETHBalance and maxrETHBalancePortion", async function () {
@@ -165,7 +165,7 @@ describe("DepositPool", function () {
 
 	describe("ETH", function () {
 		it("State adjusts correctly on ETH deposit from xrETH", async function () {
-			const setupData = await protocolFixture();
+			const setupData = await loadFixture(protocolFixture);
 
 			await depositEth(setupData, setupData.signers.random, BN.from(ethers.utils.parseEther("100")));
 		});

@@ -48,6 +48,8 @@ describe("Node Operator Onboarding", function () {
         xRPL = protocol.xRPL;
         rpl = await ethers.getContractAt("IERC20", await protocol.directory.RPL_CONTRACT_ADDRESS());
 
+        await protocol.rETHOracle.setTotalYieldAccrued(ethers.utils.parseEther("0.041059"));
+
     });
 
     it("node operator creates minipool", async function () {
