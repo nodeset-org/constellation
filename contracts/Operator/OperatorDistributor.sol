@@ -13,31 +13,13 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 import "hardhat/console.sol";
 
 contract OperatorDistributor is Base {
+
     uint public _queuedEth;
-    uint public _queuedRpl;
 
     constructor(address directory) Base(directory) {}
 
     receive() external payable {
         _queuedEth += msg.value;
-    }
-
-    /// @notice requires that the caller approve the contract to transfer RPL
-    /// @param amount The amount of RPL to queue
-    function queueRpl(uint amount) public {
-        IERC20 rpl = IERC20(getDirectory().getRPLTokenAddress());
-        require(
-            rpl.allowance(msg.sender, address(this)) >= amount,
-            "OperatorDistributor: must approve RPL transfer"
-        );
-        rpl.transferFrom(msg.sender, address(this), amount);
-        _queuedRpl += amount;
-    }
-
-    /// @notice only callable from the deposit pool
-    /// @param amount The amount of RPL received from the deposit pool
-    function queueRplProtocolOnly(uint amount) external onlyDepositPool {
-        _queuedRpl += amount;
     }
 
     function reimburseNodeForMinipool(
@@ -100,15 +82,9 @@ contract OperatorDistributor is Base {
             getDirectory().getRocketNodeStakingAddress()
         ).getNodeMinimumRPLStake(nodeAddress);
 
-        require(
-            _queuedRpl >= minimumRplStake,
-            "OperatorDistributor: insufficient RPL in queue"
-        );
-
-        // transfer out eth and rpl
+        // transfer out eth
 
         _queuedEth -= bond;
-        _queuedRpl -= minimumRplStake;
 
         payable(nodeAddress).transfer(bond);
         RocketTokenRPLInterface rpl = RocketTokenRPLInterface(

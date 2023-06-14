@@ -237,7 +237,6 @@ contract DepositPool is Base {
                 success,
                 "DepositPool: Send RPL to OperatorDistributor failed"
             );
-            nodeOperator.queueRplProtocolOnly(leftover);
         }
     }
 
