@@ -2,9 +2,11 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
+
 import "./Base.sol";
 import "./Operator/OperatorDistributor.sol";
 import "./Operator/YieldDistributor.sol";
+import "./Interfaces/RocketPool/IRocketNodeStaking.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
@@ -112,6 +114,26 @@ contract DepositPool is Base {
         _tvlRpl -= amount;
 
         emit TotalValueUpdated(old, _tvlRpl);
+    }
+
+    function stakeRPLFor(address _nodeAddress) external onlyOperatorDistributor {
+        IRocketNodeStaking nodeStaking = IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress());
+        uint256 minimumRplStake = IRocketNodeStaking(
+            getDirectory().getRocketNodeStakingAddress()
+        ).getNodeMinimumRPLStake(_nodeAddress);
+
+        // approve the node staking contract to spend the RPL
+        RocketTokenRPLInterface rpl = RocketTokenRPLInterface(
+            getDirectory().RPL_CONTRACT_ADDRESS()
+        );
+        require(
+            rpl.approve(
+                getDirectory().getRocketNodeStakingAddress(),
+                minimumRplStake
+            )
+        );
+
+        nodeStaking.stakeRPLFor(_nodeAddress, minimumRplStake);
     }
 
     ///------

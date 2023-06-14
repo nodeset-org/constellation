@@ -10,4 +10,9 @@ contract MockRocketNodeStaking is IRocketNodeStaking {
     ) external view override returns (uint256) {
         return 3.1415 ether;
     }
+
+    function stakeRPLFor(
+        address _nodeAddress,
+        uint256 _amount
+    ) external override {}
 }

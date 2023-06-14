@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "../Base.sol";
 import "../Whitelist/Whitelist.sol";
+import "../DepositPool.sol";
 import "../Interfaces/RocketPool/IRocketStorage.sol";
 import "../Interfaces/RocketPool/IMinipool.sol";
 import "../Interfaces/RocketPool/IRocketNodeManager.sol";
@@ -13,7 +14,6 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 import "hardhat/console.sol";
 
 contract OperatorDistributor is Base {
-
     uint public _queuedEth;
 
     constructor(address directory) Base(directory) {}
@@ -45,20 +45,18 @@ contract OperatorDistributor is Base {
             "OperatorDistributor: invalid signature"
         );
 
-
         IRocketStorage rocketStorage = IRocketStorage(
             getDirectory().getRocketStorageAddress()
         );
-        // check that the node operator has been added to the whitelist
-
-        // register the operator in the whitelist if they are not already
 
         address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(
             nodeAddress
         );
 
+        address depositPoolAddr = getDirectory().getDepositPoolAddress();
+
         require(
-            withdrawalAddress == getDirectory().getDepositPoolAddress(),
+            withdrawalAddress == depositPoolAddr,
             "OperatorDistributor: minipool must delegate control to deposit pool"
         );
 
@@ -78,18 +76,13 @@ contract OperatorDistributor is Base {
             "OperatorDistributor: insufficient ETH in queue"
         );
 
-        uint256 minimumRplStake = IRocketNodeStaking(
-            getDirectory().getRocketNodeStakingAddress()
-        ).getNodeMinimumRPLStake(nodeAddress);
+        DepositPool depositPool = DepositPool(payable(depositPoolAddr));
+        depositPool.stakeRPLFor(nodeAddress);
 
         // transfer out eth
 
         _queuedEth -= bond;
 
         payable(nodeAddress).transfer(bond);
-        RocketTokenRPLInterface rpl = RocketTokenRPLInterface(
-            getDirectory().RPL_CONTRACT_ADDRESS()
-        );
-        rpl.transfer(nodeAddress, minimumRplStake);
     }
 }

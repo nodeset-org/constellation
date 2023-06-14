@@ -35,4 +35,12 @@ abstract contract Base is ReentrancyGuard {
     function getDirectory() internal view returns (Directory) {
         return _directory;
     }
+
+    modifier onlyOperatorDistributor() {
+        require(
+            msg.sender == _directory.getOperatorDistributorAddress(),
+            "Can only be called by Operator Distributor!"
+        );
+        _;
+    }
 }
