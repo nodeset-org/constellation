@@ -80,9 +80,7 @@ contract OperatorDistributor is Base {
         depositPool.stakeRPLFor(nodeAddress);
 
         // transfer out eth
-
         _queuedEth -= bond;
-
         payable(nodeAddress).transfer(bond);
     }
 }

@@ -116,7 +116,7 @@ contract DepositPool is Base {
         emit TotalValueUpdated(old, _tvlRpl);
     }
 
-    function stakeRPLFor(address _nodeAddress) external onlyOperatorDistributor {
+    function stakeRPLFor(address _nodeAddress) external onlyOperatorDistributor nonReentrant {
         IRocketNodeStaking nodeStaking = IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress());
         uint256 minimumRplStake = IRocketNodeStaking(
             getDirectory().getRocketNodeStakingAddress()
@@ -132,6 +132,11 @@ contract DepositPool is Base {
                 minimumRplStake
             )
         );
+
+        uint leftover = getRplBalanceOf(address(this)) - getMaxRplBalance();
+
+        require(leftover > 0, "DepositPool: Not enough RPL in pool to stake");
+
 
         nodeStaking.stakeRPLFor(_nodeAddress, minimumRplStake);
     }
@@ -175,7 +180,6 @@ contract DepositPool is Base {
 
         uint16 oldValue = _maxRplBalancePortion;
         _maxRplBalancePortion = newMaxBalancePortion;
-        sendExcessRplToOperatorDistributor();
 
         emit NewMaxRplBalancePortion(oldValue, _maxrETHBalancePortion);
     }
@@ -210,8 +214,6 @@ contract DepositPool is Base {
 
         _tvlRpl += amount;
         emit TotalValueUpdated(old, _tvlRpl);
-
-        sendExcessRplToOperatorDistributor();
     }
 
     /// @notice If the DP would grow above `_maxrETHBalancePortion`, it instead forwards the payment to the OperatorDistributor / YieldDistributor.
@@ -243,21 +245,6 @@ contract DepositPool is Base {
             require(
                 successOperator,
                 "DepositPool: Send ETH to OperatorDistributor failed"
-            );
-        }
-    }
-
-    /// @notice If the DP would grow above `_maxRplBalancePortion`, it instead forwards the payment to the OperatorDistributor.
-    function sendExcessRplToOperatorDistributor() private {
-        uint leftover = getRplBalanceOf(address(this)) - getMaxRplBalance();
-        OperatorDistributor nodeOperator = OperatorDistributor(
-            getDirectory().getOperatorDistributorAddress()
-        );
-        if (leftover > 0) {
-            bool success = sendRPLTo(address(nodeOperator), leftover);
-            require(
-                success,
-                "DepositPool: Send RPL to OperatorDistributor failed"
             );
         }
     }
