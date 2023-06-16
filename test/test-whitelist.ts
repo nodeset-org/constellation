@@ -51,7 +51,7 @@ describe("Whitelist", function () {
         const timestamp = (await ethers.provider.getBlock(currentBlock)).timestamp;
 
         const operator = [
-            timestamp + 2,
+            timestamp + 1,
             0,
             10000,
         ];
