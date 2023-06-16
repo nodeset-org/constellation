@@ -58,9 +58,9 @@ export async function depositRpl(setupData: SetupData, from: SignerWithAddress, 
 
 	let dpBalanceChange, distributorBalanceChange;
 	let isBalanceOverMax = (dpBalance.add(amount) > maxBalanceAfterDeposit);
-	dpBalanceChange = isBalanceOverMax ? maxBalanceAfterDeposit.sub(dpBalance) : amount
+	dpBalanceChange =  dpBalance.add(amount)
 	let leftover = dpBalance.add(amount).sub(maxBalanceAfterDeposit);
-	distributorBalanceChange = isBalanceOverMax ? leftover : 0;
+	distributorBalanceChange = 0; // operatorDistributor doesn't get any RPL due to expense of creating gas inefficiency
 
 	let currAccountBalance = await setupData.rocketPool.rplContract.balanceOf(from.address);
 

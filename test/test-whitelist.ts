@@ -48,10 +48,13 @@ describe("Whitelist", function () {
         const { protocol, signers } = await loadFixture(protocolFixture);
 
         const currentBlock = await ethers.provider.getBlockNumber();
-        const timestamp = (await ethers.provider.getBlock(currentBlock)).timestamp;
+        const timestamp = (await ethers.provider.getBlock(currentBlock)).timestamp + 86400;
+
+        // set timestamp for next block to be timestamp + 1 day
+        await time.setNextBlockTimestamp(timestamp);
 
         const operator = [
-            timestamp + 1,
+            timestamp,
             0,
             10000,
         ];
