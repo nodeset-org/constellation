@@ -2,6 +2,8 @@
 pragma solidity 0.8.17;
 
 import "./Interfaces/RocketTokenRPLInterface.sol";
+import "./Interfaces/Oracles/IXRETHOracle.sol";
+import "./Interfaces/RocketPool/IRocketStorage.sol";
 
 struct Protocol {
     address whitelist;
@@ -10,6 +12,10 @@ struct Protocol {
     address payable depositPool;
     address payable operatorDistributor;
     address yieldDistributor;
+    address rethOracle;
+    address rocketStorage;
+    address rocketNodeManager;
+    address rocketNodeStaking;
 }
 
 /// @custom:security-contact info@nodeoperator.org
@@ -72,6 +78,14 @@ contract Directory {
         return _protocol.depositPool;
     }
 
+    function getRETHOracleAddress() public view returns (address) {
+        return _protocol.rethOracle;
+    }
+
+    function getRocketStorageAddress() public view returns (address) {
+        return _protocol.rocketStorage;
+    }
+
     function getOperatorDistributorAddress()
         public
         view
@@ -82,6 +96,14 @@ contract Directory {
 
     function getYieldDistributorAddress() public view returns (address) {
         return _protocol.yieldDistributor;
+    }
+
+    function getRocketNodeManagerAddress() public view returns (address) {
+        return _protocol.rocketNodeManager;
+    }
+
+    function getRocketNodeStakingAddress() public view returns (address) {
+        return _protocol.rocketNodeStaking;
     }
 
     //----

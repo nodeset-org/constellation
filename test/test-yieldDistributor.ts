@@ -33,9 +33,9 @@ describe("Yield Distributor", function () {
   
     it("Can be initialized by admin", async function () {
       const setupData = await loadFixture(deployOnlyFixture);
-      const { protocol, signers } = setupData;
+      const { protocol, signers, rocketPool } = setupData;
   
-      await expect(initializeDirectory(protocol, signers.admin)).to.not.be.reverted;
+      await expect(initializeDirectory(protocol, rocketPool, signers.admin)).to.not.be.reverted;
       await expect(protocol.yieldDistributor.initialize()).to.not.be.reverted;
   
       expect(await protocol.yieldDistributor.getIsInitialized()).equals(true);
@@ -43,9 +43,9 @@ describe("Yield Distributor", function () {
   
     it("Can only be initialized once by admin", async function () {
       const setupData = await loadFixture(deployOnlyFixture);
-      const { protocol, signers } = setupData;
+      const { protocol, signers, rocketPool } = setupData;
   
-      await expect(initializeDirectory(protocol, signers.admin)).to.not.be.reverted;
+      await expect(initializeDirectory(protocol, rocketPool, signers.admin)).to.not.be.reverted;
       await expect(protocol.yieldDistributor.initialize()).to.not.be.reverted;
   
       await expect(protocol.yieldDistributor.initialize())

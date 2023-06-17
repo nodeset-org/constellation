@@ -9,11 +9,14 @@ import "../Operator/Operator.sol";
 /// Only modifiable by admin. Upgradeable and intended to be replaced by a ZK-ID check when possible.
 contract Whitelist is UpgradeableBase {
     mapping(address => bool) private _permissions;
-    Operator[] private _operators;
+    mapping(address => Operator) public operatorMap;
+    mapping(uint => address) public operatorIndexMap;
+    mapping(address => uint) public reverseOperatorIndexMap;
+
     event OperatorAdded(Operator newOperator);
     event OperatorRemoved(address a);
 
-    uint _numOperators;
+    uint public numOperators;
 
     uint24 private _trustBuildPeriod;
     event TrustBuildPeriodUpdated(uint24 oldValue, uint24 newValue);
@@ -35,7 +38,11 @@ contract Whitelist is UpgradeableBase {
     // GETTERS
     //----
 
-    function getOperatorList() public view returns (Operator[] memory) {
+    function getOperatorsAsList() public view returns (Operator[] memory) {
+        Operator[] memory _operators = new Operator[](numOperators);
+        for (uint i = 0; i < numOperators; i++) {
+            _operators[i] = operatorMap[operatorIndexMap[i]];
+        }
         return _operators;
     }
 
@@ -59,9 +66,8 @@ contract Whitelist is UpgradeableBase {
     function getOperatorAtAddress(
         address a
     ) public view returns (Operator memory) {
-        require(_permissions[a], OPERATOR_NOT_FOUND_ERROR);
-        Operator memory operator = _operators[getOperatorIndex(a)];
-        return operator;
+        require(reverseOperatorIndexMap[a] != 0, OPERATOR_NOT_FOUND_ERROR);
+        return operatorMap[a];
     }
 
     //----
@@ -69,9 +75,13 @@ contract Whitelist is UpgradeableBase {
     //----
 
     function registerNewValidator(
-        Operator calldata operator
+        address nodeOperator
     ) public onlyOperatorDistributor {
-        _operators[operator.index].currentValidatorCount++;
+        operatorMap[nodeOperator].currentValidatorCount++;
+    }
+
+    function getOperatorAddress(uint index) public view returns (address) {
+        return operatorIndexMap[index];
     }
 
     //----
@@ -91,32 +101,26 @@ contract Whitelist is UpgradeableBase {
 
         _permissions[a] = true;
 
-        Operator memory operator = Operator(
-            _numOperators,
-            a,
-            block.timestamp,
-            0,
-            10000
-        );
+        // Fee should not start at 100% because the operator has not yet built trust.
+        Operator memory operator = Operator(block.timestamp, 0, 10000);
 
-        _operators.push(operator); // totally new operator
+        operatorMap[a] = operator;
+        operatorIndexMap[numOperators] = a;
+        reverseOperatorIndexMap[a] = numOperators + 1;
 
-        _numOperators++;
+        numOperators++;
         emit OperatorAdded(operator);
     }
 
     function removeOperator(address a) public onlyAdmin {
         _permissions[a] = false;
 
-        // move last operator to occupy removed operator's index,
-        // then pop the last operator
-        uint index = getOperatorIndex(a);
-        Operator memory o = _operators[_operators.length - 1];
-        o.index = index;
-        _operators[index] = o;
-        _operators.pop();
+        delete operatorMap[a];
+        uint index = reverseOperatorIndexMap[a] - 1;
+        delete operatorIndexMap[index];
+        delete reverseOperatorIndexMap[a];
 
-        _numOperators--;
+        numOperators--;
         emit OperatorRemoved(a);
     }
 
@@ -127,10 +131,8 @@ contract Whitelist is UpgradeableBase {
     //----
 
     function getOperatorIndex(address a) private view returns (uint) {
-        for (uint i = 0; i < _operators.length; i++) {
-            if (_operators[i].nodeAddress == a) return i;
-        }
-        revert(OPERATOR_NOT_FOUND_ERROR);
+        require(reverseOperatorIndexMap[a] != 0, OPERATOR_NOT_FOUND_ERROR);
+        return reverseOperatorIndexMap[a];
     }
 
     modifier onlyOperatorDistributor() {

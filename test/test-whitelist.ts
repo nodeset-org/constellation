@@ -8,7 +8,7 @@ import { BigNumber } from "ethers";
 
 describe("Whitelist (proxy)", function () {
     it("Admin can update contract", async function () {
-        const { protocol } = await loadFixture(protocolFixture);
+        const { protocol } = await protocolFixture();
 
         const initialAddress = protocol.whitelist.address;
 
@@ -43,16 +43,20 @@ describe("Whitelist (proxy)", function () {
     }); 
 });
 
-describe("Whitelist", function () { 
+describe("Whitelist", function () {
     it("Admin can add address to whitelist", async function () {
         const { protocol, signers } = await loadFixture(protocolFixture);
 
+        const currentBlock = await ethers.provider.getBlockNumber();
+        const timestamp = (await ethers.provider.getBlock(currentBlock)).timestamp + 86400;
+
+        // set timestamp for next block to be timestamp + 1 day
+        await time.setNextBlockTimestamp(timestamp);
+
         const operator = [
-            BigNumber.from(0),
-            signers.random.address,
-            await time.latest() + 1,
+            timestamp,
             0,
-            10000
+            10000,
         ];
 
         await expect(protocol.whitelist.addOperator(signers.random.address))
@@ -60,7 +64,7 @@ describe("Whitelist", function () {
     });
 
     it("Anyone can read from operator list", async function () {
-        const { protocol, signers } = await loadFixture(protocolFixture);
+        const { protocol, signers } = await protocolFixture();
 
         await protocol.whitelist.addOperator(signers.random.address);
 
@@ -78,11 +82,9 @@ describe("Whitelist", function () {
         // Simple comparison on structs is not possible with HH chai matchers yet,
         // so we have to compare each field directly.
         // see https://github.com/NomicFoundation/hardhat/issues/3318
-        await expect(operator.index).equals(expected.index);
-        await expect(operator.nodeAddress).equals(expected.nodeAddress);
-        await expect(operator.operationStartTime).equals(expected.operationStartTime);
-        await expect(operator.currentValidatorCount).equals(expected.currentValidatorCount);
-        await expect(operator.feePortion).equals(expected.feePortion);
+        expect(operator.operationStartTime).equals(expected.operationStartTime);
+        expect(operator.currentValidatorCount).equals(expected.currentValidatorCount);
+        expect(operator.feePortion).equals(expected.feePortion);
     });
 
     it("Non-admin cannot add address to whitelist", async function () {
