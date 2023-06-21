@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "../UpgradeableBase.sol";
 import "../Operator/Operator.sol";
+import "../Operator/YieldDistributor.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Controls operator access to the protocol.
@@ -76,6 +77,12 @@ contract Whitelist is UpgradeableBase {
         return operatorMap[a].feePortion;
     }
 
+    function getOperatorPrexistingYield(
+        address a
+    ) public view returns (uint) {
+        return operatorMap[a].totalRewardsAtGenesis;
+    }
+
     //----
     // INTERNAL
     //----
@@ -107,8 +114,12 @@ contract Whitelist is UpgradeableBase {
 
         _permissions[a] = true;
 
+        YieldDistributor yieldDistributor = YieldDistributor(
+            payable(getDirectory().getYieldDistributorAddress())
+        );
+
         // Fee should not start at 100% because the operator has not yet built trust.
-        Operator memory operator = Operator(block.timestamp, 0, 10000);
+        Operator memory operator = Operator(block.timestamp, 0, 10000, yieldDistributor.getTotalHistoricalEthFee());
 
         operatorMap[a] = operator;
         operatorIndexMap[numOperators] = a;

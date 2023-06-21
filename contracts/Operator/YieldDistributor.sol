@@ -126,6 +126,10 @@ contract YieldDistributor is Base {
         return (address(this).balance * getEthCommissionRate()) / (1 ether);
     }
 
+    function getTotalHistoricalEthFee() public view returns (uint256) {
+        return getTotalEthFee() + totalEthDistributed;
+    }
+
     /****
      * EXTERNAL
      */
@@ -149,6 +153,9 @@ contract YieldDistributor is Base {
         for (uint i = 0; i < length; i++) {
             uint operatorRewardEth = ((totalEthFee - adminRewardEth) *
                 (operators[i].feePortion / YIELD_PORTION_MAX)) / length;
+
+            // TODO: dividing by length implies all NOs have equal feePortion despite how much eth is under their management
+            // TODO: are we ok with this? or should we use a different metric than length for the determination of feePortion?
 
             address nodeOperatorAddr = getWhitelist().getOperatorAddress(i);
 
@@ -189,8 +196,7 @@ contract YieldDistributor is Base {
             "YieldDistributor: not an operator"
         );
 
-        uint totalHistoricalShareOfYield = getTotalEthFee() +
-            totalEthDistributed;
+        uint totalHistoricalShareOfYield = getTotalHistoricalEthFee();
 
         uint totalHistoricalAdminRewardEth = (totalHistoricalShareOfYield *
             _ethRewardAdminPortion) / YIELD_PORTION_MAX;
@@ -200,8 +206,7 @@ contract YieldDistributor is Base {
                 (whitelist.getOperatorFeePortion(_awardee) /
                     YIELD_PORTION_MAX)) / whitelist.numOperators();
 
-
-        uint operatorRewardEth = totalHistoricalShareOfOperatorYield -
+        uint operatorRewardEth = (totalHistoricalShareOfOperatorYield - whitelist.getOperatorPrexistingYield(_awardee)) -
             totalYieldDistributedToOperator[_awardee];
 
         uint adminRewardEth = totalHistoricalAdminRewardEth -

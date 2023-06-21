@@ -15,6 +15,7 @@ import "hardhat/console.sol";
 
 contract OperatorDistributor is Base {
     uint public _queuedEth;
+    mapping (address => bool) public hasReimbursed;
 
     constructor(address directory) Base(directory) {}
 
@@ -26,6 +27,8 @@ contract OperatorDistributor is Base {
         bytes memory sig,
         address newMinipoolAdress
     ) public {
+        require(!hasReimbursed[newMinipoolAdress], "OperatorDistributor: minipool already reimbursed");
+
         IMinipool minipool = IMinipool(newMinipoolAdress);
         address nodeAddress = minipool.getNodeAddress();
         Whitelist whitelist = Whitelist(getDirectory().getWhitelistAddress());
@@ -79,8 +82,11 @@ contract OperatorDistributor is Base {
         DepositPool depositPool = DepositPool(payable(depositPoolAddr));
         depositPool.stakeRPLFor(nodeAddress);
 
+        whitelist.registerNewValidator(nodeAddress);
+
         // transfer out eth
         _queuedEth -= bond;
         payable(nodeAddress).transfer(bond);
+        hasReimbursed[nodeAddress] = true;
     }
 }

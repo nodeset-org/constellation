@@ -11,4 +11,5 @@ struct Operator {
     /// This rises from 0% (0) to 100% (YieldDistributor.YIELD_PORTION_MAX) over
     /// time as they
     uint16 feePortion;
+    uint256 totalRewardsAtGenesis;
 }
