@@ -31,6 +31,9 @@ contract YieldDistributor is Base {
 
     uint256 public totalEthDistributed;
 
+    uint256 public totalYieldDistributedToAdmin;
+    mapping(address => uint256) public totalYieldDistributedToOperator;
+
     bool private _isInitialized = false;
     string public constant INITIALIZATION_ERROR =
         "YieldDistributor: may only initialized once";
@@ -101,7 +104,9 @@ contract YieldDistributor is Base {
     /// @notice Gets the total tvl of non-distributed yield
     function getDistributableYield() public view returns (uint256) {
         // get yield accrued from oracle
-        IXRETHOracle oracle = IXRETHOracle(getDirectory().getRETHOracleAddress());
+        IXRETHOracle oracle = IXRETHOracle(
+            getDirectory().getRETHOracleAddress()
+        );
         uint ethYieldOwed = oracle.getTotalYieldAccrued();
         return
             ethYieldOwed > totalEthDistributed
@@ -115,6 +120,10 @@ contract YieldDistributor is Base {
         uint256 totalEth = address(this).balance;
         return
             totalEth > distributableYield ? 0 : distributableYield - totalEth;
+    }
+
+    function getTotalEthFee() public view returns (uint256) {
+        return (address(this).balance * getEthCommissionRate()) / (1 ether);
     }
 
     /****
@@ -131,8 +140,7 @@ contract YieldDistributor is Base {
         Operator[] memory operators = getWhitelist().getOperatorsAsList();
         uint length = operators.length;
 
-        uint totalEthFee = (address(this).balance * getEthCommissionRate()) /
-            (1 ether);
+        uint totalEthFee = getTotalEthFee();
 
         // mint xrETH for NOs
         uint adminRewardEth = (totalEthFee * _ethRewardAdminPortion) /
@@ -151,6 +159,8 @@ contract YieldDistributor is Base {
             emit RewardDistributed(
                 Reward(nodeOperatorAddr, operatorRewardEth, 0)
             );
+
+            totalYieldDistributedToOperator[nodeOperatorAddr] += operatorRewardEth;
         }
 
         // mint xrETH for admin
@@ -159,47 +169,71 @@ contract YieldDistributor is Base {
             adminRewardEth
         );
 
-        // mint xRPL for admin
-        RocketTokenRPLInterface rpl = RocketTokenRPLInterface(
-            getDirectory().RPL_CONTRACT_ADDRESS()
-        );
+        totalYieldDistributedToAdmin += adminRewardEth;
 
-        uint adminRewardRpl = (rpl.balanceOf(address(this)) *
-            _rplRewardAdminPortion) / YIELD_PORTION_MAX;
-        xRPL(getDirectory().getRPLTokenAddress()).mintYield(
-            getDirectory().getAdminAddress(),
-            adminRewardRpl
-        );
         emit RewardDistributed(
             Reward(
                 getDirectory().getAdminAddress(),
                 adminRewardEth,
-                adminRewardRpl
+                0
             )
         );
 
         totalEthDistributed += address(this).balance;
-
-        // TODO: reimburse msg.sender
-
-        // send remaining RPL to DP
-        rpl.transfer(
-            getDirectory().getDepositPoolAddress(),
-            rpl.balanceOf(address(this))
-        );
-
-        // send remaining ETH to DP
-        (bool success, ) = getDirectory().getDepositPoolAddress().call{
-            value: address(this).balance
-        }("");
-        require(success, "YieldDistributor: failed to send ETH to DepositPool");
     }
 
     /// @notice The main reward distribution function for a single operator. This does not distribute any other rewards as in distributeRewards().
-    function distributeRewards(address _awardee) nonReentrant public {
+    /// @param _awardee Pull model where the address of the awardee defines where to distribute rewards to
+    function distributeRewardsSingle(address _awardee) public nonReentrant {
         Whitelist whitelist = getWhitelist();
-        require(whitelist.getIsAddressInWhitelist(_awardee), "YieldDistributor: not an operator");
+        require(
+            whitelist.getIsAddressInWhitelist(_awardee),
+            "YieldDistributor: not an operator"
+        );
 
+        uint totalHistoricalShareOfYield = getTotalEthFee() + totalEthDistributed;
+
+        uint totalHistoricalAdminRewardEth = (totalHistoricalShareOfYield *
+            _ethRewardAdminPortion) / YIELD_PORTION_MAX;
+
+        uint totalHistoricalShareOfOperatorYield = ((totalHistoricalShareOfYield - totalHistoricalAdminRewardEth) *
+            (whitelist.getOperatorFeePortion(_awardee) / YIELD_PORTION_MAX)) /
+            whitelist.numOperators();
+
+        uint operatorRewardEth = totalHistoricalShareOfOperatorYield - totalYieldDistributedToOperator[_awardee];
+
+        uint adminRewardEth = totalHistoricalAdminRewardEth - totalYieldDistributedToAdmin;
+
+        // check if there's enough ETH to distribute
+        require(
+            address(this).balance >= operatorRewardEth + adminRewardEth,
+            "YieldDistributor: insufficient ETH"
+        );
+
+        // mint xrETH for specific operator
+        xrETH(getDirectory().getETHTokenAddress()).internalMint(
+            _awardee,
+            operatorRewardEth
+        );
+        emit RewardDistributed(Reward(_awardee, operatorRewardEth, 0));
+
+        // mint xrETH for admin
+        xrETH(getDirectory().getETHTokenAddress()).internalMint(
+            getDirectory().getAdminAddress(),
+            adminRewardEth
+        );
+
+        emit RewardDistributed(
+            Reward(
+                getDirectory().getAdminAddress(),
+                adminRewardEth,
+                0
+            )
+        );
+
+        totalEthDistributed += operatorRewardEth + adminRewardEth;
+        totalYieldDistributedToOperator[_awardee] += operatorRewardEth;
+        totalYieldDistributedToAdmin += adminRewardEth;
     }
 
     /****
@@ -229,6 +263,24 @@ contract YieldDistributor is Base {
             ETH_REWARD_ADMIN_PORTION_OUT_OF_BOUNDS_ERROR
         );
         _ethRewardAdminPortion = newPortion;
+    }
+
+    function sweepExcessEth() public onlyAdmin {
+        uint256 excessEth = address(this).balance - getShortfall();
+        (bool success, ) = getDirectory().getDepositPoolAddress().call{
+            value: excessEth
+        }("");
+        require(success, "YieldDistributor: failed to send ETH to DepositPool");
+    }
+
+    function sweepExcessRpl() public onlyAdmin {
+        RocketTokenRPLInterface rpl = RocketTokenRPLInterface(
+            getDirectory().RPL_CONTRACT_ADDRESS()
+        );
+        rpl.transfer(
+            getDirectory().getDepositPoolAddress(),
+            rpl.balanceOf(address(this))
+        );
     }
 
     /****

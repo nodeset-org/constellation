@@ -70,6 +70,12 @@ contract Whitelist is UpgradeableBase {
         return operatorMap[a];
     }
 
+    function getOperatorFeePortion(
+        address a
+    ) public view returns (uint16) {
+        return operatorMap[a].feePortion;
+    }
+
     //----
     // INTERNAL
     //----

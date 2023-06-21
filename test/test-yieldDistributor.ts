@@ -248,7 +248,7 @@ describe("Yield Distributor", function () {
       .withArgs([signers.random3.address, operatorShare, BigNumber.from(0)]);
 
     await expect(tx).to.emit(yieldDistributor, "RewardDistributed")
-      .withArgs([signers.admin.address, adminFeeEth, adminFeeRpl]);
+      .withArgs([signers.admin.address, adminFeeEth, 0]);
 
 
     // todo: this test is a little more tricky since we need to know the gas cost of the transaction for each signer
