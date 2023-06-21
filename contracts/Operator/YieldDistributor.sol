@@ -151,7 +151,10 @@ contract YieldDistributor is Base {
         uint totalHistoricalShareOfOperatorYield = ((totalHistoricalShareOfYield -
                 totalHistoricalAdminRewardEth) *
                 (whitelist.getOperatorFeePortion(_awardee) /
-                    YIELD_PORTION_MAX)) / whitelist.getDillutionResistantLengthRatio();
+                    YIELD_PORTION_MAX)) / whitelist.numOperators();
+                    // TODO: a new operator joining will dillute the rewards of all other operators. This is not ideal.
+                    // They do not have access to prexisting yield, so they should not be able to claim it.
+                    // How do we prevent dilution of rewards for existing operators?
 
         uint operatorRewardEth = (totalHistoricalShareOfOperatorYield - whitelist.getOperatorPrexistingYield(_awardee)) -
             totalYieldDistributedToOperator[_awardee];
