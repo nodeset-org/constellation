@@ -17,7 +17,8 @@ contract Whitelist is UpgradeableBase {
     event OperatorAdded(Operator newOperator);
     event OperatorRemoved(address a);
 
-    uint public numOperators;
+    uint256 public numOperators;
+    uint256 public lengthRatioMultiplier = 1e18;
 
     uint24 private _trustBuildPeriod;
     event TrustBuildPeriodUpdated(uint24 oldValue, uint24 newValue);
@@ -71,16 +72,22 @@ contract Whitelist is UpgradeableBase {
         return operatorMap[a];
     }
 
-    function getOperatorFeePortion(
-        address a
-    ) public view returns (uint16) {
+    function getOperatorFeePortion(address a) public view returns (uint16) {
         return operatorMap[a].feePortion;
     }
 
-    function getOperatorPrexistingYield(
-        address a
-    ) public view returns (uint) {
+    function getOperatorPrexistingYield(address a) public view returns (uint) {
         return operatorMap[a].totalRewardsAtGenesis;
+    }
+
+    /// @notice Returns the share of fees each validator gets
+    function getLengthRatio() public view returns (uint256) {
+        return 1e18 / numOperators;
+    }
+
+    /// @notice Returns the dillution resistant share of fees each validator gets as a function of length
+    function getDillutionResistantLengthRatio() public view returns (uint256) {
+        return lengthRatioMultiplier * numOperators;
     }
 
     //----
@@ -119,13 +126,21 @@ contract Whitelist is UpgradeableBase {
         );
 
         // Fee should not start at 100% because the operator has not yet built trust.
-        Operator memory operator = Operator(block.timestamp, 0, 10000, yieldDistributor.getTotalHistoricalEthFee());
+        Operator memory operator = Operator(
+            block.timestamp,
+            0,
+            10000,
+            yieldDistributor.getTotalHistoricalEthFee()
+        );
+
 
         operatorMap[a] = operator;
         operatorIndexMap[numOperators] = a;
         reverseOperatorIndexMap[a] = numOperators + 1;
 
+        lengthRatioMultiplier *= getLengthRatio();
         numOperators++;
+
         emit OperatorAdded(operator);
     }
 
@@ -137,6 +152,7 @@ contract Whitelist is UpgradeableBase {
         delete operatorIndexMap[index];
         delete reverseOperatorIndexMap[a];
 
+        lengthRatioMultiplier = ((1e18 * lengthRatioMultiplier) / getLengthRatio()) / 1e18;
         numOperators--;
         emit OperatorRemoved(a);
     }

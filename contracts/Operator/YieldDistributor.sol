@@ -204,7 +204,7 @@ contract YieldDistributor is Base {
         uint totalHistoricalShareOfOperatorYield = ((totalHistoricalShareOfYield -
                 totalHistoricalAdminRewardEth) *
                 (whitelist.getOperatorFeePortion(_awardee) /
-                    YIELD_PORTION_MAX)) / whitelist.numOperators();
+                    YIELD_PORTION_MAX)) / whitelist.getDillutionResistantLengthRatio();
 
         uint operatorRewardEth = (totalHistoricalShareOfOperatorYield - whitelist.getOperatorPrexistingYield(_awardee)) -
             totalYieldDistributedToOperator[_awardee];
