@@ -115,6 +115,7 @@ contract YieldDistributor is Base {
         // mint xrETH for NOs
         uint adminRewardEth = (totalEthFee * _ethRewardAdminPortion) /
             YIELD_PORTION_MAX;
+
         for (uint i = 0; i < length; i++) {
             uint operatorRewardEth = ((totalEthFee - adminRewardEth) *
                 (operators[i].feePortion / YIELD_PORTION_MAX)) / length;
