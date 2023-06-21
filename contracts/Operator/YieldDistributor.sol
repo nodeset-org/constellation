@@ -134,62 +134,9 @@ contract YieldDistributor is Base {
      * EXTERNAL
      */
 
-    /// @notice The main reward distribution function. Anyone can call it if they're willing to pay the gas costs.
-    /// @dev TODO: reimburse msg.sender via keeper-style mechanism, e.g. 0xSplits
-    ///
-    function distributeRewards() public nonReentrant {
-        require(getIsInitialized(), NOT_INITIALIZED_ERROR);
-
-        // for all operators in good standing, mint xrETH
-        Operator[] memory operators = getWhitelist().getOperatorsAsList();
-        uint length = operators.length;
-
-        uint totalEthFee = getTotalEthFee();
-
-        // mint xrETH for NOs
-        uint adminRewardEth = (totalEthFee * _ethRewardAdminPortion) /
-            YIELD_PORTION_MAX;
-
-        for (uint i = 0; i < length; i++) {
-            uint operatorRewardEth = ((totalEthFee - adminRewardEth) *
-                (operators[i].feePortion / YIELD_PORTION_MAX)) / length;
-
-            // TODO: dividing by length implies all NOs have equal feePortion despite how much eth is under their management
-            // TODO: are we ok with this? or should we use a different metric than length for the determination of feePortion?
-
-            address nodeOperatorAddr = getWhitelist().getOperatorAddress(i);
-
-            xrETH(getDirectory().getETHTokenAddress()).internalMint(
-                nodeOperatorAddr,
-                operatorRewardEth
-            );
-            emit RewardDistributed(
-                Reward(nodeOperatorAddr, operatorRewardEth, 0)
-            );
-
-            totalYieldDistributedToOperator[
-                nodeOperatorAddr
-            ] += operatorRewardEth;
-        }
-
-        // mint xrETH for admin
-        xrETH(getDirectory().getETHTokenAddress()).internalMint(
-            getDirectory().getAdminAddress(),
-            adminRewardEth
-        );
-
-        totalYieldDistributedToAdmin += adminRewardEth;
-
-        emit RewardDistributed(
-            Reward(getDirectory().getAdminAddress(), adminRewardEth, 0)
-        );
-
-        totalEthDistributed += address(this).balance;
-    }
-
     /// @notice The main reward distribution function for a single operator. This does not distribute any other rewards as in distributeRewards().
     /// @param _awardee Pull model where the address of the awardee defines where to distribute rewards to
-    function distributeRewardsSingle(address _awardee) public nonReentrant {
+    function distributeRewards(address _awardee) public nonReentrant {
         Whitelist whitelist = getWhitelist();
         require(
             whitelist.getIsAddressInWhitelist(_awardee),
