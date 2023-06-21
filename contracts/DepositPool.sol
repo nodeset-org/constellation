@@ -220,7 +220,7 @@ contract DepositPool is Base {
     function sendExcessEthToDistributors() private {
         uint leftover = address(this).balance - getMaxrETHBalance();
         if (leftover > 0) {
-            // get shortfall from yield distributor
+            // first priority is to shore up shortfall from yield distributor
             YieldDistributor yieldDistributor = YieldDistributor(
                 payable(getDirectory().getYieldDistributorAddress())
             );

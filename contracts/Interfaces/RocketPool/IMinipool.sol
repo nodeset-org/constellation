@@ -20,4 +20,6 @@ interface IMinipool {
     function getNodeDepositBalance() external view returns (uint256);
 
     function getUserDepositBalance() external view returns (uint256);
+
+    function distributeBalance() external;
 }

@@ -160,7 +160,9 @@ contract YieldDistributor is Base {
                 Reward(nodeOperatorAddr, operatorRewardEth, 0)
             );
 
-            totalYieldDistributedToOperator[nodeOperatorAddr] += operatorRewardEth;
+            totalYieldDistributedToOperator[
+                nodeOperatorAddr
+            ] += operatorRewardEth;
         }
 
         // mint xrETH for admin
@@ -172,11 +174,7 @@ contract YieldDistributor is Base {
         totalYieldDistributedToAdmin += adminRewardEth;
 
         emit RewardDistributed(
-            Reward(
-                getDirectory().getAdminAddress(),
-                adminRewardEth,
-                0
-            )
+            Reward(getDirectory().getAdminAddress(), adminRewardEth, 0)
         );
 
         totalEthDistributed += address(this).balance;
@@ -191,18 +189,23 @@ contract YieldDistributor is Base {
             "YieldDistributor: not an operator"
         );
 
-        uint totalHistoricalShareOfYield = getTotalEthFee() + totalEthDistributed;
+        uint totalHistoricalShareOfYield = getTotalEthFee() +
+            totalEthDistributed;
 
         uint totalHistoricalAdminRewardEth = (totalHistoricalShareOfYield *
             _ethRewardAdminPortion) / YIELD_PORTION_MAX;
 
-        uint totalHistoricalShareOfOperatorYield = ((totalHistoricalShareOfYield - totalHistoricalAdminRewardEth) *
-            (whitelist.getOperatorFeePortion(_awardee) / YIELD_PORTION_MAX)) /
-            whitelist.numOperators();
+        uint totalHistoricalShareOfOperatorYield = ((totalHistoricalShareOfYield -
+                totalHistoricalAdminRewardEth) *
+                (whitelist.getOperatorFeePortion(_awardee) /
+                    YIELD_PORTION_MAX)) / whitelist.numOperators();
 
-        uint operatorRewardEth = totalHistoricalShareOfOperatorYield - totalYieldDistributedToOperator[_awardee];
 
-        uint adminRewardEth = totalHistoricalAdminRewardEth - totalYieldDistributedToAdmin;
+        uint operatorRewardEth = totalHistoricalShareOfOperatorYield -
+            totalYieldDistributedToOperator[_awardee];
+
+        uint adminRewardEth = totalHistoricalAdminRewardEth -
+            totalYieldDistributedToAdmin;
 
         // check if there's enough ETH to distribute
         require(
@@ -224,11 +227,7 @@ contract YieldDistributor is Base {
         );
 
         emit RewardDistributed(
-            Reward(
-                getDirectory().getAdminAddress(),
-                adminRewardEth,
-                0
-            )
+            Reward(getDirectory().getAdminAddress(), adminRewardEth, 0)
         );
 
         totalEthDistributed += operatorRewardEth + adminRewardEth;
