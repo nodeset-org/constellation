@@ -195,6 +195,13 @@ contract YieldDistributor is Base {
         require(success, "YieldDistributor: failed to send ETH to DepositPool");
     }
 
+    /// @notice The main reward distribution function for a single operator. This does not distribute any other rewards as in distributeRewards().
+    function distributeRewards(address _awardee) nonReentrant public {
+        Whitelist whitelist = getWhitelist();
+        require(whitelist.getIsAddressInWhitelist(_awardee), "YieldDistributor: not an operator");
+
+    }
+
     /****
      * ADMIN
      */
