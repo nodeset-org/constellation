@@ -7,6 +7,8 @@ import "../Tokens/xrETH.sol";
 import "../Tokens/xRPL.sol";
 import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";
+import "../Interfaces/Oracles/IXRETHOracle.sol";
+
 import "hardhat/console.sol";
 
 struct Reward {
@@ -26,6 +28,8 @@ contract YieldDistributor is Base {
     int public constant MAX_ETH_COMMISSION_MODIFIER = 1 ether;
     uint16 private _ethRewardAdminPortion = 5000;
     uint16 private _rplRewardAdminPortion = 5000;
+
+    uint256 public totalEthDistributed;
 
     bool private _isInitialized = false;
     string public constant INITIALIZATION_ERROR =
@@ -75,7 +79,6 @@ contract YieldDistributor is Base {
     /// This is further split into operator and admin rewards in distributeRewards()
     function getEthCommissionRate() public view returns (uint) {
         int commission = int(getRocketPoolFee()) + _ethCommissionModifier;
-
         // constrain to 0->1 ether
         int maxCommission = 1 ether;
         commission = commission >= 0 ? commission : int(0);
@@ -95,6 +98,25 @@ contract YieldDistributor is Base {
         return _ethRewardAdminPortion;
     }
 
+    /// @notice Gets the total tvl of non-distributed yield
+    function getDistributableYield() public view returns (uint256) {
+        // get yield accrued from oracle
+        IXRETHOracle oracle = IXRETHOracle(getDirectory().getRETHOracleAddress());
+        uint ethYieldOwed = oracle.getTotalYieldAccrued();
+        return
+            ethYieldOwed > totalEthDistributed
+                ? ethYieldOwed - totalEthDistributed
+                : 0;
+    }
+
+    /// @notice Gets the amount of ETH that the contract needs to receive before it can distribute full rewards again
+    function getShortfall() public view returns (uint256) {
+        uint256 distributableYield = getDistributableYield();
+        uint256 totalEth = address(this).balance;
+        return
+            totalEth > distributableYield ? 0 : distributableYield - totalEth;
+    }
+
     /****
      * EXTERNAL
      */
@@ -106,10 +128,10 @@ contract YieldDistributor is Base {
         require(getIsInitialized(), NOT_INITIALIZED_ERROR);
 
         // for all operators in good standing, mint xrETH
-        Operator[] memory operators = getWhitelist().getOperatorList();
+        Operator[] memory operators = getWhitelist().getOperatorsAsList();
         uint length = operators.length;
 
-        uint totalEthFee = (address(this).balance * (getEthCommissionRate())) /
+        uint totalEthFee = (address(this).balance * getEthCommissionRate()) /
             (1 ether);
 
         // mint xrETH for NOs
@@ -119,17 +141,20 @@ contract YieldDistributor is Base {
         for (uint i = 0; i < length; i++) {
             uint operatorRewardEth = ((totalEthFee - adminRewardEth) *
                 (operators[i].feePortion / YIELD_PORTION_MAX)) / length;
-            NodeSetETH(getDirectory().getETHTokenAddress()).internalMint(
-                operators[i].nodeAddress,
+
+            address nodeOperatorAddr = getWhitelist().getOperatorAddress(i);
+
+            xrETH(getDirectory().getETHTokenAddress()).internalMint(
+                nodeOperatorAddr,
                 operatorRewardEth
             );
             emit RewardDistributed(
-                Reward(operators[i].nodeAddress, operatorRewardEth, 0)
+                Reward(nodeOperatorAddr, operatorRewardEth, 0)
             );
         }
 
         // mint xrETH for admin
-        NodeSetETH(getDirectory().getETHTokenAddress()).internalMint(
+        xrETH(getDirectory().getETHTokenAddress()).internalMint(
             getDirectory().getAdminAddress(),
             adminRewardEth
         );
@@ -141,7 +166,7 @@ contract YieldDistributor is Base {
 
         uint adminRewardRpl = (rpl.balanceOf(address(this)) *
             _rplRewardAdminPortion) / YIELD_PORTION_MAX;
-        NodeSetRPL(getDirectory().getRPLTokenAddress()).mintYield(
+        xRPL(getDirectory().getRPLTokenAddress()).mintYield(
             getDirectory().getAdminAddress(),
             adminRewardRpl
         );
@@ -152,6 +177,8 @@ contract YieldDistributor is Base {
                 adminRewardRpl
             )
         );
+
+        totalEthDistributed += address(this).balance;
 
         // TODO: reimburse msg.sender
 
