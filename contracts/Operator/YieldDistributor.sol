@@ -72,8 +72,7 @@ contract YieldDistributor is Base {
         _isInitialized = true;
     }
 
-    // ETH withdrawals and rewards are done via gasless balance increases, not transactions,
-    // but if anyone wants to donate ETH to the protocol, they can do so by sending to this contract
+    // ETH deposits are done via gasless balance increases to DP, DP then sends ETH to this contract
     receive() external payable {
         uint256 yieldRecieved =  msg.value * getEthCommissionRate() / 1 ether;
 
