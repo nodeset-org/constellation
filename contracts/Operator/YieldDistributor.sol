@@ -33,7 +33,6 @@ contract YieldDistributor is Base {
     int private _ethCommissionModifier = 0; // total extra fee added to (or removed from) RP network commission
     int public constant MAX_ETH_COMMISSION_MODIFIER = 1 ether;
     uint16 private _ethRewardAdminPortion = 5000;
-    uint16 private _rplRewardAdminPortion = 5000;
 
     uint256 public totalYieldAccruedInInterval;
     uint256 public totalYieldAccrued;
@@ -112,10 +111,6 @@ contract YieldDistributor is Base {
         return uint(commission);
     }
 
-    /// @notice Gets the fee per RPL
-    function getRplCommissionRate() public view returns (uint) {
-        return (_rplRewardAdminPortion * 10 ** (18 - YIELD_PORTION_DECIMALS));
-    }
 
     /// @notice Gets the ETH commission portion which goes to the admin.
     /// Scales from 0 (0%) to YIELD_PORTION_MAX (100%)
@@ -145,65 +140,6 @@ contract YieldDistributor is Base {
     /****
      * EXTERNAL
      */
-
-    /// @notice The main reward distribution function. Anyone can call it if they're willing to pay the gas costs.
-    /// @dev TODO: reimburse msg.sender via keeper-style mechanism, e.g. 0xSplits
-    ///
-    function distributeRewards() public nonReentrant {
-        require(getIsInitialized(), NOT_INITIALIZED_ERROR);
-
-        // for all operators in good standing, mint xrETH
-        Operator[] memory operators = getWhitelist().getOperatorsAsList();
-        uint length = operators.length;
-
-        uint totalEthFee = (address(this).balance * getEthCommissionRate()) /
-            (1 ether);
-
-        // mint xrETH for NOs
-        uint adminRewardEth = (totalEthFee * _ethRewardAdminPortion) /
-            YIELD_PORTION_MAX;
-        for (uint i = 0; i < length; i++) {
-            uint operatorRewardEth = ((totalEthFee - adminRewardEth) *
-                (operators[i].feePortion / YIELD_PORTION_MAX)) / length;
-
-            address nodeOperatorAddr = getWhitelist().getOperatorAddress(i);
-
-            xrETH(getDirectory().getETHTokenAddress()).internalMint(
-                nodeOperatorAddr,
-                operatorRewardEth
-            );
-            emit RewardDistributed(
-                Reward(nodeOperatorAddr, operatorRewardEth, 0)
-            );
-        }
-
-        // mint xrETH for admin
-        xrETH(getDirectory().getETHTokenAddress()).internalMint(
-            getDirectory().getAdminAddress(),
-            adminRewardEth
-        );
-
-        // mint xRPL for admin
-        RocketTokenRPLInterface rpl = RocketTokenRPLInterface(
-            getDirectory().RPL_CONTRACT_ADDRESS()
-        );
-
-        uint adminRewardRpl = (rpl.balanceOf(address(this)) *
-            _rplRewardAdminPortion) / YIELD_PORTION_MAX;
-        xRPL(getDirectory().getRPLTokenAddress()).mintYield(
-            getDirectory().getAdminAddress(),
-            adminRewardRpl
-        );
-        emit RewardDistributed(
-            Reward(
-                getDirectory().getAdminAddress(),
-                adminRewardEth,
-                adminRewardRpl
-            )
-        );
-
-        totalYieldAccruedInInterval += address(this).balance;
-    }
 
     /// @notice Distributes rewards accrued between two intervals to a single awaredee
     /// @dev The caller should check for the most gas-efficient way to distribute rewards
@@ -276,10 +212,6 @@ contract YieldDistributor is Base {
             ETH_COMMISSION_MODIFIER_OUT_OF_BOUNDS_ERROR
         );
         _ethCommissionModifier = ethCommissionModifier;
-    }
-
-    function setRplRewardAdminPortion(uint16 newPortion) public onlyAdmin {
-        _rplRewardAdminPortion = newPortion;
     }
 
     function setEthRewardAdminPortion(uint16 newPortion) public onlyAdmin {
