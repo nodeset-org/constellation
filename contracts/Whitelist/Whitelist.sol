@@ -39,14 +39,6 @@ contract Whitelist is UpgradeableBase {
     // GETTERS
     //----
 
-    function getOperatorsAsList() public view returns (Operator[] memory) {
-        Operator[] memory _operators = new Operator[](numOperators);
-        for (uint i = 0; i < numOperators; i++) {
-            _operators[i] = operatorMap[operatorIndexMap[i]];
-        }
-        return _operators;
-    }
-
     function getIsAddressInWhitelist(address a) public view returns (bool) {
         return _permissions[a] != false;
     }
