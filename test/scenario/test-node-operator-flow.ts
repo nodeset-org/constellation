@@ -175,6 +175,7 @@ describe("Node Operator Onboarding", function () {
             RPLbalancesBefore.push(allAddresses[i].name + " - " + await rocketPool.rplContract.balanceOf(allAddresses[i].address));
         }
 
+        await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
         await protocol.yieldDistributor.connect(signers.random).harvest(signers.hyperdriver.address, 0, 0);
 
         console.log("deposit pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.depositPool.address)));
