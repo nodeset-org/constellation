@@ -17,6 +17,12 @@ struct Reward {
     uint rpl;
 }
 
+/// @notice Claims get filed by the protcol and distributed upon request
+struct Claim {
+    uint256 amount; // amount wei of protocol yield accrued since last interval
+    uint256 length; // length of node operators active in the interval
+}
+
 /// @custom:security-contact info@nodeset.io
 /// @notice distributes rewards
 contract YieldDistributor is Base {
@@ -29,7 +35,13 @@ contract YieldDistributor is Base {
     uint16 private _ethRewardAdminPortion = 5000;
     uint16 private _rplRewardAdminPortion = 5000;
 
-    uint256 public totalEthDistributed;
+    uint256 public totalYieldAccrued;
+
+    mapping(uint256 => Claim) public claims; // claimable yield per interval (in wei)
+    mapping(address => mapping (uint256 => bool)) public hasClaimed; // whether an operator has claimed for a given interval
+    uint256 public currentInterval = 0;
+    uint256 public currentIntervalGenesisTime = block.timestamp;
+    uint256 public maxIntervalLengthSeconds = 30 days;
 
     bool private _isInitialized = false;
     string public constant INITIALIZATION_ERROR =
@@ -65,7 +77,16 @@ contract YieldDistributor is Base {
 
     // ETH withdrawals and rewards are done via gasless balance increases, not transactions,
     // but if anyone wants to donate ETH to the protocol, they can do so by sending to this contract
-    receive() external payable {}
+    receive() external payable {
+        totalYieldAccrued += msg.value * getEthCommissionRate() / 1 ether;
+
+        // if elapsed time since last interval is greater than maxIntervalLengthSeconds, start a new interval
+        if (block.timestamp - currentIntervalGenesisTime > maxIntervalLengthSeconds) {
+            currentInterval++;
+            currentIntervalGenesisTime = block.timestamp;
+        }
+
+    }
 
     /****
      * GETTERS
@@ -104,8 +125,8 @@ contract YieldDistributor is Base {
         IXRETHOracle oracle = IXRETHOracle(getDirectory().getRETHOracleAddress());
         uint ethYieldOwed = oracle.getTotalYieldAccrued();
         return
-            ethYieldOwed > totalEthDistributed
-                ? ethYieldOwed - totalEthDistributed
+            ethYieldOwed > totalYieldAccrued
+                ? ethYieldOwed - totalYieldAccrued
                 : 0;
     }
 
@@ -177,26 +198,68 @@ contract YieldDistributor is Base {
             )
         );
 
-        totalEthDistributed += address(this).balance;
+        totalYieldAccrued += address(this).balance;
+    }
 
-        // TODO: reimburse msg.sender
+    /// @notice Distributes rewards accrued between two intervals to a single awaredee
+    /// @dev The caller should check for the most gas-efficient way to distribute rewards
+    /// @param _awaredee The address of the awaredee to distribute rewards to
+    /// @param startInterval The interval to start distributing rewards from
+    /// @param endInterval The interval to stop distributing rewards at
+    function distributeRewardsSingle(address _awaredee, uint256 startInterval, uint256 endInterval) public nonReentrant {
+        require(getIsInitialized(), NOT_INITIALIZED_ERROR);
+        require(startInterval <= endInterval, "Start interval must be less than or equal to end interval");
+        require(endInterval < currentInterval, "End interval must be less than current interval");
+        require(_awaredee != address(0), "Awaredee cannot be zero address");
 
-        // send remaining RPL to DP
-        rpl.transfer(
-            getDirectory().getDepositPoolAddress(),
-            rpl.balanceOf(address(this))
+        uint256 totalReward = 0;
+        Operator memory operator = getWhitelist().getOperatorAtAddress(_awaredee);
+        for(uint256 i = startInterval; i < endInterval; i++) {
+            if(hasClaimed[_awaredee][i]) {
+                continue;
+            }
+            Claim memory claim = claims[i];
+            uint256 fullEthReward = ((claim.amount * 1e18) / claim.length) / 1e18;
+            uint256 operatorRewardEth = (fullEthReward * operator.feePortion) / YIELD_PORTION_MAX;
+            // TODO: until the operator's feePortion is 100%, we will be collecting dust that'll need sweeping back to DP.
+            totalReward += operatorRewardEth;
+            hasClaimed[_awaredee][i] = true;
+        }
+
+        xrETH(getDirectory().getETHTokenAddress()).internalMint(
+            _awaredee,
+            totalReward
+        );
+    }
+
+    /// @notice Ends the current interval and starts a new one
+    /// @dev Only called when numOperators changes or maxIntervalLengthSeconds has passed
+    function finalizeInterval() public onlyWhitelistOrAdmin {
+        uint256 totalEthAdminRewards = totalYieldAccrued * _ethRewardAdminPortion / YIELD_PORTION_MAX;
+        uint256 totalEthOperatorRewards = totalYieldAccrued - totalEthAdminRewards;
+
+        Whitelist whitelist = getWhitelist();
+        claims[currentInterval] = Claim(
+            totalEthOperatorRewards,
+            whitelist.numOperators()
         );
 
-        // send remaining ETH to DP
-        (bool success, ) = getDirectory().getDepositPoolAddress().call{
-            value: address(this).balance
-        }("");
-        require(success, "YieldDistributor: failed to send ETH to DepositPool");
+        currentInterval++;
+        currentIntervalGenesisTime = block.timestamp;
+        totalYieldAccrued = 0;
     }
 
     /****
      * ADMIN
      */
+
+    /// @notice Sets max interval time in seconds
+    function setMaxIntervalTime(uint256 _maxIntervalLengthSeconds)
+        public
+        onlyAdmin
+    {
+        maxIntervalLengthSeconds = _maxIntervalLengthSeconds;
+    }
 
     /// @notice Sets an extra fee on top of RP network comission, as a portion of 1 ether.
     /// Can be negative to reduce RP commission by this amount instead.
