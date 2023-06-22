@@ -41,7 +41,7 @@ contract YieldDistributor is Base {
     mapping(address => mapping (uint256 => bool)) public hasClaimed; // whether an operator has claimed for a given interval
     uint256 public currentInterval = 0;
     uint256 public currentIntervalGenesisTime = block.timestamp;
-    uint256 public maxIntervalLengthSeconds = 30 days;
+    uint256 public maxIntervalLengthSeconds = 30 days; // NOs will have to wait at most this long for their payday
 
     bool private _isInitialized = false;
     string public constant INITIALIZATION_ERROR =
@@ -206,7 +206,7 @@ contract YieldDistributor is Base {
     /// @param _awaredee The address of the awaredee to distribute rewards to
     /// @param startInterval The interval to start distributing rewards from
     /// @param endInterval The interval to stop distributing rewards at
-    function distributeRewardsSingle(address _awaredee, uint256 startInterval, uint256 endInterval) public nonReentrant {
+    function harvest(address _awaredee, uint256 startInterval, uint256 endInterval) public nonReentrant {
         require(getIsInitialized(), NOT_INITIALIZED_ERROR);
         require(startInterval <= endInterval, "Start interval must be less than or equal to end interval");
         require(endInterval < currentInterval, "End interval must be less than current interval");
