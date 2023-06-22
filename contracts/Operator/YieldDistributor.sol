@@ -9,18 +9,15 @@ import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";
 import "../Interfaces/Oracles/IXRETHOracle.sol";
 
-import "hardhat/console.sol";
-
 struct Reward {
     address recipient;
     uint eth;
-    uint rpl;
 }
 
 /// @notice Claims get filed by the protcol and distributed upon request
 struct Claim {
     uint256 amount; // amount wei of protocol yield accrued since last interval
-    uint256 length; // length of node operators active in the interval
+    uint256 numOperators; // length of node operators active in the interval
 }
 
 /// @custom:security-contact info@nodeset.io
@@ -154,12 +151,12 @@ contract YieldDistributor is Base {
 
         uint256 totalReward = 0;
         Operator memory operator = getWhitelist().getOperatorAtAddress(_awaredee);
-        for(uint256 i = startInterval; i < endInterval; i++) {
+        for(uint256 i = startInterval; i <= endInterval; i++) {
             if(hasClaimed[_awaredee][i]) {
                 continue;
             }
             Claim memory claim = claims[i];
-            uint256 fullEthReward = ((claim.amount * 1e18) / claim.length) / 1e18;
+            uint256 fullEthReward = ((claim.amount * 1e18) / claim.numOperators) / 1e18;
             uint256 operatorRewardEth = (fullEthReward * operator.feePortion) / YIELD_PORTION_MAX;
             // TODO: until the operator's feePortion is 100%, we will be collecting dust that'll need sweeping back to DP.
             totalReward += operatorRewardEth;
@@ -170,15 +167,21 @@ contract YieldDistributor is Base {
             _awaredee,
             totalReward
         );
+
+        emit RewardDistributed(Reward(_awaredee, totalReward));
     }
 
     /// @notice Ends the current interval and starts a new one
     /// @dev Only called when numOperators changes or maxIntervalLengthSeconds has passed
     function finalizeInterval() public onlyWhitelistOrAdmin {
+        if(totalYieldAccruedInInterval == 0) {
+            return;
+        }
         uint256 totalEthAdminRewards = totalYieldAccruedInInterval * _ethRewardAdminPortion / YIELD_PORTION_MAX;
         uint256 totalEthOperatorRewards = totalYieldAccruedInInterval - totalEthAdminRewards;
 
         Whitelist whitelist = getWhitelist();
+
         claims[currentInterval] = Claim(
             totalEthOperatorRewards,
             whitelist.numOperators()

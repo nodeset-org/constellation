@@ -113,9 +113,11 @@ contract Whitelist is UpgradeableBase {
             payable(getDirectory().getYieldDistributorAddress())
         );
 
-        distributor.finalizeInterval();
 
         numOperators++;
+
+        distributor.finalizeInterval();
+
         emit OperatorAdded(operator);
     }
 
@@ -131,9 +133,11 @@ contract Whitelist is UpgradeableBase {
             payable(getDirectory().getYieldDistributorAddress())
         );
 
-        distributor.finalizeInterval();
 
         numOperators--;
+
+        distributor.finalizeInterval();
+
         emit OperatorRemoved(a);
     }
 
