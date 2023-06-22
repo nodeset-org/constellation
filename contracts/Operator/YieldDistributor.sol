@@ -35,6 +35,7 @@ contract YieldDistributor is Base {
     uint16 private _ethRewardAdminPortion = 5000;
     uint16 private _rplRewardAdminPortion = 5000;
 
+    uint256 public totalYieldAccruedInInterval;
     uint256 public totalYieldAccrued;
 
     mapping(uint256 => Claim) public claims; // claimable yield per interval (in wei)
@@ -78,7 +79,10 @@ contract YieldDistributor is Base {
     // ETH withdrawals and rewards are done via gasless balance increases, not transactions,
     // but if anyone wants to donate ETH to the protocol, they can do so by sending to this contract
     receive() external payable {
-        totalYieldAccrued += msg.value * getEthCommissionRate() / 1 ether;
+        uint256 yieldRecieved =  msg.value * getEthCommissionRate() / 1 ether;
+
+        totalYieldAccruedInInterval += yieldRecieved;
+        totalYieldAccrued += yieldRecieved;
 
         // if elapsed time since last interval is greater than maxIntervalLengthSeconds, start a new interval
         if (block.timestamp - currentIntervalGenesisTime > maxIntervalLengthSeconds) {
@@ -198,7 +202,7 @@ contract YieldDistributor is Base {
             )
         );
 
-        totalYieldAccrued += address(this).balance;
+        totalYieldAccruedInInterval += address(this).balance;
     }
 
     /// @notice Distributes rewards accrued between two intervals to a single awaredee
@@ -235,8 +239,8 @@ contract YieldDistributor is Base {
     /// @notice Ends the current interval and starts a new one
     /// @dev Only called when numOperators changes or maxIntervalLengthSeconds has passed
     function finalizeInterval() public onlyWhitelistOrAdmin {
-        uint256 totalEthAdminRewards = totalYieldAccrued * _ethRewardAdminPortion / YIELD_PORTION_MAX;
-        uint256 totalEthOperatorRewards = totalYieldAccrued - totalEthAdminRewards;
+        uint256 totalEthAdminRewards = totalYieldAccruedInInterval * _ethRewardAdminPortion / YIELD_PORTION_MAX;
+        uint256 totalEthOperatorRewards = totalYieldAccruedInInterval - totalEthAdminRewards;
 
         Whitelist whitelist = getWhitelist();
         claims[currentInterval] = Claim(
@@ -246,7 +250,7 @@ contract YieldDistributor is Base {
 
         currentInterval++;
         currentIntervalGenesisTime = block.timestamp;
-        totalYieldAccrued = 0;
+        totalYieldAccruedInInterval = 0;
     }
 
     /****

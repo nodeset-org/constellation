@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "../UpgradeableBase.sol";
 import "../Operator/Operator.sol";
+import "../Operator/YieldDistributor.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Controls operator access to the protocol.
@@ -108,6 +109,12 @@ contract Whitelist is UpgradeableBase {
         operatorIndexMap[numOperators] = a;
         reverseOperatorIndexMap[a] = numOperators + 1;
 
+        YieldDistributor distributor = YieldDistributor(
+            payable(getDirectory().getYieldDistributorAddress())
+        );
+
+        distributor.finalizeInterval();
+
         numOperators++;
         emit OperatorAdded(operator);
     }
@@ -119,6 +126,12 @@ contract Whitelist is UpgradeableBase {
         uint index = reverseOperatorIndexMap[a] - 1;
         delete operatorIndexMap[index];
         delete reverseOperatorIndexMap[a];
+
+        YieldDistributor distributor = YieldDistributor(
+            payable(getDirectory().getYieldDistributorAddress())
+        );
+
+        distributor.finalizeInterval();
 
         numOperators--;
         emit OperatorRemoved(a);
