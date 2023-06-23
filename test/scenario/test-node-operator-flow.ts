@@ -183,8 +183,6 @@ describe("Node Operator Onboarding", function () {
         console.log("operator distribution pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)));
         console.log("operator distribution pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)));
 
-
-
         const xrETHBalancesAfter = [];
         const xRPLBalancesAfter = [];
         const ETHbalancesAfter = [];
@@ -217,8 +215,5 @@ describe("Node Operator Onboarding", function () {
                 console.log("RPL balance after: ", RPLbalancesAfter[i]);
             }
         }
-
     });
-
-
 });
