@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "./Operator.sol";
+import "./OperatorDistributor.sol";
 import "../Whitelist/Whitelist.sol";
 import "../Tokens/xrETH.sol";
 import "../Tokens/xRPL.sol";
@@ -81,8 +82,7 @@ contract YieldDistributor is Base {
 
         // if elapsed time since last interval is greater than maxIntervalLengthSeconds, start a new interval
         if (block.timestamp - currentIntervalGenesisTime > maxIntervalLengthSeconds) {
-            currentInterval++;
-            currentIntervalGenesisTime = block.timestamp;
+            finalizeInterval();
         }
 
     }
@@ -167,6 +167,8 @@ contract YieldDistributor is Base {
             totalReward
         );
 
+        getOperatorDistributor().havestNextMinipool();
+
         emit RewardDistributed(Reward(_awaredee, totalReward));
     }
 
@@ -189,6 +191,8 @@ contract YieldDistributor is Base {
         currentInterval++;
         currentIntervalGenesisTime = block.timestamp;
         totalYieldAccruedInInterval = 0;
+
+        getOperatorDistributor().havestNextMinipool();
     }
 
     /****
@@ -237,6 +241,10 @@ contract YieldDistributor is Base {
 
     function getWhitelist() private view returns (Whitelist) {
         return Whitelist(_directory.getWhitelistAddress());
+    }
+
+    function getOperatorDistributor() private view returns (OperatorDistributor) {
+        return OperatorDistributor(_directory.getOperatorDistributorAddress());
     }
 
     modifier onlyOperator() {

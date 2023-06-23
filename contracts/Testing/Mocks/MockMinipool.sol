@@ -68,4 +68,14 @@ contract MockMinipool is IMinipool {
     function getUserDepositBalance() external view override returns (uint256) {
         return userDepositBalance;
     }
+
+    function distributeBalance(bool _rewardsOnly) external override {
+    }
+
+    function userDistributeAllowed() external view override returns (bool) {
+        return true;
+    }
+
+    function beginUserDistribute() external override {
+    }
 }

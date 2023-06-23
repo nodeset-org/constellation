@@ -41,6 +41,14 @@ abstract contract Base is ReentrancyGuard {
         _;
     }
 
+    modifier onlyYieldDistrubutor() {
+        require(
+            msg.sender == _directory.getYieldDistributorAddress(),
+            "Can only be called by Yield Distributor!"
+        );
+        _;
+    }
+
     function getDirectory() internal view returns (Directory) {
         return _directory;
     }
