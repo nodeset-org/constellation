@@ -284,9 +284,12 @@ describe("Yield Distributor", function () {
 
       // we should expect each fee reward to follow the formula:
       // uint operatorRewardEth = (totalEthFee - adminRewardEth) * (operators[i].feePortion / YIELD_PORTION_MAX) / length;
-      const eth_reward_admin_portion = await yieldDistributor.getEthRewardAdminPortion();
-      const totalYieldAfterCommission = totalYield.mul(eth_reward_admin_portion).div(ethers.utils.parseEther("1"));
+      const ethCommissionRate = ethers.utils.parseEther("1").sub(await yieldDistributor.getEthCommissionRate());
+      console.log("ethCommissionRate: " + ethers.utils.formatEther(ethCommissionRate));
+      const totalYieldAfterCommission = totalYield.mul(ethCommissionRate).div(ethers.utils.parseEther("1"));
+      console.log("totalYieldAfterCommission: ", (ethers.utils.formatEther(totalYieldAfterCommission)));
       expect(totalYieldAfterCommission).to.equal(await yieldDistributor.totalYieldAccrued());
+      console.log("totalYieldAccrued: " + ethers.utils.formatEther(await yieldDistributor.totalYieldAccrued()));
 
       const beforeEthBalances = await Promise.all([
         signers.random.getBalance(),

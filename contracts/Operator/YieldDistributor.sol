@@ -10,6 +10,8 @@ import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";
 import "../Interfaces/Oracles/IXRETHOracle.sol";
 
+import "hardhat/console.sol";
+
 struct Reward {
     address recipient;
     uint eth;
@@ -75,7 +77,7 @@ contract YieldDistributor is Base {
 
     // ETH deposits are done via gasless balance increases to DP, DP then sends ETH to this contract
     receive() external payable {
-        uint256 yieldRecieved =  msg.value * getEthCommissionRate() / 1 ether;
+        uint256 yieldRecieved =  msg.value * (1 ether - getEthCommissionRate()) / 1 ether;
 
         totalYieldAccruedInInterval += yieldRecieved;
         totalYieldAccrued += yieldRecieved;
