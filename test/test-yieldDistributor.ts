@@ -282,8 +282,6 @@ describe("Yield Distributor", function () {
       const tx4 = await yieldDistributor.connect(signers.random4).harvest(signers.random4.address, 0, 1);
       const tx5 = await yieldDistributor.connect(signers.random5).harvest(signers.random5.address, 0, 1);
 
-      // we should expect each fee reward to follow the formula:
-      // uint operatorRewardEth = (totalEthFee - adminRewardEth) * (operators[i].feePortion / YIELD_PORTION_MAX) / length;
       const ethCommissionRate = ethers.utils.parseEther("1").sub(await yieldDistributor.getEthCommissionRate());
       console.log("ethCommissionRate: " + ethers.utils.formatEther(ethCommissionRate));
       const totalYieldAfterCommission = totalYield.mul(ethCommissionRate).div(ethers.utils.parseEther("1"));
@@ -291,23 +289,23 @@ describe("Yield Distributor", function () {
       expect(totalYieldAfterCommission).to.equal(await yieldDistributor.totalYieldAccrued());
       console.log("totalYieldAccrued: " + ethers.utils.formatEther(await yieldDistributor.totalYieldAccrued()));
 
-      const beforeEthBalances = await Promise.all([
-        signers.random.getBalance(),
-        signers.random2.getBalance(),
-        signers.random3.getBalance(),
-        signers.admin.getBalance()
-      ]);
+      const operatorShareInterval0 = firstYield.mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("3"));
+      const operatorShareInterval1 = secondYield.mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("5"));
+      console.log("operatorShareInterval0: " + ethers.utils.formatEther(operatorShareInterval0));
+      console.log("operatorShareInterval1: " + ethers.utils.formatEther(operatorShareInterval1));
 
-      const afterEthBalances = await Promise.all([
-        signers.random.getBalance(),
-        signers.random2.getBalance(),
-        signers.random3.getBalance(),
-        signers.admin.getBalance()
-      ]);
+      const interval0 = await yieldDistributor.claims(0);
+      const claimPerOperatorInterval0 = interval0.amount.mul(ethers.utils.parseEther("1")).div(interval0.numOperators);
+      console.log("claimPerOperatorInterval0: " + ethers.utils.formatEther(claimPerOperatorInterval0));
+      console.log("interval0: numOperators: " + interval0.numOperators.toString(),", amount: " + ethers.utils.formatEther(interval0.amount));
 
-      const totalFee = ethers.utils.parseEther("0.15"); // RP network fee is currently 15%
-      const yield_portion_max = await yieldDistributor.YIELD_PORTION_MAX();
-      const adminFeeEth = totalFee.mul(5000).div(yield_portion_max) // admin gets 50% by default
+      const interval1 = await yieldDistributor.claims(1);
+      const claimPerOperatorInterval1 = interval1.amount.mul(ethers.utils.parseEther("1")).div(interval1.numOperators);
+      console.log("claimPerOperatorInterval1: " + ethers.utils.formatEther(claimPerOperatorInterval1));
+      console.log("interval1: numOperators: " + interval1.numOperators.toString(), ", amount: " + ethers.utils.formatEther(interval1.amount));
+
+      await expect(tx1).to.emit(yieldDistributor, "RewardDistributed").withArgs([signers.random.address, operatorShareInterval0.add(operatorShareInterval1)]);
+
     })
   })
 });

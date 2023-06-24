@@ -106,9 +106,9 @@ contract Whitelist is UpgradeableBase {
         );
 
 
-        numOperators++;
-
         distributor.finalizeInterval();
+
+        numOperators++;
 
         emit OperatorAdded(operator);
     }
@@ -126,9 +126,9 @@ contract Whitelist is UpgradeableBase {
         );
 
 
-        numOperators--;
-
         distributor.finalizeInterval();
+
+        numOperators--;
 
         emit OperatorRemoved(a);
     }

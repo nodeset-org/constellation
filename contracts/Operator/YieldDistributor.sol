@@ -180,13 +180,10 @@ contract YieldDistributor is Base {
         if(totalYieldAccruedInInterval == 0) {
             return;
         }
-        uint256 totalEthAdminRewards = totalYieldAccruedInInterval * _ethRewardAdminPortion / YIELD_PORTION_MAX;
-        uint256 totalEthOperatorRewards = totalYieldAccruedInInterval - totalEthAdminRewards;
-
         Whitelist whitelist = getWhitelist();
 
         claims[currentInterval] = Claim(
-            totalEthOperatorRewards,
+            totalYieldAccruedInInterval,
             whitelist.numOperators()
         );
 
