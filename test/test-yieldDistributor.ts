@@ -78,11 +78,11 @@ describe("Yield Distributor", function () {
 
       newFee = ethers.utils.parseEther("-0.01");
       await expect(protocol.yieldDistributor.setEthCommissionModifier(newFee))
-          .to.not.be.reverted;
+        .to.not.be.reverted;
 
       expectedFee = (await rp.networkFeesContract.getMaximumNodeFee()).add(newFee);
       await expect(await protocol.yieldDistributor.connect(signers.random).getEthCommissionRate())
-          .equals(expectedFee);
+        .equals(expectedFee);
     });
 
     it("Revert if ETH fee modifier set too high", async function () {
@@ -108,7 +108,7 @@ describe("Yield Distributor", function () {
 
       const expectedFee = (await rp.networkFeesContract.getMaximumNodeFee()).add(newFee)
       await expect(await protocol.yieldDistributor.connect(signers.random).getEthCommissionRate())
-          .to.not.equal(expectedFee);
+        .to.not.equal(expectedFee);
     });
 
     it("Admin can set ETH fee admin portion", async function () {
@@ -139,7 +139,7 @@ describe("Yield Distributor", function () {
   });
 
   async function simulateYield(setupData: SetupData, ether: number, rpl: number) {
-    const { protocol, signers, rocketPool: rp} = setupData;
+    const { protocol, signers, rocketPool: rp } = setupData;
     let mintAmount = ethers.utils.parseEther("100");
     await mint_xRpl(setupData, signers.rplWhale, mintAmount);
     await mint_xrEth(setupData, signers.rplWhale, mintAmount);
@@ -162,7 +162,7 @@ describe("Yield Distributor", function () {
 
   it("Distributes fees appropriately", async function () {
     const setupData = await loadFixture(protocolFixture)
-    const { protocol, signers, rocketPool: rp} = setupData;
+    const { protocol, signers, rocketPool: rp } = setupData;
     const yieldDistributor = protocol.yieldDistributor;
 
     const totalEthYield = 1;
@@ -231,7 +231,84 @@ describe("Yield Distributor", function () {
       ethers.utils.formatEther(adminFeeRpl) + " RPL to the admin.");
   });
 
+  describe.only("Test pull model", async () => {
+
+    it("does not dilute rewards from prior operators as more operators join", async () => {
+      const setupData = await loadFixture(protocolFixture)
+      const { protocol, signers, rocketPool: rp } = setupData;
+      const { yieldDistributor, whitelist } = protocol;
+
+      // expect whitelisted operators to be empty
+      const numOperators = await whitelist.numOperators();
+      expect(numOperators).to.equal(0);
+
+      // add 3 operators
+      await whitelist.addOperator(signers.random.address);
+      await whitelist.addOperator(signers.random2.address);
+      await whitelist.addOperator(signers.random3.address);
+
+      // send eth into yield distributor simulating yield at interval 0
+      const firstYield = ethers.utils.parseEther("13");
+      await signers.ethWhale.sendTransaction({
+        to: protocol.yieldDistributor.address,
+        value: firstYield,
+      });
+
+      const currentInterval0 = await yieldDistributor.currentInterval();
+      expect(currentInterval0).to.equal(0);
+
+      // add 2 more operators, this should have created a new interval
+      await whitelist.addOperator(signers.random4.address);
+      await whitelist.addOperator(signers.random5.address);
+
+      // send 5 more eth into yield distributor simulating yield at interval 1
+      const secondYield = ethers.utils.parseEther("5");
+      await signers.ethWhale.sendTransaction({
+        to: protocol.yieldDistributor.address,
+        value: secondYield,
+      });
+
+      const totalYield = firstYield.add(secondYield);
+
+      const currentInterval1 = await yieldDistributor.currentInterval();
+      expect(currentInterval1).to.equal(1);
+
+      await yieldDistributor.connect(signers.admin).finalizeInterval();
+
+      // harvest rewards for each operator, should collect rewards from both intervals
+      const tx1 = await yieldDistributor.connect(signers.random).harvest(signers.random.address, 0, 1);
+      const tx2 = await yieldDistributor.connect(signers.random2).harvest(signers.random2.address, 0, 1);
+      const tx3 = await yieldDistributor.connect(signers.random3).harvest(signers.random3.address, 0, 1);
+      const tx4 = await yieldDistributor.connect(signers.random4).harvest(signers.random4.address, 0, 1);
+      const tx5 = await yieldDistributor.connect(signers.random5).harvest(signers.random5.address, 0, 1);
+
+      // we should expect each fee reward to follow the formula:
+      // uint operatorRewardEth = (totalEthFee - adminRewardEth) * (operators[i].feePortion / YIELD_PORTION_MAX) / length;
+      const eth_reward_admin_portion = await yieldDistributor.getEthRewardAdminPortion();
+      const totalYieldAfterCommission = totalYield.mul(eth_reward_admin_portion).div(ethers.utils.parseEther("1"));
+      expect(totalYieldAfterCommission).to.equal(await yieldDistributor.totalYieldAccrued());
+
+      const beforeEthBalances = await Promise.all([
+        signers.random.getBalance(),
+        signers.random2.getBalance(),
+        signers.random3.getBalance(),
+        signers.admin.getBalance()
+      ]);
+
+      const afterEthBalances = await Promise.all([
+        signers.random.getBalance(),
+        signers.random2.getBalance(),
+        signers.random3.getBalance(),
+        signers.admin.getBalance()
+      ]);
+
+      const totalFee = ethers.utils.parseEther("0.15"); // RP network fee is currently 15%
+      const yield_portion_max = await yieldDistributor.YIELD_PORTION_MAX();
+      const adminFeeEth = totalFee.mul(5000).div(yield_portion_max) // admin gets 50% by default
+    })
+  })
 });
+
 
 
 // describe("Yield Distributor", function () {

@@ -22,11 +22,15 @@ contract OperatorDistributor is Base {
 
     constructor(address directory) Base(directory) {}
 
+    event WarningNoMiniPoolsToHarvest();
+
     receive() external payable {
         _queuedEth += msg.value;
     }
 
-    function removeMinipoolAddress(address _address) external onlyYieldDistrubutor {
+    function removeMinipoolAddress(
+        address _address
+    ) external onlyYieldDistrubutor {
         uint index = minipoolIndexMap[_address] - 1;
         require(index < minipoolAddresses.length, "Address not found.");
 
@@ -106,20 +110,16 @@ contract OperatorDistributor is Base {
     }
 
     function harvestNextMinipool() external onlyYieldDistrubutor {
-        require(
-            minipoolAddresses.length > 0,
-            "OperatorDistributor: no minipools to harvest"
-        );
+        if (minipoolAddresses.length == 0) {
+            emit WarningNoMiniPoolsToHarvest();
+            return;
+        }
 
         uint256 index = nextMinipoolHavestIndex % minipoolAddresses.length;
-        require(
-            index < minipoolAddresses.length,
-            "OperatorDistributor: invalid index"
-        );
 
         IMinipool minipool = IMinipool(minipoolAddresses[index]);
 
-        if(minipool.userDistributeAllowed()) {
+        if (minipool.userDistributeAllowed()) {
             minipool.distributeBalance(true);
         } else {
             minipool.beginUserDistribute();

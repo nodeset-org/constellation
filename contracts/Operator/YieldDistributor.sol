@@ -30,7 +30,7 @@ contract YieldDistributor is Base {
 
     int private _ethCommissionModifier = 0; // total extra fee added to (or removed from) RP network commission
     int public constant MAX_ETH_COMMISSION_MODIFIER = 1 ether;
-    uint16 private _ethRewardAdminPortion = 5000;
+    uint16 public _ethRewardAdminPortion = 5000;
 
     uint256 public totalYieldAccruedInInterval;
     uint256 public totalYieldAccrued;
