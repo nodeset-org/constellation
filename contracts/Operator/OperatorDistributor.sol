@@ -105,7 +105,7 @@ contract OperatorDistributor is Base {
         payable(nodeAddress).transfer(bond);
     }
 
-    function havestNextMinipool() external onlyYieldDistrubutor {
+    function harvestNextMinipool() external onlyYieldDistrubutor {
         require(
             minipoolAddresses.length > 0,
             "OperatorDistributor: no minipools to harvest"

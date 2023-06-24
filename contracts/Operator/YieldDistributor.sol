@@ -137,21 +137,21 @@ contract YieldDistributor is Base {
      * EXTERNAL
      */
 
-    /// @notice Distributes rewards accrued between two intervals to a single awaredee
+    /// @notice Distributes rewards accrued between two intervals to a single rewardee
     /// @dev The caller should check for the most gas-efficient way to distribute rewards
-    /// @param _awaredee The address of the awaredee to distribute rewards to
+    /// @param _rewardee The address of the rewardee to distribute rewards to
     /// @param startInterval The interval to start distributing rewards from
     /// @param endInterval The interval to stop distributing rewards at
-    function harvest(address _awaredee, uint256 startInterval, uint256 endInterval) public nonReentrant {
+    function harvest(address _rewardee, uint256 startInterval, uint256 endInterval) public nonReentrant {
         require(getIsInitialized(), NOT_INITIALIZED_ERROR);
         require(startInterval <= endInterval, "Start interval must be less than or equal to end interval");
         require(endInterval < currentInterval, "End interval must be less than current interval");
-        require(_awaredee != address(0), "Awaredee cannot be zero address");
+        require(_rewardee != address(0), "rewardee cannot be zero address");
 
         uint256 totalReward = 0;
-        Operator memory operator = getWhitelist().getOperatorAtAddress(_awaredee);
+        Operator memory operator = getWhitelist().getOperatorAtAddress(_rewardee);
         for(uint256 i = startInterval; i <= endInterval; i++) {
-            if(hasClaimed[_awaredee][i]) {
+            if(hasClaimed[_rewardee][i]) {
                 continue;
             }
             Claim memory claim = claims[i];
@@ -159,17 +159,17 @@ contract YieldDistributor is Base {
             uint256 operatorRewardEth = (fullEthReward * operator.feePortion) / YIELD_PORTION_MAX;
             // TODO: until the operator's feePortion is 100%, we will be collecting dust that'll need sweeping back to DP.
             totalReward += operatorRewardEth;
-            hasClaimed[_awaredee][i] = true;
+            hasClaimed[_rewardee][i] = true;
         }
 
         xrETH(getDirectory().getETHTokenAddress()).internalMint(
-            _awaredee,
+            _rewardee,
             totalReward
         );
 
-        getOperatorDistributor().havestNextMinipool();
+        getOperatorDistributor().harvestNextMinipool();
 
-        emit RewardDistributed(Reward(_awaredee, totalReward));
+        emit RewardDistributed(Reward(_rewardee, totalReward));
     }
 
     /// @notice Ends the current interval and starts a new one
@@ -192,7 +192,7 @@ contract YieldDistributor is Base {
         currentIntervalGenesisTime = block.timestamp;
         totalYieldAccruedInInterval = 0;
 
-        getOperatorDistributor().havestNextMinipool();
+        getOperatorDistributor().harvestNextMinipool();
     }
 
     /****
