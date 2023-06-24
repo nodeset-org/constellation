@@ -111,7 +111,7 @@ contract OperatorDistributor is Base {
             "OperatorDistributor: no minipools to harvest"
         );
 
-        uint256 index = nextMinipoolHavestIndex;
+        uint256 index = nextMinipoolHavestIndex % minipoolAddresses.length;
         require(
             index < minipoolAddresses.length,
             "OperatorDistributor: invalid index"
