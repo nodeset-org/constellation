@@ -269,6 +269,8 @@ describe("Yield Distributor", function () {
       });
 
       const totalYield = firstYield.add(secondYield);
+      // expect balance to be 18 eth
+      expect(await ethers.provider.getBalance(yieldDistributor.address)).to.equal(totalYield);
 
       const currentInterval1 = await yieldDistributor.currentInterval();
       expect(currentInterval1).to.equal(1);
@@ -300,7 +302,7 @@ describe("Yield Distributor", function () {
       const interval0 = await yieldDistributor.claims(0);
       const claimPerOperatorInterval0 = interval0.amount.mul(ethers.utils.parseEther("1")).div(interval0.numOperators).div(ethers.utils.parseEther("1"));
       console.log("claimPerOperatorInterval0: " + ethers.utils.formatEther(claimPerOperatorInterval0));
-      console.log("interval0: numOperators: " + interval0.numOperators.toString(),", amount: " + ethers.utils.formatEther(interval0.amount));
+      console.log("interval0: numOperators: " + interval0.numOperators.toString(), ", amount: " + ethers.utils.formatEther(interval0.amount));
 
       const interval1 = await yieldDistributor.claims(1);
       const claimPerOperatorInterval1 = interval1.amount.mul(ethers.utils.parseEther("1")).div(interval1.numOperators).div(ethers.utils.parseEther("1"));
@@ -308,8 +310,87 @@ describe("Yield Distributor", function () {
       console.log("interval1: numOperators: " + interval1.numOperators.toString(), ", amount: " + ethers.utils.formatEther(interval1.amount));
 
       await expect(tx1).to.emit(yieldDistributor, "RewardDistributed").withArgs([signers.random.address, operatorShareInterval0.add(operatorShareInterval1)]);
+      await expect(tx2).to.emit(yieldDistributor, "RewardDistributed").withArgs([signers.random2.address, operatorShareInterval0.add(operatorShareInterval1)]);
+      await expect(tx3).to.emit(yieldDistributor, "RewardDistributed").withArgs([signers.random3.address, operatorShareInterval0.add(operatorShareInterval1)]);
+      await expect(tx4).to.emit(yieldDistributor, "RewardDistributed").withArgs([signers.random4.address, operatorShareInterval1]);
+      await expect(tx5).to.emit(yieldDistributor, "RewardDistributed").withArgs([signers.random5.address, operatorShareInterval1]);
 
+      // check that the yield distributor has only the eth commission left
     })
+
+    it("cannot claim mulitple times for the same interval", async () => {
+      const setupData = await loadFixture(protocolFixture)
+      const { protocol, signers, rocketPool: rp } = setupData;
+      const { yieldDistributor, whitelist } = protocol;
+
+      // add 3 operators
+      await whitelist.addOperator(signers.random.address);
+      await whitelist.addOperator(signers.random2.address);
+      await whitelist.addOperator(signers.random3.address);
+
+      // send eth into yield distributor simulating yield at interval 0
+      const firstYield = ethers.utils.parseEther("0.0017");
+      await signers.ethWhale.sendTransaction({
+        to: protocol.yieldDistributor.address,
+        value: firstYield,
+      });
+
+      await yieldDistributor.connect(signers.admin).finalizeInterval();
+
+      // harvest rewards for each operator
+      await yieldDistributor.connect(signers.random).harvest(signers.random.address, 0, 0);
+
+      // try to harvest again
+      await expect(yieldDistributor.connect(signers.random).harvest(signers.random.address, 0, 0)).to.emit(yieldDistributor, "WarningAlreadyClaimed").withArgs(signers.random.address, 0);
+      await expect(yieldDistributor.connect(signers.random).harvest(signers.random.address, 0, 0)).to.emit(yieldDistributor, "WarningAlreadyClaimed").withArgs(signers.random.address, 0);
+      await expect(yieldDistributor.connect(signers.random).harvest(signers.random.address, 0, 0)).to.emit(yieldDistributor, "WarningAlreadyClaimed").withArgs(signers.random.address, 0);
+
+    });
+
+    it("cannot claim rewards that it was not assigned", async () => {
+      const setupData = await loadFixture(protocolFixture)
+      const { protocol, signers, rocketPool: rp } = setupData;
+      const { yieldDistributor, whitelist } = protocol;
+
+      // add 1/3 operators
+      await whitelist.addOperator(signers.random.address);
+
+      // send eth into yield distributor simulating yield at interval 0
+      const firstYield = ethers.utils.parseEther("0.0017");
+      await signers.ethWhale.sendTransaction({
+        to: protocol.yieldDistributor.address,
+        value: firstYield,
+      });
+
+      // add 2/3 operators
+      await whitelist.addOperator(signers.random2.address);
+
+      // send eth into yield distributor simulating yield at interval 1
+      const secondYield = ethers.utils.parseEther("0.0017");
+      await signers.ethWhale.sendTransaction({
+        to: protocol.yieldDistributor.address,
+        value: secondYield,
+      });
+
+      // add 3/3 operators
+      await whitelist.addOperator(signers.random3.address);
+
+      // send eth into yield distributor simulating yield at interval 2
+      const thirdYield = ethers.utils.parseEther("0.0017");
+      await signers.ethWhale.sendTransaction({
+        to: protocol.yieldDistributor.address,
+        value: thirdYield,
+      });
+
+      // finalize current interval
+      await yieldDistributor.connect(signers.admin).finalizeInterval();
+
+      // harvest rewards for each operator at interval 1
+      await expect(yieldDistributor.connect(signers.random).harvest(signers.random.address, 1, 1)).to.not.be.reverted;
+      await expect(yieldDistributor.connect(signers.random2).harvest(signers.random2.address, 1, 1)).to.not.be.reverted;
+      await expect(yieldDistributor.connect(signers.random3).harvest(signers.random3.address, 1, 1)).to.be.revertedWith("No claim for operator");
+
+    });
   })
 });
 

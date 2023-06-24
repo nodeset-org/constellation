@@ -58,6 +58,7 @@ contract YieldDistributor is Base {
         "YieldDistributor: Already distributing rewards";
 
     event RewardDistributed(Reward);
+    event WarningAlreadyClaimed(address operator, uint256 interval);
 
     constructor(address directory) Base(directory) {}
 
@@ -157,6 +158,7 @@ contract YieldDistributor is Base {
         Operator memory operator = getWhitelist().getOperatorAtAddress(_rewardee);
         for(uint256 i = startInterval; i <= endInterval; i++) {
             if(hasClaimed[_rewardee][i]) {
+                emit WarningAlreadyClaimed(_rewardee, i);
                 continue;
             }
             Claim memory claim = claims[i];
