@@ -149,6 +149,9 @@ contract YieldDistributor is Base {
         require(startInterval <= endInterval, "Start interval must be less than or equal to end interval");
         require(endInterval < currentInterval, "End interval must be less than current interval");
         require(_rewardee != address(0), "rewardee cannot be zero address");
+        Whitelist whitelist = getWhitelist();
+        require(whitelist.getIsAddressInWhitelist(_rewardee), "Rewardee is not whitelisted");
+        require(whitelist.getOperatorAtAddress(_rewardee).intervalStart >= startInterval, "Rewardee has not been an operator since startInterval");
 
         uint256 totalReward = 0;
         Operator memory operator = getWhitelist().getOperatorAtAddress(_rewardee);

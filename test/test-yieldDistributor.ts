@@ -279,8 +279,8 @@ describe("Yield Distributor", function () {
       const tx1 = await yieldDistributor.connect(signers.random).harvest(signers.random.address, 0, 1);
       const tx2 = await yieldDistributor.connect(signers.random2).harvest(signers.random2.address, 0, 1);
       const tx3 = await yieldDistributor.connect(signers.random3).harvest(signers.random3.address, 0, 1);
-      const tx4 = await yieldDistributor.connect(signers.random4).harvest(signers.random4.address, 0, 1);
-      const tx5 = await yieldDistributor.connect(signers.random5).harvest(signers.random5.address, 0, 1);
+      const tx4 = await yieldDistributor.connect(signers.random4).harvest(signers.random4.address, 1, 1);
+      const tx5 = await yieldDistributor.connect(signers.random5).harvest(signers.random5.address, 1, 1);
 
       const ethCommissionRate = ethers.utils.parseEther("1").sub(await yieldDistributor.getEthCommissionRate());
       console.log("ethCommissionRate: " + ethers.utils.formatEther(ethCommissionRate));
@@ -289,18 +289,21 @@ describe("Yield Distributor", function () {
       expect(totalYieldAfterCommission).to.equal(await yieldDistributor.totalYieldAccrued());
       console.log("totalYieldAccrued: " + ethers.utils.formatEther(await yieldDistributor.totalYieldAccrued()));
 
-      const operatorShareInterval0 = firstYield.mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("3"));
-      const operatorShareInterval1 = secondYield.mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("5"));
+      const firstYieldAfterCommission = firstYield.mul(ethCommissionRate).div(ethers.utils.parseEther("1"));
+      const secondYieldAfterCommission = secondYield.mul(ethCommissionRate).div(ethers.utils.parseEther("1"));
+
+      const operatorShareInterval0 = firstYieldAfterCommission.mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("3"));
+      const operatorShareInterval1 = secondYieldAfterCommission.mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("5"));
       console.log("operatorShareInterval0: " + ethers.utils.formatEther(operatorShareInterval0));
       console.log("operatorShareInterval1: " + ethers.utils.formatEther(operatorShareInterval1));
 
       const interval0 = await yieldDistributor.claims(0);
-      const claimPerOperatorInterval0 = interval0.amount.mul(ethers.utils.parseEther("1")).div(interval0.numOperators);
+      const claimPerOperatorInterval0 = interval0.amount.mul(ethers.utils.parseEther("1")).div(interval0.numOperators).div(ethers.utils.parseEther("1"));
       console.log("claimPerOperatorInterval0: " + ethers.utils.formatEther(claimPerOperatorInterval0));
       console.log("interval0: numOperators: " + interval0.numOperators.toString(),", amount: " + ethers.utils.formatEther(interval0.amount));
 
       const interval1 = await yieldDistributor.claims(1);
-      const claimPerOperatorInterval1 = interval1.amount.mul(ethers.utils.parseEther("1")).div(interval1.numOperators);
+      const claimPerOperatorInterval1 = interval1.amount.mul(ethers.utils.parseEther("1")).div(interval1.numOperators).div(ethers.utils.parseEther("1"));
       console.log("claimPerOperatorInterval1: " + ethers.utils.formatEther(claimPerOperatorInterval1));
       console.log("interval1: numOperators: " + interval1.numOperators.toString(), ", amount: " + ethers.utils.formatEther(interval1.amount));
 

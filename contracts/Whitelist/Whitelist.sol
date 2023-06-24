@@ -40,7 +40,7 @@ contract Whitelist is UpgradeableBase {
     //----
 
     function getIsAddressInWhitelist(address a) public view returns (bool) {
-        return _permissions[a] != false;
+        return _permissions[a];
     }
 
     function getTrustBuildPeriod() public view returns (uint) {
@@ -94,16 +94,17 @@ contract Whitelist is UpgradeableBase {
 
         _permissions[a] = true;
 
+        YieldDistributor distributor = YieldDistributor(
+            payable(getDirectory().getYieldDistributorAddress())
+        );
+
         // Fee should not start at 100% because the operator has not yet built trust.
-        Operator memory operator = Operator(block.timestamp, 0, 10000);
+        Operator memory operator = Operator(block.timestamp, 0, 10000, distributor.currentInterval() + 1);
 
         operatorMap[a] = operator;
         operatorIndexMap[numOperators] = a;
         reverseOperatorIndexMap[a] = numOperators + 1;
 
-        YieldDistributor distributor = YieldDistributor(
-            payable(getDirectory().getYieldDistributorAddress())
-        );
 
 
         distributor.finalizeInterval();
@@ -151,4 +152,6 @@ contract Whitelist is UpgradeableBase {
         );
         _;
     }
+
+
 }
