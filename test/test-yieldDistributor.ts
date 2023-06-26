@@ -8,7 +8,7 @@ import { initializeDirectory } from "./test-directory";
 import { mint_xRpl } from "./test-xRpl";
 import { mint_xrEth } from "./test-xrEth";
 import { string } from "hardhat/internal/core/params/argumentTypes";
-import { operator } from "../typechain-types/contracts";
+import { operator, whitelist } from "../typechain-types/contracts";
 import { RewardStruct } from "../typechain-types/contracts/Operator/YieldDistributor";
 
 describe("Yield Distributor", function () {
@@ -138,25 +138,18 @@ describe("Yield Distributor", function () {
 
   });
 
-  async function simulateYield(setupData: SetupData, ether: number, rpl: number) {
+  async function simulateYield(setupData: SetupData, yieldAmountEth: BigNumber) {
     const { protocol, signers, rocketPool: rp } = setupData;
     let mintAmount = ethers.utils.parseEther("100");
-    await mint_xRpl(setupData, signers.rplWhale, mintAmount);
     await mint_xrEth(setupData, signers.rplWhale, mintAmount);
 
     await protocol.whitelist.addOperator(signers.random.address);
     await protocol.whitelist.addOperator(signers.random2.address);
     await protocol.whitelist.addOperator(signers.random3.address);
 
-    const yieldAmountEth = ethers.utils.parseEther(ether.toString());
-    const yieldAmountRpl = ethers.utils.parseEther(rpl.toString());
-
-    console.log("Simulating yield of " + ethers.utils.formatEther(yieldAmountEth) + " ETH and " +
-      ethers.utils.formatEther(yieldAmountRpl) + " RPL")
 
     // simulate yield from validator
-    await rp.rplContract.connect(signers.rplWhale).transfer(protocol.yieldDistributor.address, yieldAmountRpl);
-    await signers.random.sendTransaction({ to: protocol.yieldDistributor.address, value: yieldAmountEth, gasLimit: 1000000 });
+    await signers.ethWhale.sendTransaction({ to: protocol.yieldDistributor.address, value: yieldAmountEth, gasLimit: 1000000 });
   }
 
 
@@ -165,40 +158,25 @@ describe("Yield Distributor", function () {
     const { protocol, signers, rocketPool: rp } = setupData;
     const yieldDistributor = protocol.yieldDistributor;
 
-    const totalEthYield = 1;
-    const totalRplYield = 1;
+    const totalEthYield = ethers.utils.parseEther("1");
 
-    const beforeEthBalances = await Promise.all([
-      signers.random.getBalance(),
-      signers.random2.getBalance(),
-      signers.random3.getBalance(),
-      signers.admin.getBalance()
-    ]);
+    await simulateYield(setupData, totalEthYield);
 
-    await simulateYield(setupData, totalEthYield, totalRplYield);
+    expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).to.equal(totalEthYield);
 
-    const afterEthBalances = await Promise.all([
-      signers.random.getBalance(),
-      signers.random2.getBalance(),
-      signers.random3.getBalance(),
-      signers.admin.getBalance()
-    ]);
+    const totalFee = (totalEthYield.mul(ethers.utils.parseEther("1").sub(await yieldDistributor.getEthCommissionRate()))).div(ethers.utils.parseEther("1"))
+    const adminFeeEth = totalEthYield.sub(totalFee);
 
-    const totalFee = ethers.utils.parseEther("0.15"); // RP network fee is currently 15%
-    const yield_portion_max = await yieldDistributor.YIELD_PORTION_MAX();
-    const adminFeeEth = totalFee.mul(5000).div(yield_portion_max) // admin gets 50% by default
-    // TODO: getEthCommissionRate() seems to be failing as it returns totalFee
-    // TODO: do not use hardcoded 5k value
-
-    const operatorShare = (totalFee.sub(adminFeeEth)).div(3); // 3 operators used in this test
-    const rpl = await ethers.getContractAt("IERC20", await protocol.directory.RPL_CONTRACT_ADDRESS());
-    const adminFeeRpl = (await rpl.balanceOf(yieldDistributor.address)).mul(5000).div(yield_portion_max);
+    const operatorShare = (totalFee).div(3); // 3 operators used in this test
 
     await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
 
-    const tx1 = await protocol.yieldDistributor.connect(signers.random).harvest(signers.random.address, 0, 0);
-    const tx2 = await protocol.yieldDistributor.connect(signers.random).harvest(signers.random2.address, 0, 0);
-    const tx3 = await protocol.yieldDistributor.connect(signers.random2).harvest(signers.random3.address, 0, 0);
+    const tx1 = await protocol.yieldDistributor.connect(signers.ethWhale).harvest(signers.random.address, 1, 1);
+    const tx2 = await protocol.yieldDistributor.connect(signers.ethWhale).harvest(signers.random2.address, 1, 1);
+    const tx3 = await protocol.yieldDistributor.connect(signers.ethWhale).harvest(signers.random3.address, 1, 1);
+
+    expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).to.equal(adminFeeEth);
+    // there's a bug here
 
     // we should expect each fee reward to follow the formula:
     // uint operatorRewardEth = (totalEthFee - adminRewardEth) * (operators[i].feePortion / YIELD_PORTION_MAX) / length;
@@ -213,22 +191,9 @@ describe("Yield Distributor", function () {
       .withArgs([signers.random3.address, operatorShare]);
 
 
-    // todo: this test is a little more tricky since we need to know the gas cost of the transaction for each signer
-    // also, changeEtherBalances will not work here since each transaction is run in a separate block rather than all together
-    // await expect(tx).to.changeEtherBalances(
-    //     [signers.random.address, signers.random2.address, signers.random3.address, signers.admin.address],
-    //     [operatorShare, operatorShare, operatorShare, adminFeeEth]
-    //   );
-
-    //await expect(tx).to.changeTokenBalance(
-    //    protocol.xRPL, signers.admin.address, adminFeeRpl
-    //  );
-    // should also send some amount to the DP (then OD), 
-    // but this functionality is tested in test - depositPool.ts
+    // check that the remaining eth in contract is equal to the admin fee
 
     console.log("Distributed " + ethers.utils.formatEther(operatorShare) + " ETH to 3 operators.");
-    console.log("Distributed " + ethers.utils.formatEther(adminFeeEth) + " ETH and " +
-      ethers.utils.formatEther(adminFeeRpl) + " RPL to the admin.");
   });
 
   describe("Test pull model", async () => {

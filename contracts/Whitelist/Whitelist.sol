@@ -99,8 +99,11 @@ contract Whitelist is UpgradeableBase {
         );
 
         // Fee should not start at 100% because the operator has not yet built trust.
+        numOperators++;
 
-        uint256 nextInterval = distributor.currentInterval() + 1;
+        distributor.finalizeInterval();
+
+        uint256 nextInterval = distributor.currentInterval();
         Operator memory operator = Operator(block.timestamp, 0, 10000, nextInterval);
         // operator will be entitled to rewards in the next interval
 
@@ -108,9 +111,6 @@ contract Whitelist is UpgradeableBase {
         operatorIndexMap[numOperators] = a;
         reverseOperatorIndexMap[a] = numOperators + 1;
 
-        numOperators++;
-
-        distributor.finalizeInterval();
         emit OperatorAdded(operator);
     }
 
