@@ -231,7 +231,7 @@ describe("Yield Distributor", function () {
       ethers.utils.formatEther(adminFeeRpl) + " RPL to the admin.");
   });
 
-  describe.only("Test pull model", async () => {
+  describe("Test pull model", async () => {
 
     it("does not dilute rewards from prior operators as more operators join", async () => {
       const setupData = await loadFixture(protocolFixture)
@@ -347,7 +347,7 @@ describe("Yield Distributor", function () {
 
     });
 
-    it.only("cannot claim rewards that it was not assigned", async () => {
+    it("cannot claim until it has been assigned an interval", async () => {
       const setupData = await loadFixture(protocolFixture)
       const { protocol, signers, rocketPool: rp } = setupData;
       const { yieldDistributor, whitelist } = protocol;
@@ -396,7 +396,6 @@ describe("Yield Distributor", function () {
       console.log("Operator 2", await whitelist.getOperatorAtAddress(signers.random2.address));
       console.log("Operator 3", await whitelist.getOperatorAtAddress(signers.random3.address));
 
-      // harvest rewards for each operator at interval 1
       await expect(yieldDistributor.harvest(signers.random.address, 0, 3)).to.be.rejectedWith("Rewardee has not been an operator since startInterval");
       await expect(yieldDistributor.harvest(signers.random2.address, 1, 3)).to.be.rejectedWith("Rewardee has not been an operator since startInterval");
       await expect(yieldDistributor.harvest(signers.random3.address, 2, 3)).to.be.revertedWith("Rewardee has not been an operator since startInterval");
