@@ -385,10 +385,16 @@ describe("Yield Distributor", function () {
       // finalize current interval
       await yieldDistributor.connect(signers.admin).finalizeInterval();
 
+      console.log("current interval: " + (await yieldDistributor.currentInterval()).toString());
+
+      console.log("Operator 0", await whitelist.getOperatorAtAddress(signers.random.address));
+      console.log("Operator 1", await whitelist.getOperatorAtAddress(signers.random2.address));
+      console.log("Operator 2", await whitelist.getOperatorAtAddress(signers.random3.address));
+
       // harvest rewards for each operator at interval 1
-      await expect(yieldDistributor.connect(signers.random).harvest(signers.random.address, 1, 1)).to.not.be.reverted;
-      await expect(yieldDistributor.connect(signers.random2).harvest(signers.random2.address, 1, 1)).to.not.be.reverted;
-      await expect(yieldDistributor.connect(signers.random3).harvest(signers.random3.address, 1, 1)).to.be.revertedWith("No claim for operator");
+      await expect(yieldDistributor.harvest(signers.random.address, 0, 2)).to.not.be.reverted;
+      await expect(yieldDistributor.harvest(signers.random2.address, 2, 2)).to.not.be.reverted;
+      await expect(yieldDistributor.harvest(signers.random3.address, 2, 2)).to.be.revertedWith("Rewardee has not been an operator since startInterval");
 
     });
   })
