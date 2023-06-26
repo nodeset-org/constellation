@@ -193,6 +193,7 @@ contract YieldDistributor is Base {
         );
 
         currentInterval++;
+        console.log("New interval: %s", currentInterval);
         currentIntervalGenesisTime = block.timestamp;
         totalYieldAccruedInInterval = 0;
 

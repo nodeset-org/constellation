@@ -5,6 +5,8 @@ import "../UpgradeableBase.sol";
 import "../Operator/Operator.sol";
 import "../Operator/YieldDistributor.sol";
 
+import "hardhat/console.sol";
+
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Controls operator access to the protocol.
 /// Only modifiable by admin. Upgradeable and intended to be replaced by a ZK-ID check when possible.
@@ -99,13 +101,15 @@ contract Whitelist is UpgradeableBase {
         );
 
         // Fee should not start at 100% because the operator has not yet built trust.
-        Operator memory operator = Operator(block.timestamp, 0, 10000, distributor.currentInterval() + 1);
+
+        uint256 nextInterval = distributor.currentInterval();
+        console.log(nextInterval);
+        Operator memory operator = Operator(block.timestamp, 0, 10000, nextInterval);
+        // operator will be entitled to rewards in the next interval
 
         operatorMap[a] = operator;
         operatorIndexMap[numOperators] = a;
         reverseOperatorIndexMap[a] = numOperators + 1;
-
-
 
         distributor.finalizeInterval();
 

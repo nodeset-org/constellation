@@ -347,7 +347,7 @@ describe("Yield Distributor", function () {
 
     });
 
-    it("cannot claim rewards that it was not assigned", async () => {
+    it.only("cannot claim rewards that it was not assigned", async () => {
       const setupData = await loadFixture(protocolFixture)
       const { protocol, signers, rocketPool: rp } = setupData;
       const { yieldDistributor, whitelist } = protocol;
@@ -356,7 +356,7 @@ describe("Yield Distributor", function () {
       await whitelist.addOperator(signers.random.address);
 
       // send eth into yield distributor simulating yield at interval 0
-      const firstYield = ethers.utils.parseEther("0.0017");
+      const firstYield = ethers.utils.parseEther("0.17");
       await signers.ethWhale.sendTransaction({
         to: protocol.yieldDistributor.address,
         value: firstYield,
@@ -366,7 +366,7 @@ describe("Yield Distributor", function () {
       await whitelist.addOperator(signers.random2.address);
 
       // send eth into yield distributor simulating yield at interval 1
-      const secondYield = ethers.utils.parseEther("0.0017");
+      const secondYield = ethers.utils.parseEther("0.317");
       await signers.ethWhale.sendTransaction({
         to: protocol.yieldDistributor.address,
         value: secondYield,
@@ -376,7 +376,7 @@ describe("Yield Distributor", function () {
       await whitelist.addOperator(signers.random3.address);
 
       // send eth into yield distributor simulating yield at interval 2
-      const thirdYield = ethers.utils.parseEther("0.0017");
+      const thirdYield = ethers.utils.parseEther("3.0017");
       await signers.ethWhale.sendTransaction({
         to: protocol.yieldDistributor.address,
         value: thirdYield,
