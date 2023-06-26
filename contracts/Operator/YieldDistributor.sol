@@ -185,6 +185,7 @@ contract YieldDistributor is Base {
     /// @dev Only called when numOperators changes or maxIntervalLengthSeconds has passed
     function finalizeInterval() public onlyWhitelistOrAdmin {
         if(totalYieldAccruedInInterval == 0) {
+            console.log("Not called");
             return;
         }
         Whitelist whitelist = getWhitelist();

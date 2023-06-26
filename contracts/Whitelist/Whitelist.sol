@@ -111,10 +111,9 @@ contract Whitelist is UpgradeableBase {
         operatorIndexMap[numOperators] = a;
         reverseOperatorIndexMap[a] = numOperators + 1;
 
-        distributor.finalizeInterval();
-
         numOperators++;
 
+        distributor.finalizeInterval();
         emit OperatorAdded(operator);
     }
 
