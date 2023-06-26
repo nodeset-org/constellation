@@ -153,10 +153,10 @@ contract YieldDistributor is Base {
         require(_rewardee != address(0), "rewardee cannot be zero address");
         Whitelist whitelist = getWhitelist();
         require(whitelist.getIsAddressInWhitelist(_rewardee), "Rewardee is not whitelisted");
-        require(whitelist.getOperatorAtAddress(_rewardee).intervalStart >= startInterval, "Rewardee has not been an operator since startInterval");
+        Operator memory operator = getWhitelist().getOperatorAtAddress(_rewardee);
+        require(operator.intervalStart <= startInterval, "Rewardee has not been an operator since startInterval");
 
         uint256 totalReward = 0;
-        Operator memory operator = getWhitelist().getOperatorAtAddress(_rewardee);
         for(uint256 i = startInterval; i <= endInterval; i++) {
             if(hasClaimed[_rewardee][i]) {
                 emit WarningAlreadyClaimed(_rewardee, i);
@@ -184,8 +184,7 @@ contract YieldDistributor is Base {
     /// @notice Ends the current interval and starts a new one
     /// @dev Only called when numOperators changes or maxIntervalLengthSeconds has passed
     function finalizeInterval() public onlyWhitelistOrAdmin {
-        if(totalYieldAccruedInInterval == 0) {
-            console.log("Not called");
+        if(totalYieldAccruedInInterval == 0 && currentInterval > 0) {
             return;
         }
         Whitelist whitelist = getWhitelist();
@@ -196,7 +195,6 @@ contract YieldDistributor is Base {
         );
 
         currentInterval++;
-        console.log("New interval: %s", currentInterval);
         currentIntervalGenesisTime = block.timestamp;
         totalYieldAccruedInInterval = 0;
 

@@ -353,9 +353,7 @@ describe("Yield Distributor", function () {
       const { yieldDistributor, whitelist } = protocol;
 
       // add 1/3 operators
-      console.log("Current interval before adding operators: ", await yieldDistributor.currentInterval());
       await whitelist.addOperator(signers.random.address);
-      console.log("Current interval after adding operators: ", await yieldDistributor.currentInterval());
 
       // send eth into yield distributor simulating yield at interval 0
       const firstYield = ethers.utils.parseEther("0.17");
@@ -364,13 +362,11 @@ describe("Yield Distributor", function () {
         value: firstYield,
       });
 
-      expect(await yieldDistributor.currentInterval()).to.equal(0);
+      expect(await yieldDistributor.currentInterval()).to.equal(1);
       // since there are no operators, nobody can claim
 
       // add 2/3 operators
-      console.log("Current interval before adding operators: ", await yieldDistributor.currentInterval());
       await whitelist.addOperator(signers.random2.address);
-      console.log("Current interval after adding operators: ", await yieldDistributor.currentInterval());
 
       // send eth into yield distributor simulating yield at interval 1
       const secondYield = ethers.utils.parseEther("0.317");
@@ -379,12 +375,10 @@ describe("Yield Distributor", function () {
         value: secondYield,
       });
 
-      expect(await yieldDistributor.currentInterval()).to.equal(1)
+      expect(await yieldDistributor.currentInterval()).to.equal(2)
 
       // add 3/3 operators
-      console.log("Current interval before adding operators: ", await yieldDistributor.currentInterval());
       await whitelist.addOperator(signers.random3.address);
-      console.log("Current interval after adding operators: ", await yieldDistributor.currentInterval());
 
       // send eth into yield distributor simulating yield at interval 2
       const thirdYield = ethers.utils.parseEther("3.0017");
@@ -393,21 +387,19 @@ describe("Yield Distributor", function () {
         value: thirdYield,
       });
 
-      expect(await yieldDistributor.currentInterval()).to.equal(2)
+      expect(await yieldDistributor.currentInterval()).to.equal(3)
 
       // finalize current interval
       await yieldDistributor.connect(signers.admin).finalizeInterval();
 
-      console.log("current interval: " + (await yieldDistributor.currentInterval()).toString());
-
-      console.log("Operator 0", await whitelist.getOperatorAtAddress(signers.random.address));
-      console.log("Operator 1", await whitelist.getOperatorAtAddress(signers.random2.address));
-      console.log("Operator 2", await whitelist.getOperatorAtAddress(signers.random3.address));
+      console.log("Operator", await whitelist.getOperatorAtAddress(signers.random.address));
+      console.log("Operator 2", await whitelist.getOperatorAtAddress(signers.random2.address));
+      console.log("Operator 3", await whitelist.getOperatorAtAddress(signers.random3.address));
 
       // harvest rewards for each operator at interval 1
-      await expect(yieldDistributor.harvest(signers.random.address, 0, 2)).to.not.be.reverted;
-      await expect(yieldDistributor.harvest(signers.random2.address, 2, 2)).to.not.be.reverted;
-      await expect(yieldDistributor.harvest(signers.random3.address, 2, 2)).to.be.revertedWith("Rewardee has not been an operator since startInterval");
+      await expect(yieldDistributor.harvest(signers.random.address, 0, 3)).to.be.rejectedWith("Rewardee has not been an operator since startInterval");
+      await expect(yieldDistributor.harvest(signers.random2.address, 1, 3)).to.be.rejectedWith("Rewardee has not been an operator since startInterval");
+      await expect(yieldDistributor.harvest(signers.random3.address, 2, 3)).to.be.revertedWith("Rewardee has not been an operator since startInterval");
 
     });
   })
