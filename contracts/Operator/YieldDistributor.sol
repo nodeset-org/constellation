@@ -36,6 +36,7 @@ contract YieldDistributor is Base {
 
     uint256 public totalYieldAccruedInInterval;
     uint256 public totalYieldAccrued;
+    uint256 public dustAccrued;
 
     mapping(uint256 => Claim) public claims; // claimable yield per interval (in wei)
     mapping(address => mapping (uint256 => bool)) public hasClaimed; // whether an operator has claimed for a given interval
@@ -165,6 +166,7 @@ contract YieldDistributor is Base {
             uint256 fullEthReward = ((claim.amount * 1e18) / claim.numOperators) / 1e18;
             uint256 operatorRewardEth = (fullEthReward * operator.feePortion) / YIELD_PORTION_MAX;
             // TODO: until the operator's feePortion is 100%, we will be collecting dust that'll need sweeping back to DP.
+            dustAccrued += fullEthReward - operatorRewardEth;
             totalReward += operatorRewardEth;
             hasClaimed[_rewardee][i] = true;
         }

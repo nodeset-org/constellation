@@ -353,7 +353,9 @@ describe("Yield Distributor", function () {
       const { yieldDistributor, whitelist } = protocol;
 
       // add 1/3 operators
+      console.log("Current interval before adding operators: ", await yieldDistributor.currentInterval());
       await whitelist.addOperator(signers.random.address);
+      console.log("Current interval after adding operators: ", await yieldDistributor.currentInterval());
 
       // send eth into yield distributor simulating yield at interval 0
       const firstYield = ethers.utils.parseEther("0.17");
@@ -362,8 +364,13 @@ describe("Yield Distributor", function () {
         value: firstYield,
       });
 
+      expect(await yieldDistributor.currentInterval()).to.equal(0);
+      // since there are no operators, nobody can claim
+
       // add 2/3 operators
+      console.log("Current interval before adding operators: ", await yieldDistributor.currentInterval());
       await whitelist.addOperator(signers.random2.address);
+      console.log("Current interval after adding operators: ", await yieldDistributor.currentInterval());
 
       // send eth into yield distributor simulating yield at interval 1
       const secondYield = ethers.utils.parseEther("0.317");
@@ -372,8 +379,12 @@ describe("Yield Distributor", function () {
         value: secondYield,
       });
 
+      expect(await yieldDistributor.currentInterval()).to.equal(1)
+
       // add 3/3 operators
+      console.log("Current interval before adding operators: ", await yieldDistributor.currentInterval());
       await whitelist.addOperator(signers.random3.address);
+      console.log("Current interval after adding operators: ", await yieldDistributor.currentInterval());
 
       // send eth into yield distributor simulating yield at interval 2
       const thirdYield = ethers.utils.parseEther("3.0017");
@@ -381,6 +392,8 @@ describe("Yield Distributor", function () {
         to: protocol.yieldDistributor.address,
         value: thirdYield,
       });
+
+      expect(await yieldDistributor.currentInterval()).to.equal(2)
 
       // finalize current interval
       await yieldDistributor.connect(signers.admin).finalizeInterval();

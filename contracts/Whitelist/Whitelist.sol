@@ -102,7 +102,7 @@ contract Whitelist is UpgradeableBase {
 
         // Fee should not start at 100% because the operator has not yet built trust.
 
-        uint256 nextInterval = distributor.currentInterval();
+        uint256 nextInterval = distributor.currentInterval() + 1;
         console.log(nextInterval);
         Operator memory operator = Operator(block.timestamp, 0, 10000, nextInterval);
         // operator will be entitled to rewards in the next interval
