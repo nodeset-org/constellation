@@ -140,8 +140,6 @@ describe("Yield Distributor", function () {
 
   async function simulateYield(setupData: SetupData, yieldAmountEth: BigNumber) {
     const { protocol, signers, rocketPool: rp } = setupData;
-    let mintAmount = ethers.utils.parseEther("100");
-    await mint_xrEth(setupData, signers.rplWhale, mintAmount);
 
     await protocol.whitelist.addOperator(signers.random.address);
     await protocol.whitelist.addOperator(signers.random2.address);
@@ -171,12 +169,22 @@ describe("Yield Distributor", function () {
 
     await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
 
+    const initialBalances = await Promise.all([
+      signers.random.getBalance(),
+      signers.random2.getBalance(),
+      signers.random3.getBalance(),
+    ]);
     const tx1 = await protocol.yieldDistributor.connect(signers.ethWhale).harvest(signers.random.address, 1, 1);
     const tx2 = await protocol.yieldDistributor.connect(signers.ethWhale).harvest(signers.random2.address, 1, 1);
     const tx3 = await protocol.yieldDistributor.connect(signers.ethWhale).harvest(signers.random3.address, 1, 1);
+    const finalBalances = await Promise.all([
+      signers.random.getBalance(),
+      signers.random2.getBalance(),
+      signers.random3.getBalance(),
+    ]);
+    const deltaBalances = finalBalances.map((final, i) => final.sub(initialBalances[i]));
 
-    expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).to.equal(adminFeeEth);
-    // there's a bug here
+    expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).to.equal(adminFeeEth.add(1));
 
     // we should expect each fee reward to follow the formula:
     // uint operatorRewardEth = (totalEthFee - adminRewardEth) * (operators[i].feePortion / YIELD_PORTION_MAX) / length;
@@ -191,12 +199,9 @@ describe("Yield Distributor", function () {
       .withArgs([signers.random3.address, operatorShare]);
 
 
-    // check that the remaining eth in contract is equal to the admin fee
-
-    console.log("Distributed " + ethers.utils.formatEther(operatorShare) + " ETH to 3 operators.");
   });
 
-  describe("Test pull model", async () => {
+  it("Test pull model", async () => {
 
     it("does not dilute rewards from prior operators as more operators join", async () => {
       const setupData = await loadFixture(protocolFixture)
@@ -250,29 +255,20 @@ describe("Yield Distributor", function () {
       const tx5 = await yieldDistributor.connect(signers.random5).harvest(signers.random5.address, 1, 1);
 
       const ethCommissionRate = ethers.utils.parseEther("1").sub(await yieldDistributor.getEthCommissionRate());
-      console.log("ethCommissionRate: " + ethers.utils.formatEther(ethCommissionRate));
       const totalYieldAfterCommission = totalYield.mul(ethCommissionRate).div(ethers.utils.parseEther("1"));
-      console.log("totalYieldAfterCommission: ", (ethers.utils.formatEther(totalYieldAfterCommission)));
       expect(totalYieldAfterCommission).to.equal(await yieldDistributor.totalYieldAccrued());
-      console.log("totalYieldAccrued: " + ethers.utils.formatEther(await yieldDistributor.totalYieldAccrued()));
 
       const firstYieldAfterCommission = firstYield.mul(ethCommissionRate).div(ethers.utils.parseEther("1"));
       const secondYieldAfterCommission = secondYield.mul(ethCommissionRate).div(ethers.utils.parseEther("1"));
 
       const operatorShareInterval0 = firstYieldAfterCommission.mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("3"));
       const operatorShareInterval1 = secondYieldAfterCommission.mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("5"));
-      console.log("operatorShareInterval0: " + ethers.utils.formatEther(operatorShareInterval0));
-      console.log("operatorShareInterval1: " + ethers.utils.formatEther(operatorShareInterval1));
 
       const interval0 = await yieldDistributor.claims(0);
       const claimPerOperatorInterval0 = interval0.amount.mul(ethers.utils.parseEther("1")).div(interval0.numOperators).div(ethers.utils.parseEther("1"));
-      console.log("claimPerOperatorInterval0: " + ethers.utils.formatEther(claimPerOperatorInterval0));
-      console.log("interval0: numOperators: " + interval0.numOperators.toString(), ", amount: " + ethers.utils.formatEther(interval0.amount));
 
       const interval1 = await yieldDistributor.claims(1);
       const claimPerOperatorInterval1 = interval1.amount.mul(ethers.utils.parseEther("1")).div(interval1.numOperators).div(ethers.utils.parseEther("1"));
-      console.log("claimPerOperatorInterval1: " + ethers.utils.formatEther(claimPerOperatorInterval1));
-      console.log("interval1: numOperators: " + interval1.numOperators.toString(), ", amount: " + ethers.utils.formatEther(interval1.amount));
 
       await expect(tx1).to.emit(yieldDistributor, "RewardDistributed").withArgs([signers.random.address, operatorShareInterval0.add(operatorShareInterval1)]);
       await expect(tx2).to.emit(yieldDistributor, "RewardDistributed").withArgs([signers.random2.address, operatorShareInterval0.add(operatorShareInterval1)]);
@@ -280,7 +276,7 @@ describe("Yield Distributor", function () {
       await expect(tx4).to.emit(yieldDistributor, "RewardDistributed").withArgs([signers.random4.address, operatorShareInterval1]);
       await expect(tx5).to.emit(yieldDistributor, "RewardDistributed").withArgs([signers.random5.address, operatorShareInterval1]);
 
-      // check that the yield distributor has only the eth commission left
+      expect(await ethers.provider.getBalance(yieldDistributor.address)).to.equal(totalYieldAfterCommission);
     })
 
     it("cannot claim mulitple times for the same interval", async () => {

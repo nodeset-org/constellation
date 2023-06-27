@@ -137,6 +137,14 @@ contract YieldDistributor is Base {
             totalEth > distributableYield ? 0 : distributableYield - totalEth;
     }
 
+    function getClaims() public view returns(Claim[] memory) {
+        Claim[] memory _claims = new Claim[](currentInterval + 1);
+        for (uint256 i = 0; i <= currentInterval; i++) {
+            _claims[i] = claims[i];
+        }
+        return _claims;
+    }
+
     /****
      * EXTERNAL
      */
@@ -171,10 +179,9 @@ contract YieldDistributor is Base {
             hasClaimed[_rewardee][i] = true;
         }
 
-        xrETH(getDirectory().getETHTokenAddress()).internalMint(
-            _rewardee,
-            totalReward
-        );
+        // send eth to rewardee
+        (bool success, ) = _rewardee.call{value: totalReward}("");
+        require(success, "Failed to send ETH to rewardee");
 
         getOperatorDistributor().harvestNextMinipool();
 
