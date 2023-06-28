@@ -26,21 +26,20 @@ struct Claim {
 /// @custom:security-contact info@nodeset.io
 /// @notice distributes rewards
 contract YieldDistributor is Base {
-    uint8 public constant YIELD_PORTION_DECIMALS = 4;
-    uint16 public constant YIELD_PORTION_MAX =
-        uint16(10) ** YIELD_PORTION_DECIMALS;
 
-    int private _ethCommissionModifier = 0; // total extra fee added to (or removed from) RP network commission
-    int public constant MAX_ETH_COMMISSION_MODIFIER = 1 ether;
-    uint16 public _ethRewardAdminPortion = 5000;
+    uint256 public nodeOperatorSplit = 0.15e18; // 15% goes to node operators
+    uint256 public ethLiquidityProviderSplit = 0.8e18; // 80% goes to ETH liquidity providers
+    uint256 public adminSplit = 0.05e18; // 5% goes to the admin
 
-    uint256 public totalYieldAccruedInInterval;
+    uint256 public nodeOperatorYieldAccruedInInterval;
     uint256 public totalYieldAccrued;
     uint256 public dustAccrued;
     uint256 public adminYieldAccrued;
+    uint256 public ethLiquidityProviderYieldAccrued;
 
     mapping(uint256 => Claim) public claims; // claimable yield per interval (in wei)
     mapping(address => mapping(uint256 => bool)) public hasClaimed; // whether an operator has claimed for a given interval
+
     uint256 public currentInterval = 0;
     uint256 public currentIntervalGenesisTime = block.timestamp;
     uint256 public maxIntervalLengthSeconds = 30 days; // NOs will have to wait at most this long for their payday
@@ -80,12 +79,16 @@ contract YieldDistributor is Base {
 
     // ETH deposits are done via gasless balance increases to DP, DP then sends ETH to this contract
     receive() external payable {
-        uint256 yieldRecieved = (msg.value *
-            (1 ether - getEthCommissionRate())) / 1 ether;
+        totalYieldAccrued += msg.value;
 
-        totalYieldAccruedInInterval += yieldRecieved;
-        totalYieldAccrued += yieldRecieved;
-        adminYieldAccrued += msg.value - yieldRecieved;
+        uint256 yieldRecievedForNodeOperator = (msg.value * nodeOperatorSplit) / 1e18;
+        uint256 yieldRecievedForAdmin = (msg.value * adminSplit) / 1e18;
+        uint256 yieldRecievedForLiquidityProviders = msg.value - yieldRecievedForNodeOperator - yieldRecievedForAdmin;
+
+        nodeOperatorYieldAccruedInInterval += yieldRecievedForNodeOperator;
+
+        adminYieldAccrued += yieldRecievedForAdmin;
+        ethLiquidityProviderYieldAccrued += yieldRecievedForLiquidityProviders;
 
         // if elapsed time since last interval is greater than maxIntervalLengthSeconds, start a new interval
         if (
@@ -102,24 +105,6 @@ contract YieldDistributor is Base {
 
     function getIsInitialized() public view returns (bool) {
         return _isInitialized;
-    }
-
-    /// @notice Gets the total protocol ETH commission rate as a fraction of one ether
-    /// This is further split into operator and admin rewards in distributeRewards()
-    function getEthCommissionRate() public view returns (uint) {
-        int commission = int(getRocketPoolFee()) + _ethCommissionModifier;
-        // constrain to 0->1 ether
-        int maxCommission = 1 ether;
-        commission = commission >= 0 ? commission : int(0);
-        commission = commission > maxCommission ? maxCommission : commission;
-
-        return uint(commission);
-    }
-
-    /// @notice Gets the ETH commission portion which goes to the admin.
-    /// Scales from 0 (0%) to YIELD_PORTION_MAX (100%)
-    function getEthRewardAdminPortion() public view returns (uint16) {
-        return _ethRewardAdminPortion;
     }
 
     /// @notice Gets the total tvl of non-distributed yield
@@ -195,8 +180,7 @@ contract YieldDistributor is Base {
             Claim memory claim = claims[i];
             uint256 fullEthReward = ((claim.amount * 1e18) /
                 claim.numOperators) / 1e18;
-            uint256 operatorRewardEth = (fullEthReward * operator.feePortion) /
-                YIELD_PORTION_MAX;
+            uint256 operatorRewardEth = (fullEthReward * operator.feePortion) / 1e18;
             // TODO: until the operator's feePortion is 100%, we will be collecting dust that'll need sweeping back to DP.
             dustAccrued += fullEthReward - operatorRewardEth;
             totalReward += operatorRewardEth;
@@ -220,19 +204,19 @@ contract YieldDistributor is Base {
     /// @notice Ends the current interval and starts a new one
     /// @dev Only called when numOperators changes or maxIntervalLengthSeconds has passed
     function finalizeInterval() public onlyWhitelistOrAdmin {
-        if (totalYieldAccruedInInterval == 0 && currentInterval > 0) {
+        if (nodeOperatorYieldAccruedInInterval == 0 && currentInterval > 0) {
             return;
         }
         Whitelist whitelist = getWhitelist();
 
         claims[currentInterval] = Claim(
-            totalYieldAccruedInInterval,
+            nodeOperatorYieldAccruedInInterval,
             whitelist.numOperators()
         );
 
         currentInterval++;
         currentIntervalGenesisTime = block.timestamp;
-        totalYieldAccruedInInterval = 0;
+        nodeOperatorYieldAccruedInInterval = 0;
 
         getOperatorDistributor().harvestNextMinipool();
     }
@@ -256,25 +240,18 @@ contract YieldDistributor is Base {
         require(success, "Failed to send ETH to treasury");
     }
 
-    /// @notice Sets an extra fee on top of RP network comission, as a portion of 1 ether.
-    /// Can be negative to reduce RP commission by this amount instead.
-    function setEthCommissionModifier(
-        int ethCommissionModifier
+    function setProtocolFeeSplits (
+        uint256 _nodeOperatorSplit,
+        uint256 _ethLiquidityProviderSplit,
+        uint256 _adminSplit
     ) public onlyAdmin {
         require(
-            ethCommissionModifier <= MAX_ETH_COMMISSION_MODIFIER &&
-                ethCommissionModifier >= -MAX_ETH_COMMISSION_MODIFIER,
-            ETH_COMMISSION_MODIFIER_OUT_OF_BOUNDS_ERROR
+            _nodeOperatorSplit + _ethLiquidityProviderSplit + _adminSplit == 1e18,
+            "Splits must add up to 100%"
         );
-        _ethCommissionModifier = ethCommissionModifier;
-    }
-
-    function setEthRewardAdminPortion(uint16 newPortion) public onlyAdmin {
-        require(
-            newPortion <= YIELD_PORTION_MAX,
-            ETH_REWARD_ADMIN_PORTION_OUT_OF_BOUNDS_ERROR
-        );
-        _ethRewardAdminPortion = newPortion;
+        nodeOperatorSplit = _nodeOperatorSplit;
+        ethLiquidityProviderSplit = _ethLiquidityProviderSplit;
+        adminSplit = _adminSplit;
     }
 
     /****

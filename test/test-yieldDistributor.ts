@@ -55,85 +55,63 @@ describe("Yield Distributor", function () {
 
 
   describe("Setters", function () {
-    it("Random address cannot set ETH fee modifier", async function () {
+    it("Random address cannot set split ratios", async function () {
       const setupData = await loadFixture(deployOnlyFixture);
       const { protocol, signers } = setupData;
 
       await expect(protocol.yieldDistributor.connect(signers.random)
-        .setEthCommissionModifier(BigNumber.from(999)))
+        .setProtocolFeeSplits(BigNumber.from(999), BigNumber.from(999), BigNumber.from(999)))
         .to.be.revertedWith(await protocol.yieldDistributor.ADMIN_ONLY_ERROR());
-    });
-
-    it("Admin can set ETH fee modifier", async function () {
-      const setupData = await loadFixture(deployOnlyFixture);
-      const { protocol, signers, rocketPool: rp } = setupData;
-
-      let newFee = ethers.utils.parseEther("0.01");
-      await expect(protocol.yieldDistributor.setEthCommissionModifier(newFee))
-        .to.not.be.reverted;
-
-      let expectedFee = (await rp.networkFeesContract.getMaximumNodeFee()).add(newFee);
-      await expect(await protocol.yieldDistributor.connect(signers.random).getEthCommissionRate())
-        .equals(expectedFee);
-
-      newFee = ethers.utils.parseEther("-0.01");
-      await expect(protocol.yieldDistributor.setEthCommissionModifier(newFee))
-        .to.not.be.reverted;
-
-      expectedFee = (await rp.networkFeesContract.getMaximumNodeFee()).add(newFee);
-      await expect(await protocol.yieldDistributor.connect(signers.random).getEthCommissionRate())
-        .equals(expectedFee);
-    });
-
-    it("Revert if ETH fee modifier set too high", async function () {
-      const setupData = await loadFixture(deployOnlyFixture);
-      const { protocol, signers, rocketPool: rp } = setupData;
-
-      let newFee = (await protocol.yieldDistributor.MAX_ETH_COMMISSION_MODIFIER()).add(ethers.utils.parseEther("0.1"));
-      await expect(protocol.yieldDistributor.setEthCommissionModifier(newFee))
-        .to.be.revertedWith(await protocol.yieldDistributor.ETH_COMMISSION_MODIFIER_OUT_OF_BOUNDS_ERROR());
-
-      let expectedFee = (await rp.networkFeesContract.getMaximumNodeFee()).add(newFee)
-      await expect(await protocol.yieldDistributor.connect(signers.random).getEthCommissionRate())
-        .to.not.equal(expectedFee);
-    });
-
-    it("Revert if ETH fee modifier set too low", async function () {
-      const setupData = await loadFixture(deployOnlyFixture);
-      const { protocol, signers, rocketPool: rp } = setupData;
-
-      const newFee = ((await protocol.yieldDistributor.MAX_ETH_COMMISSION_MODIFIER()).add(ethers.utils.parseEther("0.1"))).mul(-1);
-      await expect(protocol.yieldDistributor.setEthCommissionModifier(newFee))
-        .to.be.revertedWith(await protocol.yieldDistributor.ETH_COMMISSION_MODIFIER_OUT_OF_BOUNDS_ERROR());
-
-      const expectedFee = (await rp.networkFeesContract.getMaximumNodeFee()).add(newFee)
-      await expect(await protocol.yieldDistributor.connect(signers.random).getEthCommissionRate())
-        .to.not.equal(expectedFee);
     });
 
     it("Admin can set ETH fee admin portion", async function () {
       const setupData = await loadFixture(deployOnlyFixture);
       const { protocol, signers } = setupData;
 
-      const newFee = .75 * await protocol.yieldDistributor.YIELD_PORTION_MAX();
-      await expect(protocol.yieldDistributor.setEthRewardAdminPortion(newFee))
-        .to.not.be.reverted;
+      const previousAdminSplit = await protocol.yieldDistributor.connect(signers.random).adminSplit();
+      const previousETHLPSplit = await protocol.yieldDistributor.connect(signers.random).ethLiquidityProviderSplit();
+      const previousNOSplit = await protocol.yieldDistributor.connect(signers.random).nodeOperatorSplit();
 
-      await expect(await protocol.yieldDistributor.connect(signers.random).getEthRewardAdminPortion())
-        .equals(newFee);
+      expect(previousNOSplit).not.equals(ethers.utils.parseUnits("0.50", "18"));
+      expect(previousETHLPSplit).not.equals(ethers.utils.parseUnits("0.25", "18"));
+      expect(previousAdminSplit).not.equals(ethers.utils.parseUnits("0.25", "18"));
+
+      await protocol.yieldDistributor.setProtocolFeeSplits(
+        ethers.utils.parseUnits("0.50", "18"),
+        ethers.utils.parseUnits("0.25", "18"),
+        ethers.utils.parseUnits("0.25", "18"),
+      )
+
+      const finalAdminSplit = await protocol.yieldDistributor.connect(signers.random).adminSplit();
+      const finalETHLPSplit = await protocol.yieldDistributor.connect(signers.random).ethLiquidityProviderSplit();
+      const finalNOSplit = await protocol.yieldDistributor.connect(signers.random).nodeOperatorSplit();
+
+      expect(finalNOSplit).equals(ethers.utils.parseUnits("0.50", "18"));
+      expect(finalAdminSplit).equals(ethers.utils.parseUnits("0.25", "18"));
+      expect(finalETHLPSplit).equals(ethers.utils.parseUnits("0.25", "18"));
     });
 
-    it("Revert if ETH fee admin portion is out of bounds", async function () {
+    it("Revert if split ratios don't add up", async function () {
       const setupData = await loadFixture(deployOnlyFixture);
       const { protocol, signers } = setupData;
 
-      const previousFee = await protocol.yieldDistributor.connect(signers.random).getEthRewardAdminPortion();
+      const previousAdminSplit = await protocol.yieldDistributor.connect(signers.random).adminSplit();
+      const previousETHLPSplit = await protocol.yieldDistributor.connect(signers.random).ethLiquidityProviderSplit();
+      const previousNOSplit = await protocol.yieldDistributor.connect(signers.random).nodeOperatorSplit();
+      await expect(protocol.yieldDistributor.setProtocolFeeSplits(
+        ethers.utils.parseUnits("0.5", "18"),
+        ethers.utils.parseUnits("0.5", "18"),
+        ethers.utils.parseUnits("0.5", "18"),
+      )).to.be.revertedWith("Splits must add up to 100%")
 
-      const newFee = await protocol.yieldDistributor.YIELD_PORTION_MAX() + 1;
-      await expect(protocol.yieldDistributor.setEthRewardAdminPortion(newFee))
-        .to.be.revertedWith(await protocol.yieldDistributor.ETH_REWARD_ADMIN_PORTION_OUT_OF_BOUNDS_ERROR());
+      const finalAdminSplit = await protocol.yieldDistributor.connect(signers.random).adminSplit();
+      const finalETHLPSplit = await protocol.yieldDistributor.connect(signers.random).ethLiquidityProviderSplit();
+      const finalNOSplit = await protocol.yieldDistributor.connect(signers.random).nodeOperatorSplit();
 
-      await expect(await protocol.yieldDistributor.connect(signers.random).getEthRewardAdminPortion()).to.equal(previousFee);
+      expect(previousAdminSplit).to.equal(finalAdminSplit);
+      expect(previousETHLPSplit).to.equal(finalETHLPSplit);
+      expect(previousNOSplit).to.equal(finalNOSplit);
+
     });
 
   });
@@ -162,8 +140,9 @@ describe("Yield Distributor", function () {
 
     expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).to.equal(totalEthYield);
 
-    const totalFee = (totalEthYield.mul(ethers.utils.parseEther("1").sub(await yieldDistributor.getEthCommissionRate()))).div(ethers.utils.parseEther("1"))
-    const adminFeeEth = totalEthYield.sub(totalFee);
+    const totalFee = (await yieldDistributor.nodeOperatorSplit()).mul(totalEthYield).div(ethers.utils.parseEther("1"))
+    const adminFeeEth = (await yieldDistributor.adminSplit()).mul(totalEthYield).div(ethers.utils.parseEther("1"))
+    const ethLiquidityProviderFeeEth = (await yieldDistributor.ethLiquidityProviderSplit()).mul(totalEthYield).div(ethers.utils.parseEther("1"))
 
     const operatorShare = (totalFee).div(3); // 3 operators used in this test
 
@@ -184,7 +163,7 @@ describe("Yield Distributor", function () {
     ]);
     const deltaBalances = finalBalances.map((final, i) => final.sub(initialBalances[i]));
 
-    expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).to.equal(adminFeeEth.add(1));
+    expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).to.equal(adminFeeEth.add(ethLiquidityProviderFeeEth));
 
     // we should expect each fee reward to follow the formula:
     // uint operatorRewardEth = (totalEthFee - adminRewardEth) * (operators[i].feePortion / YIELD_PORTION_MAX) / length;
@@ -254,12 +233,11 @@ describe("Yield Distributor", function () {
       const tx4 = await yieldDistributor.connect(signers.random4).harvest(signers.random4.address, 1, 1);
       const tx5 = await yieldDistributor.connect(signers.random5).harvest(signers.random5.address, 1, 1);
 
-      const ethCommissionRate = ethers.utils.parseEther("1").sub(await yieldDistributor.getEthCommissionRate());
-      const totalYieldAfterCommission = totalYield.mul(ethCommissionRate).div(ethers.utils.parseEther("1"));
-      expect(totalYieldAfterCommission).to.equal(await yieldDistributor.totalYieldAccrued());
+      const totalYieldAfterCommission = (await yieldDistributor.nodeOperatorSplit()).mul(totalYield).div(ethers.utils.parseEther("1"))
+      expect(totalYieldAfterCommission).to.equal((await yieldDistributor.nodeOperatorSplit()).mul(await yieldDistributor.nodeOperatorSplit()).div(ethers.utils.parseEther("1")));
 
-      const firstYieldAfterCommission = firstYield.mul(ethCommissionRate).div(ethers.utils.parseEther("1"));
-      const secondYieldAfterCommission = secondYield.mul(ethCommissionRate).div(ethers.utils.parseEther("1"));
+      const firstYieldAfterCommission = firstYield.mul(await yieldDistributor.nodeOperatorSplit()).div(ethers.utils.parseEther("1"));
+      const secondYieldAfterCommission = secondYield.mul(await yieldDistributor.nodeOperatorSplit()).div(ethers.utils.parseEther("1"));
 
       const operatorShareInterval0 = firstYieldAfterCommission.mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("3"));
       const operatorShareInterval1 = secondYieldAfterCommission.mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("5"));
