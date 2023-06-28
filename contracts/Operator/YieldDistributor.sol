@@ -90,7 +90,6 @@ contract YieldDistributor is Base {
         if (block.timestamp - currentIntervalGenesisTime > maxIntervalLengthSeconds) {
             finalizeInterval();
         }
-
     }
 
     /****
@@ -174,8 +173,8 @@ contract YieldDistributor is Base {
                 continue;
             }
             Claim memory claim = claims[i];
-            uint256 fullEthReward = ((claim.amount * 1e18) / claim.numOperators) / 1e18;
-            uint256 operatorRewardEth = (fullEthReward * operator.feePortion) / YIELD_PORTION_MAX;
+            uint256 fullEthReward = (claim.amount * 1e18 / claim.numOperators) / 1e18;
+            uint256 operatorRewardEth = fullEthReward * operator.feePortion / YIELD_PORTION_MAX;
             // TODO: until the operator's feePortion is 100%, we will be collecting dust that'll need sweeping back to DP.
             dustAccrued += fullEthReward - operatorRewardEth;
             totalReward += operatorRewardEth;
@@ -247,14 +246,6 @@ contract YieldDistributor is Base {
             ETH_REWARD_ADMIN_PORTION_OUT_OF_BOUNDS_ERROR
         );
         _ethRewardAdminPortion = newPortion;
-    }
-
-    function adminClaimAndSweep(address treasury) public onlyAdmin {
-        uint256 amount = adminYieldAccrued + dustAccrued;
-        adminYieldAccrued = 0;
-        dustAccrued = 0;
-        (bool success, ) = treasury.call{value: amount}("");
-        require(success, "Failed to send ETH to treasury");
     }
 
     /****
