@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { DepositPool, xrETH, xRPL, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking } from "../typechain-types";
+import { DepositPool, xrETH, xRPL, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IConstellationMinipoolsOracle, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking } from "../typechain-types";
 import { initializeDirectory } from "./test-directory";
 
 const protocolParams  = { trustBuildPeriod : ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
@@ -32,8 +32,6 @@ export type Signers = {
 	operator: SignerWithAddress,
 	random2: SignerWithAddress,
 	random3: SignerWithAddress,
-	random4: SignerWithAddress,
-	random5: SignerWithAddress,
 	rplWhale: SignerWithAddress,
 	hyperdriver: SignerWithAddress,
 	ethWhale: SignerWithAddress,
@@ -110,12 +108,10 @@ async function createSigners(): Promise<Signers> {
 		operator: signersArray[2],
 		random2: signersArray[3],
 		random3: signersArray[4],
-		random4: signersArray[5],
-		random5: signersArray[6],
 		// Patricio Worthalter (patricioworthalter.eth)
 		rplWhale: await ethers.getImpersonatedSigner("0x57757e3d981446d585af0d9ae4d7df6d64647806"),
-		hyperdriver: signersArray[7],
-		ethWhale: signersArray[8],
+		hyperdriver: signersArray[5],
+		ethWhale: signersArray[6],
 	};
 }
 

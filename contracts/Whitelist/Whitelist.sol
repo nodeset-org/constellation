@@ -3,7 +3,6 @@ pragma solidity 0.8.17;
 
 import "../UpgradeableBase.sol";
 import "../Operator/Operator.sol";
-import "../Operator/YieldDistributor.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Controls operator access to the protocol.
@@ -39,8 +38,16 @@ contract Whitelist is UpgradeableBase {
     // GETTERS
     //----
 
+    function getOperatorsAsList() public view returns (Operator[] memory) {
+        Operator[] memory _operators = new Operator[](numOperators);
+        for (uint i = 0; i < numOperators; i++) {
+            _operators[i] = operatorMap[operatorIndexMap[i]];
+        }
+        return _operators;
+    }
+
     function getIsAddressInWhitelist(address a) public view returns (bool) {
-        return _permissions[a];
+        return _permissions[a] != false;
     }
 
     function getTrustBuildPeriod() public view returns (uint) {
@@ -94,23 +101,14 @@ contract Whitelist is UpgradeableBase {
 
         _permissions[a] = true;
 
-        YieldDistributor distributor = YieldDistributor(
-            payable(getDirectory().getYieldDistributorAddress())
-        );
-
         // Fee should not start at 100% because the operator has not yet built trust.
-        numOperators++;
-
-        distributor.finalizeInterval();
-
-        uint256 nextInterval = distributor.currentInterval();
-        Operator memory operator = Operator(block.timestamp, 0, 10000, nextInterval);
-        // operator will be entitled to rewards in the next interval
+        Operator memory operator = Operator(block.timestamp, 0, 10000);
 
         operatorMap[a] = operator;
         operatorIndexMap[numOperators] = a;
         reverseOperatorIndexMap[a] = numOperators + 1;
 
+        numOperators++;
         emit OperatorAdded(operator);
     }
 
@@ -122,15 +120,7 @@ contract Whitelist is UpgradeableBase {
         delete operatorIndexMap[index];
         delete reverseOperatorIndexMap[a];
 
-        YieldDistributor distributor = YieldDistributor(
-            payable(getDirectory().getYieldDistributorAddress())
-        );
-
-
-        distributor.finalizeInterval();
-
         numOperators--;
-
         emit OperatorRemoved(a);
     }
 
@@ -152,6 +142,4 @@ contract Whitelist is UpgradeableBase {
         );
         _;
     }
-
-
 }

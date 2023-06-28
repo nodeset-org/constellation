@@ -175,14 +175,14 @@ describe("Node Operator Onboarding", function () {
             RPLbalancesBefore.push(allAddresses[i].name + " - " + await rocketPool.rplContract.balanceOf(allAddresses[i].address));
         }
 
-        const currentInterval = await protocol.yieldDistributor.currentInterval();
-        await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
-        await protocol.yieldDistributor.connect(signers.random).harvest(signers.hyperdriver.address, currentInterval, currentInterval);
+        await protocol.yieldDistributor.connect(signers.random).distributeRewards();
 
         console.log("deposit pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.depositPool.address)));
         console.log("deposit pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.depositPool.address)));
         console.log("operator distribution pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)));
         console.log("operator distribution pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)));
+
+
 
         const xrETHBalancesAfter = [];
         const xRPLBalancesAfter = [];
@@ -216,5 +216,8 @@ describe("Node Operator Onboarding", function () {
                 console.log("RPL balance after: ", RPLbalancesAfter[i]);
             }
         }
+
     });
+
+
 });

@@ -16,31 +16,10 @@ import "hardhat/console.sol";
 contract OperatorDistributor is Base {
     uint public _queuedEth;
 
-    address[] public minipoolAddresses;
-    mapping(address => uint256) public minipoolIndexMap;
-    uint256 public nextMinipoolHavestIndex;
-
     constructor(address directory) Base(directory) {}
-
-    event WarningNoMiniPoolsToHarvest();
 
     receive() external payable {
         _queuedEth += msg.value;
-    }
-
-    function removeMinipoolAddress(
-        address _address
-    ) external onlyYieldDistrubutor {
-        uint index = minipoolIndexMap[_address] - 1;
-        require(index < minipoolAddresses.length, "Address not found.");
-
-        // Move the last address into the spot located by index
-        address lastAddress = minipoolAddresses[minipoolAddresses.length - 1];
-        minipoolAddresses[index] = lastAddress;
-        minipoolIndexMap[lastAddress] = index;
-        // Remove the last address
-        minipoolAddresses.pop();
-        delete minipoolIndexMap[_address];
     }
 
     function reimburseNodeForMinipool(
@@ -100,31 +79,8 @@ contract OperatorDistributor is Base {
         DepositPool depositPool = DepositPool(payable(depositPoolAddr));
         depositPool.stakeRPLFor(nodeAddress);
 
-        // add minipool to minipoolAddresses
-        minipoolAddresses.push(newMinipoolAdress);
-        minipoolIndexMap[newMinipoolAdress] = minipoolAddresses.length;
-
         // transfer out eth
         _queuedEth -= bond;
         payable(nodeAddress).transfer(bond);
-    }
-
-    function harvestNextMinipool() external onlyYieldDistrubutor {
-        if (minipoolAddresses.length == 0) {
-            emit WarningNoMiniPoolsToHarvest();
-            return;
-        }
-
-        uint256 index = nextMinipoolHavestIndex % minipoolAddresses.length;
-
-        IMinipool minipool = IMinipool(minipoolAddresses[index]);
-
-        if (minipool.userDistributeAllowed()) {
-            minipool.distributeBalance(true);
-        } else {
-            minipool.beginUserDistribute();
-        }
-
-        nextMinipoolHavestIndex = index + 1;
     }
 }

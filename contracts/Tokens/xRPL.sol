@@ -91,7 +91,7 @@ contract xRPL is
         assert(tvlRpl > 0);
 
         if (totalSupply() == 0) return 1;
-        return (totalSupply() * 1e18 / tvlRpl) / 1e18;
+        return totalSupply() / tvlRpl;
     }
 
     function getMinimumStakeError() public view returns (string memory) {
@@ -103,25 +103,6 @@ contract xRPL is
                 ),
                 " RPL"
             );
-    }
-
-    function redeem(uint _amount) external {
-
-        uint amount = _amount * getRedemptionValuePerToken();
-
-        require(amount > 0, BURN_TOO_SMALL_ERROR);
-        require(
-            balanceOf(msg.sender) >= amount,
-            "xRPL: You do not have enough xRPL to redeem"
-        );
-
-        // notify DP that it has sent RPL
-        DepositPool(getDirectory().getDepositPoolAddress()).sendRpl(
-            payable(msg.sender),
-            amount
-        );
-
-        _burn(msg.sender, amount);
     }
 
     /***********
