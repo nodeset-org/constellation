@@ -47,8 +47,8 @@ contract DepositPool is Base {
     string public constant NOT_ENOUGH_RPL_ERROR =
         "Deposit Pool: Not enough RPL";
 
-    uint private _tvlEth;
-    uint private _tvlRpl;
+    uint private _dpOwnedEth;
+    uint private _dpOwnedRpl;
 
     /// @notice Emitted whenever this contract sends or receives ETH outside of the protocol.
     event TotalValueUpdated(uint oldValue, uint newValue);
@@ -62,13 +62,13 @@ contract DepositPool is Base {
     /// @notice Gets the total ETH value locked inside the protocol, including inside of validators, the OperatorDistributor,
     // and this contract.
     function getTvlEth() public view returns (uint) {
-        return _tvlEth;
+        return _dpOwnedEth;
     }
 
     /// @notice Gets the total RPL value locked inside the protocol, including inside of validators, the OperatorDistributor,
     // and this contract.
     function getTvlRpl() public view returns (uint) {
-        return _tvlRpl;
+        return _dpOwnedRpl;
     }
 
     function getMaxrETHBalancePortion() public view returns (uint16) {
@@ -101,7 +101,7 @@ contract DepositPool is Base {
         (bool success, ) = to.call{value: amount}("");
         assert(success);
 
-        _tvlEth -= amount;
+        _dpOwnedEth -= amount;
         emit TotalValueUpdated(old, getTvlEth());
     }
 
@@ -109,11 +109,11 @@ contract DepositPool is Base {
     function sendRpl(address payable to, uint amount) public onlyRplToken {
         require(amount <= getMaxRplBalance(), NOT_ENOUGH_RPL_ERROR);
 
-        uint old = _tvlRpl;
+        uint old = _dpOwnedRpl;
         require(sendRPLTo(to, amount));
-        _tvlRpl -= amount;
+        _dpOwnedRpl -= amount;
 
-        emit TotalValueUpdated(old, _tvlRpl);
+        emit TotalValueUpdated(old, _dpOwnedRpl);
     }
 
     function stakeRPLFor(address _nodeAddress) external onlyOperatorDistributor nonReentrant {
@@ -197,8 +197,8 @@ contract DepositPool is Base {
 
         uint old = getTvlEth();
 
-        _tvlEth += msg.value;
-        emit TotalValueUpdated(old, _tvlEth);
+        _dpOwnedEth += msg.value;
+        emit TotalValueUpdated(old, _dpOwnedEth);
 
         sendExcessEthToDistributors();
     }
@@ -212,8 +212,8 @@ contract DepositPool is Base {
 
         uint old = getTvlRpl();
 
-        _tvlRpl += amount;
-        emit TotalValueUpdated(old, _tvlRpl);
+        _dpOwnedRpl += amount;
+        emit TotalValueUpdated(old, _dpOwnedRpl);
     }
 
     /// @notice If the DP would grow above `_maxrETHBalancePortion`, it instead forwards the payment to the OperatorDistributor / YieldDistributor.
