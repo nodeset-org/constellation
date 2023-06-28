@@ -37,6 +37,7 @@ contract YieldDistributor is Base {
     uint256 public totalYieldAccruedInInterval;
     uint256 public totalYieldAccrued;
     uint256 public dustAccrued;
+    uint256 public adminYieldAccrued;
 
     mapping(uint256 => Claim) public claims; // claimable yield per interval (in wei)
     mapping(address => mapping (uint256 => bool)) public hasClaimed; // whether an operator has claimed for a given interval
@@ -83,6 +84,7 @@ contract YieldDistributor is Base {
 
         totalYieldAccruedInInterval += yieldRecieved;
         totalYieldAccrued += yieldRecieved;
+        adminYieldAccrued += msg.value - yieldRecieved;
 
         // if elapsed time since last interval is greater than maxIntervalLengthSeconds, start a new interval
         if (block.timestamp - currentIntervalGenesisTime > maxIntervalLengthSeconds) {
@@ -160,9 +162,10 @@ contract YieldDistributor is Base {
         require(endInterval < currentInterval, "End interval must be less than current interval");
         require(_rewardee != address(0), "rewardee cannot be zero address");
         Whitelist whitelist = getWhitelist();
-        require(whitelist.getIsAddressInWhitelist(_rewardee), "Rewardee is not whitelisted");
         Operator memory operator = getWhitelist().getOperatorAtAddress(_rewardee);
         require(operator.intervalStart <= startInterval, "Rewardee has not been an operator since startInterval");
+
+        bool isWhitelisted = whitelist.getIsAddressInWhitelist(_rewardee);
 
         uint256 totalReward = 0;
         for(uint256 i = startInterval; i <= endInterval; i++) {
@@ -180,8 +183,13 @@ contract YieldDistributor is Base {
         }
 
         // send eth to rewardee
-        (bool success, ) = _rewardee.call{value: totalReward}("");
-        require(success, "Failed to send ETH to rewardee");
+
+        if(isWhitelisted) {
+            (bool success, ) = _rewardee.call{value: totalReward}("");
+            require(success, "Failed to send ETH to rewardee");
+        } else {
+            dustAccrued += totalReward;
+        }
 
         getOperatorDistributor().harvestNextMinipool();
 
@@ -239,6 +247,14 @@ contract YieldDistributor is Base {
             ETH_REWARD_ADMIN_PORTION_OUT_OF_BOUNDS_ERROR
         );
         _ethRewardAdminPortion = newPortion;
+    }
+
+    function adminClaimAndSweep(address treasury) public onlyAdmin {
+        uint256 amount = adminYieldAccrued + dustAccrued;
+        adminYieldAccrued = 0;
+        dustAccrued = 0;
+        (bool success, ) = treasury.call{value: amount}("");
+        require(success, "Failed to send ETH to treasury");
     }
 
     /****
