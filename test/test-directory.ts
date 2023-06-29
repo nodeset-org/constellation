@@ -8,8 +8,8 @@ export async function initializeDirectory(protocol: Protocol, rocketPool: Rocket
   return await protocol.directory.connect(addressToUse).initialize(
     {
       whitelist: protocol.whitelist.address,
-      ethToken: protocol.xrETH.address,
-      rplToken: protocol.xRPL.address,
+      wethVault: protocol.vCWETH.address,
+      rplVault: protocol.vCRPL.address,
       depositPool: protocol.depositPool.address,
       operatorDistributor: protocol.operatorDistributor.address,
       yieldDistributor: protocol.yieldDistributor.address,

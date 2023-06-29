@@ -16,7 +16,7 @@ contract RPLVault is Base, ERC4626 {
     )
         Base(directoryAddress)
         ERC20(NAME, SYMBOL)
-        ERC4626(IERC20(_directory.RPL_CONTRACT_ADDRESS()))
+        ERC4626(IERC20(Directory(directoryAddress).RPL_CONTRACT_ADDRESS()))
     {}
 
     using Math for uint256;

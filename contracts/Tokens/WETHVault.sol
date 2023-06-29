@@ -17,7 +17,7 @@ contract WETHVault is Base, ERC4626 {
     )
         Base(directoryAddress)
         ERC20(NAME, SYMBOL)
-        ERC4626(IERC20(_directory.getWETHAddress()))
+        ERC4626(IERC20(Directory(directoryAddress).WETH_CONTRACT_ADDRESS()))
     {}
 
     using Math for uint256;
