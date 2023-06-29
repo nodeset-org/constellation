@@ -151,6 +151,10 @@ contract WETHVault is Base, ERC4626 {
             totalEth > distributableYield ? 0 : distributableYield - totalEth;
     }
 
+    function getOracle() public view returns (IXRETHOracle) {
+        return IXRETHOracle(getDirectory().getRETHOracleAddress());
+    }
+
     /**ADMIN FUNCTIONS */
 
     function setFees(
@@ -173,7 +177,4 @@ contract WETHVault is Base, ERC4626 {
         takerFee2BasePoint = _takerFee2BasePoint;
     }
 
-    function getOracle() public view returns (IXRETHOracle) {
-        return IXRETHOracle(getDirectory().getRETHOracleAddress());
-    }
 }
