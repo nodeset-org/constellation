@@ -43,7 +43,7 @@ contract xrETH is
     }
 
     function internalMint(address to, uint amount) public onlyYieldDistributor {
-        _mint(to, amount);
+        _mint(to, amount / getRedemptionValuePerToken());
     }
 
     function mint(address to, uint amount) private {
@@ -53,18 +53,19 @@ contract xrETH is
             value: amount
         }("");
         require(success, "xrETH: Failed to transfer ETH to Deposit Pool!");
-        _mint(to, amount * getRedemptionValuePerToken());
+
+        _mint(to, amount / getRedemptionValuePerToken());
     }
 
     /***********
      * BURN
      */
 
-    function _burn(address account, uint256 amount) internal override {
-        super._burn(account, amount);
+    function _burn(address account, uint256 xrETH, uint256 eth) internal {
+        super._burn(account, xrETH);
         DepositPool(getDirectory().getDepositPoolAddress()).sendEth(
             payable(account),
-            amount
+            eth
         );
     }
 
@@ -96,6 +97,21 @@ contract xrETH is
                 ),
                 " wei"
             );
+    }
+
+    /***********
+     * REDEEM
+     */
+
+    function redeem(uint xrETH) external {
+        uint256 eth = xrETH * getRedemptionValuePerToken();
+        require(eth > 0, BURN_TOO_SMALL_ERROR);
+        require(
+            eth <= balanceOf(msg.sender),
+            "xrETH: Not enough ETH in contract to redeem!"
+        );
+
+        _burn(msg.sender, xrETH, eth);
     }
 
     /***********

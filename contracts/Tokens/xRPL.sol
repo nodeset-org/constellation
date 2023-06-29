@@ -46,22 +46,21 @@ contract xRPL is
 
     /// @notice Exchanges the senders' RPL for this token instead.
     /// @dev Requires this contract to already have approval from the sender to spend their RPL.
-    function mint(address to, uint _amount) public {
-        require(_amount >= _minimumStakeAmount, getMinimumStakeError());
+    function mint(address to, uint amount) public {
+        require(amount >= _minimumStakeAmount, getMinimumStakeError());
 
         // send RPL to DP
         bool success = RocketTokenRPLInterface(
             getDirectory().RPL_CONTRACT_ADDRESS()
-        ).transferFrom(to, getDirectory().getDepositPoolAddress(), _amount);
+        ).transferFrom(to, getDirectory().getDepositPoolAddress(), amount);
         require(success, "xRPL: Failed to transfer RPL to Deposit Pool!");
 
 
         // notify DP that it has received RPL
-        DepositPool(getDirectory().getDepositPoolAddress()).receiveRpl(_amount);
+        DepositPool(getDirectory().getDepositPoolAddress()).receiveRpl(amount);
 
         // calculate mint amount
-        uint256 mintAmount = _amount / getRedemptionValuePerToken();
-        _mint(to, mintAmount);
+        _mint(to, amount / getRedemptionValuePerToken());
     }
 
     function mintYield(address to, uint amount) public onlyYieldDistributor {
@@ -72,11 +71,11 @@ contract xRPL is
      * BURN
      */
 
-    function _burn(address account, uint256 amount) internal override {
-        super._burn(account, amount);
+    function _burn(address account, uint256 xrpl, uint256 rpl) internal {
+        super._burn(account, xrpl);
         DepositPool(getDirectory().getDepositPoolAddress()).sendRpl(
             payable(account),
-            amount
+            rpl
         );
     }
 
@@ -118,13 +117,7 @@ contract xRPL is
             "xRPL: You do not have enough xRPL to redeem"
         );
 
-        // notify DP that it has sent RPL
-        DepositPool(getDirectory().getDepositPoolAddress()).sendRpl(
-            payable(msg.sender),
-            rpl
-        );
-
-        _burn(msg.sender, xrpl);
+        _burn(msg.sender, xrpl, rpl);
     }
 
     /***********
