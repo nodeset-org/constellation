@@ -58,7 +58,7 @@ export async function depositRpl(setupData: SetupData, from: SignerWithAddress, 
 
 	let dpBalanceChange, distributorBalanceChange;
 	let isBalanceOverMax = (dpBalance.add(amount) > maxBalanceAfterDeposit);
-	dpBalanceChange =  dpBalance.add(amount)
+	dpBalanceChange = dpBalance.add(amount)
 	let leftover = dpBalance.add(amount).sub(maxBalanceAfterDeposit);
 	distributorBalanceChange = 0; // operatorDistributor doesn't get any RPL due to expense of creating gas inefficiency
 
@@ -75,26 +75,30 @@ export async function depositRpl(setupData: SetupData, from: SignerWithAddress, 
 	const rp = setupData.rocketPool;
 
 	await expect(rp.rplContract.connect(from).approve(protocol.xRPL.address, amount))
-			.to.emit(rp.rplContract, "Approval")
-			.withArgs(from.address, protocol.xRPL.address, amount);
+		.to.emit(rp.rplContract, "Approval")
+		.withArgs(from.address, protocol.xRPL.address, amount);
 
 	const tx = await protocol.xRPL.connect(from).mint(from.address, amount);
+
+	const adminRplFee = await protocol.xRPL.adminFeeRate();
+
 	const receipt = await tx.wait();
-	if(receipt.status != 1){
+	if (receipt.status != 1) {
 		throw new Error("Transaction failed");
-	  }
+	}
 	await expect(tx)
 		.to.changeTokenBalance(
 			protocol.xRPL,
 			from,
-			amount
+			amount.mul(adminRplFee).div(ethers.utils.parseEther("1"))
 		);
 
 	await expect(tx).to.changeTokenBalances(
-			rp.rplContract,
-			[from, protocol.depositPool, protocol.operatorDistributor],
-			[amount.mul(-1), dpBalanceChange, distributorBalanceChange]
-		);
+		rp.rplContract,
+		[from, protocol.depositPool, protocol.operatorDistributor],
+		[-amount.mul(adminRplFee).div(ethers.utils.parseEther("1")), dpBalanceChange, distributorBalanceChange]
+	);
+
 	await expect(tx)
 		.to.emit(protocol.depositPool, "TotalValueUpdated").withArgs(tvl, tvl.add(amount));
 

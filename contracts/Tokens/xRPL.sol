@@ -26,8 +26,8 @@ contract xRPL is
     string constant MINT_NOT_PERMITTED_ERROR =
         "xRPL: only the YieldDistributor can mint without sending RPL";
 
-    uint private _minimumStakeAmount = 0.1e18; // rpl in this case
-    uint256 private _adminFeeRate = 0.50e18; // 50% of yield goes to admin
+    uint256 public minimumStakeAmount = 0.1e18;
+    uint256 public adminFeeRate = 0.50e18; // 50% of yield goes to admin
 
     event MinimumStakeAmountUpdated(
         uint oldMinimumAmount,
@@ -48,18 +48,16 @@ contract xRPL is
     /// @notice Exchanges the senders' RPL for this token instead.
     /// @dev Requires this contract to already have approval from the sender to spend their RPL.
     function mint(address to, uint amount) public {
-        require(amount >= _minimumStakeAmount, getMinimumStakeError());
+        require(amount >= minimumStakeAmount, getMinimumStakeError());
 
         // Calculate the fee to be paid
-        uint256 fee = amount * _adminFeeRate;
+        uint256 fee = (amount * adminFeeRate) / 1e18;
 
         // Ensure the amount after fee is still above the minimum stake amount
-        require(amount - fee >= _minimumStakeAmount, "Amount after fee is below the minimum stake amount");
+        require(amount - fee >= minimumStakeAmount, "Amount after fee is below the minimum stake amount");
 
         // Subtract the fee from the amount
         amount -= fee;
-
-        require(RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS()).transferFrom(msg.sender, getDirectory().getAdminAddress(), fee), "Failed to transfer admin fee");
 
         // send RPL to DP
         bool success = RocketTokenRPLInterface(
@@ -73,6 +71,8 @@ contract xRPL is
 
         // calculate mint amount
         _mint(to, amount / getRedemptionValuePerToken());
+        address admin = getDirectory().getAdminAddress();
+        _mint(admin, fee / getRedemptionValuePerToken());
     }
 
     function mintYield(address to, uint amount) public onlyYieldDistributor {
@@ -96,7 +96,7 @@ contract xRPL is
      */
 
     function getMinimumStakeAmount() public view returns (uint) {
-        return _minimumStakeAmount;
+        return minimumStakeAmount;
     }
 
     function getRedemptionValuePerToken() public view returns (uint) {
@@ -113,7 +113,7 @@ contract xRPL is
             string.concat(
                 string.concat(
                     "Minimum stake is ",
-                    Strings.toString(_minimumStakeAmount)
+                    Strings.toString(minimumStakeAmount)
                 ),
                 " RPL"
             );
@@ -136,9 +136,13 @@ contract xRPL is
      */
 
     function setMinimumStakeAmount(uint newStakeAmount) external onlyAdmin {
-        uint oldMin = _minimumStakeAmount;
-        _minimumStakeAmount = newStakeAmount;
-        emit MinimumStakeAmountUpdated(oldMin, _minimumStakeAmount);
+        uint oldMin = minimumStakeAmount;
+        minimumStakeAmount = newStakeAmount;
+        emit MinimumStakeAmountUpdated(oldMin, minimumStakeAmount);
+    }
+
+    function setAdminFeeRate(uint newFeeRate) external onlyAdmin {
+        adminFeeRate = newFeeRate;
     }
 
     modifier onlyYieldDistributor() {
