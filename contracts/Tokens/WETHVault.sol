@@ -22,11 +22,11 @@ contract WETHVault is Base, ERC4626 {
 
     using Math for uint256;
 
-    uint256 public makerFee1BasePoint = 0.05e5; // admin maker fee
-    uint256 public makerFee2BasePoint = 0.05e5; // node operator maker fee
+    uint256 public makerFee1BasePoint = 0.01e5; // admin maker fee
+    uint256 public makerFee2BasePoint = 0.02e5; // node operator maker fee
 
-    uint256 public takerFee1BasePoint = 0.05e5; // admin taker fee
-    uint256 public takerFee2BasePoint = 0.05e5; // node operator taker fee
+    uint256 public takerFee1BasePoint = 0.03e5; // admin taker fee
+    uint256 public takerFee2BasePoint = 0.04e5; // node operator taker fee
 
     uint256 public totalAssetsAccrued;
 
@@ -76,7 +76,7 @@ contract WETHVault is Base, ERC4626 {
         address receiver,
         uint256 assets,
         uint256 shares
-    ) internal virtual override {
+    ) internal virtual override onlyDepositPool {
         uint256 fee1 = _feeOnTotal(assets, makerFee1BasePoint);
         uint256 fee2 = _feeOnTotal(assets, makerFee2BasePoint);
 

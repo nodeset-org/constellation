@@ -11,14 +11,6 @@ contract RPLVault is Base, ERC4626 {
     string constant NAME = "Constellation RPL";
     string constant SYMBOL = "vCRPL";
 
-    event MinimumStakeAmountUpdated(
-        uint oldMinimumAmount,
-        uint newMinimumAmount
-    );
-
-    /// @notice Queue of depositors who wish to redeem their position
-    address payable[] private redemptionQueue;
-
     constructor(
         address directoryAddress
     )
