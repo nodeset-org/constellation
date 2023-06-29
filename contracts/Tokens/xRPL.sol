@@ -26,7 +26,8 @@ contract xRPL is
     string constant MINT_NOT_PERMITTED_ERROR =
         "xRPL: only the YieldDistributor can mint without sending RPL";
 
-    uint private _minimumStakeAmount = 0.1 ether; // rpl in this case
+    uint private _minimumStakeAmount = 0.1e18; // rpl in this case
+    uint256 private _adminFeeRate = 0.50e18; // 50% of yield goes to admin
 
     event MinimumStakeAmountUpdated(
         uint oldMinimumAmount,
@@ -48,6 +49,17 @@ contract xRPL is
     /// @dev Requires this contract to already have approval from the sender to spend their RPL.
     function mint(address to, uint amount) public {
         require(amount >= _minimumStakeAmount, getMinimumStakeError());
+
+        // Calculate the fee to be paid
+        uint256 fee = amount * _adminFeeRate;
+
+        // Ensure the amount after fee is still above the minimum stake amount
+        require(amount - fee >= _minimumStakeAmount, "Amount after fee is below the minimum stake amount");
+
+        // Subtract the fee from the amount
+        amount -= fee;
+
+        require(RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS()).transferFrom(msg.sender, getDirectory().getAdminAddress(), fee), "Failed to transfer admin fee");
 
         // send RPL to DP
         bool success = RocketTokenRPLInterface(
@@ -108,7 +120,6 @@ contract xRPL is
     }
 
     function redeem(uint xrpl) external {
-
         uint rpl = xrpl * getRedemptionValuePerToken();
 
         require(rpl > 0, BURN_TOO_SMALL_ERROR);

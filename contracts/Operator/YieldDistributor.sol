@@ -254,6 +254,18 @@ contract YieldDistributor is Base {
         adminSplit = _adminSplit;
     }
 
+    // sends eth to deposit pool
+    function distributeEthLpRewards() external {
+        address to = getDirectory().getDepositPoolAddress();
+        (bool success, ) = to.call{value: ethLiquidityProviderYieldAccrued}("");
+        require(success, "Failed to send ETH to deposit pool");
+        ethLiquidityProviderYieldAccrued = 0;
+    }
+
+    function getEthLpRewards() public view returns (uint256) {
+        return ethLiquidityProviderYieldAccrued;
+    }
+
     /****
      * PRIVATE
      */
