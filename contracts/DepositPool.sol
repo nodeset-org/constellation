@@ -7,6 +7,7 @@ import "./Base.sol";
 import "./Operator/OperatorDistributor.sol";
 import "./Operator/YieldDistributor.sol";
 import "./Interfaces/RocketPool/IRocketNodeStaking.sol";
+import "./Tokens/WETHVault.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
@@ -38,8 +39,6 @@ contract DepositPool is Base {
         "DepositPool: Send RPL to OperatorDistributor failed";
     string public constant ONLY_ETH_TOKEN_ERROR =
         "DepositPool: This function may only be called by the xrETH token contract";
-    string public constant ONLY_RPL_TOKEN_ERROR =
-        "DepositPool: This function may only be called by the xRPL token contract";
     string public constant MAX_BALANCE_PORTION_OUT_OF_RANGE_ERROR =
         "DepositPool: Supplied maxBalancePortion is out of range. Must be >= 0 or <= MAX_BALANCE_PORTION.";
     string public constant NOT_ENOUGH_ETH_ERROR =
@@ -93,7 +92,7 @@ contract DepositPool is Base {
     ///--------
 
     /// @notice only the token contract can spend DP funds
-    function sendEth(address payable to, uint amount) public onlyEthToken {
+    function sendEth(address payable to, uint amount) public onlyWETHVault {
         require(amount <= getMaxrETHBalance(), NOT_ENOUGH_ETH_ERROR);
 
         uint old = getTvlEth();
@@ -106,7 +105,7 @@ contract DepositPool is Base {
     }
 
     /// @notice only the token contract can spend DP funds
-    function sendRpl(address payable to, uint amount) public onlyRplToken {
+    function sendRpl(address payable to, uint amount) public onlyRplVault {
         require(amount <= getMaxRplBalance(), NOT_ENOUGH_RPL_ERROR);
 
         uint old = _dpOwnedRpl;
@@ -203,7 +202,7 @@ contract DepositPool is Base {
         sendExcessEthToDistributors();
     }
 
-    function receiveRpl(uint amount) external onlyRplToken {
+    function receiveRpl(uint amount) external onlyRplVault {
         // do not accept deposits if new operator activity is disabled
         require(
             _maxRplBalancePortion < MAX_BALANCE_PORTION,
@@ -221,18 +220,16 @@ contract DepositPool is Base {
         uint leftover = address(this).balance - getMaxrETHBalance();
         if (leftover > 0) {
             // get shortfall from yield distributor
-            YieldDistributor yieldDistributor = YieldDistributor(
-                payable(getDirectory().getYieldDistributorAddress())
-            );
-            uint yieldDistributorShortfall = yieldDistributor.getShortfall();
-            if (yieldDistributorShortfall > 0) {
-                if (yieldDistributorShortfall > leftover) {
-                    yieldDistributorShortfall = leftover;
+            WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
+            uint shortfall = vweth.getShortfall();
+            if (shortfall > 0) {
+                if (shortfall > leftover) {
+                    shortfall = leftover;
                 }
-                leftover -= yieldDistributorShortfall;
+                leftover -= shortfall;
                 (bool successYield, ) = getDirectory()
                     .getYieldDistributorAddress()
-                    .call{value: yieldDistributorShortfall}("");
+                    .call{value: shortfall}("");
                 require(
                     successYield,
                     "DepositPool: Send ETH to YieldDistributor failed"
@@ -259,21 +256,5 @@ contract DepositPool is Base {
         return
             RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS())
                 .transfer(to, amount);
-    }
-
-    modifier onlyEthToken() {
-        require(
-            msg.sender == getDirectory().getETHTokenAddress(),
-            ONLY_ETH_TOKEN_ERROR
-        );
-        _;
-    }
-
-    modifier onlyRplToken() {
-        require(
-            msg.sender == getDirectory().getRPLTokenAddress(),
-            ONLY_RPL_TOKEN_ERROR
-        );
-        _;
     }
 }

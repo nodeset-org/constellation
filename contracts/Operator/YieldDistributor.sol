@@ -22,9 +22,8 @@ struct Claim {
 }
 
 /// @custom:security-contact info@nodeset.io
-/// @notice distributes rewards
+/// @notice distributes rewards in weth to node operators
 contract YieldDistributor is Base {
-
 
     uint256 public totalYieldAccrued;
     uint256 public yieldAccruedInInterval;
@@ -91,26 +90,6 @@ contract YieldDistributor is Base {
         return _isInitialized;
     }
 
-    /// @notice Gets the total tvl of non-distributed yield
-    function getDistributableYield() public view returns (uint256) {
-        // get yield accrued from oracle
-        IXRETHOracle oracle = IXRETHOracle(
-            getDirectory().getRETHOracleAddress()
-        );
-        uint ethYieldOwed = oracle.getTotalYieldAccrued();
-        return
-            ethYieldOwed > totalYieldAccrued
-                ? ethYieldOwed - totalYieldAccrued
-                : 0;
-    }
-
-    /// @notice Gets the amount of ETH that the contract needs to receive before it can distribute full rewards again
-    function getShortfall() public view returns (uint256) {
-        uint256 distributableYield = getDistributableYield();
-        uint256 totalEth = address(this).balance;
-        return
-            totalEth > distributableYield ? 0 : distributableYield - totalEth;
-    }
 
     function getClaims() public view returns (Claim[] memory) {
         Claim[] memory _claims = new Claim[](currentInterval + 1);

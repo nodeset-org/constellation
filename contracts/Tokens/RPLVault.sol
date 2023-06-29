@@ -21,8 +21,11 @@ contract RPLVault is Base, ERC4626 {
 
     constructor(
         address directoryAddress
-    ) Base(directoryAddress) ERC20(NAME, SYMBOL) ERC4626(_directory.getRPLTokenAddress()) {
-    }
+    )
+        Base(directoryAddress)
+        ERC20(NAME, SYMBOL)
+        ERC4626(IERC20(_directory.RPL_CONTRACT_ADDRESS()))
+    {}
 
     using Math for uint256;
 
@@ -30,32 +33,45 @@ contract RPLVault is Base, ERC4626 {
     uint256 public takerFeeBasePoint = 0.05e5; // admin taker fee
 
     /** @dev See {IERC4626-previewDeposit}. */
-    function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
-        uint256 fee = _feeOnTotal(assets,makerFeeBasePoint);
+    function previewDeposit(
+        uint256 assets
+    ) public view virtual override returns (uint256) {
+        uint256 fee = _feeOnTotal(assets, makerFeeBasePoint);
         return super.previewDeposit(assets - fee);
     }
 
     /** @dev See {IERC4626-previewMint}. */
-    function previewMint(uint256 shares) public view virtual override returns (uint256) {
+    function previewMint(
+        uint256 shares
+    ) public view virtual override returns (uint256) {
         uint256 assets = super.previewMint(shares);
-        return assets + _feeOnRaw(assets,makerFeeBasePoint);
+        return assets + _feeOnRaw(assets, makerFeeBasePoint);
     }
 
     /** @dev See {IERC4626-previewWithdraw}. */
-    function previewWithdraw(uint256 assets) public view virtual override returns (uint256) {
+    function previewWithdraw(
+        uint256 assets
+    ) public view virtual override returns (uint256) {
         uint256 fee = _feeOnRaw(assets, takerFeeBasePoint);
         return super.previewWithdraw(assets + fee);
     }
 
     /** @dev See {IERC4626-previewRedeem}. */
-    function previewRedeem(uint256 shares) public view virtual override returns (uint256) {
+    function previewRedeem(
+        uint256 shares
+    ) public view virtual override returns (uint256) {
         uint256 assets = super.previewRedeem(shares);
         return assets - _feeOnTotal(assets, takerFeeBasePoint);
     }
 
     /** @dev See {IERC4626-_deposit}. */
-    function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
-        uint256 fee = _feeOnTotal(assets,makerFeeBasePoint);
+    function _deposit(
+        address caller,
+        address receiver,
+        uint256 assets,
+        uint256 shares
+    ) internal virtual override {
+        uint256 fee = _feeOnTotal(assets, makerFeeBasePoint);
 
         address recipient1 = _directory.getAdminAddress();
 
@@ -84,12 +100,19 @@ contract RPLVault is Base, ERC4626 {
         }
     }
 
-    function _feeOnRaw(uint256 assets, uint256 feeBasePoint) private pure returns (uint256) {
+    function _feeOnRaw(
+        uint256 assets,
+        uint256 feeBasePoint
+    ) private pure returns (uint256) {
         return assets.mulDiv(feeBasePoint, 1e5, Math.Rounding.Up);
     }
 
-    function _feeOnTotal(uint256 assets, uint256 feeBasePoint) private pure returns (uint256) {
-        return assets.mulDiv(feeBasePoint, feeBasePoint + 1e5, Math.Rounding.Up);
+    function _feeOnTotal(
+        uint256 assets,
+        uint256 feeBasePoint
+    ) private pure returns (uint256) {
+        return
+            assets.mulDiv(feeBasePoint, feeBasePoint + 1e5, Math.Rounding.Up);
     }
 
     /**ADMIN FUNCTIONS */
@@ -98,7 +121,10 @@ contract RPLVault is Base, ERC4626 {
         uint256 _makerFeeBasePoint,
         uint256 _takerFeeBasePoint
     ) external onlyAdmin {
-        require(_makerFeeBasePoint + _takerFeeBasePoint <= 1e5, "fees must be lte 100%");
+        require(
+            _makerFeeBasePoint + _takerFeeBasePoint <= 1e5,
+            "fees must be lte 100%"
+        );
         makerFeeBasePoint = _makerFeeBasePoint;
         takerFeeBasePoint = _takerFeeBasePoint;
     }

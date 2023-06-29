@@ -57,11 +57,20 @@ abstract contract Base is ReentrancyGuard {
         _;
     }
 
-    function onlyWETHVault() internal view {
+    modifier onlyWETHVault() {
         require(
             msg.sender == _directory.getWETHVaultAddress(),
             "Can only be called by WETH Vault!"
         );
+        _;
+    }
+
+    modifier onlyRplVault() {
+        require(
+            msg.sender == _directory.getRPLVaultAddress(),
+            "DepositPool: This function may only be called by the xRPL token contract"
+        );
+        _;
     }
 
     function getDirectory() internal view returns (Directory) {

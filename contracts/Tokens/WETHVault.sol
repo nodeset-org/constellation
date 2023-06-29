@@ -5,17 +5,20 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
 import "../Base.sol";
 import "../DepositPool.sol";
+import "../Operator/YieldDistributor.sol";
 
 /// @custom:security-contact info@nodeoperator.org
-contract WETHVault is Base, ERC4626{
-
+contract WETHVault is Base, ERC4626 {
     string constant NAME = "Constellation ETH";
     string constant SYMBOL = "vCWETH";
 
     constructor(
         address directoryAddress
-    ) Base(directoryAddress) ERC20(NAME, SYMBOL) ERC4626(_directory.getWETHAddress()) {
-    }
+    )
+        Base(directoryAddress)
+        ERC20(NAME, SYMBOL)
+        ERC4626(IERC20(_directory.getWETHAddress()))
+    {}
 
     using Math for uint256;
 
@@ -25,40 +28,62 @@ contract WETHVault is Base, ERC4626{
     uint256 public takerFee1BasePoint = 0.05e5; // admin taker fee
     uint256 public takerFee2BasePoint = 0.05e5; // node operator taker fee
 
+    uint256 public totalAssetsAccrued;
+
     /** @dev See {IERC4626-previewDeposit}. */
-    function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
-        uint256 fee1 = _feeOnTotal(assets,makerFee1BasePoint);
+    function previewDeposit(
+        uint256 assets
+    ) public view virtual override returns (uint256) {
+        uint256 fee1 = _feeOnTotal(assets, makerFee1BasePoint);
         uint256 fee2 = _feeOnTotal(assets, makerFee2BasePoint);
         return super.previewDeposit(assets - fee1 - fee2);
     }
 
     /** @dev See {IERC4626-previewMint}. */
-    function previewMint(uint256 shares) public view virtual override returns (uint256) {
+    function previewMint(
+        uint256 shares
+    ) public view virtual override returns (uint256) {
         uint256 assets = super.previewMint(shares);
-        return assets + _feeOnRaw(assets,makerFee1BasePoint) + _feeOnRaw(assets, makerFee2BasePoint);
+        return
+            assets +
+            _feeOnRaw(assets, makerFee1BasePoint) +
+            _feeOnRaw(assets, makerFee2BasePoint);
     }
 
     /** @dev See {IERC4626-previewWithdraw}. */
-    function previewWithdraw(uint256 assets) public view virtual override returns (uint256) {
+    function previewWithdraw(
+        uint256 assets
+    ) public view virtual override returns (uint256) {
         uint256 fee1 = _feeOnRaw(assets, takerFee1BasePoint);
         uint256 fee2 = _feeOnRaw(assets, takerFee2BasePoint);
         return super.previewWithdraw(assets + fee1 + fee2);
     }
 
     /** @dev See {IERC4626-previewRedeem}. */
-    function previewRedeem(uint256 shares) public view virtual override returns (uint256) {
+    function previewRedeem(
+        uint256 shares
+    ) public view virtual override returns (uint256) {
         uint256 assets = super.previewRedeem(shares);
-        return assets - _feeOnTotal(assets, takerFee1BasePoint) - _feeOnTotal(assets, takerFee2BasePoint);
+        return
+            assets -
+            _feeOnTotal(assets, takerFee1BasePoint) -
+            _feeOnTotal(assets, takerFee2BasePoint);
     }
 
     /** @dev See {IERC4626-_deposit}. */
-    function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
-        uint256 fee1 = _feeOnTotal(assets,makerFee1BasePoint);
+    function _deposit(
+        address caller,
+        address receiver,
+        uint256 assets,
+        uint256 shares
+    ) internal virtual override {
+        uint256 fee1 = _feeOnTotal(assets, makerFee1BasePoint);
         uint256 fee2 = _feeOnTotal(assets, makerFee2BasePoint);
 
         address recipient1 = _directory.getAdminAddress();
         address recipient2 = _directory.getYieldDistributorAddress();
 
+        totalAssetsAccrued += assets;
         super._deposit(caller, receiver, assets, shares);
 
         if (fee1 > 0 && recipient1 != address(this)) {
@@ -94,12 +119,36 @@ contract WETHVault is Base, ERC4626{
         }
     }
 
-    function _feeOnRaw(uint256 assets, uint256 feeBasePoint) private pure returns (uint256) {
+    function _feeOnRaw(
+        uint256 assets,
+        uint256 feeBasePoint
+    ) private pure returns (uint256) {
         return assets.mulDiv(feeBasePoint, 1e5, Math.Rounding.Up);
     }
 
-    function _feeOnTotal(uint256 assets, uint256 feeBasePoint) private pure returns (uint256) {
-        return assets.mulDiv(feeBasePoint, feeBasePoint + 1e5, Math.Rounding.Up);
+    function _feeOnTotal(
+        uint256 assets,
+        uint256 feeBasePoint
+    ) private pure returns (uint256) {
+        return
+            assets.mulDiv(feeBasePoint, feeBasePoint + 1e5, Math.Rounding.Up);
+    }
+
+    /// @notice Gets the total tvl of non-distributed yield
+    function getDistributableYield() public view returns (uint256) {
+        uint256 stakedEthAccrued = getOracle().getTotalYieldAccrued();
+        return
+            stakedEthAccrued > totalAssetsAccrued
+                ? stakedEthAccrued - totalAssetsAccrued
+                : 0;
+    }
+
+    /// @notice Gets the amount of ETH that the contract needs to receive before it can distribute full rewards again
+    function getShortfall() public view returns (uint256) {
+        uint256 distributableYield = getDistributableYield();
+        uint256 totalEth = ERC20(asset()).balanceOf(address(this));
+        return
+            totalEth > distributableYield ? 0 : distributableYield - totalEth;
     }
 
     /**ADMIN FUNCTIONS */
@@ -110,10 +159,21 @@ contract WETHVault is Base, ERC4626{
         uint256 _takerFee1BasePoint,
         uint256 _takerFee2BasePoint
     ) external onlyAdmin {
-        require(_makerFee1BasePoint + _makerFee2BasePoint + _takerFee1BasePoint + _takerFee2BasePoint <= 1e5, "fees must be lte 100%");
+        require(
+            _makerFee1BasePoint +
+                _makerFee2BasePoint +
+                _takerFee1BasePoint +
+                _takerFee2BasePoint <=
+                1e5,
+            "fees must be lte 100%"
+        );
         makerFee1BasePoint = _makerFee1BasePoint;
         makerFee2BasePoint = _makerFee2BasePoint;
         takerFee1BasePoint = _takerFee1BasePoint;
         takerFee2BasePoint = _takerFee2BasePoint;
+    }
+
+    function getOracle() public view returns (IXRETHOracle) {
+        return IXRETHOracle(getDirectory().getRETHOracleAddress());
     }
 }
