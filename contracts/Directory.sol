@@ -7,10 +7,11 @@ import "./Interfaces/RocketPool/IRocketStorage.sol";
 
 struct Protocol {
     address whitelist;
-    address payable ethToken; // raspETH
-    address payable rplToken; // xRPL
+    address payable wethVault; // raspETH
+    address payable rplVault; // xRPL
     address payable depositPool;
     address payable operatorDistributor;
+    address payable weth;
     address yieldDistributor;
     address rethOracle;
     address rocketStorage;
@@ -34,6 +35,7 @@ contract Directory {
 
     address payable public constant RPL_CONTRACT_ADDRESS =
         payable(0xD33526068D116cE69F19A9ee46F0bd304F21A51f);
+
     address public constant RP_NETWORK_FEES_ADDRESS =
         payable(0x320f3aAB9405e38b955178BBe75c477dECBA0C27);
 
@@ -66,12 +68,12 @@ contract Directory {
         return _protocol.whitelist;
     }
 
-    function getETHTokenAddress() public view returns (address payable) {
-        return _protocol.ethToken;
+    function getWETHVaultAddress() public view returns (address payable) {
+        return _protocol.wethVault;
     }
 
-    function getRPLTokenAddress() public view returns (address payable) {
-        return _protocol.rplToken;
+    function getRPLVaultAddress() public view returns (address payable) {
+        return _protocol.rplVault;
     }
 
     function getDepositPoolAddress() public view returns (address payable) {
@@ -84,6 +86,10 @@ contract Directory {
 
     function getRocketStorageAddress() public view returns (address) {
         return _protocol.rocketStorage;
+    }
+
+    function getWETHAddress() public view returns (address payable) {
+        return _protocol.weth;
     }
 
     function getOperatorDistributorAddress()

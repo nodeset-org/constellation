@@ -49,15 +49,22 @@ abstract contract Base is ReentrancyGuard {
         _;
     }
 
-    function getDirectory() internal view returns (Directory) {
-        return _directory;
-    }
-
     modifier onlyOperatorDistributor() {
         require(
             msg.sender == _directory.getOperatorDistributorAddress(),
             "Can only be called by Operator Distributor!"
         );
         _;
+    }
+
+    function onlyWETHVault() internal view {
+        require(
+            msg.sender == _directory.getWETHVaultAddress(),
+            "Can only be called by WETH Vault!"
+        );
+    }
+
+    function getDirectory() internal view returns (Directory) {
+        return _directory;
     }
 }

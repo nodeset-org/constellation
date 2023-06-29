@@ -4,8 +4,6 @@ pragma solidity 0.8.17;
 import "./Operator.sol";
 import "./OperatorDistributor.sol";
 import "../Whitelist/Whitelist.sol";
-import "../Tokens/xrETH.sol";
-import "../Tokens/xRPL.sol";
 import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";
 import "../Interfaces/Oracles/IXRETHOracle.sol";
@@ -27,15 +25,10 @@ struct Claim {
 /// @notice distributes rewards
 contract YieldDistributor is Base {
 
-    uint256 public nodeOperatorSplit = 0.15e18; // 15% goes to node operators
-    uint256 public ethLiquidityProviderSplit = 0.8e18; // 80% goes to ETH liquidity providers
-    uint256 public adminSplit = 0.05e18; // 5% goes to the admin
 
-    uint256 public nodeOperatorYieldAccruedInInterval;
     uint256 public totalYieldAccrued;
+    uint256 public yieldAccruedInInterval;
     uint256 public dustAccrued;
-    uint256 public adminYieldAccrued;
-    uint256 public ethLiquidityProviderYieldAccrued;
 
     mapping(uint256 => Claim) public claims; // claimable yield per interval (in wei)
     mapping(address => mapping(uint256 => bool)) public hasClaimed; // whether an operator has claimed for a given interval
@@ -71,24 +64,15 @@ contract YieldDistributor is Base {
         );
         // approve infinite RPL spends for this address from xRPL
         RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS()).approve(
-            getDirectory().getRPLTokenAddress(),
+            _directory.getRPLVaultAddress(),
             type(uint).max
         );
         _isInitialized = true;
     }
 
-    // ETH deposits are done via gasless balance increases to DP, DP then sends ETH to this contract
-    receive() external payable {
-        totalYieldAccrued += msg.value;
-
-        uint256 yieldRecievedForNodeOperator = (msg.value * nodeOperatorSplit) / 1e18;
-        uint256 yieldRecievedForAdmin = (msg.value * adminSplit) / 1e18;
-        uint256 yieldRecievedForLiquidityProviders = msg.value - yieldRecievedForNodeOperator - yieldRecievedForAdmin;
-
-        nodeOperatorYieldAccruedInInterval += yieldRecievedForNodeOperator;
-
-        adminYieldAccrued += yieldRecievedForAdmin;
-        ethLiquidityProviderYieldAccrued += yieldRecievedForLiquidityProviders;
+    function wethReceived(uint256 weth) external onlyWETHVault {
+        totalYieldAccrued += weth;
+        yieldAccruedInInterval += weth;
 
         // if elapsed time since last interval is greater than maxIntervalLengthSeconds, start a new interval
         if (
@@ -204,19 +188,19 @@ contract YieldDistributor is Base {
     /// @notice Ends the current interval and starts a new one
     /// @dev Only called when numOperators changes or maxIntervalLengthSeconds has passed
     function finalizeInterval() public onlyWhitelistOrAdmin {
-        if (nodeOperatorYieldAccruedInInterval == 0 && currentInterval > 0) {
+        if (yieldAccruedInInterval == 0 && currentInterval > 0) {
             return;
         }
         Whitelist whitelist = getWhitelist();
 
         claims[currentInterval] = Claim(
-            nodeOperatorYieldAccruedInInterval,
+            yieldAccruedInInterval,
             whitelist.numOperators()
         );
 
         currentInterval++;
         currentIntervalGenesisTime = block.timestamp;
-        nodeOperatorYieldAccruedInInterval = 0;
+        yieldAccruedInInterval = 0;
 
         getOperatorDistributor().harvestNextMinipool();
     }
@@ -232,50 +216,16 @@ contract YieldDistributor is Base {
         maxIntervalLengthSeconds = _maxIntervalLengthSeconds;
     }
 
-    function adminClaimAndSweep(address treasury) public onlyAdmin {
-        uint256 amount = adminYieldAccrued + dustAccrued;
-        adminYieldAccrued = 0;
+    function adminSweep(address treasury) public onlyAdmin {
+        uint256 amount = dustAccrued;
         dustAccrued = 0;
         (bool success, ) = treasury.call{value: amount}("");
         require(success, "Failed to send ETH to treasury");
     }
 
-    function setProtocolFeeSplits (
-        uint256 _nodeOperatorSplit,
-        uint256 _ethLiquidityProviderSplit,
-        uint256 _adminSplit
-    ) public onlyAdmin {
-        require(
-            _nodeOperatorSplit + _ethLiquidityProviderSplit + _adminSplit == 1e18,
-            "Splits must add up to 100%"
-        );
-        nodeOperatorSplit = _nodeOperatorSplit;
-        ethLiquidityProviderSplit = _ethLiquidityProviderSplit;
-        adminSplit = _adminSplit;
-    }
-
-    // sends eth to deposit pool
-    function distributeEthLpRewards() external {
-        address to = getDirectory().getDepositPoolAddress();
-        (bool success, ) = to.call{value: ethLiquidityProviderYieldAccrued}("");
-        require(success, "Failed to send ETH to deposit pool");
-        ethLiquidityProviderYieldAccrued = 0;
-    }
-
-    function getEthLpRewards() public view returns (uint256) {
-        return ethLiquidityProviderYieldAccrued;
-    }
-
     /****
      * PRIVATE
      */
-
-    function getRocketPoolFee() private view returns (uint) {
-        return
-            RocketDAOProtocolSettingsNetworkInterface(
-                getDirectory().RP_NETWORK_FEES_ADDRESS()
-            ).getMaximumNodeFee();
-    }
 
     function getWhitelist() private view returns (Whitelist) {
         return Whitelist(_directory.getWhitelistAddress());
