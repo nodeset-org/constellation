@@ -11,7 +11,7 @@ import "./Tokens/WETHVault.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
-/// ETH + RPL intakes from token mints and validator yields are stored here, but only up to a maximum percentage of protocol TVL.
+/// ETH + RPL intakes from token mints and validator yields and sends to respective ERC4246 vaults.
 contract DepositPool is Base {
     /// @notice Keeps track of the previous _maxBalancePortion for easy reversion (e.g. unpausing)
     uint16 private _prevEthMaxBalancePortion = 100;
