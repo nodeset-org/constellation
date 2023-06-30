@@ -28,24 +28,21 @@ contract OperatorDistributor is Base {
         _queuedEth += msg.value;
     }
 
-    function removeMinipoolAddress(
-        address _address
-    ) external onlyYieldDistrubutor {
-        uint index = minipoolIndexMap[_address] - 1;
-        require(index < minipoolAddresses.length, "Address not found.");
-
-        // Move the last address into the spot located by index
-        address lastAddress = minipoolAddresses[minipoolAddresses.length - 1];
-        minipoolAddresses[index] = lastAddress;
-        minipoolIndexMap[lastAddress] = index;
-        // Remove the last address
-        minipoolAddresses.pop();
-        delete minipoolIndexMap[_address];
+    /// @notice Gets the total ETH value locked inside the protocol, including inside of validators, the OperatorDistributor,
+    // and this contract.
+    function getTvlEth() public view returns (uint) {
+        return address(this).balance;
     }
 
-    function _stakeRPLFor(
-        address _nodeAddress
-    ) internal  {
+    /// @notice Gets the total RPL value locked inside the protocol, including inside of validators, the OperatorDistributor,
+    // and this contract.
+    function getTvlRpl() public view returns (uint) {
+        return
+            RocketTokenRPLInterface(_directory.RPL_CONTRACT_ADDRESS())
+                .balanceOf(address(this));
+    }
+
+    function _stakeRPLFor(address _nodeAddress) internal {
         IRocketNodeStaking nodeStaking = IRocketNodeStaking(
             getDirectory().getRocketNodeStakingAddress()
         );

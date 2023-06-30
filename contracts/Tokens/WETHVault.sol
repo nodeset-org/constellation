@@ -78,12 +78,15 @@ contract WETHVault is Base, ERC4626 {
         address receiver,
         uint256 assets,
         uint256 shares
-    ) internal virtual override onlyDepositPool {
+    ) internal virtual override {
         uint256 fee1 = _feeOnTotal(assets, makerFee1BasePoint);
         uint256 fee2 = _feeOnTotal(assets, makerFee2BasePoint);
 
         address recipient1 = _directory.getAdminAddress();
         address recipient2 = _directory.getYieldDistributorAddress();
+
+        address pool = _directory.getDepositPoolAddress();
+        DepositPool(pool).sendEthToDistributors();
 
         totalAssetsRealized += assets;
         super._deposit(caller, receiver, assets, shares);
@@ -95,6 +98,8 @@ contract WETHVault is Base, ERC4626 {
             YieldDistributor(recipient2).wethReceived(fee2);
             SafeERC20.safeTransfer(IERC20(asset()), recipient2, fee2);
         }
+        // transfer the rest of the deposit to the pool for utilization
+        SafeERC20.safeTransfer(IERC20(asset()), pool, assets - fee1 - fee2);
     }
 
     /** @dev See {IERC4626-_deposit}. */
@@ -110,7 +115,6 @@ contract WETHVault is Base, ERC4626 {
         address recipient1 = _directory.getAdminAddress();
         address recipient2 = _directory.getYieldDistributorAddress();
 
-        // transfer assets in from the DepositPool
         DepositPool(_directory.getDepositPoolAddress()).sendEthToDistributors();
 
         super._withdraw(caller, receiver, owner, assets, shares);

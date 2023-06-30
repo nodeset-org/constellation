@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
 import "../Base.sol";
 import "../DepositPool.sol";
+import "../Operator/OperatorDistributor.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 contract RPLVault is Base, ERC4626 {
@@ -64,16 +65,21 @@ contract RPLVault is Base, ERC4626 {
         address receiver,
         uint256 assets,
         uint256 shares
-    ) internal virtual override {
+    ) internal virtual override  {
         uint256 fee = _feeOnTotal(assets, makerFeeBasePoint);
 
         address recipient1 = _directory.getAdminAddress();
+
+        address pool = _directory.getDepositPoolAddress();
+        DepositPool(pool).sendRplToDistributors();
 
         super._deposit(caller, receiver, assets, shares);
 
         if (fee > 0 && recipient1 != address(this)) {
             SafeERC20.safeTransfer(IERC20(asset()), recipient1, fee);
         }
+        // transfer the rest of the deposit to the pool for utilization
+        SafeERC20.safeTransfer(IERC20(asset()), pool, assets - fee);
     }
 
     /** @dev See {IERC4626-_deposit}. */
@@ -86,6 +92,8 @@ contract RPLVault is Base, ERC4626 {
     ) internal virtual override {
         uint256 fee = _feeOnRaw(assets, takerFeeBasePoint);
         address recipient1 = _directory.getAdminAddress();
+
+        DepositPool(_directory.getDepositPoolAddress()).sendRplToDistributors();
 
         super._withdraw(caller, receiver, owner, assets, shares);
 
@@ -107,6 +115,10 @@ contract RPLVault is Base, ERC4626 {
     ) private pure returns (uint256) {
         return
             assets.mulDiv(feeBasePoint, feeBasePoint + 1e5, Math.Rounding.Up);
+    }
+
+    function totalAssets() public view override returns (uint256) {
+        return super.totalAssets() + DepositPool(_directory.getDepositPoolAddress()).getTvlRpl() + OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl();
     }
 
     // @notice Returns the amount of asset this contract must contain to be sufficiently collateralized

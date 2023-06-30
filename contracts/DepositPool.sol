@@ -17,9 +17,6 @@ import "./Interfaces/IWETH.sol";
 /// ETH + RPL intakes from token mints and validator yields and sends to respective ERC4246 vaults.
 contract DepositPool is Base {
 
-    uint private _dpOwnedEth;
-    uint private _dpOwnedRpl;
-
     uint256 public splitRatioEth = 0.30e5; // sends 30% to operator distributor and 70% to eth vault
     uint256 public splitRatioRpl = 0.30e5; // sends 30% to operator distributor and 70% to rpl vault
 
@@ -35,13 +32,13 @@ contract DepositPool is Base {
     /// @notice Gets the total ETH value locked inside the protocol, including inside of validators, the OperatorDistributor,
     // and this contract.
     function getTvlEth() public view returns (uint) {
-        return _dpOwnedEth;
+        return address(this).balance;
     }
 
     /// @notice Gets the total RPL value locked inside the protocol, including inside of validators, the OperatorDistributor,
     // and this contract.
     function getTvlRpl() public view returns (uint) {
-        return _dpOwnedRpl;
+        return RocketTokenRPLInterface(_directory.RPL_CONTRACT_ADDRESS()).balanceOf(address(this));
     }
 
     ///--------
@@ -62,25 +59,9 @@ contract DepositPool is Base {
         splitRatioRpl = newSplitRatio;
     }
 
-    ///------
-    /// RECEIVE
-    ///------
-
-    receive() external payable {
-        uint old = getTvlEth();
-
-        _dpOwnedEth += msg.value;
-        emit TotalValueUpdated(old, _dpOwnedEth);
-
-        sendEthToDistributors();
-    }
-
-    function receiveRpl(uint amount) external onlyRplVault {
-        uint old = getTvlRpl();
-
-        _dpOwnedRpl += amount;
-        emit TotalValueUpdated(old, _dpOwnedRpl);
-    }
+    ///--------
+    /// ACTIONS
+    ///--------
 
     /// @notice Sends 30% of the ETH balance to the OperatorDistributor and the rest to the WETHVault.
     /// @dev Splits the total ETH balance into WETH tokens and distributes them between the WETHVault and OperatorDistributor based on the splitRatioEth. However, when the requiredCapital from WETHVault is zero, all balance is sent to the OperatorDistributor.
