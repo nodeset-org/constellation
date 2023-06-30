@@ -16,24 +16,6 @@ import "./Interfaces/IWETH.sol";
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
 /// ETH + RPL intakes from token mints and validator yields and sends to respective ERC4246 vaults.
 contract DepositPool is Base {
-    // TODO: remove these notes,
-    // _maxRplBalancePortion is staked at the node level, and needs to be a percentage of the TVL. This is to service large inflows and outflows of new minipool contracts.
-    // likewise, _maxrETHBalancePortion needs to optimize yield for eth. eth in this contract is only reserved for creating stakers for minipool contracts
-    // the oracle is simple a TVL calculation of all the ETH in the system
-    // Total RPL is already on-chain and does not need to be an oracle
-
-    string public constant SEND_ETH_TO_OPERATOR_DISTRIBUTOR_ERROR =
-        "DepositPool: Send ETH to OperatorDistributor failed";
-    string public constant SEND_RPL_TO_OPERATOR_DISTRIBUTOR_ERROR =
-        "DepositPool: Send RPL to OperatorDistributor failed";
-    string public constant ONLY_ETH_TOKEN_ERROR =
-        "DepositPool: This function may only be called by the xrETH token contract";
-    string public constant MAX_BALANCE_PORTION_OUT_OF_RANGE_ERROR =
-        "DepositPool: Supplied maxBalancePortion is out of range. Must be >= 0 or <= MAX_BALANCE_PORTION.";
-    string public constant NOT_ENOUGH_ETH_ERROR =
-        "Deposit Pool: Not enough ETH";
-    string public constant NOT_ENOUGH_RPL_ERROR =
-        "Deposit Pool: Not enough RPL";
 
     uint private _dpOwnedEth;
     uint private _dpOwnedRpl;
@@ -63,8 +45,22 @@ contract DepositPool is Base {
     }
 
     ///--------
-    /// TOKEN
+    /// SETTERS
     ///--------
+
+    /// @notice Sets the split ratio for ETH. This percentage of ETH will be sent to the OperatorDistributor and 1 - splitRatioEth will be sent to the WETHVault.
+    /// @param newSplitRatio The new split ratio.
+    function setSplitRatioEth(uint256 newSplitRatio) external onlyAdmin {
+        require(newSplitRatio <= 1e5, "split ratio must be lte to 1e5");
+        splitRatioEth = newSplitRatio;
+    }
+
+    /// @notice Sets the split ratio for RPL. This percentage of RPL will be sent to the OperatorDistributor and 1 - splitRatioRpl will be sent to the RPLVault.
+    /// @param newSplitRatio The new split ratio.
+    function setSplitRatioRpl(uint256 newSplitRatio) external onlyAdmin {
+        require(newSplitRatio <= 1e5, "split ratio must be lte to 1e5");
+        splitRatioRpl = newSplitRatio;
+    }
 
     ///------
     /// RECEIVE
@@ -166,17 +162,5 @@ contract DepositPool is Base {
                 toOperatorDistributor
             );
         }
-    }
-
-    function getRplBalanceOf(address a) private view returns (uint) {
-        return
-            RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS())
-                .balanceOf(address(a));
-    }
-
-    function sendRPLTo(address to, uint amount) private returns (bool) {
-        return
-            RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS())
-                .transfer(to, amount);
     }
 }
