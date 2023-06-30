@@ -24,6 +24,8 @@ contract RPLVault is Base, ERC4626 {
     uint256 public makerFeeBasePoint = 0.05e5; // admin maker fee
     uint256 public takerFeeBasePoint = 0.05e5; // admin taker fee
 
+    uint256 public collateralizationRatioBasePoint = 0.02e5; // collateralization ratio
+
     /** @dev See {IERC4626-previewDeposit}. */
     function previewDeposit(
         uint256 assets
@@ -105,6 +107,20 @@ contract RPLVault is Base, ERC4626 {
     ) private pure returns (uint256) {
         return
             assets.mulDiv(feeBasePoint, feeBasePoint + 1e5, Math.Rounding.Up);
+    }
+
+    // @notice Returns the amount of asset this contract must contain to be sufficiently collateralized
+    function getRequiredCollateral() public view returns (uint256) {
+        uint256 currentBalance = ERC20(asset()).balanceOf(address(this));
+        uint256 fullBalance = getDistributableYield();
+
+        uint256 requiredBalance = collateralizationRatioBasePoint.mulDiv(
+            fullBalance,
+            1e5,
+            Math.Rounding.Up
+        );
+
+        return requiredBalance > currentBalance ? requiredBalance : 0;
     }
 
     /**ADMIN FUNCTIONS */

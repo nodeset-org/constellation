@@ -28,7 +28,9 @@ contract WETHVault is Base, ERC4626 {
     uint256 public takerFee1BasePoint = 0.03e5; // admin taker fee
     uint256 public takerFee2BasePoint = 0.04e5; // node operator taker fee
 
-    uint256 public totalAssetsAccrued;
+    uint256 public collateralizationRatioBasePoint = 0.02e5; // collateralization ratio
+
+    uint256 public totalAssetsRealized; // total deposited assets
 
     /** @dev See {IERC4626-previewDeposit}. */
     function previewDeposit(
@@ -83,7 +85,7 @@ contract WETHVault is Base, ERC4626 {
         address recipient1 = _directory.getAdminAddress();
         address recipient2 = _directory.getYieldDistributorAddress();
 
-        totalAssetsAccrued += assets;
+        totalAssetsRealized += assets;
         super._deposit(caller, receiver, assets, shares);
 
         if (fee1 > 0 && recipient1 != address(this)) {
@@ -107,6 +109,12 @@ contract WETHVault is Base, ERC4626 {
         uint256 fee2 = _feeOnRaw(assets, takerFee2BasePoint);
         address recipient1 = _directory.getAdminAddress();
         address recipient2 = _directory.getYieldDistributorAddress();
+
+        // transfer assets in from the DepositPool
+        DepositPool(_directory.getDepositPoolAddress()).transferToVault(
+            assets,
+            owner
+        );
 
         super._withdraw(caller, receiver, owner, assets, shares);
 
@@ -134,12 +142,12 @@ contract WETHVault is Base, ERC4626 {
             assets.mulDiv(feeBasePoint, feeBasePoint + 1e5, Math.Rounding.Up);
     }
 
-    /// @notice Gets the total tvl of non-distributed yield
+    /// @notice Gets the total value of non-distributed yield
     function getDistributableYield() public view returns (uint256) {
-        uint256 stakedEthAccrued = getOracle().getTotalYieldAccrued();
+        uint256 totalUnrealizedAccrual = getOracle().getTotalYieldAccrued();
         return
-            stakedEthAccrued > totalAssetsAccrued
-                ? stakedEthAccrued - totalAssetsAccrued
+            totalUnrealizedAccrual > totalAssetsRealized
+                ? totalUnrealizedAccrual - totalAssetsRealized
                 : 0;
     }
 
@@ -153,6 +161,25 @@ contract WETHVault is Base, ERC4626 {
 
     function getOracle() public view returns (IXRETHOracle) {
         return IXRETHOracle(getDirectory().getRETHOracleAddress());
+    }
+
+    function totalAssets() public view override returns (uint256) {
+        DepositPool dp = DepositPool(getDirectory().getDepositPoolAddress());
+        return super.totalAssets() + getDistributableYield() + dp.getDpTvlEth();
+    }
+
+    // @notice Returns the amount of asset this contract must contain to be sufficiently collateralized
+    function getRequiredCollateral() public view returns (uint256) {
+        uint256 currentBalance = ERC20(asset()).balanceOf(address(this));
+        uint256 fullBalance = getDistributableYield();
+
+        uint256 requiredBalance = collateralizationRatioBasePoint.mulDiv(
+            fullBalance,
+            1e5,
+            Math.Rounding.Up
+        );
+
+        return requiredBalance > currentBalance ? requiredBalance : 0;
     }
 
     /**ADMIN FUNCTIONS */

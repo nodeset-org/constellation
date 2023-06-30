@@ -60,7 +60,7 @@ contract DepositPool is Base {
 
     /// @notice Gets the total ETH value locked inside the protocol, including inside of validators, the OperatorDistributor,
     // and this contract.
-    function getTvlEth() public view returns (uint) {
+    function getDpTvlEth() public view returns (uint) {
         return _dpOwnedEth;
     }
 
@@ -78,10 +78,6 @@ contract DepositPool is Base {
         return _maxRplBalancePortion;
     }
 
-    function getMaxrETHBalance() public view returns (uint) {
-        return (getTvlEth() * _maxrETHBalancePortion) / MAX_BALANCE_PORTION;
-    }
-
     function getMaxRplBalance() public view returns (uint) {
         return ((getTvlRpl() * _maxRplBalancePortion) /
             MAX_BALANCE_PORTION);
@@ -92,7 +88,7 @@ contract DepositPool is Base {
     ///--------
 
     /// @notice only the token contract can spend DP funds
-    function sendEth(address payable to, uint amount) public onlyWETHVault {
+    function transferToVault(address payable to, uint amount) public onlyWETHVault {
         require(amount <= getMaxrETHBalance(), NOT_ENOUGH_ETH_ERROR);
 
         uint old = getTvlEth();
