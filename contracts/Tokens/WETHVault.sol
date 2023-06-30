@@ -111,10 +111,7 @@ contract WETHVault is Base, ERC4626 {
         address recipient2 = _directory.getYieldDistributorAddress();
 
         // transfer assets in from the DepositPool
-        DepositPool(_directory.getDepositPoolAddress()).transferToVault(
-            assets,
-            owner
-        );
+        DepositPool(_directory.getDepositPoolAddress()).sendEthToDistributors();
 
         super._withdraw(caller, receiver, owner, assets, shares);
 
@@ -151,24 +148,16 @@ contract WETHVault is Base, ERC4626 {
                 : 0;
     }
 
-    /// @notice Gets the amount of ETH that the contract needs to receive before it can distribute full rewards again
-    function getShortfall() public view returns (uint256) {
-        uint256 distributableYield = getDistributableYield();
-        uint256 totalEth = ERC20(asset()).balanceOf(address(this));
-        return
-            totalEth > distributableYield ? 0 : distributableYield - totalEth;
-    }
-
     function getOracle() public view returns (IXRETHOracle) {
         return IXRETHOracle(getDirectory().getRETHOracleAddress());
     }
 
     function totalAssets() public view override returns (uint256) {
         DepositPool dp = DepositPool(getDirectory().getDepositPoolAddress());
-        return super.totalAssets() + getDistributableYield() + dp.getDpTvlEth();
+        return super.totalAssets() + getDistributableYield() + dp.getTvlEth();
     }
 
-    // @notice Returns the amount of asset this contract must contain to be sufficiently collateralized
+    /// @notice Returns the minimal amount of asset this contract must contain to be sufficiently collateralized for operations
     function getRequiredCollateral() public view returns (uint256) {
         uint256 currentBalance = ERC20(asset()).balanceOf(address(this));
         uint256 fullBalance = getDistributableYield();

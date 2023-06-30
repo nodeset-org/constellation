@@ -43,6 +43,30 @@ contract OperatorDistributor is Base {
         delete minipoolIndexMap[_address];
     }
 
+    function _stakeRPLFor(
+        address _nodeAddress
+    ) internal  {
+        IRocketNodeStaking nodeStaking = IRocketNodeStaking(
+            getDirectory().getRocketNodeStakingAddress()
+        );
+        uint256 minimumRplStake = IRocketNodeStaking(
+            getDirectory().getRocketNodeStakingAddress()
+        ).getNodeMinimumRPLStake(_nodeAddress);
+
+        // approve the node staking contract to spend the RPL
+        RocketTokenRPLInterface rpl = RocketTokenRPLInterface(
+            getDirectory().RPL_CONTRACT_ADDRESS()
+        );
+        require(
+            rpl.approve(
+                getDirectory().getRocketNodeStakingAddress(),
+                minimumRplStake
+            )
+        );
+
+        nodeStaking.stakeRPLFor(_nodeAddress, minimumRplStake);
+    }
+
     function reimburseNodeForMinipool(
         bytes memory sig,
         address newMinipoolAdress
@@ -98,7 +122,7 @@ contract OperatorDistributor is Base {
         );
 
         DepositPool depositPool = DepositPool(payable(depositPoolAddr));
-        depositPool.stakeRPLFor(nodeAddress);
+        _stakeRPLFor(nodeAddress);
 
         // add minipool to minipoolAddresses
         minipoolAddresses.push(newMinipoolAdress);
