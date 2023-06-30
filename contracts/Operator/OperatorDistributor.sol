@@ -64,6 +64,7 @@ contract OperatorDistributor is Base {
                 .balanceOf(address(this)) + getAmountFundedRpl();
     }
 
+    /// @notice Should be called by admin server when a node operator exists a minipool
     function removeMinipoolAddress(
         address _address
     ) public onlyWhitelistOrAdmin {
