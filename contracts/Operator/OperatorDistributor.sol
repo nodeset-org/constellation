@@ -24,6 +24,8 @@ contract OperatorDistributor is Base {
     mapping(address => uint256) public minipoolAmountFundedEth;
     mapping(address => uint256) public minipoolAmountFundedRpl;
 
+    mapping(address => address[]) nodeOperatorOwnedMinipools;
+
     constructor(address directory) Base(directory) {}
 
     event WarningNoMiniPoolsToHarvest();
@@ -64,7 +66,7 @@ contract OperatorDistributor is Base {
 
     function removeMinipoolAddress(
         address _address
-    ) external onlyWhitelistOrAdmin {
+    ) public onlyWhitelistOrAdmin {
         uint index = minipoolIndexMap[_address] - 1;
         require(index < minipoolAddresses.length, "Address not found.");
 
@@ -79,6 +81,17 @@ contract OperatorDistributor is Base {
         // Set amount funded to 0 since it's being returned to DP
         minipoolAmountFundedEth[_address] = 0;
         minipoolAmountFundedRpl[_address] = 0;
+    }
+
+    function removeNodeOperator(
+        address _address
+    ) external onlyWhitelistOrAdmin {
+        // remove all minipools owned by node operator
+        address[] memory minipools = nodeOperatorOwnedMinipools[_address];
+        for(uint i = 0; i < minipools.length; i++) {
+            removeMinipoolAddress(minipools[i]);
+        }
+        delete nodeOperatorOwnedMinipools[_address];
     }
 
     function _stakeRPLFor(address _nodeAddress) internal {
@@ -161,6 +174,9 @@ contract OperatorDistributor is Base {
         );
 
         _stakeRPLFor(nodeAddress);
+
+        // new minipool owned by node operator
+        nodeOperatorOwnedMinipools[nodeAddress].push(newMinipoolAdress);
 
         // add minipool to minipoolAddresses
         minipoolAddresses.push(newMinipoolAdress);

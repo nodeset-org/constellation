@@ -114,24 +114,31 @@ contract Whitelist is UpgradeableBase {
         emit OperatorAdded(operator);
     }
 
-    function removeOperator(address a) public onlyAdmin {
-        _permissions[a] = false;
+    function removeOperator(address nodeOperator) public onlyAdmin {
+        _permissions[nodeOperator] = false;
 
-        delete operatorMap[a];
-        uint index = reverseOperatorIndexMap[a] - 1;
+        delete operatorMap[nodeOperator];
+        uint index = reverseOperatorIndexMap[nodeOperator] - 1;
         delete operatorIndexMap[index];
-        delete reverseOperatorIndexMap[a];
+        delete reverseOperatorIndexMap[nodeOperator];
 
-        YieldDistributor distributor = YieldDistributor(
+
+        OperatorDistributor odistributor = OperatorDistributor(
+            payable(getDirectory().getOperatorDistributorAddress())
+        );
+
+        odistributor.removeNodeOperator(nodeOperator);
+
+        YieldDistributor ydistributor = YieldDistributor(
             payable(getDirectory().getYieldDistributorAddress())
         );
 
 
-        distributor.finalizeInterval();
+        ydistributor.finalizeInterval();
 
         numOperators--;
 
-        emit OperatorRemoved(a);
+        emit OperatorRemoved(nodeOperator);
     }
 
     function _authorizeUpgrade(address) internal override onlyAdmin {}
