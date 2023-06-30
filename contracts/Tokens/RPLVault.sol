@@ -121,7 +121,7 @@ contract RPLVault is Base, ERC4626 {
         return super.totalAssets() + DepositPool(_directory.getDepositPoolAddress()).getTvlRpl() + OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl();
     }
 
-    // @notice Returns the amount of asset this contract must contain to be sufficiently collateralized
+    /// @notice Returns the amount of asset this contract must contain to be sufficiently collateralized
     function getRequiredCollateral() public view returns (uint256) {
         uint256 currentBalance = ERC20(asset()).balanceOf(address(this));
         uint256 fullBalance = DepositPool(_directory.getDepositPoolAddress()).getTvlRpl();
