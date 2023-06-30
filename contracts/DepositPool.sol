@@ -8,6 +8,7 @@ import "./Operator/OperatorDistributor.sol";
 import "./Operator/YieldDistributor.sol";
 import "./Interfaces/RocketPool/IRocketNodeStaking.sol";
 import "./Tokens/WETHVault.sol";
+import "./Tokens/RPLVault.sol";
 
 import "./Interfaces/IWETH.sol";
 
@@ -37,7 +38,8 @@ contract DepositPool is Base {
     uint private _dpOwnedEth;
     uint private _dpOwnedRpl;
 
-    uint256 public splitRatioEth = 0.30e5; // sends 30% to
+    uint256 public splitRatioEth = 0.30e5; // sends 30% to operator distributor and 70% to eth vault
+    uint256 public splitRatioRpl = 0.30e5; // sends 30% to operator distributor and 70% to rpl vault
 
     /// @notice Emitted whenever this contract sends or receives ETH outside of the protocol.
     event TotalValueUpdated(uint oldValue, uint newValue);
@@ -92,7 +94,7 @@ contract DepositPool is Base {
             .getOperatorDistributorAddress();
         uint256 requiredCapital = vweth.getRequiredCollateral();
         uint256 totalBalance = address(this).balance;
-        IWETH WETH = IWETH(getDirectory().getWETHAddress()); // WETH token contract
+        IWETH WETH = IWETH(_directory.WETH_CONTRACT_ADDRESS()); // WETH token contract
 
         // Always split total balance according to the ratio
         uint256 toOperatorDistributor = (totalBalance * splitRatioEth) / 1e5;
@@ -119,6 +121,47 @@ contract DepositPool is Base {
             WETH.deposit{value: toOperatorDistributor}();
             SafeERC20.safeTransfer(
                 IERC20(address(WETH)),
+                operatorDistributor,
+                toOperatorDistributor
+            );
+        }
+    }
+
+    /// @notice Sends 30% of the ETH balance to the OperatorDistributor and the rest to the WETHVault.
+    /// @dev Splits the total ETH balance into WETH tokens and distributes them between the WETHVault and OperatorDistributor based on the splitRatioEth. However, when the requiredCapital from WETHVault is zero, all balance is sent to the OperatorDistributor.
+    function sendRplToDistributors() public {
+        RPLVault vrpl = RPLVault(getDirectory().getRPLVaultAddress());
+        address operatorDistributor = getDirectory()
+            .getOperatorDistributorAddress();
+        uint256 requiredCapital = vrpl.getRequiredCollateral();
+        RocketTokenRPLInterface RPL = RocketTokenRPLInterface(
+            _directory.RPL_CONTRACT_ADDRESS()
+        ); // RPL token contract
+        uint256 totalBalance = RPL.balanceOf(address(this));
+
+        // Always split total balance according to the ratio
+        uint256 toOperatorDistributor = (totalBalance * splitRatioRpl) / 1e5;
+        uint256 toRplVault = totalBalance - toOperatorDistributor;
+
+        // When required capital is zero, send everything to OperatorDistributor
+        if (requiredCapital == 0) {
+            toOperatorDistributor = totalBalance;
+            toRplVault = 0;
+        }
+
+        // Wrap ETH to WETH and send to WETHVault
+        if (toRplVault > 0) {
+            SafeERC20.safeTransfer(
+                IERC20(address(RPL)),
+                address(vrpl),
+                toRplVault
+            );
+        }
+
+        // Wrap ETH to WETH and send to Operator Distributor
+        if (toOperatorDistributor > 0) {
+            SafeERC20.safeTransfer(
+                IERC20(address(RPL)),
                 operatorDistributor,
                 toOperatorDistributor
             );
