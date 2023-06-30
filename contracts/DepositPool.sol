@@ -21,13 +21,6 @@ contract DepositPool is Base {
     // the oracle is simple a TVL calculation of all the ETH in the system
     // Total RPL is already on-chain and does not need to be an oracle
 
-    event NewMaxrETHBalancePortion(uint16 oldValue, uint16 newValue);
-    event NewMaxRplBalancePortion(uint16 oldValue, uint16 newValue);
-
-    uint16 public constant MAX_BALANCE_PORTION_DECIMALS = 4;
-    uint16 public constant MAX_BALANCE_PORTION =
-        uint16(10) ** MAX_BALANCE_PORTION_DECIMALS;
-
     string public constant SEND_ETH_TO_OPERATOR_DISTRIBUTOR_ERROR =
         "DepositPool: Send ETH to OperatorDistributor failed";
     string public constant SEND_RPL_TO_OPERATOR_DISTRIBUTOR_ERROR =
@@ -44,7 +37,7 @@ contract DepositPool is Base {
     uint private _dpOwnedEth;
     uint private _dpOwnedRpl;
 
-    uint256 public splitRatio = 0.30e5; // 30%
+    uint256 public splitRatioEth = 0.30e5; // sends 30% to
 
     /// @notice Emitted whenever this contract sends or receives ETH outside of the protocol.
     event TotalValueUpdated(uint oldValue, uint newValue);
@@ -91,7 +84,8 @@ contract DepositPool is Base {
         emit TotalValueUpdated(old, _dpOwnedRpl);
     }
 
-    /// @notice If the DP would grow above `_maxrETHBalancePortion`, it instead forwards the payment to the OperatorDistributor / YieldDistributor.
+    /// @notice Sends 30% of the ETH balance to the OperatorDistributor and the rest to the WETHVault.
+    /// @dev Splits the total ETH balance into WETH tokens and distributes them between the WETHVault and OperatorDistributor based on the splitRatioEth. However, when the requiredCapital from WETHVault is zero, all balance is sent to the OperatorDistributor.
     function sendEthToDistributors() public {
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
         address operatorDistributor = getDirectory()
@@ -100,40 +94,36 @@ contract DepositPool is Base {
         uint256 totalBalance = address(this).balance;
         IWETH WETH = IWETH(getDirectory().getWETHAddress()); // WETH token contract
 
-        if (totalBalance > requiredCapital) {
-            // Wrap required capital to WETH and send to WETHVault
-            WETH.deposit{value: requiredCapital}();
+        // Always split total balance according to the ratio
+        uint256 toOperatorDistributor = (totalBalance * splitRatioEth) / 1e5;
+        uint256 toWETHVault = totalBalance - toOperatorDistributor;
+
+        // When required capital is zero, send everything to OperatorDistributor
+        if (requiredCapital == 0) {
+            toOperatorDistributor = totalBalance;
+            toWETHVault = 0;
+        }
+
+        // Wrap ETH to WETH and send to WETHVault
+        if (toWETHVault > 0) {
+            WETH.deposit{value: toWETHVault}();
             SafeERC20.safeTransfer(
                 IERC20(address(WETH)),
                 address(vweth),
-                requiredCapital
+                toWETHVault
             );
+        }
 
-            // Calculate remaining balance and the split according to the ratio
-            uint256 remainingBalance = totalBalance - requiredCapital;
-            uint256 toOperatorDistributor = (remainingBalance * splitRatio) /
-                1e5;
-
-            // Wrap remaining balance to WETH and send to Operator Distributor
+        // Wrap ETH to WETH and send to Operator Distributor
+        if (toOperatorDistributor > 0) {
             WETH.deposit{value: toOperatorDistributor}();
             SafeERC20.safeTransfer(
                 IERC20(address(WETH)),
                 operatorDistributor,
                 toOperatorDistributor
             );
-        } else {
-            // Wrap all balance to WETH and send to WETHVault if required capital is not met
-            WETH.deposit{value: totalBalance}();
-            SafeERC20.safeTransfer(
-                IERC20(address(WETH)),
-                address(vweth),
-                totalBalance
-            );
         }
     }
-
-    // Emit event for failed transactions
-    event SendFailed(string reason);
 
     function getRplBalanceOf(address a) private view returns (uint) {
         return
