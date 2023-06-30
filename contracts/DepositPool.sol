@@ -66,12 +66,15 @@ contract DepositPool is Base {
     /// @notice Sends 30% of the ETH balance to the OperatorDistributor and the rest to the WETHVault.
     /// @dev Splits the total ETH balance into WETH tokens and distributes them between the WETHVault and OperatorDistributor based on the splitRatioEth. However, when the requiredCapital from WETHVault is zero, all balance is sent to the OperatorDistributor.
     function sendEthToDistributors() public {
+        // convert entire weth balance of this contract to eth
+        IWETH WETH = IWETH(_directory.WETH_CONTRACT_ADDRESS()); // WETH token contract
+        WETH.withdraw(WETH.balanceOf(address(this)));
+
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
         address operatorDistributor = getDirectory()
             .getOperatorDistributorAddress();
         uint256 requiredCapital = vweth.getRequiredCollateral();
         uint256 totalBalance = address(this).balance;
-        IWETH WETH = IWETH(_directory.WETH_CONTRACT_ADDRESS()); // WETH token contract
 
         // Always split total balance according to the ratio
         uint256 toOperatorDistributor = (totalBalance * splitRatioEth) / 1e5;
