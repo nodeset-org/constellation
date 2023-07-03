@@ -144,7 +144,6 @@ contract YieldDistributor is Base {
             uint256 fullEthReward = ((claim.amount * 1e18) /
                 claim.numOperators) / 1e18;
             uint256 operatorRewardEth = (fullEthReward * operator.feePortion) / 1e18;
-            // TODO: until the operator's feePortion is 100%, we will be collecting dust that'll need sweeping back to DP.
             dustAccrued += fullEthReward - operatorRewardEth;
             totalReward += operatorRewardEth;
             hasClaimed[_rewardee][i] = true;
