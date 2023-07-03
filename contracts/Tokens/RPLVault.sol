@@ -10,7 +10,7 @@ import "../Operator/OperatorDistributor.sol";
 /// @custom:security-contact info@nodeoperator.org
 contract RPLVault is Base, ERC4626 {
     string constant NAME = "Constellation RPL";
-    string constant SYMBOL = "vCRPL"; // Vaulted Constellation RPL
+    string constant SYMBOL = "xRPL"; // Vaulted Constellation RPL
 
     constructor(
         address directoryAddress

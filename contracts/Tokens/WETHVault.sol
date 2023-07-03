@@ -10,7 +10,7 @@ import "../Operator/YieldDistributor.sol";
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is Base, ERC4626 {
     string constant NAME = "Constellation ETH";
-    string constant SYMBOL = "vCWETH"; // Vaulted Constellation Wrapped ETH
+    string constant SYMBOL = "xrETH"; // Vaulted Constellation Wrapped ETH
 
     constructor(
         address directoryAddress
