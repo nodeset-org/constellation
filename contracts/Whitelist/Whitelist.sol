@@ -19,8 +19,6 @@ contract Whitelist is UpgradeableBase {
 
     uint public numOperators;
 
-    event TrustBuildPeriodUpdated(uint24 oldValue, uint24 newValue);
-
     string public constant OPERATOR_NOT_FOUND_ERROR =
         "Whitelist: Provided address is not an allowed operator!";
     string public constant OPERATOR_DUPLICATE_ERROR =

@@ -90,7 +90,7 @@ async function getRocketPool(): Promise<RocketPool> {
 
 async function deployProtocol(): Promise<Protocol> {
 	const directory = await (await ethers.getContractFactory("Directory")).deploy();
-	const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directory.address, protocolParams.trustBuildPeriod], { 'initializer' : 'initializeWhitelist',  'kind' : 'uups', 'unsafeAllow': ['constructor'] });
+	const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directory.address], { 'initializer' : 'initializeWhitelist',  'kind' : 'uups', 'unsafeAllow': ['constructor'] });
 	const vCWETH = await (await ethers.getContractFactory("WETHVault")).deploy(directory.address);
 	const vCRPL = await (await ethers.getContractFactory("RPLVault")).deploy(directory.address);
 	const depositPool = await (await ethers.getContractFactory("DepositPool")).deploy(directory.address);
