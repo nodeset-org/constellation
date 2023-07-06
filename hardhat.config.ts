@@ -10,7 +10,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // add hardhat tasks
-import "./tasks/deploy_task";
+import "./scripts/tasks/deploy_task";
 
 const config: HardhatUserConfig = {
   solidity: {

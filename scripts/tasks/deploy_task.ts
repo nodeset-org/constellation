@@ -26,6 +26,10 @@ task("verifyDirectory", "Verify Directory contract")
 
 task("deploy", "Deploy contracts")
     .setAction(async (args, hre) => {
+        // create file to log deployments if it doesn't exist
+        if (!fs.existsSync("./deployments")) {
+            fs.mkdirSync("./deployments");
+        }
         const logStream = fs.createWriteStream(`./deployments/${hre.network.name}.log`, { flags: 'a' });
         const today = new Date();
         logStream.write(`${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}\n`);
@@ -38,5 +42,7 @@ task("deploy", "Deploy contracts")
             address: directoryContract.address,
         });
         logStream.write(`directory: ${directoryContract.address}\n`);
+        // [DevOps] ideally we have some automated way for Frontend/Backend to get the current addresses for each network as well as a staging/production environment/dev ID for each network
+        // [DevOps] for now we can just pass the log around on discord
 
     });
