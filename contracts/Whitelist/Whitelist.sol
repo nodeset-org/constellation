@@ -39,14 +39,6 @@ contract Whitelist is UpgradeableBase {
         return _permissions[a];
     }
 
-    function getRewardShare(
-        Operator calldata operator
-    ) public view returns (uint) {
-        uint timeSinceStart = (block.timestamp - operator.operationStartTime);
-        uint portion = timeSinceStart / getTrustBuildPeriod();
-        if (portion < 1) return portion;
-        else return 100; // max percentage of rewards is 100%
-    }
 
     function getOperatorAtAddress(
         address a

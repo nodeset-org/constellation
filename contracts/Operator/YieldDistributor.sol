@@ -62,7 +62,7 @@ contract YieldDistributor is Base {
             DIRECTORY_NOT_INITIALIZED_ERROR
         );
         // approve infinite RPL spends for this address from xRPL
-        RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS()).approve(
+        RocketTokenRPLInterface(getDirectory().getRPLAddress()).approve(
             _directory.getRPLVaultAddress(),
             type(uint).max
         );

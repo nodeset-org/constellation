@@ -7,7 +7,12 @@ import { Directory } from "../typechain-types/contracts/Directory";
 import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH } from "../typechain-types";
 import { initializeDirectory } from "./test-directory";
 
-const protocolParams  = { trustBuildPeriod : ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
+const protocolParams  = {
+	trustBuildPeriod : ethers.utils.parseUnits("1.5768", 7) ,
+	rplToken: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
+	wethToken: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+	rpNetworkFees: "0x320f3aAB9405e38b955178BBe75c477dECBA0C27",
+}; // ~6 months in seconds
 
 export type SetupData = {
 	protocol: Protocol,

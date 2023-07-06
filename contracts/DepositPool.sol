@@ -38,7 +38,7 @@ contract DepositPool is Base {
     /// @notice Gets the total RPL value locked inside the protocol, including inside of validators, the OperatorDistributor,
     // and this contract.
     function getTvlRpl() public view returns (uint) {
-        return RocketTokenRPLInterface(_directory.RPL_CONTRACT_ADDRESS()).balanceOf(address(this));
+        return RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this));
     }
 
     ///--------
@@ -67,7 +67,7 @@ contract DepositPool is Base {
     /// @dev Splits the total ETH balance into WETH tokens and distributes them between the WETHVault and OperatorDistributor based on the splitRatioEth. However, when the requiredCapital from WETHVault is zero, all balance is sent to the OperatorDistributor.
     function sendEthToDistributors() public {
         // convert entire weth balance of this contract to eth
-        IWETH WETH = IWETH(_directory.WETH_CONTRACT_ADDRESS()); // WETH token contract
+        IWETH WETH = IWETH(_directory.getWETHAddress()); // WETH token contract
         WETH.withdraw(WETH.balanceOf(address(this)));
 
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
@@ -115,7 +115,7 @@ contract DepositPool is Base {
             .getOperatorDistributorAddress();
         uint256 requiredCapital = vrpl.getRequiredCollateral();
         RocketTokenRPLInterface RPL = RocketTokenRPLInterface(
-            _directory.RPL_CONTRACT_ADDRESS()
+            _directory.getRPLAddress()
         ); // RPL token contract
         uint256 totalBalance = RPL.balanceOf(address(this));
 
