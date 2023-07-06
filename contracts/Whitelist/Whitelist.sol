@@ -87,8 +87,6 @@ contract Whitelist is UpgradeableBase {
         emit TrustBuildPeriodUpdated(old, _trustBuildPeriod);
     }
 
-    // TODO: Determine what happens if the operator already exists but isn't permissioned.
-    // Currently, operators who leave the system are reset upon rejoining.
     function addOperator(address a) public onlyAdmin {
         require(!_permissions[a], OPERATOR_DUPLICATE_ERROR);
 
