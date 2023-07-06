@@ -98,7 +98,6 @@ contract Whitelist is UpgradeableBase {
             payable(getDirectory().getYieldDistributorAddress())
         );
 
-        // Fee should not start at 100% because the operator has not yet built trust.
         numOperators++;
 
         distributor.finalizeInterval();
