@@ -2,15 +2,20 @@ import { task } from "hardhat/config";
 import fs from "fs";
 
 // create retry function to attempt redeployment if there is some network error
-async function retry(func: any, args: any, retries: number): Promise<any> {
+async function retryDeploy(ethers: any, factory: string, args: any, retries: number): Promise<any> {
     try {
-        return await func(...args);
+        console.log(`Attempting to deploy ${factory}...`);
+        const ContractFactory = await ethers.getContractFactory(factory);
+        const contractFactory = await ContractFactory.deploy(...args);
+        await contractFactory.deployed();
+        return contractFactory;
     } catch (e) {
-        if (retries <= 0) {
+        if (retries > 0) {
+            console.log(`Error deploying ${factory}. Retrying...`);
+            return await retryDeploy(ethers, factory, args, retries - 1);
+        } else {
             throw e;
         }
-        console.log("Retrying deployment...");
-        return await retry(func, args, retries - 1);
     }
 }
 
@@ -36,7 +41,7 @@ task("deploy", "Deploy contracts")
 
         const { ethers } = hre;
 
-        const directoryContract = await retry(ethers.getContractFactory, ["Directory"], 5);
+        const directoryContract = await retryDeploy(ethers, "Directory", [], 3);
         console.log("directory successfully deployed at address: ", directoryContract.address);
         await hre.run("verifyDirectory", {
             address: directoryContract.address,
