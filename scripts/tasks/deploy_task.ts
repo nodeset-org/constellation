@@ -43,10 +43,10 @@ task("deploy", "Deploy contracts")
 
         const directoryContract = await retryDeploy(ethers, "Directory", [], 3);
         console.log("directory successfully deployed at address: ", directoryContract.address);
+        logStream.write(`directory: ${directoryContract.address}\n`);
         await hre.run("verifyDirectory", {
             address: directoryContract.address,
         });
-        logStream.write(`directory: ${directoryContract.address}\n`);
         // [DevOps] ideally we have some automated way for Frontend/Backend to get the current addresses for each network as well as a staging/production environment/dev ID for each network
         // [DevOps] for now we can just pass the log around on discord
 
