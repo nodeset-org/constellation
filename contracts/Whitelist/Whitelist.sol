@@ -19,7 +19,6 @@ contract Whitelist is UpgradeableBase {
 
     uint public numOperators;
 
-    uint24 private _trustBuildPeriod;
     event TrustBuildPeriodUpdated(uint24 oldValue, uint24 newValue);
 
     string public constant OPERATOR_NOT_FOUND_ERROR =
@@ -32,7 +31,6 @@ contract Whitelist is UpgradeableBase {
         uint24 trustBuildPeriod
     ) public initializer {
         super.initialize(directoryAddress);
-        _trustBuildPeriod = trustBuildPeriod;
     }
 
     //----
@@ -41,10 +39,6 @@ contract Whitelist is UpgradeableBase {
 
     function getIsAddressInWhitelist(address a) public view returns (bool) {
         return _permissions[a];
-    }
-
-    function getTrustBuildPeriod() public view returns (uint) {
-        return _trustBuildPeriod;
     }
 
     function getRewardShare(
@@ -81,12 +75,6 @@ contract Whitelist is UpgradeableBase {
     // ADMIN
     //----
 
-    function setTrustBuildPeriod(uint8 trustBuildPeriod) public onlyAdmin {
-        uint24 old = _trustBuildPeriod;
-        _trustBuildPeriod = trustBuildPeriod;
-        emit TrustBuildPeriodUpdated(old, _trustBuildPeriod);
-    }
-
     function addOperator(address a) public onlyAdmin {
         require(!_permissions[a], OPERATOR_DUPLICATE_ERROR);
 
@@ -119,7 +107,6 @@ contract Whitelist is UpgradeableBase {
         delete operatorIndexMap[index];
         delete reverseOperatorIndexMap[nodeOperator];
 
-
         OperatorDistributor odistributor = OperatorDistributor(
             payable(getDirectory().getOperatorDistributorAddress())
         );
@@ -129,7 +116,6 @@ contract Whitelist is UpgradeableBase {
         YieldDistributor ydistributor = YieldDistributor(
             payable(getDirectory().getYieldDistributorAddress())
         );
-
 
         ydistributor.finalizeInterval();
 
@@ -156,6 +142,4 @@ contract Whitelist is UpgradeableBase {
         );
         _;
     }
-
-
 }
