@@ -28,6 +28,11 @@ const config: HardhatUserConfig = {
         url: process.env.MAINNET_URL as string,
         blockNumber: parseInt(process.env.MAINNET_FORK_NUMBER as string),
       }
+    },
+
+    goerli: {
+      url: process.env.GOERLI_URL as string,
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY as string],
     }
   },
 
