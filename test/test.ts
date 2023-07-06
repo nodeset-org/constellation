@@ -17,7 +17,7 @@ const protocolParams  = {
 export type SetupData = {
 	protocol: Protocol,
 	signers: Signers,
-	rocketPool: RocketPool,
+	externDeps: ExternalDependencies,
 }
 
 export type Protocol = {
@@ -29,7 +29,14 @@ export type Protocol = {
 	operatorDistributor: OperatorDistributor,
 	yieldDistributor: YieldDistributor,
 	rETHOracle: IXRETHOracle,
-	wETH: IWETH,
+}
+
+export type ExternalDependencies = {
+	rocketStorage: IRocketStorage,
+	rocketNodeManager: IRocketNodeManager,
+	rocketNodeStaking: IRocketNodeStaking,
+	rplToken: RocketTokenRPLInterface,
+	wethToken: IWETH,
 }
 
 export type Signers = {
@@ -45,15 +52,7 @@ export type Signers = {
 	ethWhale: SignerWithAddress,
 }
 
-export type RocketPool = {
-	rplContract: RocketTokenRPLInterface, //RocketTokenRPLInterface
-	networkFeesContract: RocketDAOProtocolSettingsNetworkInterface,
-	rockStorageContract: IRocketStorage,
-	rocketNodeManagerContract: IRocketNodeManager,
-	rocketNodeStakingContract: IRocketNodeStaking,
-}
-
-export function getAllAddresses(Signers: Signers, Protocol: Protocol, RocketPool: RocketPool) {
+export function getAllAddresses(Signers: Signers, Protocol: Protocol, RocketPool: ExternalDependencies) {
 	const allAddresses = [];
 	for (const [key, value] of Object.entries(Signers)) {
 		allAddresses.push({name: key, address: value.address});
@@ -67,30 +66,33 @@ export function getAllAddresses(Signers: Signers, Protocol: Protocol, RocketPool
 	return allAddresses;
 }
 
-async function getRocketPool(): Promise<RocketPool> {
-	const rplContract = (await ethers.getContractAt(
+async function getExternDeps(): Promise<ExternalDependencies> {
+	const rplToken = (await ethers.getContractAt(
 		"RocketTokenRPLInterface",
 		"0xD33526068D116cE69F19A9ee46F0bd304F21A51f"
 	));
-	const networkFeesContract = (await ethers.getContractAt(
-		"RocketDAOProtocolSettingsNetworkInterface",
-		"0x320f3aAB9405e38b955178BBe75c477dECBA0C27"
-	));
+	//const networkFeesContract = (await ethers.getContractAt(
+	//	"RocketDAOProtocolSettingsNetworkInterface",
+	//	"0x320f3aAB9405e38b955178BBe75c477dECBA0C27"
+	//));
 
 	// deploy mock rocket storage
 	const rocketStorageFactory = await ethers.getContractFactory("MockRocketStorage");
-	const rockStorageContract = (await rocketStorageFactory.deploy()) as IRocketStorage;
-	await rockStorageContract.deployed();
+	const rocketStorage = (await rocketStorageFactory.deploy()) as IRocketStorage;
+	await rocketStorage.deployed();
 
 	const rocketNodeManagerFactory = await ethers.getContractFactory("MockRocketNodeManager");
-	const rocketNodeManagerContract = (await rocketNodeManagerFactory.deploy()) as IRocketNodeManager;
-	await rocketNodeManagerContract.deployed();
+	const rocketNodeManager = (await rocketNodeManagerFactory.deploy()) as IRocketNodeManager;
+	await rocketNodeManager.deployed();
 
 	const rocketNodeStakingFactory = await ethers.getContractFactory("MockRocketNodeStaking");
-	const rocketNodeStakingContract = (await rocketNodeStakingFactory.deploy()) as IRocketNodeStaking;
-	await rocketNodeStakingContract.deployed();
+	const rocketNodeStaking = (await rocketNodeStakingFactory.deploy()) as IRocketNodeStaking;
+	await rocketNodeStaking.deployed();
 
-	return { rplContract, networkFeesContract, rockStorageContract, rocketNodeManagerContract, rocketNodeStakingContract };
+	const wethToken = await ethers.getContractAt("IWETH", protocolParams.wethToken);
+
+
+	return { rplToken,/* networkFeesContract,*/ rocketStorage, rocketNodeManager, rocketNodeStaking, wethToken };
 }
 
 async function deployProtocol(): Promise<Protocol> {
@@ -104,9 +106,8 @@ async function deployProtocol(): Promise<Protocol> {
 
 	const rETHOracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
 
-	const wETH = await ethers.getContractAt("IWETH", await directory.getWETHAddress());
 
-	return { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, rETHOracle, wETH};
+	return { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, rETHOracle};
 }
 
 async function createSigners(): Promise<Signers> {
@@ -133,12 +134,12 @@ export async function deployOnlyFixture(): Promise<SetupData> {
 
 	const deployedProtocol = await deployProtocol();
 	const signers = await createSigners();
-	const rocketPool = await getRocketPool();
+	const externDeps = await getExternDeps();
 
 	return {
 		protocol: deployedProtocol,
 		signers,
-		rocketPool,
+		externDeps,
 	};
 }
 
@@ -146,11 +147,11 @@ export async function protocolFixture(): Promise<SetupData> {
 
 	const deployedProtocol = await deployProtocol();
 	const signers = await createSigners();
-	const rocketPool = await getRocketPool();
+	const externDeps = await getExternDeps();
 
-	await expect(initializeDirectory(deployedProtocol, rocketPool, signers.admin)).to.not.be.reverted;
+	await expect(initializeDirectory(deployedProtocol, externDeps, signers.admin)).to.not.be.reverted;
 	await expect(deployedProtocol.yieldDistributor.initialize())
 	.to.not.be.reverted;
 
-	return { protocol: deployedProtocol, signers, rocketPool};
+	return { protocol: deployedProtocol, signers, externDeps};
 }
