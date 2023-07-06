@@ -7,9 +7,5 @@ import "../Base.sol";
 struct Operator {
     uint256 operationStartTime;
     uint256 currentValidatorCount;
-    /// @notice The portion of an operator's total allotted fee which they actually receive.
-    /// This rises from 0% (0) to 100% (YieldDistributor.YIELD_PORTION_MAX) over
-    /// time as they
-    uint256 feePortion;
     uint256 intervalStart;
 }

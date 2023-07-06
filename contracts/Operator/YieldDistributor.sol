@@ -143,9 +143,7 @@ contract YieldDistributor is Base {
             Claim memory claim = claims[i];
             uint256 fullEthReward = ((claim.amount * 1e18) /
                 claim.numOperators) / 1e18;
-            uint256 operatorRewardEth = (fullEthReward * operator.feePortion) / 1e18;
-            dustAccrued += fullEthReward - operatorRewardEth;
-            totalReward += operatorRewardEth;
+            totalReward += fullEthReward;
             hasClaimed[_rewardee][i] = true;
         }
 
