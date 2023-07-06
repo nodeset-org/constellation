@@ -3,10 +3,14 @@ import "@nomicfoundation/hardhat-toolbox";
 import '@openzeppelin/hardhat-upgrades';
 import "hardhat-contract-sizer";
 import "hardhat-gas-reporter";
+import "@nomiclabs/hardhat-etherscan";
 
 // init dotenv
 import dotenv from "dotenv";
 dotenv.config();
+
+// add hardhat tasks
+import "./tasks/deploy_task";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -25,6 +29,10 @@ const config: HardhatUserConfig = {
         blockNumber: parseInt(process.env.MAINNET_FORK_NUMBER as string),
       }
     }
+  },
+
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY as string,
   },
 
   contractSizer: {
