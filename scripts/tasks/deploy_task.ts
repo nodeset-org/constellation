@@ -40,6 +40,45 @@ async function retryVerify(hre: any, address: string, network: string, retries: 
     }
 }
 
+task("deployMocks", "Deploy mock contracts")
+    .setAction(async (args, hre) => {
+
+        // create file to log deployments if it doesn't exist
+        if (!fs.existsSync("./deployments")) {
+            fs.mkdirSync("./deployments");
+        }
+
+        const logStream = fs.createWriteStream(`./deployments/mocks-${hre.network.name}.log`, { flags: 'a' });
+        const today = new Date();
+        logStream.write(`${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}\n`);
+
+        const { ethers, upgrades } = hre;
+
+        const mockOracle = await retryDeploy(ethers, "MockOracle", [], 5);
+        console.log("mockOracle successfully deployed at address: ", mockOracle.address);
+        logStream.write(`mockOracle: ${mockOracle.address}\n`);
+        let hasVerified = await retryVerify(hre, mockOracle.address, hre.network.name, 5, []);
+        logStream.write(`mockOracle ${hasVerified ? "" : "not "} verified\n`);
+
+        const mockRocketStorage = await retryDeploy(ethers, "MockRocketStorage", [], 5);
+        console.log("mockRocketStorage successfully deployed at address: ", mockRocketStorage.address);
+        logStream.write(`mockRocketStorage: ${mockRocketStorage.address}\n`);
+        hasVerified = await retryVerify(hre, mockRocketStorage.address, hre.network.name, 5, []);
+        logStream.write(`mockRocketStorage ${hasVerified ? "" : "not "} verified\n`);
+
+        const mockRocketNodeManager = await retryDeploy(ethers, "MockRocketNodeManager", [], 5);
+        console.log("mockRocketNodeManager successfully deployed at address: ", mockRocketNodeManager.address);
+        logStream.write(`mockRocketNodeManager: ${mockRocketNodeManager.address}\n`);
+        hasVerified = await retryVerify(hre, mockRocketNodeManager.address, hre.network.name, 5, []);
+        logStream.write(`mockRocketNodeManager ${hasVerified ? "" : "not "} verified\n`);
+
+        const mockRocketNodeStaking = await retryDeploy(ethers, "MockRocketNodeStaking", [], 5);
+        console.log("mockRocketNodeStaking successfully deployed at address: ", mockRocketNodeStaking.address);
+        logStream.write(`mockRocketNodeStaking: ${mockRocketNodeStaking.address}\n`);
+        hasVerified = await retryVerify(hre, mockRocketNodeStaking.address, hre.network.name, 5, []);
+        logStream.write(`mockRocketNodeStaking ${hasVerified ? "" : "not "} verified\n`);
+    });
+
 task("deploy", "Deploy contracts")
     .setAction(async (args, hre) => {
         // create file to log deployments if it doesn't exist
@@ -98,11 +137,5 @@ task("deploy", "Deploy contracts")
         logStream.write(`yieldDistributor: ${yieldDistributor.address}\n`);
         hasVerified = await retryVerify(hre, yieldDistributor.address, hre.network.name, 5, [directory.address]);
         logStream.write(`yieldDistributor ${hasVerified ? "" : "not "} verified\n`);
-
-        const mockOracle = await retryDeploy(ethers, "MockOracle", [], 5);
-        console.log("mockOracle successfully deployed at address: ", mockOracle.address);
-        logStream.write(`mockOracle: ${mockOracle.address}\n`);
-        hasVerified = await retryVerify(hre, mockOracle.address, hre.network.name, 5, []);
-        logStream.write(`mockOracle ${hasVerified ? "" : "not "} verified\n`);
 
     });
