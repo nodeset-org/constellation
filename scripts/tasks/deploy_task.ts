@@ -19,15 +19,24 @@ async function retryDeploy(ethers: any, factory: string, args: any, retries: num
     }
 }
 
-task("verifyDirectory", "Verify Directory contract")
-    .addParam("address", "Address of the contract to verify")
-    .setAction(async (args, hre) => {
-            await hre.run("verify:verify", {
-                address: args.address,
-                constructorArguments: [],
-            });
-    });
-
+// create retry function for verification
+async function retryVerify(hre: any, address: string, network: string, retries: number, constructorArgs?: any): Promise<void> {
+    try {
+        console.log(`Attempting to verify ${address} on ${network}...`);
+        await hre.run("verify:verify", {
+            address: address,
+            network: network,
+            constructorArguments: constructorArgs,
+        });
+    } catch (e) {
+        if (retries > 0) {
+            console.log(`Error verifying ${address} on ${network}. Retrying...`);
+            return await retryVerify(hre, address, network, retries - 1, constructorArgs);
+        } else {
+            throw e;
+        }
+    }
+}
 
 task("deploy", "Deploy contracts")
     .setAction(async (args, hre) => {
@@ -41,12 +50,12 @@ task("deploy", "Deploy contracts")
 
         const { ethers } = hre;
 
-        const directoryContract = await retryDeploy(ethers, "Directory", [], 3);
+        const directoryContract = await retryDeploy(ethers, "Directory", [], 5);
         console.log("directory successfully deployed at address: ", directoryContract.address);
         logStream.write(`directory: ${directoryContract.address}\n`);
-        await hre.run("verifyDirectory", {
-            address: directoryContract.address,
-        });
+        await retryVerify(hre, directoryContract.address, hre.network.name, 5, []);
+        console.log("directory successfully verified");
+
         // [DevOps] ideally we have some automated way for Frontend/Backend to get the current addresses for each network as well as a staging/production environment/dev ID for each network
         // [DevOps] for now we can just pass the log around on discord
 
