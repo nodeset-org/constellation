@@ -32,6 +32,7 @@ async function retryVerify(hre: any, address: string, network: string, retries: 
     } catch (e) {
         if (retries > 0) {
             console.log(`Error verifying ${address} on ${network}. Retrying...`);
+            await new Promise(r => setTimeout(r, 10000));
             return await retryVerify(hre, address, network, retries - 1, constructorArgs);
         } else {
             console.log(`Error verifying ${address} on ${network}. Exiting to Main...`);
@@ -52,9 +53,13 @@ task("deployMocks", "Deploy mock contracts for external dependencies")
         const today = new Date();
         logStream.write(`${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}\n`);
 
-        const { ethers, upgrades } = hre;
+        // write the command used to deploy
+        const firstLine = `npx hardhat deployMocks --network ${hre.network.name}\n`;
+        logStream.write(firstLine);
 
-        const mockOracle = await retryDeploy(ethers, "MockOracle", [], 5);
+        const { ethers } = hre;
+
+        const mockOracle = await retryDeploy(ethers, "MockRETHOracle", [], 5);
         console.log("mockOracle successfully deployed at address: ", mockOracle.address);
         logStream.write(`mockOracle: ${mockOracle.address}\n`);
         let hasVerified = await retryVerify(hre, mockOracle.address, hre.network.name, 5, []);
@@ -143,7 +148,7 @@ task("deploy", "Deploy contracts")
         // [DevOps] ideally we have some automated way for Frontend/Backend to get the current addresses for each network as well as a staging/production environment/dev ID for each network
         // [DevOps] for now we can just pass the log around on discord
 
-        const whitelist = await upgrades.deployProxy(await retryDeploy(ethers, "contracts/Whitelist/Whitelist.sol:Whitelist", [directory.address], 5), { 'initializer' : 'initializeWhitelist',  'kind' : 'uups', 'unsafeAllow': ['constructor'] });
+        const whitelist = await upgrades.deployProxy(await retryDeploy(ethers, "contracts/Whitelist/Whitelist.sol:Whitelist", [directory.address], 5), { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
         const whitelistImplentation = await whitelist.getImplementation();
         console.log("whitelist successfully deployed at address: ", whitelist.address);
         logStream.write(`whitelist: ${whitelist.address}\n`);

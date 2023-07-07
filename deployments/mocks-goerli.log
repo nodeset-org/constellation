@@ -1,0 +1,19 @@
+6/7/2023
+mockOracle: undefined
+mockOracle not  verified
+mockRocketStorage: 0x1dE986607fB7045A031D7BcD4a6072bA587c4096
+mockRocketStorage not  verified
+mockRocketNodeManager: 0x76766805985aF42B0F80c130aeFd0e24A68bEcDa
+mockRocketNodeManager not  verified
+mockRocketNodeStaking: 0x089ce988a190B91f141EFB424889D989837AA501
+mockRocketNodeStaking not  verified
+6/7/2023
+npx hardhat deployMocks --network goerli
+mockOracle: 0x91E67709698Cfb3b6fA74eF34A00c55c0308E833
+mockOracle verified
+mockRocketStorage: 0x405287D78df1B6db51A713803Deed60820a8a2d7
+mockRocketStorage verified
+mockRocketNodeManager: 0xd8F872A323c7C1523AA550DbbAf10EA82aE7174c
+mockRocketNodeManager  verified
+mockRocketNodeStaking: 0xE654D427CBA510091BDE59689b2a564AE7123831
+mockRocketNodeStaking verified
