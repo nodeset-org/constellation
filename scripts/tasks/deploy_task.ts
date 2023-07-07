@@ -40,7 +40,7 @@ async function retryVerify(hre: any, address: string, network: string, retries: 
     }
 }
 
-task("deployMocks", "Deploy mock contracts")
+task("deployMocks", "Deploy mock contracts for external dependencies")
     .setAction(async (args, hre) => {
 
         // create file to log deployments if it doesn't exist
@@ -80,7 +80,46 @@ task("deployMocks", "Deploy mock contracts")
     });
 
 task("deploy", "Deploy contracts")
+    .addParam("oracle", "Address of oracle")
+    .addParam("rocketStorage", "Address of rocketStorage")
+    .addParam("rocketNodeManager", "Address of rocketNodeManager")
+    .addParam("rocketNodeStaking", "Address of rocketNodeStaking")
+    .addParam("rplToken", "Address of rplToken")
+    .addParam("wethToken", "Address of wethToken")
     .setAction(async (args, hre) => {
+        const { ethers, upgrades } = hre;
+
+        // validate params to be addresses
+        if (!ethers.utils.isAddress(args.oracle)) {
+            console.log("Invalid oracle address");
+            return;
+        }
+
+        if (!ethers.utils.isAddress(args.rocketStorage)) {
+            console.log("Invalid rocketStorage address");
+            return;
+        }
+
+        if (!ethers.utils.isAddress(args.rocketNodeManager)) {
+            console.log("Invalid rocketNodeManager address");
+            return;
+        }
+
+        if (!ethers.utils.isAddress(args.rocketNodeStaking)) {
+            console.log("Invalid rocketNodeStaking address");
+            return;
+        }
+
+        if (!ethers.utils.isAddress(args.rplToken)) {
+            console.log("Invalid rplToken address");
+            return;
+        }
+
+        if (!ethers.utils.isAddress(args.wethToken)) {
+            console.log("Invalid wethToken address");
+            return;
+        }
+
         // create file to log deployments if it doesn't exist
         if (!fs.existsSync("./deployments")) {
             fs.mkdirSync("./deployments");
@@ -89,7 +128,10 @@ task("deploy", "Deploy contracts")
         const today = new Date();
         logStream.write(`${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}\n`);
 
-        const { ethers, upgrades } = hre;
+        // write the command used to deploy
+        const firstLine = `npx hardhat deploy --network ${hre.network.name} --oracle ${args.oracle} --rocketStorage ${args.rocketStorage} --rocketNodeManager ${args.rocketNodeManager} --rocketNodeStaking ${args.rocketNodeStaking} --rplToken ${args.rplToken} --wethToken ${args.wethToken}\n`;
+        logStream.write(firstLine);
+
 
         const directory = await retryDeploy(ethers, "Directory", [], 5);
         console.log("directory successfully deployed at address: ", directory.address);
