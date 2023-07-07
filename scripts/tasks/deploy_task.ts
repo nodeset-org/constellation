@@ -84,13 +84,14 @@ task("deployMocks", "Deploy mock contracts for external dependencies")
         logStream.write(`mockRocketNodeStaking ${hasVerified ? "" : "not "} verified\n`);
     });
 
+    // example for goerli npx hardhat deploy --oracle 0x91E67709698Cfb3b6fA74eF34A00c55c0308E833 --rocketstorage 0x405287D78df1B6db51A713803Deed60820a8a2d7 --rocketnodemanager 0xd8F872A323c7C1523AA550DbbAf10EA82aE7174c --rocketnodestaking 0xE654D427CBA510091BDE59689b2a564AE7123831 --rpltoken 0x5e932688e81a182e3de211db6544f98b8e4f89c7 --wethtoken 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6
 task("deploy", "Deploy contracts")
     .addParam("oracle", "Address of oracle")
-    .addParam("rocketStorage", "Address of rocketStorage")
-    .addParam("rocketNodeManager", "Address of rocketNodeManager")
-    .addParam("rocketNodeStaking", "Address of rocketNodeStaking")
-    .addParam("rplToken", "Address of rplToken")
-    .addParam("wethToken", "Address of wethToken")
+    .addParam("rocketstorage", "Address of rocketStorage")
+    .addParam("rocketnodemanager", "Address of rocketNodeManager")
+    .addParam("rocketnodestaking", "Address of rocketNodeStaking")
+    .addParam("rpltoken", "Address of rplToken")
+    .addParam("wethtoken", "Address of wethToken")
     .setAction(async (args, hre) => {
         const { ethers, upgrades } = hre;
 
@@ -101,7 +102,7 @@ task("deploy", "Deploy contracts")
         }
 
         if (!ethers.utils.isAddress(args.rocketStorage)) {
-            console.log("Invalid rocketStorage address");
+            console.log("Invalid rocketStorage address", args.rocketStorage);
             return;
         }
 
