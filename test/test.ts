@@ -23,7 +23,7 @@ export type Protocol = {
 	depositPool: DepositPool,
 	operatorDistributor: OperatorDistributor,
 	yieldDistributor: YieldDistributor,
-	rETHOracle: IXRETHOracle,
+	oracle: IXRETHOracle,
 	wETH: IWETH,
 }
 
@@ -97,11 +97,11 @@ async function deployProtocol(): Promise<Protocol> {
 	const operatorDistributor = await (await ethers.getContractFactory("OperatorDistributor")).deploy(directory.address);
 	const yieldDistributor = await (await ethers.getContractFactory("YieldDistributor")).deploy(directory.address);
 
-	const rETHOracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
+	const oracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
 
 	const wETH = await ethers.getContractAt("IWETH", await directory.getWETHAddress());
 
-	return { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, rETHOracle, wETH};
+	return { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, oracle, wETH};
 }
 
 async function createSigners(): Promise<Signers> {

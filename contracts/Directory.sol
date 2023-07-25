@@ -12,7 +12,7 @@ struct Protocol {
     address payable depositPool;
     address payable operatorDistributor;
     address yieldDistributor;
-    address rethOracle;
+    address oracle;
     address rocketStorage;
     address rocketNodeManager;
     address rocketNodeStaking;
@@ -83,7 +83,7 @@ contract Directory {
     }
 
     function getRETHOracleAddress() public view returns (address) {
-        return _protocol.rethOracle;
+        return _protocol.oracle;
     }
 
     function getRocketStorageAddress() public view returns (address) {

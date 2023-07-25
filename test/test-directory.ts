@@ -13,7 +13,7 @@ export async function initializeDirectory(protocol: Protocol, rocketPool: Rocket
       depositPool: protocol.depositPool.address,
       operatorDistributor: protocol.operatorDistributor.address,
       yieldDistributor: protocol.yieldDistributor.address,
-      rethOracle: protocol.rETHOracle.address,
+      oracle: protocol.oracle.address,
       rocketStorage: rocketPool.rockStorageContract.address,
       rocketNodeManager: rocketPool.rocketNodeManagerContract.address,
       rocketNodeStaking: rocketPool.rocketNodeStakingContract.address,

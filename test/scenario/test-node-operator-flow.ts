@@ -7,9 +7,9 @@ import { BigNumber as BN } from "ethers";
 import { Protocol } from "../test";
 import { Signers } from "../test";
 import { RocketPool } from "../test";
-import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault } from "../../typechain-types";
+import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault, IWETH } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
-import { printBalances, printObjectBalances, printObjectWETHBalances, printWETHBalances } from "../utils/utils";
+import { expectNumberE18ToBeApproximately, expectNumberToBeApproximately, printBalances, printObjectBalances, printObjectWETHBalances, printWETHBalances } from "../utils/utils";
 
 export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: RocketPool) {
     const mockMinipoolFactory = await ethers.getContractFactory("MockMinipool");
@@ -35,6 +35,7 @@ describe("Node Operator Onboarding", function () {
     let xrETH: WETHVault;
     let xRPL: RPLVault;
     let rpl: IERC20;
+    let weth: IWETH;
 
     before(async function () {
         setupData = await protocolFixture();
@@ -46,9 +47,10 @@ describe("Node Operator Onboarding", function () {
 
         xrETH = protocol.vCWETH;
         xRPL = protocol.vCRPL;
+        weth = protocol.wETH;
         rpl = await ethers.getContractAt("IERC20", await protocol.directory.RPL_CONTRACT_ADDRESS());
 
-        await protocol.rETHOracle.setTotalYieldAccrued(ethers.utils.parseEther("0.041059"));
+        await protocol.oracle.setTotalYieldAccrued(ethers.utils.parseEther("0.041059"));
 
     });
 
@@ -93,37 +95,28 @@ describe("Node Operator Onboarding", function () {
     });
 
 
-    it.only("eth whale supplies Nodeset deposit pool with eth and rpl", async function () {
+    it("eth whale supplies Nodeset deposit pool with eth and rpl", async function () {
 
         // eth gets shares of xrETH
         await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
         await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
         await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
+
+        const fee1 = ethers.utils.formatUnits(await protocol.vCWETH.makerFee1BasePoint(), 3);
+        const fee2 = ethers.utils.formatUnits(await protocol.vCWETH.makerFee2BasePoint(), 3);
+        const expectedAmountInDP =  ethers.utils.parseEther(`${100 - parseInt(fee1) - parseInt(fee2)}`);
+        const actualAmountInDP = await weth.balanceOf(protocol.depositPool.address);
+        expectNumberE18ToBeApproximately(actualAmountInDP, expectedAmountInDP, 0.005);
+        // error should be less than 0.1%
+
         await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
         await protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("100"), signers.rplWhale.address);
+        const rplAdminFee = parseInt(ethers.utils.formatUnits(await protocol.vCRPL.makerFeeBasePoint(), 3));
+        const expectedRplInDP = ethers.utils.parseEther(`${100 - rplAdminFee}`);
+        const actualRplInDP = await rpl.balanceOf(protocol.depositPool.address);
+        expectNumberE18ToBeApproximately(actualRplInDP, expectedRplInDP, 0.005);
 
-        await printObjectWETHBalances(protocol, protocol.wETH.address);
-        await printObjectBalances(protocol);
-        expect(await ethers.provider.getBalance(protocol.vCWETH.address)).to.equal(ethers.utils.parseEther("1"));
-        const rplAdminFee = await protocol.vCRPL.makerFeeBasePoint();
-        expect(await rocketPool.rplContract.balanceOf(protocol.depositPool.address)).to.equal(ethers.utils.parseEther("100").mul(rplAdminFee).div(ethers.utils.parseEther("1")));
 
-        console.log("C")
-        const oracleYield = await protocol.rETHOracle.getTotalYieldAccrued();
-        console.log("oracle yield: ", ethers.utils.formatEther(oracleYield));
-
-        console.log("D")
-        const expectedOperatorDistribution = ethers.utils.parseEther("99").sub(oracleYield);
-
-        expect(await ethers.provider.getBalance(protocol.operatorDistributor.address)).to.equal(expectedOperatorDistribution);
-        expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("0"));
-
-        console.log("E")
-        // print balances of deposit pool and operator distribution pool
-        console.log("deposit pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.depositPool.address)));
-        console.log("deposit pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.depositPool.address)));
-        console.log("operator distribution pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)));
-        console.log("operator distribution pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)));
     });
 
     it("node operator gets reimbursement", async function () {
