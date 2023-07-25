@@ -6,7 +6,10 @@ import "hardhat-gas-reporter";
 
 // init dotenv
 import dotenv from "dotenv";
-dotenv.config();
+import findConfig from 'find-config';
+
+const dotenvPath = findConfig('.env');
+dotenv.config({ path: dotenvPath });
 
 const config: HardhatUserConfig = {
   solidity: {
