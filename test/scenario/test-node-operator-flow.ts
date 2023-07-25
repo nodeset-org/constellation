@@ -9,7 +9,7 @@ import { Signers } from "../test";
 import { RocketPool } from "../test";
 import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault, IWETH } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
-import { expectNumberE18ToBeApproximately, expectNumberToBeApproximately, printBalances, printObjectBalances, printObjectWETHBalances, printWETHBalances } from "../utils/utils";
+import { expectNumberE18ToBeApproximately, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances } from "../utils/utils";
 
 export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: RocketPool) {
     const mockMinipoolFactory = await ethers.getContractFactory("MockMinipool");
@@ -24,7 +24,7 @@ export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: 
 }
 
 
-describe("Node Operator Onboarding", function () {
+describe.only("Node Operator Onboarding", function () {
 
     let setupData: SetupData;
     let protocol: Protocol;
@@ -114,6 +114,22 @@ describe("Node Operator Onboarding", function () {
         const expectedRplInDP = ethers.utils.parseEther(`${100 - rplAdminFee}`);
         const actualRplInDP = await rpl.balanceOf(protocol.depositPool.address);
         expectNumberE18ToBeApproximately(actualRplInDP, expectedRplInDP, 0.005);
+    });
+
+    it("eth whale redeems one share to trigger pool rebalacings", async function () {
+        await protocol.oracle.setTotalYieldAccrued(ethers.utils.parseEther("101"));
+        console.log("weth balances before redeem");
+        await printObjectTokenBalances(protocol, protocol.wETH.address);
+        await printObjectTokenBalances({whale: signers.ethWhale}, protocol.wETH.address);
+        console.log("eth balances before redeem");
+        await printObjectBalances(protocol)
+        await protocol.vCWETH.connect(signers.ethWhale).redeem(ethers.utils.parseUnits("40", 18), signers.ethWhale.address, signers.ethWhale.address);
+        console.log("-------------------");
+        console.log("weth balances after redeem");
+        await printObjectTokenBalances(protocol, protocol.wETH.address);
+        await printObjectTokenBalances({whale: signers.ethWhale}, protocol.wETH.address);
+        console.log("eth balances after redeem");
+        await printObjectBalances(protocol)
     });
 
     it("node operator gets reimbursement", async function () {

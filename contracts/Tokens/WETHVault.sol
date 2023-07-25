@@ -12,6 +12,18 @@ contract WETHVault is Base, ERC4626 {
     string constant NAME = "Constellation ETH";
     string constant SYMBOL = "xrETH"; // Vaulted Constellation Wrapped ETH
 
+    struct Shares {
+        uint256 shareCount;
+        uint256 averagePurchasePrice;
+    }
+
+    struct UpdateShares {
+        uint256 existingPurchasePrice;
+        uint256 existingShareCount;
+        uint256 newShareCount;
+        uint256 newAveragePurchasePrice;
+    }
+
     constructor(
         address directoryAddress
     )
@@ -31,6 +43,11 @@ contract WETHVault is Base, ERC4626 {
     uint256 public collateralizationRatioBasePoint = 0.02e5; // collateralization ratio
 
     uint256 public totalAssetsRealized; // total deposited assets
+
+    mapping(address => Shares) public principals;
+
+    event NewCapitalGain(uint256 amount, address indexed winner);
+    event NewCapitalLoss(uint256 amount, address indexed loser);
 
     /** @dev See {IERC4626-previewDeposit}. */
     function previewDeposit(
@@ -88,7 +105,22 @@ contract WETHVault is Base, ERC4626 {
         address payable pool = _directory.getDepositPoolAddress();
         DepositPool(pool).sendEthToDistributors();
 
-        totalAssetsRealized += assets;
+        Shares storage deposit = principals[receiver];
+        UpdateShares memory newShares = UpdateShares(
+            deposit.averagePurchasePrice,
+            deposit.shareCount,
+            deposit.shareCount + shares,
+            assets + deposit.averagePurchasePrice > 0
+                ? ((assets * shares +
+                    deposit.averagePurchasePrice * deposit.shareCount) *
+                    1e5) /
+                    (deposit.shareCount + shares) /
+                    1e5
+                : 0
+        );
+        deposit.averagePurchasePrice = newShares.newAveragePurchasePrice;
+        deposit.shareCount = newShares.newShareCount;
+
         super._deposit(caller, receiver, assets, shares);
 
         if (fee1 > 0 && recipient1 != address(this)) {
@@ -116,6 +148,34 @@ contract WETHVault is Base, ERC4626 {
         address payable recipient2 = _directory.getYieldDistributorAddress();
 
         DepositPool(_directory.getDepositPoolAddress()).sendEthToDistributors();
+
+
+        Shares storage deposit = principals[owner];
+        UpdateShares memory newShares = UpdateShares(
+            deposit.averagePurchasePrice,
+            deposit.shareCount,
+            deposit.shareCount - shares,
+            deposit.shareCount - shares > 0
+                ? ((deposit.averagePurchasePrice * deposit.shareCount -
+                    assets * shares) *
+                    1e5) /
+                    (deposit.shareCount - shares) /
+                    1e5
+                : 0
+        );
+
+        deposit.averagePurchasePrice = newShares.newAveragePurchasePrice;
+        deposit.shareCount = newShares.newShareCount;
+
+        // record capital gains/losses
+        if (assets > newShares.existingPurchasePrice) {
+            uint256 capitalGain = assets - newShares.existingPurchasePrice;
+            totalAssetsRealized += capitalGain;
+            emit NewCapitalGain(capitalGain, receiver);
+        } else if (assets < newShares.existingPurchasePrice) {
+            uint256 capitalLoss = newShares.existingPurchasePrice - assets;
+            emit NewCapitalLoss(capitalLoss, receiver);
+        }
 
         super._withdraw(caller, receiver, owner, assets, shares);
 
@@ -196,5 +256,4 @@ contract WETHVault is Base, ERC4626 {
         takerFee1BasePoint = _takerFee1BasePoint;
         takerFee2BasePoint = _takerFee2BasePoint;
     }
-
 }

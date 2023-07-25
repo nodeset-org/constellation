@@ -10,11 +10,11 @@ export const printBalances = async (accounts: string[], opts: any = {}) => {
     }
 };
 
-export const printWETHBalances = async (accounts: string[], wethAddr: string, opts: any = {}) => {
+export const printTokenBalances = async (accounts: string[], token: string, opts: any = {}) => {
     const {names = []} = opts;
-    const weth = await ethers.getContractAt("IWETH", wethAddr);
+    const weth = await ethers.getContractAt("IWETH", token);
     for (let i = 0; i < accounts.length; i++) {
-        console.log(`WETH Balance: ${ethers.utils.formatEther(await weth.balanceOf(accounts[i]))} at ${names.length > 0 ? names[i] : accounts[i]}`);
+        console.log(`Token Balance: ${ethers.utils.formatEther(await weth.balanceOf(accounts[i]))} at ${names.length > 0 ? names[i] : accounts[i]}`);
 
     }
 };
@@ -26,9 +26,9 @@ export const printObjectBalances = async (obj: any) => {
     }
 }
 
-export const printObjectWETHBalances = async (obj: any, wethAddr: string) => {
+export const printObjectTokenBalances = async (obj: any, tokenAddr: string) => {
     for (const key in obj) {
-        await printWETHBalances([obj[key].address], wethAddr, {names: [key]});
+        await printTokenBalances([obj[key].address], tokenAddr, {names: [key]});
     }
 }
 
