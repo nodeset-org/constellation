@@ -7,48 +7,18 @@ import "./Base.sol";
 import "./Operator/OperatorDistributor.sol";
 import "./Operator/YieldDistributor.sol";
 import "./Interfaces/RocketPool/IRocketNodeStaking.sol";
+import "./Tokens/WETHVault.sol";
+import "./Tokens/RPLVault.sol";
+
+import "./Interfaces/IWETH.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
-/// ETH + RPL intakes from token mints and validator yields are stored here, but only up to a maximum percentage of protocol TVL.
+/// ETH + RPL intakes from token mints and validator yields and sends to respective ERC4246 vaults.
 contract DepositPool is Base {
-    /// @notice Keeps track of the previous _maxBalancePortion for easy reversion (e.g. unpausing)
-    uint16 private _prevEthMaxBalancePortion = 100;
-    uint16 private _maxrETHBalancePortion = 100;
 
-    uint16 private _prevRplMaxBalancePortion = 100;
-    uint16 private _maxRplBalancePortion = 100;
-
-    // TODO: remove these notes,
-    // _maxRplBalancePortion is staked at the node level, and needs to be a percentage of the TVL. This is to service large inflows and outflows of new minipool contracts.
-    // likewise, _maxrETHBalancePortion needs to optimize yield for eth. eth in this contract is only reserved for creating stakers for minipool contracts
-    // the oracle is simple a TVL calculation of all the ETH in the system
-    // Total RPL is already on-chain and does not need to be an oracle
-
-    event NewMaxrETHBalancePortion(uint16 oldValue, uint16 newValue);
-    event NewMaxRplBalancePortion(uint16 oldValue, uint16 newValue);
-
-    uint16 public constant MAX_BALANCE_PORTION_DECIMALS = 4;
-    uint16 public constant MAX_BALANCE_PORTION =
-        uint16(10) ** MAX_BALANCE_PORTION_DECIMALS;
-
-    string public constant SEND_ETH_TO_OPERATOR_DISTRIBUTOR_ERROR =
-        "DepositPool: Send ETH to OperatorDistributor failed";
-    string public constant SEND_RPL_TO_OPERATOR_DISTRIBUTOR_ERROR =
-        "DepositPool: Send RPL to OperatorDistributor failed";
-    string public constant ONLY_ETH_TOKEN_ERROR =
-        "DepositPool: This function may only be called by the xrETH token contract";
-    string public constant ONLY_RPL_TOKEN_ERROR =
-        "DepositPool: This function may only be called by the xRPL token contract";
-    string public constant MAX_BALANCE_PORTION_OUT_OF_RANGE_ERROR =
-        "DepositPool: Supplied maxBalancePortion is out of range. Must be >= 0 or <= MAX_BALANCE_PORTION.";
-    string public constant NOT_ENOUGH_ETH_ERROR =
-        "Deposit Pool: Not enough ETH";
-    string public constant NOT_ENOUGH_RPL_ERROR =
-        "Deposit Pool: Not enough RPL";
-
-    uint private _dpOwnedEth;
-    uint private _dpOwnedRpl;
+    uint256 public splitRatioEth = 0.30e5; // sends 30% to operator distributor and 70% to eth vault
+    uint256 public splitRatioRpl = 0.30e5; // sends 30% to operator distributor and 70% to rpl vault
 
     /// @notice Emitted whenever this contract sends or receives ETH outside of the protocol.
     event TotalValueUpdated(uint oldValue, uint newValue);
@@ -62,218 +32,119 @@ contract DepositPool is Base {
     /// @notice Gets the total ETH value locked inside the protocol, including inside of validators, the OperatorDistributor,
     // and this contract.
     function getTvlEth() public view returns (uint) {
-        return _dpOwnedEth;
+        return address(this).balance;
     }
 
     /// @notice Gets the total RPL value locked inside the protocol, including inside of validators, the OperatorDistributor,
     // and this contract.
     function getTvlRpl() public view returns (uint) {
-        return _dpOwnedRpl;
-    }
-
-    function getMaxrETHBalancePortion() public view returns (uint16) {
-        return _maxrETHBalancePortion;
-    }
-
-    function getMaxRplBalancePortion() public view returns (uint16) {
-        return _maxRplBalancePortion;
-    }
-
-    function getMaxrETHBalance() public view returns (uint) {
-        return (getTvlEth() * _maxrETHBalancePortion) / MAX_BALANCE_PORTION;
-    }
-
-    function getMaxRplBalance() public view returns (uint) {
-        return ((getTvlRpl() * _maxRplBalancePortion) /
-            MAX_BALANCE_PORTION);
+        return RocketTokenRPLInterface(_directory.RPL_CONTRACT_ADDRESS()).balanceOf(address(this));
     }
 
     ///--------
-    /// TOKEN
+    /// SETTERS
     ///--------
 
-    /// @notice only the token contract can spend DP funds
-    function sendEth(address payable to, uint amount) public onlyEthToken {
-        require(amount <= getMaxrETHBalance(), NOT_ENOUGH_ETH_ERROR);
-
-        uint old = getTvlEth();
-
-        (bool success, ) = to.call{value: amount}("");
-        assert(success);
-
-        _dpOwnedEth -= amount;
-        emit TotalValueUpdated(old, getTvlEth());
+    /// @notice Sets the split ratio for ETH. This percentage of ETH will be sent to the OperatorDistributor and 1 - splitRatioEth will be sent to the WETHVault.
+    /// @param newSplitRatio The new split ratio.
+    function setSplitRatioEth(uint256 newSplitRatio) external onlyAdmin {
+        require(newSplitRatio <= 1e5, "split ratio must be lte to 1e5");
+        splitRatioEth = newSplitRatio;
     }
 
-    /// @notice only the token contract can spend DP funds
-    function sendRpl(address payable to, uint amount) public onlyRplToken {
-        require(amount <= getMaxRplBalance(), NOT_ENOUGH_RPL_ERROR);
-
-        uint old = _dpOwnedRpl;
-        require(sendRPLTo(to, amount));
-        _dpOwnedRpl -= amount;
-
-        emit TotalValueUpdated(old, _dpOwnedRpl);
+    /// @notice Sets the split ratio for RPL. This percentage of RPL will be sent to the OperatorDistributor and 1 - splitRatioRpl will be sent to the RPLVault.
+    /// @param newSplitRatio The new split ratio.
+    function setSplitRatioRpl(uint256 newSplitRatio) external onlyAdmin {
+        require(newSplitRatio <= 1e5, "split ratio must be lte to 1e5");
+        splitRatioRpl = newSplitRatio;
     }
 
-    function stakeRPLFor(address _nodeAddress) external onlyOperatorDistributor nonReentrant {
-        IRocketNodeStaking nodeStaking = IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress());
-        uint256 minimumRplStake = IRocketNodeStaking(
-            getDirectory().getRocketNodeStakingAddress()
-        ).getNodeMinimumRPLStake(_nodeAddress);
+    ///--------
+    /// ACTIONS
+    ///--------
 
-        // approve the node staking contract to spend the RPL
-        RocketTokenRPLInterface rpl = RocketTokenRPLInterface(
-            getDirectory().RPL_CONTRACT_ADDRESS()
-        );
-        require(
-            rpl.approve(
-                getDirectory().getRocketNodeStakingAddress(),
-                minimumRplStake
-            )
-        );
+    /// @notice Sends 30% of the ETH balance to the OperatorDistributor and the rest to the WETHVault.
+    /// @dev Splits the total ETH balance into WETH tokens and distributes them between the WETHVault and OperatorDistributor based on the splitRatioEth. However, when the requiredCapital from WETHVault is zero, all balance is sent to the OperatorDistributor.
+    function sendEthToDistributors() public {
+        // convert entire weth balance of this contract to eth
+        IWETH WETH = IWETH(_directory.WETH_CONTRACT_ADDRESS()); // WETH token contract
+        WETH.withdraw(WETH.balanceOf(address(this)));
 
-        uint leftover = getRplBalanceOf(address(this)) - getMaxRplBalance();
+        WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
+        address operatorDistributor = getDirectory()
+            .getOperatorDistributorAddress();
+        uint256 requiredCapital = vweth.getRequiredCollateral();
+        uint256 totalBalance = address(this).balance;
 
-        require(leftover > 0, "DepositPool: Not enough RPL in pool to stake");
+        // Always split total balance according to the ratio
+        uint256 toOperatorDistributor = (totalBalance * splitRatioEth) / 1e5;
+        uint256 toWETHVault = totalBalance - toOperatorDistributor;
 
+        // When required capital is zero, send everything to OperatorDistributor
+        if (requiredCapital == 0) {
+            toOperatorDistributor = totalBalance;
+            toWETHVault = 0;
+        }
 
-        nodeStaking.stakeRPLFor(_nodeAddress, minimumRplStake);
-    }
-
-    ///------
-    /// ADMIN
-    ///------
-
-    /// @notice Sets the maximum percentage of TVL which is allowed to be in the Deposit Pool.
-    /// On deposit, if the DP would grow beyond this, it instead forwards the payment to the OperatorDistributor.
-    /// Allows any value between 0 and MAX_BALANCE_PORTION.
-    /// 0 would prevent withdrawals since all ETH sent to this contract is forwarded to the OperatorDistributor.
-    /// Setting to MAX_BALANCE_PORTION effectively freezes new operator activity by keeping 100% in the DepositPool.
-    function setMaxrETHBalancePortion(
-        uint16 newMaxBalancePortion
-    ) public onlyAdmin {
-        require(
-            newMaxBalancePortion >= 0 &&
-                newMaxBalancePortion <= MAX_BALANCE_PORTION
-        );
-
-        uint16 oldValue = _maxrETHBalancePortion;
-        _maxrETHBalancePortion = newMaxBalancePortion;
-        sendExcessEthToDistributors();
-
-        emit NewMaxrETHBalancePortion(oldValue, _maxrETHBalancePortion);
-    }
-
-    /// @notice Sets the maximum percentage of TVL which is allowed to be in the Deposit Pool.
-    /// On deposit, if the DP would grow beyond this, it instead forwards the payment to the OperatorDistributor.
-    /// Allows any value between 0 an MAX_BALANCE_PORTION.
-    /// 0 would prevent withdrawals since all ETH sent to this contract is forwarded to the OperatorDistributor.
-    /// Setting to MAX_BALANCE_PORTION effectively freezes new operator activity by keeping 100% in the DepositPool.
-    function setMaxRplBalancePortion(
-        uint16 newMaxBalancePortion
-    ) public onlyAdmin {
-        require(
-            newMaxBalancePortion >= 0 &&
-                newMaxBalancePortion <= MAX_BALANCE_PORTION
-        );
-
-        uint16 oldValue = _maxRplBalancePortion;
-        _maxRplBalancePortion = newMaxBalancePortion;
-
-        emit NewMaxRplBalancePortion(oldValue, _maxrETHBalancePortion);
-    }
-
-    ///------
-    /// RECEIVE
-    ///------
-
-    receive() external payable {
-        // do not accept deposits if new operator activity is disabled
-        require(
-            _maxrETHBalancePortion < MAX_BALANCE_PORTION,
-            MAX_BALANCE_PORTION_ERROR
-        );
-
-        uint old = getTvlEth();
-
-        _dpOwnedEth += msg.value;
-        emit TotalValueUpdated(old, _dpOwnedEth);
-
-        sendExcessEthToDistributors();
-    }
-
-    function receiveRpl(uint amount) external onlyRplToken {
-        // do not accept deposits if new operator activity is disabled
-        require(
-            _maxRplBalancePortion < MAX_BALANCE_PORTION,
-            MAX_BALANCE_PORTION_ERROR
-        );
-
-        uint old = getTvlRpl();
-
-        _dpOwnedRpl += amount;
-        emit TotalValueUpdated(old, _dpOwnedRpl);
-    }
-
-    /// @notice If the DP would grow above `_maxrETHBalancePortion`, it instead forwards the payment to the OperatorDistributor / YieldDistributor.
-    function sendExcessEthToDistributors() private {
-        uint leftover = address(this).balance - getMaxrETHBalance();
-        if (leftover > 0) {
-            // get shortfall from yield distributor
-            YieldDistributor yieldDistributor = YieldDistributor(
-                payable(getDirectory().getYieldDistributorAddress())
+        // Wrap ETH to WETH and send to WETHVault
+        if (toWETHVault > 0) {
+            WETH.deposit{value: toWETHVault}();
+            SafeERC20.safeTransfer(
+                IERC20(address(WETH)),
+                address(vweth),
+                toWETHVault
             );
-            uint yieldDistributorShortfall = yieldDistributor.getShortfall();
-            if (yieldDistributorShortfall > 0) {
-                if (yieldDistributorShortfall > leftover) {
-                    yieldDistributorShortfall = leftover;
-                }
-                leftover -= yieldDistributorShortfall;
-                (bool successYield, ) = getDirectory()
-                    .getYieldDistributorAddress()
-                    .call{value: yieldDistributorShortfall}("");
-                require(
-                    successYield,
-                    "DepositPool: Send ETH to YieldDistributor failed"
-                );
-            }
+        }
 
-            (bool successOperator, ) = getDirectory()
-                .getOperatorDistributorAddress()
-                .call{value: leftover}("");
-            require(
-                successOperator,
-                "DepositPool: Send ETH to OperatorDistributor failed"
+        // Wrap ETH to WETH and send to Operator Distributor
+        if (toOperatorDistributor > 0) {
+            WETH.deposit{value: toOperatorDistributor}();
+            SafeERC20.safeTransfer(
+                IERC20(address(WETH)),
+                operatorDistributor,
+                toOperatorDistributor
             );
         }
     }
 
-    function getRplBalanceOf(address a) private view returns (uint) {
-        return
-            RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS())
-                .balanceOf(address(a));
-    }
+    /// @notice Sends 30% of the ETH balance to the OperatorDistributor and the rest to the WETHVault.
+    /// @dev Splits the total ETH balance into WETH tokens and distributes them between the WETHVault and OperatorDistributor based on the splitRatioEth. However, when the requiredCapital from WETHVault is zero, all balance is sent to the OperatorDistributor.
+    function sendRplToDistributors() public {
+        RPLVault vrpl = RPLVault(getDirectory().getRPLVaultAddress());
+        address operatorDistributor = getDirectory()
+            .getOperatorDistributorAddress();
+        uint256 requiredCapital = vrpl.getRequiredCollateral();
+        RocketTokenRPLInterface RPL = RocketTokenRPLInterface(
+            _directory.RPL_CONTRACT_ADDRESS()
+        ); // RPL token contract
+        uint256 totalBalance = RPL.balanceOf(address(this));
 
-    function sendRPLTo(address to, uint amount) private returns (bool) {
-        return
-            RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS())
-                .transfer(to, amount);
-    }
+        // Always split total balance according to the ratio
+        uint256 toOperatorDistributor = (totalBalance * splitRatioRpl) / 1e5;
+        uint256 toRplVault = totalBalance - toOperatorDistributor;
 
-    modifier onlyEthToken() {
-        require(
-            msg.sender == getDirectory().getETHTokenAddress(),
-            ONLY_ETH_TOKEN_ERROR
-        );
-        _;
-    }
+        // When required capital is zero, send everything to OperatorDistributor
+        if (requiredCapital == 0) {
+            toOperatorDistributor = totalBalance;
+            toRplVault = 0;
+        }
 
-    modifier onlyRplToken() {
-        require(
-            msg.sender == getDirectory().getRPLTokenAddress(),
-            ONLY_RPL_TOKEN_ERROR
-        );
-        _;
+        // Wrap ETH to WETH and send to WETHVault
+        if (toRplVault > 0) {
+            SafeERC20.safeTransfer(
+                IERC20(address(RPL)),
+                address(vrpl),
+                toRplVault
+            );
+        }
+
+        // Wrap ETH to WETH and send to Operator Distributor
+        if (toOperatorDistributor > 0) {
+            SafeERC20.safeTransfer(
+                IERC20(address(RPL)),
+                operatorDistributor,
+                toOperatorDistributor
+            );
+        }
     }
 }

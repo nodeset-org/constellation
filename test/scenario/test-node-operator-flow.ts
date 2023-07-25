@@ -9,7 +9,6 @@ import { Signers } from "../test";
 import { RocketPool } from "../test";
 import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, xrETH, xRPL } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
-import { xrEthSol } from "../../typechain-types/contracts/Tokens";
 
 export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: RocketPool) {
     const mockMinipoolFactory = await ethers.getContractFactory("MockMinipool");
@@ -105,7 +104,8 @@ describe("Node Operator Onboarding", function () {
 
 
         expect(await ethers.provider.getBalance(protocol.depositPool.address)).to.equal(ethers.utils.parseEther("1"));
-        expect(await rocketPool.rplContract.balanceOf(protocol.depositPool.address)).to.equal(ethers.utils.parseEther("100"));
+        const rplAdminFee = await protocol.xRPL.adminFeeRate();
+        expect(await rocketPool.rplContract.balanceOf(protocol.depositPool.address)).to.equal(ethers.utils.parseEther("100").mul(rplAdminFee).div(ethers.utils.parseEther("1")));
 
         const oracleYield = await protocol.rETHOracle.getTotalYieldAccrued();
         console.log("oracle yield: ", ethers.utils.formatEther(oracleYield));

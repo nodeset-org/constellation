@@ -17,8 +17,14 @@ contract OperatorDistributor is Base {
     uint public _queuedEth;
 
     address[] public minipoolAddresses;
-    mapping(address => uint256) public minipoolIndexMap;
+
     uint256 public nextMinipoolHavestIndex;
+
+    mapping(address => uint256) public minipoolIndexMap;
+    mapping(address => uint256) public minipoolAmountFundedEth;
+    mapping(address => uint256) public minipoolAmountFundedRpl;
+
+    mapping(address => address[]) nodeOperatorOwnedMinipools;
 
     constructor(address directory) Base(directory) {}
 
@@ -28,9 +34,40 @@ contract OperatorDistributor is Base {
         _queuedEth += msg.value;
     }
 
+    function getAmountFundedEth() public view returns (uint256) {
+        uint256 amountFunded;
+        for(uint i = 0; i < minipoolAddresses.length; i++) {
+            amountFunded += minipoolAmountFundedEth[minipoolAddresses[i]];
+        }
+        return amountFunded;
+    }
+
+    function getAmountFundedRpl() public view returns (uint256) {
+        uint256 amountFunded;
+        for(uint i = 0; i < minipoolAddresses.length; i++) {
+            amountFunded += minipoolAmountFundedRpl[minipoolAddresses[i]];
+        }
+        return amountFunded;
+    }
+
+    /// @notice Gets the total ETH value locked inside the protocol, including inside of validators, the OperatorDistributor,
+    // and this contract.
+    function getTvlEth() public view returns (uint) {
+        return address(this).balance + getAmountFundedEth();
+    }
+
+    /// @notice Gets the total RPL value locked inside the protocol, including inside of validators, the OperatorDistributor,
+    // and this contract.
+    function getTvlRpl() public view returns (uint) {
+        return
+            RocketTokenRPLInterface(_directory.RPL_CONTRACT_ADDRESS())
+                .balanceOf(address(this)) + getAmountFundedRpl();
+    }
+
+    /// @notice Should be called by admin server when a node operator exists a minipool
     function removeMinipoolAddress(
         address _address
-    ) external onlyYieldDistrubutor {
+    ) public onlyWhitelistOrAdmin {
         uint index = minipoolIndexMap[_address] - 1;
         require(index < minipoolAddresses.length, "Address not found.");
 
@@ -41,6 +78,46 @@ contract OperatorDistributor is Base {
         // Remove the last address
         minipoolAddresses.pop();
         delete minipoolIndexMap[_address];
+
+        // Set amount funded to 0 since it's being returned to DP
+        minipoolAmountFundedEth[_address] = 0;
+        minipoolAmountFundedRpl[_address] = 0;
+    }
+
+    function removeNodeOperator(
+        address _address
+    ) external onlyWhitelistOrAdmin {
+        // remove all minipools owned by node operator
+        address[] memory minipools = nodeOperatorOwnedMinipools[_address];
+        for(uint i = 0; i < minipools.length; i++) {
+            removeMinipoolAddress(minipools[i]);
+        }
+        delete nodeOperatorOwnedMinipools[_address];
+    }
+
+    function _stakeRPLFor(address _nodeAddress) internal {
+        IRocketNodeStaking nodeStaking = IRocketNodeStaking(
+            getDirectory().getRocketNodeStakingAddress()
+        );
+        uint256 minimumRplStake = IRocketNodeStaking(
+            getDirectory().getRocketNodeStakingAddress()
+        ).getNodeMinimumRPLStake(_nodeAddress);
+
+        // approve the node staking contract to spend the RPL
+        RocketTokenRPLInterface rpl = RocketTokenRPLInterface(
+            getDirectory().RPL_CONTRACT_ADDRESS()
+        );
+        require(
+            rpl.approve(
+                getDirectory().getRocketNodeStakingAddress(),
+                minimumRplStake
+            )
+        );
+
+        // update amount funded rpl
+        minipoolAmountFundedRpl[_nodeAddress] = minimumRplStake;
+
+        nodeStaking.stakeRPLFor(_nodeAddress, minimumRplStake);
     }
 
     function reimburseNodeForMinipool(
@@ -97,12 +174,17 @@ contract OperatorDistributor is Base {
             "OperatorDistributor: insufficient ETH in queue"
         );
 
-        DepositPool depositPool = DepositPool(payable(depositPoolAddr));
-        depositPool.stakeRPLFor(nodeAddress);
+        _stakeRPLFor(nodeAddress);
+
+        // new minipool owned by node operator
+        nodeOperatorOwnedMinipools[nodeAddress].push(newMinipoolAdress);
 
         // add minipool to minipoolAddresses
         minipoolAddresses.push(newMinipoolAdress);
         minipoolIndexMap[newMinipoolAdress] = minipoolAddresses.length;
+
+        // updated amount funded eth
+        minipoolAmountFundedEth[newMinipoolAdress] = bond;
 
         // transfer out eth
         _queuedEth -= bond;

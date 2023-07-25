@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { DepositPool, xrETH, xRPL, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking } from "../typechain-types";
+import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH } from "../typechain-types";
 import { initializeDirectory } from "./test-directory";
 
 const protocolParams  = { trustBuildPeriod : ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
@@ -18,12 +18,13 @@ export type SetupData = {
 export type Protocol = {
 	directory: Directory,
 	whitelist: Contract,
-	xrETH: xrETH,
-	xRPL: xRPL,
+	vCWETH: WETHVault,
+	vCRPL: RPLVault,
 	depositPool: DepositPool,
 	operatorDistributor: OperatorDistributor,
 	yieldDistributor: YieldDistributor,
 	rETHOracle: IXRETHOracle,
+	wETH: IWETH,
 }
 
 export type Signers = {
@@ -88,18 +89,19 @@ async function getRocketPool(): Promise<RocketPool> {
 }
 
 async function deployProtocol(): Promise<Protocol> {
-	const [admin] = await ethers.getSigners();
 	const directory = await (await ethers.getContractFactory("Directory")).deploy();
 	const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directory.address, protocolParams.trustBuildPeriod], { 'initializer' : 'initializeWhitelist',  'kind' : 'uups', 'unsafeAllow': ['constructor'] });
-	const xrETH = await (await ethers.getContractFactory("xrETH")).deploy(directory.address);
-	const xRPL = await (await ethers.getContractFactory("xRPL")).deploy(directory.address);
+	const vCWETH = await (await ethers.getContractFactory("WETHVault")).deploy(directory.address);
+	const vCRPL = await (await ethers.getContractFactory("RPLVault")).deploy(directory.address);
 	const depositPool = await (await ethers.getContractFactory("DepositPool")).deploy(directory.address);
 	const operatorDistributor = await (await ethers.getContractFactory("OperatorDistributor")).deploy(directory.address);
 	const yieldDistributor = await (await ethers.getContractFactory("YieldDistributor")).deploy(directory.address);
 
 	const rETHOracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
 
-	return { directory, whitelist, xrETH, xRPL, depositPool, operatorDistributor, yieldDistributor, rETHOracle};
+	const wETH = await ethers.getContractAt("IWETH", await directory.getWETHAddress());
+
+	return { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, rETHOracle, wETH};
 }
 
 async function createSigners(): Promise<Signers> {

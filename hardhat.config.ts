@@ -1,10 +1,15 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import '@openzeppelin/hardhat-upgrades';
+import "hardhat-contract-sizer";
+import "hardhat-gas-reporter";
 
 // init dotenv
 import dotenv from "dotenv";
-dotenv.config();
+import findConfig from 'find-config';
+
+const dotenvPath = findConfig('.env');
+dotenv.config({ path: dotenvPath });
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -23,7 +28,13 @@ const config: HardhatUserConfig = {
         blockNumber: parseInt(process.env.MAINNET_FORK_NUMBER as string),
       }
     }
-  }
+  },
+
+  contractSizer: {
+    alphaSort: true,
+    runOnCompile: true,
+    disambiguatePaths: false,
+  },
 };
 
 export default config;
