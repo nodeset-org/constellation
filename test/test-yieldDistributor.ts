@@ -10,6 +10,7 @@ import { mint_xrEth } from "./test-xrEth";
 import { string } from "hardhat/internal/core/params/argumentTypes";
 import { operator, whitelist } from "../typechain-types/contracts";
 import { RewardStruct } from "../typechain-types/contracts/Operator/YieldDistributor";
+import { expectNumberE18ToBeApproximately } from "./utils/utils";
 
 describe("Yield Distributor", function () {
 
@@ -90,9 +91,7 @@ describe("Yield Distributor", function () {
 
     expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).to.equal(totalEthYield);
 
-    const totalFee = (await yieldDistributor.nodeOperatorSplit()).mul(totalEthYield).div(ethers.utils.parseEther("1"))
-    const adminFeeEth = (await yieldDistributor.adminSplit()).mul(totalEthYield).div(ethers.utils.parseEther("1"))
-    const ethLiquidityProviderFeeEth = (await yieldDistributor.ethLiquidityProviderSplit()).mul(totalEthYield).div(ethers.utils.parseEther("1"))
+    const totalFee = await yieldDistributor.totalYieldAccrued()
 
     const operatorShare = (totalFee).div(3); // 3 operators used in this test
 
@@ -113,7 +112,7 @@ describe("Yield Distributor", function () {
     ]);
     const deltaBalances = finalBalances.map((final, i) => final.sub(initialBalances[i]));
 
-    expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).to.equal(adminFeeEth.add(ethLiquidityProviderFeeEth));
+    expectNumberE18ToBeApproximately(await ethers.provider.getBalance(protocol.yieldDistributor.address), ethers.BigNumber.from("0"), 0.0001);
 
     // we should expect each fee reward to follow the formula:
     // uint operatorRewardEth = (totalEthFee - adminRewardEth) * (operators[i].feePortion / YIELD_PORTION_MAX) / length;

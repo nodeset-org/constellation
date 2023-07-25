@@ -70,6 +70,10 @@ contract YieldDistributor is Base {
     }
 
     function wethReceived(uint256 weth) external onlyWETHVault {
+        _wethReceived(weth);
+    }
+
+    function _wethReceived(uint256 weth) internal {
         totalYieldAccrued += weth;
         yieldAccruedInInterval += weth;
 
@@ -218,5 +222,14 @@ contract YieldDistributor is Base {
     modifier onlyOperator() {
         require(getWhitelist().getIsAddressInWhitelist(msg.sender));
         _;
+    }
+
+
+    /****
+     * RECEIVE
+     */
+
+    receive() external payable {
+        _wethReceived(msg.value);
     }
 }

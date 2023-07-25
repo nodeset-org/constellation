@@ -40,5 +40,11 @@ export const expectNumberE18ToBeApproximately = (actualBig: BigNumber, expectedB
 
     const upperBound = expected * (1 + accpetableErrorMargin);
     const lowerBound = expected * (1 - accpetableErrorMargin);
+    // handle case where expected is 0
+    if (expected === 0) {
+        expect(actual).to.be.within(-accpetableErrorMargin, accpetableErrorMargin);
+        return;
+    }
+
     expect(actual).to.be.within(lowerBound, upperBound);
 }
