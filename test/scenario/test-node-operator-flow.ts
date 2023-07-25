@@ -123,13 +123,28 @@ describe.only("Node Operator Onboarding", function () {
         await printObjectTokenBalances({whale: signers.ethWhale}, protocol.wETH.address);
         console.log("eth balances before redeem");
         await printObjectBalances(protocol)
-        await protocol.vCWETH.connect(signers.ethWhale).redeem(ethers.utils.parseUnits("40", 18), signers.ethWhale.address, signers.ethWhale.address);
+        console.log("=======gains pre redemption=======");
+        console.log("eth gains: ", ethers.utils.formatEther(await protocol.vCWETH.totalAssetsRealized()));
+        const tx = await protocol.vCWETH.connect(signers.ethWhale).redeem(ethers.utils.parseUnits("40", 18), signers.ethWhale.address, signers.ethWhale.address);
+        const receipt = await tx.wait();
+        const {events} = receipt;
+        if(events) {
+            for(let i = 0; i < events.length; i++) {
+                // print events containing "Capital"
+                if(events[i].event?.includes("Capital")) {
+                    console.log(events[i].event);
+                    console.log(ethers.utils.formatEther(events[i].args?.amount));
+                }
+            }
+        }
         console.log("-------------------");
         console.log("weth balances after redeem");
         await printObjectTokenBalances(protocol, protocol.wETH.address);
         await printObjectTokenBalances({whale: signers.ethWhale}, protocol.wETH.address);
         console.log("eth balances after redeem");
         await printObjectBalances(protocol)
+        console.log("=======gains post redemption=======");
+        console.log("eth gains: ", ethers.utils.formatEther(await protocol.vCWETH.totalAssetsRealized()));
     });
 
     it("node operator gets reimbursement", async function () {

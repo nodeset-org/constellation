@@ -18,7 +18,7 @@ contract WETHVault is Base, ERC4626 {
     }
 
     struct UpdateShares {
-        uint256 existingPurchasePrice;
+        uint256 existingAveragePurchasePrice;
         uint256 existingShareCount;
         uint256 newShareCount;
         uint256 newAveragePurchasePrice;
@@ -168,12 +168,12 @@ contract WETHVault is Base, ERC4626 {
         deposit.shareCount = newShares.newShareCount;
 
         // record capital gains/losses
-        if (assets > newShares.existingPurchasePrice) {
-            uint256 capitalGain = assets - newShares.existingPurchasePrice;
-            totalAssetsRealized += capitalGain;
+        if (newShares.newAveragePurchasePrice > newShares.existingAveragePurchasePrice) {
+            uint256 capitalGain = newShares.newAveragePurchasePrice - newShares.existingAveragePurchasePrice;
+            totalAssetsRealized += capitalGain * shares;
             emit NewCapitalGain(capitalGain, receiver);
-        } else if (assets < newShares.existingPurchasePrice) {
-            uint256 capitalLoss = newShares.existingPurchasePrice - assets;
+        } else if (newShares.newAveragePurchasePrice < newShares.existingAveragePurchasePrice) {
+            uint256 capitalLoss = newShares.existingAveragePurchasePrice - newShares.newAveragePurchasePrice;
             emit NewCapitalLoss(capitalLoss, receiver);
         }
 
