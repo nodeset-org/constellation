@@ -118,35 +118,40 @@ export async function depositRpl(setupData: SetupData, from: SignerWithAddress, 
 describe(`DepositPool`, function () {
 
 	describe("Getters and Setters", function () {
-		it("Random address can get maxrETHBalance and maxrETHBalancePortion", async function () {
+		it("Random address can get splitRatioEth and splitRatioRpl", async function () {
 			const setupData = await loadFixture(protocolFixture);
-			let maxBalance = await setupData.protocol.depositPool.getMaxrETHBalance();
-			console.log("maxBalance is " + maxBalance);
+			let splitRatioEth = await setupData.protocol.depositPool.splitRatioEth();
+			let splitRatioRpl = await setupData.protocol.depositPool.splitRatioRpl();
 
+			expect(splitRatioEth).gt(0);
+			expect(splitRatioRpl).gt(0);
 		});
-		it("Random address cannot set maxrETHBalancePortion and maxRplBalancePortion", async function () {
+		it("Random address cannot set splitRatioEth and splitRatioRpl", async function () {
 			const setupData = await loadFixture(protocolFixture);
 			const { protocol, signers } = setupData;
 
-			await expect(protocol.depositPool.connect(signers.random).setMaxrETHBalancePortion(1000))
-				.to.be.revertedWith(await protocol.depositPool.ADMIN_ONLY_ERROR());
+			await expect(protocol.depositPool.connect(signers.random).setSplitRatioEth(1000))
+				.to.be.revertedWith(await protocol.directory.ADMIN_ONLY_ERROR());
 
-			await expect(protocol.depositPool.connect(signers.random).setMaxRplBalancePortion(1000))
-				.to.be.revertedWith(await protocol.depositPool.ADMIN_ONLY_ERROR());
+			await expect(protocol.depositPool.connect(signers.random).setSplitRatioRpl(1000))
+				.to.be.revertedWith(await protocol.directory.ADMIN_ONLY_ERROR());
 		});
 
-		it("Admin cannot set maxrETHBalancePortion or maxRplBalancePortion to out of range value", async function () {
+		it("Admin cannot set splitRatioEth or splitRatioRpl to out of range value", async function () {
 			const setupData = await loadFixture(protocolFixture);
 			const { protocol, signers } = setupData;
 
-			let maxrETHBalancePortion = await protocol.depositPool.connect(signers.random).getMaxrETHBalancePortion();
-			let maxRplBalancePortion = await protocol.depositPool.connect(signers.random).getMaxrETHBalancePortion();
+			let splitRatioEth = await protocol.depositPool.connect(signers.random).splitRatioEth();
+			let splitRatioRpl = await protocol.depositPool.connect(signers.random).splitRatioRpl();
 
-			expect(await protocol.depositPool.setMaxrETHBalancePortion(maxrETHBalancePortion + 1))
-				.to.be.revertedWith(await protocol.depositPool.MAX_BALANCE_PORTION_OUT_OF_RANGE_ERROR());
+			expect(await protocol.depositPool.connect(signers.admin).setSplitRatioEth(ethers.utils.parseUnits("1.01", 5)))
+				.to.be.revertedWith("split ratio must be lte to 1e5");
 
-			expect(await protocol.depositPool.setMaxRplBalancePortion(maxRplBalancePortion + 1))
-				.to.be.revertedWith(await protocol.depositPool.MAX_BALANCE_PORTION_OUT_OF_RANGE_ERROR());
+			expect(await protocol.depositPool.connect(signers.admin).setSplitRatioRpl(ethers.utils.parseUnits("1.01", 5)))
+				.to.be.revertedWith("split ratio must be lte to 1e5");
+
+			expect(await protocol.depositPool.connect(signers.admin).splitRatioEth()).to.equal(splitRatioEth);
+			expect(await protocol.depositPool.connect(signers.admin).splitRatioRpl()).to.equal(splitRatioRpl);
 		});
 
 		it("Admin address can set maxrETHBalancePortion and maxRplBalancePortion", async function () {

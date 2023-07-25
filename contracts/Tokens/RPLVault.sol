@@ -70,7 +70,7 @@ contract RPLVault is Base, ERC4626 {
 
         address recipient1 = _directory.getAdminAddress();
 
-        address pool = _directory.getDepositPoolAddress();
+        address payable pool = _directory.getDepositPoolAddress();
         DepositPool(pool).sendRplToDistributors();
 
         super._deposit(caller, receiver, assets, shares);

@@ -29,14 +29,12 @@ contract DepositPool is Base {
     /// GETTERS
     ///--------
 
-    /// @notice Gets the total ETH value locked inside the protocol, including inside of validators, the OperatorDistributor,
-    // and this contract.
+    /// @notice Gets the total ETH value locked inside the this pool
     function getTvlEth() public view returns (uint) {
         return address(this).balance;
     }
 
-    /// @notice Gets the total RPL value locked inside the protocol, including inside of validators, the OperatorDistributor,
-    // and this contract.
+    /// @notice Gets the total RPL value locked inside the this pool
     function getTvlRpl() public view returns (uint) {
         return RocketTokenRPLInterface(_directory.RPL_CONTRACT_ADDRESS()).balanceOf(address(this));
     }
@@ -146,5 +144,9 @@ contract DepositPool is Base {
                 toOperatorDistributor
             );
         }
+    }
+
+    /// @notice Receive hook for ETH deposits
+    receive() external payable {
     }
 }
