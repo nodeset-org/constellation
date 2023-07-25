@@ -9,6 +9,7 @@ import { Signers } from "../test";
 import { RocketPool } from "../test";
 import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
+import { printBalances, printWETHBalances } from "../utils/utils";
 
 export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: RocketPool) {
     const mockMinipoolFactory = await ethers.getContractFactory("MockMinipool");
@@ -94,23 +95,16 @@ describe("Node Operator Onboarding", function () {
 
     it.only("eth whale supplies Nodeset deposit pool with eth and rpl", async function () {
 
-        // eth whale create weth
+        // eth gets shares of xrETH
         await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
-
-        // approve weth to be deposited into vCWETH
         await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
-
-        console.log("pre A")
-
         await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
-
-        console.log("A")
-
         await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
         await protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("100"), signers.rplWhale.address);
 
         console.log("B")
-        expect(await ethers.provider.getBalance(protocol.depositPool.address)).to.equal(ethers.utils.parseEther("1"));
+        await printWETHBalances([protocol.depositPool.address, protocol.operatorDistributor.address, protocol.vCWETH.address, signers.rplWhale.address, protocol.yieldDistributor.address], protocol.wETH.address);
+        expect(await ethers.provider.getBalance(protocol.vCWETH.address)).to.equal(ethers.utils.parseEther("1"));
         const rplAdminFee = await protocol.vCRPL.makerFeeBasePoint();
         expect(await rocketPool.rplContract.balanceOf(protocol.depositPool.address)).to.equal(ethers.utils.parseEther("100").mul(rplAdminFee).div(ethers.utils.parseEther("1")));
 
