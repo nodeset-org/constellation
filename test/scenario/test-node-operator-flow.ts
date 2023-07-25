@@ -9,7 +9,7 @@ import { Signers } from "../test";
 import { RocketPool } from "../test";
 import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
-import { printBalances, printWETHBalances } from "../utils/utils";
+import { printBalances, printObjectBalances, printObjectWETHBalances, printWETHBalances } from "../utils/utils";
 
 export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: RocketPool) {
     const mockMinipoolFactory = await ethers.getContractFactory("MockMinipool");
@@ -102,8 +102,8 @@ describe("Node Operator Onboarding", function () {
         await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
         await protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("100"), signers.rplWhale.address);
 
-        console.log("B")
-        await printWETHBalances([protocol.depositPool.address, protocol.operatorDistributor.address, protocol.vCWETH.address, signers.rplWhale.address, protocol.yieldDistributor.address], protocol.wETH.address);
+        await printObjectWETHBalances(protocol, protocol.wETH.address);
+        await printObjectBalances(protocol);
         expect(await ethers.provider.getBalance(protocol.vCWETH.address)).to.equal(ethers.utils.parseEther("1"));
         const rplAdminFee = await protocol.vCRPL.makerFeeBasePoint();
         expect(await rocketPool.rplContract.balanceOf(protocol.depositPool.address)).to.equal(ethers.utils.parseEther("100").mul(rplAdminFee).div(ethers.utils.parseEther("1")));
