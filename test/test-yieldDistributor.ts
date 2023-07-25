@@ -55,64 +55,14 @@ describe("Yield Distributor", function () {
 
 
   describe("Setters", function () {
-    it("Random address cannot set split ratios", async function () {
+    it("Random address cannot setMaxIntervalTime", async function () {
       const setupData = await loadFixture(deployOnlyFixture);
       const { protocol, signers } = setupData;
 
-      await expect(protocol.yieldDistributor.connect(signers.random)
-        .setProtocolFeeSplits(BigNumber.from(999), BigNumber.from(999), BigNumber.from(999)))
+      await expect(protocol.yieldDistributor.connect(signers.random).setMaxIntervalTime(1))
         .to.be.revertedWith(await protocol.yieldDistributor.ADMIN_ONLY_ERROR());
-    });
 
-    it("Admin can set ETH fee admin portion", async function () {
-      const setupData = await loadFixture(deployOnlyFixture);
-      const { protocol, signers } = setupData;
-
-      const previousAdminSplit = await protocol.yieldDistributor.connect(signers.random).adminSplit();
-      const previousETHLPSplit = await protocol.yieldDistributor.connect(signers.random).ethLiquidityProviderSplit();
-      const previousNOSplit = await protocol.yieldDistributor.connect(signers.random).nodeOperatorSplit();
-
-      expect(previousNOSplit).not.equals(ethers.utils.parseUnits("0.50", "18"));
-      expect(previousETHLPSplit).not.equals(ethers.utils.parseUnits("0.25", "18"));
-      expect(previousAdminSplit).not.equals(ethers.utils.parseUnits("0.25", "18"));
-
-      await protocol.yieldDistributor.setProtocolFeeSplits(
-        ethers.utils.parseUnits("0.50", "18"),
-        ethers.utils.parseUnits("0.25", "18"),
-        ethers.utils.parseUnits("0.25", "18"),
-      )
-
-      const finalAdminSplit = await protocol.yieldDistributor.connect(signers.random).adminSplit();
-      const finalETHLPSplit = await protocol.yieldDistributor.connect(signers.random).ethLiquidityProviderSplit();
-      const finalNOSplit = await protocol.yieldDistributor.connect(signers.random).nodeOperatorSplit();
-
-      expect(finalNOSplit).equals(ethers.utils.parseUnits("0.50", "18"));
-      expect(finalAdminSplit).equals(ethers.utils.parseUnits("0.25", "18"));
-      expect(finalETHLPSplit).equals(ethers.utils.parseUnits("0.25", "18"));
-    });
-
-    it("Revert if split ratios don't add up", async function () {
-      const setupData = await loadFixture(deployOnlyFixture);
-      const { protocol, signers } = setupData;
-
-      const previousAdminSplit = await protocol.yieldDistributor.connect(signers.random).adminSplit();
-      const previousETHLPSplit = await protocol.yieldDistributor.connect(signers.random).ethLiquidityProviderSplit();
-      const previousNOSplit = await protocol.yieldDistributor.connect(signers.random).nodeOperatorSplit();
-      await expect(protocol.yieldDistributor.setProtocolFeeSplits(
-        ethers.utils.parseUnits("0.5", "18"),
-        ethers.utils.parseUnits("0.5", "18"),
-        ethers.utils.parseUnits("0.5", "18"),
-      )).to.be.revertedWith("Splits must add up to 100%")
-
-      const finalAdminSplit = await protocol.yieldDistributor.connect(signers.random).adminSplit();
-      const finalETHLPSplit = await protocol.yieldDistributor.connect(signers.random).ethLiquidityProviderSplit();
-      const finalNOSplit = await protocol.yieldDistributor.connect(signers.random).nodeOperatorSplit();
-
-      expect(previousAdminSplit).to.equal(finalAdminSplit);
-      expect(previousETHLPSplit).to.equal(finalETHLPSplit);
-      expect(previousNOSplit).to.equal(finalNOSplit);
-
-    });
+    })
 
   });
 

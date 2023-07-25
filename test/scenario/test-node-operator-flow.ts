@@ -107,7 +107,6 @@ describe("Node Operator Onboarding", function () {
         const expectedAmountInDP =  ethers.utils.parseEther(`${100 - parseInt(fee1) - parseInt(fee2)}`);
         const actualAmountInDP = await weth.balanceOf(protocol.depositPool.address);
         expectNumberE18ToBeApproximately(actualAmountInDP, expectedAmountInDP, 0.005);
-        // error should be less than 0.1%
 
         await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
         await protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("100"), signers.rplWhale.address);
@@ -115,8 +114,6 @@ describe("Node Operator Onboarding", function () {
         const expectedRplInDP = ethers.utils.parseEther(`${100 - rplAdminFee}`);
         const actualRplInDP = await rpl.balanceOf(protocol.depositPool.address);
         expectNumberE18ToBeApproximately(actualRplInDP, expectedRplInDP, 0.005);
-
-
     });
 
     it("node operator gets reimbursement", async function () {
