@@ -56,7 +56,7 @@ describe("Whitelist", function () {
         const operator = [
             timestamp,
             0,
-            ethers.utils.parseEther("1"),
+            1,
         ];
 
         await expect(protocol.whitelist.addOperator(signers.random.address))
@@ -84,7 +84,6 @@ describe("Whitelist", function () {
         // see https://github.com/NomicFoundation/hardhat/issues/3318
         expect(operator.operationStartTime).equals(expected.operationStartTime);
         expect(operator.currentValidatorCount).equals(expected.currentValidatorCount);
-        expect(operator.feePortion).equals(expected.feePortion);
     });
 
     it("Non-admin cannot add address to whitelist", async function () {

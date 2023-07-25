@@ -5,8 +5,6 @@ import { deployOnlyFixture, Protocol, protocolFixture, SetupData } from "./test"
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { initializeDirectory } from "./test-directory";
-import { mint_xRpl } from "./test-xRpl";
-import { mint_xrEth } from "./test-xrEth";
 import { string } from "hardhat/internal/core/params/argumentTypes";
 import { operator, whitelist } from "../typechain-types/contracts";
 import { RewardStruct } from "../typechain-types/contracts/Operator/YieldDistributor";
@@ -182,14 +180,13 @@ describe("Yield Distributor", function () {
       const tx4 = await yieldDistributor.connect(signers.random4).harvest(signers.random4.address, 1, 1);
       const tx5 = await yieldDistributor.connect(signers.random5).harvest(signers.random5.address, 1, 1);
 
-      const totalYieldAfterCommission = (await yieldDistributor.nodeOperatorSplit()).mul(totalYield).div(ethers.utils.parseEther("1"))
-      expect(totalYieldAfterCommission).to.equal((await yieldDistributor.nodeOperatorSplit()).mul(await yieldDistributor.nodeOperatorSplit()).div(ethers.utils.parseEther("1")));
+      const claims = await yieldDistributor.getClaims();
 
-      const firstYieldAfterCommission = firstYield.mul(await yieldDistributor.nodeOperatorSplit()).div(ethers.utils.parseEther("1"));
-      const secondYieldAfterCommission = secondYield.mul(await yieldDistributor.nodeOperatorSplit()).div(ethers.utils.parseEther("1"));
+      expect(claims[0].amount).to.equal(firstYield);
+      expect(claims[1].amount).to.equal(secondYield);
 
-      const operatorShareInterval0 = firstYieldAfterCommission.mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("3"));
-      const operatorShareInterval1 = secondYieldAfterCommission.mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("5"));
+      const operatorShareInterval0 = firstYield.mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("3"));
+      const operatorShareInterval1 = secondYield.mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("5"));
 
       const interval0 = await yieldDistributor.claims(0);
       const claimPerOperatorInterval0 = interval0.amount.mul(ethers.utils.parseEther("1")).div(interval0.numOperators).div(ethers.utils.parseEther("1"));
@@ -203,7 +200,7 @@ describe("Yield Distributor", function () {
       await expect(tx4).to.emit(yieldDistributor, "RewardDistributed").withArgs([signers.random4.address, operatorShareInterval1]);
       await expect(tx5).to.emit(yieldDistributor, "RewardDistributed").withArgs([signers.random5.address, operatorShareInterval1]);
 
-      expect(await ethers.provider.getBalance(yieldDistributor.address)).to.equal(totalYieldAfterCommission);
+      expect(await ethers.provider.getBalance(yieldDistributor.address)).to.equal(totalYield);
     })
 
     it("cannot claim mulitple times for the same interval", async () => {

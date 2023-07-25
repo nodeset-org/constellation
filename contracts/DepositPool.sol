@@ -22,6 +22,8 @@ contract DepositPool is Base {
 
     /// @notice Emitted whenever this contract sends or receives ETH outside of the protocol.
     event TotalValueUpdated(uint oldValue, uint newValue);
+    event SplitRatioEthUpdated(uint oldValue, uint newValue);
+    event SplitRatioRplUpdated(uint oldValue, uint newValue);
 
     constructor(address directoryAddress) Base(directoryAddress) {}
 
@@ -47,6 +49,7 @@ contract DepositPool is Base {
     /// @param newSplitRatio The new split ratio.
     function setSplitRatioEth(uint256 newSplitRatio) external onlyAdmin {
         require(newSplitRatio <= 1e5, "split ratio must be lte to 1e5");
+        emit SplitRatioEthUpdated(splitRatioEth, newSplitRatio);
         splitRatioEth = newSplitRatio;
     }
 
@@ -54,6 +57,7 @@ contract DepositPool is Base {
     /// @param newSplitRatio The new split ratio.
     function setSplitRatioRpl(uint256 newSplitRatio) external onlyAdmin {
         require(newSplitRatio <= 1e5, "split ratio must be lte to 1e5");
+        emit SplitRatioRplUpdated(splitRatioRpl, newSplitRatio);
         splitRatioRpl = newSplitRatio;
     }
 
