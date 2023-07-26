@@ -50,8 +50,6 @@ describe.only("Node Operator Onboarding", function () {
         weth = protocol.wETH;
         rpl = await ethers.getContractAt("IERC20", await protocol.directory.RPL_CONTRACT_ADDRESS());
 
-        await protocol.oracle.setTotalYieldAccrued(ethers.utils.parseEther("0.041059"));
-
     });
 
     it("node operator creates minipool", async function () {
@@ -117,12 +115,14 @@ describe.only("Node Operator Onboarding", function () {
     });
 
     it("eth whale redeems one share to trigger pool rebalacings", async function () {
-        await protocol.oracle.setTotalYieldAccrued(ethers.utils.parseEther("1"));
-        console.log("weth balances before redeem");
+        await protocol.oracle.setTotalYieldAccrued(ethers.utils.parseEther("0"));
+        console.log("TOKEN balances before redeem");
         await printObjectTokenBalances(protocol, protocol.wETH.address);
         await printObjectTokenBalances({whale: signers.ethWhale}, protocol.wETH.address);
+        await printObjectTokenBalances({vWhale: signers.ethWhale}, protocol.vCWETH.address);
         console.log("eth balances before redeem");
         await printObjectBalances(protocol)
+
         console.log("=======gains pre redemption=======");
         console.log("eth gains: ", ethers.utils.formatEther(await protocol.vCWETH.totalYieldDistributed()));
         const tx = await protocol.vCWETH.connect(signers.ethWhale).redeem(ethers.utils.parseUnits("40", 18), signers.ethWhale.address, signers.ethWhale.address);
@@ -138,9 +138,10 @@ describe.only("Node Operator Onboarding", function () {
             }
         }
         console.log("-------------------");
-        console.log("weth balances after redeem");
+        console.log("TOKEN BALANCES after redeem");
         await printObjectTokenBalances(protocol, protocol.wETH.address);
         await printObjectTokenBalances({whale: signers.ethWhale}, protocol.wETH.address);
+        await printObjectTokenBalances({vWhale: signers.ethWhale}, protocol.vCWETH.address);
         console.log("eth balances after redeem");
         await printObjectBalances(protocol)
         console.log("=======gains post redemption=======");

@@ -31,9 +31,9 @@ contract DepositPool is Base {
     /// GETTERS
     ///--------
 
-    /// @notice Gets the total ETH value locked inside the this pool
+    /// @notice Gets the total ETH and WETH value locked inside the this pool
     function getTvlEth() public view returns (uint) {
-        return address(this).balance;
+        return address(this).balance + IWETH(_directory.WETH_CONTRACT_ADDRESS()).balanceOf(address(this));
     }
 
     /// @notice Gets the total RPL value locked inside the this pool

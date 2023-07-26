@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import "../Base.sol";
 import "../DepositPool.sol";
 import "../Operator/YieldDistributor.sol";
+import "hardhat/console.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is Base, ERC4626 {
@@ -124,7 +125,11 @@ contract WETHVault is Base, ERC4626 {
             1e18;
         positions[receiver].shares += shares;
 
+        console.log("balance of pool in asset()", ERC20(asset()).balanceOf(address(this)));
+        console.log("total assets", totalAssets());
         super._deposit(caller, receiver, assets, shares);
+        console.log("balance of pool in asset()", ERC20(asset()).balanceOf(address(this)));
+        console.log("total assets", totalAssets());
 
         if (fee1 > 0 && recipient1 != address(this)) {
             SafeERC20.safeTransfer(IERC20(asset()), recipient1, fee1);
@@ -135,6 +140,7 @@ contract WETHVault is Base, ERC4626 {
         }
         // transfer the rest of the deposit to the pool for utilization
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets - fee1 - fee2);
+
     }
 
     /** @dev See {IERC4626-_deposit}. */
@@ -214,7 +220,7 @@ contract WETHVault is Base, ERC4626 {
     /// @notice Returns the minimal amount of asset this contract must contain to be sufficiently collateralized for operations
     function getRequiredCollateral() public view returns (uint256) {
         uint256 currentBalance = ERC20(asset()).balanceOf(address(this));
-        uint256 fullBalance = getDistributableYield();
+        uint256 fullBalance = totalAssets();
 
         uint256 requiredBalance = collateralizationRatioBasePoint.mulDiv(
             fullBalance,
