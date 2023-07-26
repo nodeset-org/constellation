@@ -12,9 +12,9 @@ contract WETHVault is Base, ERC4626 {
     string constant NAME = "Constellation ETH";
     string constant SYMBOL = "xrETH"; // Vaulted Constellation Wrapped ETH
 
-    struct Shares {
-        uint256 shareCount;
-        uint256 averagePurchasePrice;
+    struct Position {
+        uint256 shares;
+        uint256 pricePaidPerShare;
     }
 
     constructor(
@@ -35,13 +35,11 @@ contract WETHVault is Base, ERC4626 {
 
     uint256 public collateralizationRatioBasePoint = 0.02e5; // collateralization ratio
 
-    uint256 public totalAssetsDeposited; // total deposited assets
-    uint256 public totalAssetsWithdrawn; // total withdrawn assets
+    uint256 public totalYieldDistributed;
 
-    mapping(address => Shares) public principals;
+    mapping(address => Position) public positions;
 
-    event NewCapitalGain(uint256 amount, address indexed winner);
-    event NewCapitalLoss(uint256 amount, address indexed loser);
+    event NewCapitalGain(uint256 amount, address indexed winner); // shares can only appreciate in value
 
     /** @dev See {IERC4626-previewDeposit}. */
     function previewDeposit(
@@ -99,7 +97,22 @@ contract WETHVault is Base, ERC4626 {
         address payable pool = _directory.getDepositPoolAddress();
         DepositPool(pool).sendEthToDistributors();
 
-        totalAssetsDeposited += assets;
+        uint256 totalPriceOfShares = super.convertSharesToAssets(shares);
+        uint256 lastPricePaidPerShare = positions[receiver].pricePaidPerShare;
+
+        uint256 originalValueTimesShares = lastPricePaidPerShare
+            .mul(positions[receiver].shares)
+            .mul(1e18);
+        uint256 newValueTimesShares = totalPriceOfShares.mul(1e18);
+        uint256 totalShares = positions[receiver].shares.add(shares);
+
+        uint256 weightedPriceSum = originalValueTimesShares.add(
+            newValueTimesShares
+        );
+        positions[receiver].pricePaidPerShare = weightedPriceSum
+            .div(totalShares)
+            .div(1e18);
+
         super._deposit(caller, receiver, assets, shares);
 
         if (fee1 > 0 && recipient1 != address(this)) {
@@ -129,6 +142,19 @@ contract WETHVault is Base, ERC4626 {
         DepositPool(_directory.getDepositPoolAddress()).sendEthToDistributors();
 
         totalAssetsWithdrawn += assets;
+        uint256 currentPriceOfShares = super.convertSharesToAssets(shares);
+        uint256 lastPriceOfShares = positions[owner].pricePaidPerShare.mul(
+            shares
+        );
+        uint256 capitalGain = currentPriceOfShares - lastPriceOfShares; // will always be positive
+        totalYieldDistributed += capitalGain;
+        emit NewCapitalGain(capitalGain, receiver);
+
+        positions[owner].shares -= shares;
+        if(positions[owner].shares == 0) {
+            positions[owner].pricePaidPerShare = 0;
+        }
+
         super._withdraw(caller, receiver, owner, assets, shares);
 
         if (fee1 > 0 && recipient1 != address(this)) {
