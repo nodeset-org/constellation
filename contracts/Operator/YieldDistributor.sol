@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import "./Operator.sol";
 import "./OperatorDistributor.sol";
 import "../Whitelist/Whitelist.sol";
 import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";
 import "../Interfaces/Oracles/IXRETHOracle.sol";
+import "../Interfaces/IWETH.sol";
 
 import "hardhat/console.sol";
 
@@ -70,6 +73,10 @@ contract YieldDistributor is Base {
     }
 
     function wethReceived(uint256 weth) external onlyWETHVault {
+        _wethReceived(weth);
+    }
+
+    function _wethReceived(uint256 weth) internal {
         totalYieldAccrued += weth;
         yieldAccruedInInterval += weth;
 
@@ -147,11 +154,14 @@ contract YieldDistributor is Base {
             hasClaimed[_rewardee][i] = true;
         }
 
-        // send eth to rewardee
+        // send weth to rewardee
 
         if (isWhitelisted) {
-            (bool success, ) = _rewardee.call{value: totalReward}("");
-            require(success, "Failed to send ETH to rewardee");
+            SafeERC20.safeTransfer(
+                IWETH(_directory.WETH_CONTRACT_ADDRESS()),
+                _rewardee,
+                totalReward
+            );
         } else {
             dustAccrued += totalReward;
         }
@@ -218,5 +228,16 @@ contract YieldDistributor is Base {
     modifier onlyOperator() {
         require(getWhitelist().getIsAddressInWhitelist(msg.sender));
         _;
+    }
+
+
+    /****
+     * RECEIVE
+     */
+
+    receive() external payable {
+        // mint weth
+        IWETH(_directory.WETH_CONTRACT_ADDRESS()).deposit{value: msg.value}();
+        _wethReceived(msg.value);
     }
 }

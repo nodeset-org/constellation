@@ -12,6 +12,20 @@ contract WETHVault is Base, ERC4626 {
     string constant NAME = "Constellation ETH";
     string constant SYMBOL = "xrETH"; // Vaulted Constellation Wrapped ETH
 
+    struct Position {
+        uint256 shares;
+        uint256 pricePaidPerShare;
+    }
+
+    struct WeightedAverageCalculation {
+        uint256 totalPriceOfShares;
+        uint256 lastPricePaidPerShare;
+        uint256 originalValueTimesShares;
+        uint256 newValueTimesShares;
+        uint256 totalShares;
+        uint256 weightedPriceSum;
+    }
+
     constructor(
         address directoryAddress
     )
@@ -30,7 +44,11 @@ contract WETHVault is Base, ERC4626 {
 
     uint256 public collateralizationRatioBasePoint = 0.02e5; // collateralization ratio
 
-    uint256 public totalAssetsRealized; // total deposited assets
+    uint256 public totalYieldDistributed;
+
+    mapping(address => Position) public positions;
+
+    event NewCapitalGain(uint256 amount, address indexed winner); // shares can only appreciate in value
 
     /** @dev See {IERC4626-previewDeposit}. */
     function previewDeposit(
@@ -83,12 +101,29 @@ contract WETHVault is Base, ERC4626 {
         uint256 fee2 = _feeOnTotal(assets, makerFee2BasePoint);
 
         address recipient1 = _directory.getAdminAddress();
-        address recipient2 = _directory.getYieldDistributorAddress();
+        address payable recipient2 = _directory.getYieldDistributorAddress();
 
-        address pool = _directory.getDepositPoolAddress();
+        address payable pool = _directory.getDepositPoolAddress();
         DepositPool(pool).sendEthToDistributors();
 
-        totalAssetsRealized += assets;
+        WeightedAverageCalculation memory vars;
+        vars.totalPriceOfShares = super.convertToAssets(shares);
+        vars.lastPricePaidPerShare = positions[receiver].pricePaidPerShare;
+        vars.originalValueTimesShares =
+            vars.lastPricePaidPerShare *
+            positions[receiver].shares *
+            1e18;
+
+        vars.newValueTimesShares = vars.totalPriceOfShares * 1e18;
+        vars.totalShares = positions[receiver].shares + shares;
+        vars.weightedPriceSum = vars.originalValueTimesShares + vars.newValueTimesShares;
+
+        positions[receiver].pricePaidPerShare =
+            vars.weightedPriceSum /
+            vars.totalShares /
+            1e18;
+        positions[receiver].shares += shares;
+
         super._deposit(caller, receiver, assets, shares);
 
         if (fee1 > 0 && recipient1 != address(this)) {
@@ -100,6 +135,7 @@ contract WETHVault is Base, ERC4626 {
         }
         // transfer the rest of the deposit to the pool for utilization
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets - fee1 - fee2);
+
     }
 
     /** @dev See {IERC4626-_deposit}. */
@@ -113,9 +149,20 @@ contract WETHVault is Base, ERC4626 {
         uint256 fee1 = _feeOnRaw(assets, takerFee1BasePoint);
         uint256 fee2 = _feeOnRaw(assets, takerFee2BasePoint);
         address recipient1 = _directory.getAdminAddress();
-        address recipient2 = _directory.getYieldDistributorAddress();
+        address payable recipient2 = _directory.getYieldDistributorAddress();
 
         DepositPool(_directory.getDepositPoolAddress()).sendEthToDistributors();
+
+        uint256 currentPriceOfShares = super.convertToAssets(shares);
+        uint256 lastPriceOfShares = positions[owner].pricePaidPerShare * shares;
+        uint256 capitalGain = currentPriceOfShares - lastPriceOfShares; // will always be positive
+        totalYieldDistributed += capitalGain;
+        emit NewCapitalGain(capitalGain, receiver);
+
+        positions[owner].shares -= shares;
+        if (positions[owner].shares == 0) {
+            positions[owner].pricePaidPerShare = 0;
+        }
 
         super._withdraw(caller, receiver, owner, assets, shares);
 
@@ -146,10 +193,7 @@ contract WETHVault is Base, ERC4626 {
     /// @notice Gets the total value of non-distributed yield
     function getDistributableYield() public view returns (uint256) {
         uint256 totalUnrealizedAccrual = getOracle().getTotalYieldAccrued();
-        return
-            totalUnrealizedAccrual > totalAssetsRealized
-                ? totalUnrealizedAccrual - totalAssetsRealized
-                : 0;
+        return totalUnrealizedAccrual - totalYieldDistributed;
     }
 
     function getOracle() public view returns (IXRETHOracle) {
@@ -158,13 +202,20 @@ contract WETHVault is Base, ERC4626 {
 
     function totalAssets() public view override returns (uint256) {
         DepositPool dp = DepositPool(getDirectory().getDepositPoolAddress());
-        return super.totalAssets() + getDistributableYield() + dp.getTvlEth();
+        OperatorDistributor od = OperatorDistributor(
+            getDirectory().getOperatorDistributorAddress()
+        );
+        return
+            super.totalAssets() +
+            getDistributableYield() +
+            dp.getTvlEth() +
+            od.getTvlEth();
     }
 
     /// @notice Returns the minimal amount of asset this contract must contain to be sufficiently collateralized for operations
     function getRequiredCollateral() public view returns (uint256) {
         uint256 currentBalance = ERC20(asset()).balanceOf(address(this));
-        uint256 fullBalance = getDistributableYield();
+        uint256 fullBalance = totalAssets();
 
         uint256 requiredBalance = collateralizationRatioBasePoint.mulDiv(
             fullBalance,
@@ -196,5 +247,4 @@ contract WETHVault is Base, ERC4626 {
         takerFee1BasePoint = _takerFee1BasePoint;
         takerFee2BasePoint = _takerFee2BasePoint;
     }
-
 }

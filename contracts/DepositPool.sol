@@ -22,6 +22,8 @@ contract DepositPool is Base {
 
     /// @notice Emitted whenever this contract sends or receives ETH outside of the protocol.
     event TotalValueUpdated(uint oldValue, uint newValue);
+    event SplitRatioEthUpdated(uint oldValue, uint newValue);
+    event SplitRatioRplUpdated(uint oldValue, uint newValue);
 
     constructor(address directoryAddress) Base(directoryAddress) {}
 
@@ -29,14 +31,12 @@ contract DepositPool is Base {
     /// GETTERS
     ///--------
 
-    /// @notice Gets the total ETH value locked inside the protocol, including inside of validators, the OperatorDistributor,
-    // and this contract.
+    /// @notice Gets the total ETH and WETH value locked inside the this pool
     function getTvlEth() public view returns (uint) {
-        return address(this).balance;
+        return address(this).balance + IWETH(_directory.WETH_CONTRACT_ADDRESS()).balanceOf(address(this));
     }
 
-    /// @notice Gets the total RPL value locked inside the protocol, including inside of validators, the OperatorDistributor,
-    // and this contract.
+    /// @notice Gets the total RPL value locked inside the this pool
     function getTvlRpl() public view returns (uint) {
         return RocketTokenRPLInterface(_directory.RPL_CONTRACT_ADDRESS()).balanceOf(address(this));
     }
@@ -49,6 +49,7 @@ contract DepositPool is Base {
     /// @param newSplitRatio The new split ratio.
     function setSplitRatioEth(uint256 newSplitRatio) external onlyAdmin {
         require(newSplitRatio <= 1e5, "split ratio must be lte to 1e5");
+        emit SplitRatioEthUpdated(splitRatioEth, newSplitRatio);
         splitRatioEth = newSplitRatio;
     }
 
@@ -56,6 +57,7 @@ contract DepositPool is Base {
     /// @param newSplitRatio The new split ratio.
     function setSplitRatioRpl(uint256 newSplitRatio) external onlyAdmin {
         require(newSplitRatio <= 1e5, "split ratio must be lte to 1e5");
+        emit SplitRatioRplUpdated(splitRatioRpl, newSplitRatio);
         splitRatioRpl = newSplitRatio;
     }
 
@@ -96,14 +98,10 @@ contract DepositPool is Base {
             );
         }
 
-        // Wrap ETH to WETH and send to Operator Distributor
+        // Don't wrap ETH to WETH and send to Operator Distributor
         if (toOperatorDistributor > 0) {
-            WETH.deposit{value: toOperatorDistributor}();
-            SafeERC20.safeTransfer(
-                IERC20(address(WETH)),
-                operatorDistributor,
-                toOperatorDistributor
-            );
+            (bool success, ) = operatorDistributor.call{value: toOperatorDistributor}("");
+            require(success, "Transfer failed.");
         }
     }
 
@@ -146,5 +144,9 @@ contract DepositPool is Base {
                 toOperatorDistributor
             );
         }
+    }
+
+    /// @notice Receive hook for ETH deposits
+    receive() external payable {
     }
 }

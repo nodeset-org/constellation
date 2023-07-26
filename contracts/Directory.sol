@@ -11,8 +11,8 @@ struct Protocol {
     address payable rplVault; // xRPL
     address payable depositPool;
     address payable operatorDistributor;
-    address yieldDistributor;
-    address rethOracle;
+    address payable yieldDistributor;
+    address oracle;
     address rocketStorage;
     address rocketNodeManager;
     address rocketNodeStaking;
@@ -83,7 +83,7 @@ contract Directory {
     }
 
     function getRETHOracleAddress() public view returns (address) {
-        return _protocol.rethOracle;
+        return _protocol.oracle;
     }
 
     function getRocketStorageAddress() public view returns (address) {
@@ -102,7 +102,7 @@ contract Directory {
         return _protocol.operatorDistributor;
     }
 
-    function getYieldDistributorAddress() public view returns (address) {
+    function getYieldDistributorAddress() public view returns (address payable) {
         return _protocol.yieldDistributor;
     }
 
