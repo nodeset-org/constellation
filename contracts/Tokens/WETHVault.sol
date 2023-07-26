@@ -17,13 +17,6 @@ contract WETHVault is Base, ERC4626 {
         uint256 averagePurchasePrice;
     }
 
-    struct UpdateShares {
-        uint256 existingAveragePurchasePrice;
-        uint256 existingShareCount;
-        uint256 newShareCount;
-        uint256 newAveragePurchasePrice;
-    }
-
     constructor(
         address directoryAddress
     )
@@ -42,7 +35,8 @@ contract WETHVault is Base, ERC4626 {
 
     uint256 public collateralizationRatioBasePoint = 0.02e5; // collateralization ratio
 
-    uint256 public totalAssetsRealized; // total deposited assets
+    uint256 public totalAssetsDeposited; // total deposited assets
+    uint256 public totalAssetsWithdrawn; // total withdrawn assets
 
     mapping(address => Shares) public principals;
 
@@ -105,22 +99,7 @@ contract WETHVault is Base, ERC4626 {
         address payable pool = _directory.getDepositPoolAddress();
         DepositPool(pool).sendEthToDistributors();
 
-        Shares storage deposit = principals[receiver];
-        UpdateShares memory newShares = UpdateShares(
-            deposit.averagePurchasePrice,
-            deposit.shareCount,
-            deposit.shareCount + shares,
-            assets + deposit.averagePurchasePrice > 0
-                ? ((assets * shares +
-                    deposit.averagePurchasePrice * deposit.shareCount) *
-                    1e5) /
-                    (deposit.shareCount + shares) /
-                    1e5
-                : 0
-        );
-        deposit.averagePurchasePrice = newShares.newAveragePurchasePrice;
-        deposit.shareCount = newShares.newShareCount;
-
+        totalAssetsDeposited += assets;
         super._deposit(caller, receiver, assets, shares);
 
         if (fee1 > 0 && recipient1 != address(this)) {
@@ -149,34 +128,7 @@ contract WETHVault is Base, ERC4626 {
 
         DepositPool(_directory.getDepositPoolAddress()).sendEthToDistributors();
 
-
-        Shares storage deposit = principals[owner];
-        UpdateShares memory newShares = UpdateShares(
-            deposit.averagePurchasePrice,
-            deposit.shareCount,
-            deposit.shareCount - shares,
-            deposit.shareCount - shares > 0
-                ? ((deposit.averagePurchasePrice * deposit.shareCount -
-                    assets * shares) *
-                    1e5) /
-                    (deposit.shareCount - shares) /
-                    1e5
-                : 0
-        );
-
-        deposit.averagePurchasePrice = newShares.newAveragePurchasePrice;
-        deposit.shareCount = newShares.newShareCount;
-
-        // record capital gains/losses
-        if (newShares.newAveragePurchasePrice > newShares.existingAveragePurchasePrice) {
-            uint256 capitalGain = newShares.newAveragePurchasePrice - newShares.existingAveragePurchasePrice;
-            totalAssetsRealized += capitalGain * shares;
-            emit NewCapitalGain(capitalGain, receiver);
-        } else if (newShares.newAveragePurchasePrice < newShares.existingAveragePurchasePrice) {
-            uint256 capitalLoss = newShares.existingAveragePurchasePrice - newShares.newAveragePurchasePrice;
-            emit NewCapitalLoss(capitalLoss, receiver);
-        }
-
+        totalAssetsWithdrawn += assets;
         super._withdraw(caller, receiver, owner, assets, shares);
 
         if (fee1 > 0 && recipient1 != address(this)) {
@@ -206,9 +158,10 @@ contract WETHVault is Base, ERC4626 {
     /// @notice Gets the total value of non-distributed yield
     function getDistributableYield() public view returns (uint256) {
         uint256 totalUnrealizedAccrual = getOracle().getTotalYieldAccrued();
+        uint256 netDeposit = totalAssetsDeposited - totalAssetsWithdrawn;
         return
-            totalUnrealizedAccrual > totalAssetsRealized
-                ? totalUnrealizedAccrual - totalAssetsRealized
+            totalUnrealizedAccrual > totalAssetsDeposited
+                ? totalUnrealizedAccrual - totalAssetsDeposited
                 : 0;
     }
 
@@ -218,7 +171,14 @@ contract WETHVault is Base, ERC4626 {
 
     function totalAssets() public view override returns (uint256) {
         DepositPool dp = DepositPool(getDirectory().getDepositPoolAddress());
-        return super.totalAssets() + getDistributableYield() + dp.getTvlEth();
+        OperatorDistributor od = OperatorDistributor(
+            getDirectory().getOperatorDistributorAddress()
+        );
+        return
+            super.totalAssets() +
+            getDistributableYield() +
+            dp.getTvlEth() +
+            od.getTvlEth();
     }
 
     /// @notice Returns the minimal amount of asset this contract must contain to be sufficiently collateralized for operations

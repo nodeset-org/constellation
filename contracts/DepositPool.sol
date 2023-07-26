@@ -98,14 +98,10 @@ contract DepositPool is Base {
             );
         }
 
-        // Wrap ETH to WETH and send to Operator Distributor
+        // Don't wrap ETH to WETH and send to Operator Distributor
         if (toOperatorDistributor > 0) {
-            WETH.deposit{value: toOperatorDistributor}();
-            SafeERC20.safeTransfer(
-                IERC20(address(WETH)),
-                operatorDistributor,
-                toOperatorDistributor
-            );
+            (bool success, ) = operatorDistributor.call{value: toOperatorDistributor}("");
+            require(success, "Transfer failed.");
         }
     }
 
