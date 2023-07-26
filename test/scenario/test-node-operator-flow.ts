@@ -124,7 +124,7 @@ describe.only("Node Operator Onboarding", function () {
         console.log("eth balances before redeem");
         await printObjectBalances(protocol)
         console.log("=======gains pre redemption=======");
-        console.log("eth gains: ", ethers.utils.formatEther(await protocol.vCWETH.totalAssetsRealized()));
+        console.log("eth gains: ", ethers.utils.formatEther(await protocol.vCWETH.totalYieldDistributed()));
         const tx = await protocol.vCWETH.connect(signers.ethWhale).redeem(ethers.utils.parseUnits("40", 18), signers.ethWhale.address, signers.ethWhale.address);
         const receipt = await tx.wait();
         const {events} = receipt;
@@ -144,7 +144,7 @@ describe.only("Node Operator Onboarding", function () {
         console.log("eth balances after redeem");
         await printObjectBalances(protocol)
         console.log("=======gains post redemption=======");
-        console.log("eth gains: ", ethers.utils.formatEther(await protocol.vCWETH.totalAssetsRealized()));
+        console.log("eth gains: ", ethers.utils.formatEther(await protocol.vCWETH.totalYieldDistributed()));
     });
 
     it("node operator gets reimbursement", async function () {

@@ -17,6 +17,15 @@ contract WETHVault is Base, ERC4626 {
         uint256 pricePaidPerShare;
     }
 
+    struct WeightedAverageCalculation {
+        uint256 totalPriceOfShares;
+        uint256 lastPricePaidPerShare;
+        uint256 originalValueTimesShares;
+        uint256 newValueTimesShares;
+        uint256 totalShares;
+        uint256 weightedPriceSum;
+    }
+
     constructor(
         address directoryAddress
     )
@@ -97,21 +106,23 @@ contract WETHVault is Base, ERC4626 {
         address payable pool = _directory.getDepositPoolAddress();
         DepositPool(pool).sendEthToDistributors();
 
-        uint256 totalPriceOfShares = super.convertSharesToAssets(shares);
-        uint256 lastPricePaidPerShare = positions[receiver].pricePaidPerShare;
+        WeightedAverageCalculation memory vars;
+        vars.totalPriceOfShares = super.convertToAssets(shares);
+        vars.lastPricePaidPerShare = positions[receiver].pricePaidPerShare;
+        vars.originalValueTimesShares =
+            vars.lastPricePaidPerShare *
+            positions[receiver].shares *
+            1e18;
 
-        uint256 originalValueTimesShares = lastPricePaidPerShare
-            .mul(positions[receiver].shares)
-            .mul(1e18);
-        uint256 newValueTimesShares = totalPriceOfShares.mul(1e18);
-        uint256 totalShares = positions[receiver].shares.add(shares);
+        vars.newValueTimesShares = vars.totalPriceOfShares * 1e18;
+        vars.totalShares = positions[receiver].shares + shares;
+        vars.weightedPriceSum = vars.originalValueTimesShares + vars.newValueTimesShares;
 
-        uint256 weightedPriceSum = originalValueTimesShares.add(
-            newValueTimesShares
-        );
-        positions[receiver].pricePaidPerShare = weightedPriceSum
-            .div(totalShares)
-            .div(1e18);
+        positions[receiver].pricePaidPerShare =
+            vars.weightedPriceSum /
+            vars.totalShares /
+            1e18;
+        positions[receiver].shares += shares;
 
         super._deposit(caller, receiver, assets, shares);
 
@@ -141,17 +152,14 @@ contract WETHVault is Base, ERC4626 {
 
         DepositPool(_directory.getDepositPoolAddress()).sendEthToDistributors();
 
-        totalAssetsWithdrawn += assets;
-        uint256 currentPriceOfShares = super.convertSharesToAssets(shares);
-        uint256 lastPriceOfShares = positions[owner].pricePaidPerShare.mul(
-            shares
-        );
+        uint256 currentPriceOfShares = super.convertToAssets(shares);
+        uint256 lastPriceOfShares = positions[owner].pricePaidPerShare * shares;
         uint256 capitalGain = currentPriceOfShares - lastPriceOfShares; // will always be positive
         totalYieldDistributed += capitalGain;
         emit NewCapitalGain(capitalGain, receiver);
 
         positions[owner].shares -= shares;
-        if(positions[owner].shares == 0) {
+        if (positions[owner].shares == 0) {
             positions[owner].pricePaidPerShare = 0;
         }
 
@@ -184,11 +192,7 @@ contract WETHVault is Base, ERC4626 {
     /// @notice Gets the total value of non-distributed yield
     function getDistributableYield() public view returns (uint256) {
         uint256 totalUnrealizedAccrual = getOracle().getTotalYieldAccrued();
-        uint256 netDeposit = totalAssetsDeposited - totalAssetsWithdrawn;
-        return
-            totalUnrealizedAccrual > totalAssetsDeposited
-                ? totalUnrealizedAccrual - totalAssetsDeposited
-                : 0;
+        return totalUnrealizedAccrual - totalYieldDistributed;
     }
 
     function getOracle() public view returns (IXRETHOracle) {
