@@ -115,7 +115,7 @@ describe.only("Node Operator Onboarding", function () {
     });
 
     it("eth whale redeems one share to trigger pool rebalacings", async function () {
-        await protocol.oracle.setTotalYieldAccrued(ethers.utils.parseEther("0"));
+        await protocol.oracle.setTotalYieldAccrued(ethers.utils.parseEther("2"));
         console.log("TOKEN balances before redeem");
         await printObjectTokenBalances(protocol, protocol.wETH.address);
         await printObjectTokenBalances({whale: signers.ethWhale}, protocol.wETH.address);
