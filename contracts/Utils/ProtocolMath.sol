@@ -5,8 +5,6 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import "./ABDKMath64x64.sol";
 
-import "hardhat/console.sol";
-
 pragma solidity ^0.8.0;
 
 library ProtocolMath {
@@ -17,9 +15,9 @@ library ProtocolMath {
     // f(x) = maxValue * (e^(k*(x-1)) - e^-k) / (1 - e^-k)
     function exponentialFunction(
         uint256 x,
-        uint256 maxValue,
-        uint256 k
-    ) internal view returns (uint256) {
+        uint256 k,
+        uint256 maxValue
+    ) internal pure returns (uint256) {
         require(x <= PRECISION, "x must be less than or equal to 1e18");
         require(maxValue > 0, "maxValue must be greater than 0");
         require(k > 0, "k must be greater than 0");
@@ -27,10 +25,6 @@ library ProtocolMath {
         int128 _x = ABDKMath64x64.fromUInt(x);
         int128 _k = ABDKMath64x64.fromUInt(k);
         int128 _maxValue = ABDKMath64x64.fromUInt(maxValue);
-
-        console.log("x: %s", x);
-        console.log("k: %s", k);
-        console.log("maxValue: %s", maxValue);
 
         int128 one = ABDKMath64x64.fromUInt(PRECISION);
         int128 exp_minus_k = ABDKMath64x64.exp(-_k);
