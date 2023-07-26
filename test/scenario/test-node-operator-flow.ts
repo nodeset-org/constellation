@@ -116,36 +116,17 @@ describe.only("Node Operator Onboarding", function () {
 
     it("eth whale redeems one share to trigger pool rebalacings", async function () {
         await protocol.oracle.setTotalYieldAccrued(ethers.utils.parseEther("2"));
-        console.log("TOKEN balances before redeem");
-        await printObjectTokenBalances(protocol, protocol.wETH.address);
-        await printObjectTokenBalances({whale: signers.ethWhale}, protocol.wETH.address);
-        await printObjectTokenBalances({vWhale: signers.ethWhale}, protocol.vCWETH.address);
-        console.log("eth balances before redeem");
-        await printObjectBalances(protocol)
-
-        console.log("=======gains pre redemption=======");
-        console.log("eth gains: ", ethers.utils.formatEther(await protocol.vCWETH.totalYieldDistributed()));
         const tx = await protocol.vCWETH.connect(signers.ethWhale).redeem(ethers.utils.parseUnits("40", 18), signers.ethWhale.address, signers.ethWhale.address);
         const receipt = await tx.wait();
         const {events} = receipt;
         if(events) {
             for(let i = 0; i < events.length; i++) {
-                // print events containing "Capital"
                 if(events[i].event?.includes("Capital")) {
-                    console.log(events[i].event);
-                    console.log(ethers.utils.formatEther(events[i].args?.amount));
+                    expectNumberE18ToBeApproximately(events[i].args?.amount, ethers.utils.parseEther(".82"), 0.01);
                 }
             }
         }
-        console.log("-------------------");
-        console.log("TOKEN BALANCES after redeem");
-        await printObjectTokenBalances(protocol, protocol.wETH.address);
-        await printObjectTokenBalances({whale: signers.ethWhale}, protocol.wETH.address);
-        await printObjectTokenBalances({vWhale: signers.ethWhale}, protocol.vCWETH.address);
-        console.log("eth balances after redeem");
-        await printObjectBalances(protocol)
-        console.log("=======gains post redemption=======");
-        console.log("eth gains: ", ethers.utils.formatEther(await protocol.vCWETH.totalYieldDistributed()));
+        expectNumberE18ToBeApproximately(await protocol.vCWETH.totalYieldDistributed(), ethers.utils.parseEther(".82"), 0.01);
     });
 
     it("node operator gets reimbursement", async function () {

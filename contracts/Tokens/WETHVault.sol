@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import "../Base.sol";
 import "../DepositPool.sol";
 import "../Operator/YieldDistributor.sol";
-import "hardhat/console.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is Base, ERC4626 {
@@ -125,11 +124,7 @@ contract WETHVault is Base, ERC4626 {
             1e18;
         positions[receiver].shares += shares;
 
-        console.log("balance of pool in asset()", ERC20(asset()).balanceOf(address(this)));
-        console.log("total assets", totalAssets());
         super._deposit(caller, receiver, assets, shares);
-        console.log("balance of pool in asset()", ERC20(asset()).balanceOf(address(this)));
-        console.log("total assets", totalAssets());
 
         if (fee1 > 0 && recipient1 != address(this)) {
             SafeERC20.safeTransfer(IERC20(asset()), recipient1, fee1);
