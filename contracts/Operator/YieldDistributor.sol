@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Operator.sol";
 import "./OperatorDistributor.sol";
 import "../Whitelist/Whitelist.sol";
+import "../Utils/ProtocolMath.sol";
+
 import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";
 import "../Interfaces/Oracles/IXRETHOracle.sol";
@@ -39,6 +41,9 @@ contract YieldDistributor is Base {
     uint256 public currentIntervalGenesisTime = block.timestamp;
     uint256 public maxIntervalLengthSeconds = 30 days; // NOs will have to wait at most this long for their payday
 
+    uint256 k; // steepness of the curve
+    uint256 maxValidators; // max number of validators used to normalize x axis
+
     bool private _isInitialized = false;
     string public constant INITIALIZATION_ERROR =
         "YieldDistributor: may only initialized once";
@@ -56,7 +61,10 @@ contract YieldDistributor is Base {
     event RewardDistributed(Reward);
     event WarningAlreadyClaimed(address operator, uint256 interval);
 
-    constructor(address directory) Base(directory) {}
+    constructor(address directory) Base(directory) {
+        k = 7e18;
+        maxValidators = 5;
+    }
 
     function initialize() public onlyAdmin {
         require(!_isInitialized, INITIALIZATION_ERROR);
@@ -147,10 +155,20 @@ contract YieldDistributor is Base {
                 emit WarningAlreadyClaimed(_rewardee, i);
                 continue;
             }
+
             Claim memory claim = claims[i];
+
             uint256 fullEthReward = ((claim.amount * 1e18) /
                 claim.numOperators) / 1e18;
-            totalReward += fullEthReward;
+
+            uint256 operatorsPortion = ProtocolMath.exponentialFunction(
+                (operator.currentValidatorCount * 1e18 / maxValidators) / 1e18,
+                claim.amount,
+                k
+            );
+
+            totalReward += operatorsPortion;
+            dustAccrued += fullEthReward - operatorsPortion;
             hasClaimed[_rewardee][i] = true;
         }
 
@@ -207,6 +225,14 @@ contract YieldDistributor is Base {
         dustAccrued = 0;
         (bool success, ) = treasury.call{value: amount}("");
         require(success, "Failed to send ETH to treasury");
+    }
+
+    function setRewardIncentiveModel(
+        uint256 _k,
+        uint256 _maxValidators
+    ) public onlyAdmin {
+        k = _k;
+        maxValidators = _maxValidators;
     }
 
     /****
