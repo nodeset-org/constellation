@@ -12,12 +12,20 @@ library ProtocolMath {
 
     uint256 public constant PRECISION = 1e18;
 
-    function fromRatio(uint256 value) internal pure returns (int128) {
-        int128 _value = ABDKMath64x64.fromUInt(value);
-        int128 one = ABDKMath64x64.fromUInt(PRECISION);
-        return ABDKMath64x64.div(_value, one);
+
+    function fromRatio(uint256 numerator, uint256 denominator)
+        internal
+        pure
+        returns (int128)
+    {
+        int128 _numerator = ABDKMath64x64.fromUInt(numerator);
+        int128 _denominator = ABDKMath64x64.fromUInt(denominator);
+        return ABDKMath64x64.div(_numerator, _denominator);
     }
 
+    function fromRatio(uint256 value) internal pure returns (int128) {
+        return fromRatio(value, PRECISION);
+    }
     // f(x) = maxValue * (e^(k*(x-1)) - e^-k) / (1 - e^-k)
     function exponentialFunction(
         uint256 x, // must be value between 0 and 1e18
