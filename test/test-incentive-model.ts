@@ -14,7 +14,7 @@ describe.only("Incentive Modeling Tests", async () => {
     })
 
     it("success - f(0,3,3)=0", async () => {
-        const x = ethers.utils.parseEther("0");
+        const x = 0;
         const k = 3;
         const m = 3;
         const result = await model.test(x, k, m);
@@ -22,7 +22,7 @@ describe.only("Incentive Modeling Tests", async () => {
     })
 
     it("success - f(.5,3,3)=.547", async () => {
-        const x = ethers.utils.parseEther(".5");
+        const x = ethers.utils.parseUnits(".5", 5);
         const k = "3";
         const m = "3";
         const result = await model.test(x, k, m);
@@ -30,7 +30,7 @@ describe.only("Incentive Modeling Tests", async () => {
     })
 
     it("success - f(1,2,6)=2", async () => {
-        const x = ethers.utils.parseEther("1");
+        const x = ethers.utils.parseUnits("1", 5);
         const k = 6;
         const m = 2;
         const result = await model.test(x, k, m);

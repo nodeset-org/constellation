@@ -12,7 +12,7 @@ pragma solidity ^0.8.0;
 library ProtocolMath {
     using ABDKMath64x64 for int128;
 
-    uint256 public constant PRECISION = 1e18;
+    uint256 public constant PRECISION = 1e5;
 
     function fromRatio(uint256 value) internal pure returns (int128) {
         int128 _value = ABDKMath64x64.fromUInt(value);
@@ -22,7 +22,7 @@ library ProtocolMath {
 
     // f(x) = maxValue * (e^(k*(x-1)) - e^-k) / (1 - e^-k)
     function exponentialFunction(
-        uint256 x, // must be value between 0 and 1e18
+        uint256 x, // must be value between 0 and 1e5
         uint256 k,
         uint256 maxValue
     ) internal view returns (uint256) {
@@ -40,17 +40,12 @@ library ProtocolMath {
         console.logInt(int(_maxValue));
         console.log("--------------------");
 
-        int128 one = ABDKMath64x64.fromUInt(PRECISION);
-        console.log("one");
-        console.logInt(int(one));
-        console.log("--------------------");
-
         int128 exp_minus_k = ABDKMath64x64.exp(-_k);
         console.log("exp_minus_k");
         console.logInt(int(exp_minus_k));
         console.log("--------------------");
 
-        int128 exp_kx_minus_one = ABDKMath64x64.exp(_k * (_x - one));
+        int128 exp_kx_minus_one = ABDKMath64x64.exp(_k * (_x.sub(1)));
         console.log("exp_kx_minus_one");
         console.logInt(int(exp_kx_minus_one));
         console.log("--------------------");
@@ -60,7 +55,7 @@ library ProtocolMath {
         console.logInt(int(numerator));
         console.log("--------------------");
 
-        int128 denominator = one.sub(exp_minus_k);
+        int128 denominator = ABDKMath64x64.fromUInt(uint256(1)).sub(exp_minus_k);
         console.log("denominator");
         console.logInt(int(denominator));
         console.log("--------------------");
