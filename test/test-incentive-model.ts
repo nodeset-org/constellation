@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { protocolFixture } from "./test";
 import { ProtocolMathTest } from "../typechain-types";
 import { evaluateModel, expectNumberE18ToBeApproximately } from "./utils/utils";
-import seedrandom from 'seedrandom';
+import seedrandom from "seedrandom"
 
 describe.only("Incentive Modeling Tests", async () => {
 
@@ -51,15 +51,19 @@ describe.only("Incentive Modeling Tests", async () => {
     })
 
     // test over randomly generated values
-    const rng = seedrandom('wen{::}moontho?');
+    const rng = seedrandom('wen{::}moon_tho?');
     for (let i = 0; i < 1000; i++) {
         const x = parseFloat(rng().toFixed(5));
         const k = parseFloat((rng() * 10).toFixed(0));
         const m = parseFloat((rng() * 10).toFixed(0));
-        it(`success - f(${x},${k},${m})=${evaluateModel(x, k, m)}`, async () => {
+        it(`${k !== 0 ? 'success' : 'fail'} - f(${x},${k},${m})=${evaluateModel(x, k, m)}`, async () => {
             const xBig = ethers.utils.parseEther(x.toString());
-            const result = await model.test(xBig, k, m);
-            expectNumberE18ToBeApproximately(result, ethers.utils.parseEther(evaluateModel(x, k, m).toFixed(18)), 0.001);
+            if(k !== 0) {
+                const result = await model.test(xBig, k, m);
+                expectNumberE18ToBeApproximately(result, ethers.utils.parseEther(evaluateModel(x, k, m).toFixed(18)), 0.001);
+            } else {
+                await expect(model.test(xBig, k, m)).to.be.revertedWith("ProtocolMath: k must be > 0");
+            }
         })
     }
 

@@ -26,6 +26,7 @@ library ProtocolMath {
     ) internal view returns (uint256) {
 
         require(x <= PRECISION, "ProtocolMath: x must be <= PRECISION");
+        require(k > 0, "ProtocolMath: k must be > 0");
 
         int128 _x = fromRatio(x); // must be bin64 fixed point
         int128 _k = ABDKMath64x64.fromUInt(k);
