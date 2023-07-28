@@ -53,7 +53,7 @@ describe.only("Incentive Modeling Tests", async () => {
     // test over randomly generated values
     const rng = seedrandom('wen{::}moon_tho?');
     for (let i = 0; i < 1000; i++) {
-        const x = parseFloat(rng().toFixed(5));
+        const x = parseFloat(rng().toFixed(rng() > .5 ? 18 : 0));
         const k = parseFloat((rng() * 10).toFixed(0));
         const m = parseFloat((rng() * 10).toFixed(0));
         it(`${k !== 0 ? 'success' : 'fail'} - f(${x},${k},${m})=${evaluateModel(x, k, m)}`, async () => {
