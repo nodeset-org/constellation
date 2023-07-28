@@ -45,7 +45,9 @@ library ProtocolMath {
         console.logInt(int(exp_minus_k));
         console.log("--------------------");
 
-        int128 exp_kx_minus_one = ABDKMath64x64.exp(_k * (_x.sub(1)));
+        int128 one = ABDKMath64x64.fromUInt(uint256(1));
+
+        int128 exp_kx_minus_one = ABDKMath64x64.exp(_k.mul(_x.sub(one)));
         console.log("exp_kx_minus_one");
         console.logInt(int(exp_kx_minus_one));
         console.log("--------------------");
@@ -55,7 +57,9 @@ library ProtocolMath {
         console.logInt(int(numerator));
         console.log("--------------------");
 
-        int128 denominator = ABDKMath64x64.fromUInt(uint256(1)).sub(exp_minus_k);
+
+
+        int128 denominator = one.sub(exp_minus_k);
         console.log("denominator");
         console.logInt(int(denominator));
         console.log("--------------------");
