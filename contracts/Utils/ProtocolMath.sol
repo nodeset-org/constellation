@@ -12,17 +12,19 @@ pragma solidity ^0.8.0;
 library ProtocolMath {
     using ABDKMath64x64 for int128;
 
-    uint256 public constant PRECISION = 1e18;
+    int128 public constant PRECISION = 1e18;
+
+    function fromRatio(uint256 value) internal pure returns (int128) {
+        int128 _value = ABDKMath64x64.fromUInt(value);
+        return ABDKMath64x64.divi(_value, int128(PRECISION));
+    }
 
     // f(x) = maxValue * (e^(k*(x-1)) - e^-k) / (1 - e^-k)
     function exponentialFunction(
-        uint256 x,
+        uint256 x, // must be bin64 fixed point
         uint256 k,
         uint256 maxValue
     ) internal view returns (uint256) {
-        require(x <= PRECISION, "x must be less than or equal to 1e18");
-        require(maxValue > 0, "maxValue must be greater than 0");
-        require(k > 0, "k must be greater than 0");
 
         int128 _x = ABDKMath64x64.fromUInt(x);
         console.log("x");
@@ -37,7 +39,7 @@ library ProtocolMath {
         console.logInt(int(_maxValue));
         console.log("--------------------");
 
-        int128 one = ABDKMath64x64.fromUInt(PRECISION);
+        int128 one = ABDKMath64x64.fromInt(PRECISION);
         console.log("one");
         console.logInt(int(one));
         console.log("--------------------");
@@ -67,7 +69,8 @@ library ProtocolMath {
         console.logInt(int(result));
         console.log("--------------------");
 
-        uint256 resultUint = SafeCast.toUint256(result);
+        // Convert from binary fixed point to uint256
+        uint256 resultUint = ABDKMath64x64.mulu(result, 1e18);
         console.log("resultUint");
         console.logUint(resultUint);
         console.log("--------------------");
