@@ -29,6 +29,7 @@
     "dotenv": "^16.1.1",
     "find-config": "^1.0.0",
     "hardhat-contract-sizer": "^2.10.0",
-    "hardhat-gas-reporter": "^1.0.9"
+    "hardhat-gas-reporter": "^1.0.9",
+    "seedrandom": "^3.0.5"
   }
 }

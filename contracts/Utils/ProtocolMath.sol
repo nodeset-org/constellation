@@ -25,6 +25,8 @@ library ProtocolMath {
         uint256 maxValue
     ) internal view returns (uint256) {
 
+        require(x <= PRECISION, "ProtocolMath: x must be <= PRECISION");
+
         int128 _x = fromRatio(x); // must be bin64 fixed point
         int128 _k = ABDKMath64x64.fromUInt(k);
         int128 _maxValue = ABDKMath64x64.fromUInt(maxValue);
