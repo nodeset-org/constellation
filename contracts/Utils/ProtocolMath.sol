@@ -12,7 +12,7 @@ pragma solidity ^0.8.0;
 library ProtocolMath {
     using ABDKMath64x64 for int128;
 
-    uint256 public constant PRECISION = 1e5;
+    uint256 public constant PRECISION = 1e18;
 
     function fromRatio(uint256 value) internal pure returns (int128) {
         int128 _value = ABDKMath64x64.fromUInt(value);
@@ -22,7 +22,7 @@ library ProtocolMath {
 
     // f(x) = maxValue * (e^(k*(x-1)) - e^-k) / (1 - e^-k)
     function exponentialFunction(
-        uint256 x, // must be value between 0 and 1e5
+        uint256 x, // must be value between 0 and 1e18
         uint256 k,
         uint256 maxValue
     ) internal view returns (uint256) {

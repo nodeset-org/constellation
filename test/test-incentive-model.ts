@@ -23,15 +23,15 @@ describe.only("Incentive Modeling Tests", async () => {
     })
 
     it("success - f(.5,3,3)=.547", async () => {
-        const x = .5e5;
+        const x = ethers.utils.parseEther(".5");
         const k = 3;
         const m = 3;
         const result = await model.test(x, k, m);
-        expectNumberE18ToBeApproximately(result, ethers.utils.parseEther(".547"), 0.005);
+        expectNumberE18ToBeApproximately(result, ethers.utils.parseEther(".547"), 0.001);
     })
 
     it("success - f(1,2,6)=2", async () => {
-        const x = 1e5;
+        const x = ethers.utils.parseEther("1");
         const k = 6;
         const m = 2;
         const result = await model.test(x, k, m);
