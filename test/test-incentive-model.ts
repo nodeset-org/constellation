@@ -52,14 +52,14 @@ describe.only("Incentive Modeling Tests", async () => {
 
     // test over randomly generated values
     const rng = seedrandom('wen{::}moontho?');
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 1000; i++) {
         const x = parseFloat(rng().toFixed(5));
         const k = parseFloat((rng() * 10).toFixed(0));
         const m = parseFloat((rng() * 10).toFixed(0));
         it(`success - f(${x},${k},${m})=${evaluateModel(x, k, m)}`, async () => {
             const xBig = ethers.utils.parseEther(x.toString());
             const result = await model.test(xBig, k, m);
-            expectNumberE18ToBeApproximately(result, ethers.utils.parseEther(evaluateModel(x, k, m).toString()), 0.001);
+            expectNumberE18ToBeApproximately(result, ethers.utils.parseEther(evaluateModel(x, k, m).toFixed(18)), 0.001);
         })
     }
 
