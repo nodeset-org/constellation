@@ -5,8 +5,6 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import "./ABDKMath64x64.sol";
 
-import "hardhat/console.sol";
-
 pragma solidity ^0.8.0;
 
 library ProtocolMath {
@@ -28,53 +26,16 @@ library ProtocolMath {
     ) internal view returns (uint256) {
 
         int128 _x = fromRatio(x); // must be bin64 fixed point
-        console.log("x");
-        console.logInt(int(_x));
-        console.log("--------------------");
         int128 _k = ABDKMath64x64.fromUInt(k);
-        console.log("k");
-        console.logInt(int(_k));
-        console.log("--------------------");
         int128 _maxValue = ABDKMath64x64.fromUInt(maxValue);
-        console.log("maxValue");
-        console.logInt(int(_maxValue));
-        console.log("--------------------");
-
         int128 exp_minus_k = ABDKMath64x64.exp(-_k);
-        console.log("exp_minus_k");
-        console.logInt(int(exp_minus_k));
-        console.log("--------------------");
-
         int128 one = ABDKMath64x64.fromUInt(uint256(1));
-
         int128 exp_kx_minus_one = ABDKMath64x64.exp(_k.mul(_x.sub(one)));
-        console.log("exp_kx_minus_one");
-        console.logInt(int(exp_kx_minus_one));
-        console.log("--------------------");
-
         int128 numerator = _maxValue.mul(exp_kx_minus_one.sub(exp_minus_k));
-        console.log("numerator");
-        console.logInt(int(numerator));
-        console.log("--------------------");
-
-
-
         int128 denominator = one.sub(exp_minus_k);
-        console.log("denominator");
-        console.logInt(int(denominator));
-        console.log("--------------------");
-
         int128 result = numerator.div(denominator);
-        console.log("result");
-        console.logInt(int(result));
-        console.log("--------------------");
-
         // Convert from binary fixed point to uint256
         uint256 resultUint = ABDKMath64x64.mulu(result, 1e18);
-        console.log("resultUint");
-        console.logUint(resultUint);
-        console.log("--------------------");
-
         return resultUint;
     }
 }

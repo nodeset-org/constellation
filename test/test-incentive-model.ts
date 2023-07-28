@@ -2,7 +2,7 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { protocolFixture } from "./test";
 import { ProtocolMathTest } from "../typechain-types";
-import { expectNumberE18ToBeApproximately } from "./utils/utils";
+import { evaluateModel, expectNumberE18ToBeApproximately } from "./utils/utils";
 
 describe.only("Incentive Modeling Tests", async () => {
 
@@ -37,4 +37,16 @@ describe.only("Incentive Modeling Tests", async () => {
         const result = await model.test(x, k, m);
         expect(result).to.equal(ethers.utils.parseEther("2"));
     })
+
+    type ParamsType = { x: number; k: number; m: number };
+    [{ x: 0.1, k: 3, m: 3 }, { x: 0.69, k: 3, m: 3 }, { x: .6, k: 2, m: 6 }].forEach((params: ParamsType) => {
+        it(`success - f(${params.x},${params.k},${params.m})=${evaluateModel(params.x, params.k, params.m)}`, async () => {
+            const x = ethers.utils.parseEther(params.x.toString());
+            const k = params.k;
+            const m = params.m;
+            const result = await model.test(x, k, m);
+            expectNumberE18ToBeApproximately(result, ethers.utils.parseEther(evaluateModel(params.x, params.k, params.m).toString()), 0.001);
+        })
+    })
+
 })

@@ -48,3 +48,8 @@ export const expectNumberE18ToBeApproximately = (actualBig: BigNumber, expectedB
 
     expect(actual).to.be.within(lowerBound, upperBound);
 }
+
+export const evaluateModel = (x: number, k: number, m: number) => {
+    // f(x) = maxValue * (e^(k*(x-1)) - e^-k) / (1 - e^-k)
+    return (m * (Math.exp(k * (x - 1)) - Math.exp(-k))) / (1 - Math.exp(-k));
+};
