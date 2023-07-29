@@ -71,13 +71,18 @@ export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: 
 }
 
 export const registerNewValidator = async (setupData: SetupData, nodeOperators: SignerWithAddress[]) => {
+
+    // one currently needs 8 eth in the operatorDistribution contract to register a validator for each node operator
+    const requiredEth = ethers.utils.parseEther("8").mul(nodeOperators.length);
+    if((await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)).lt(requiredEth)) {
+        throw new Error(`Not enough eth in operatorDistributor contract to register ${nodeOperators.length} validators`);
+    }
+
     const bondValue = ethers.utils.parseEther("8");
     const mockValidatorPubkey = ethers.utils.randomBytes(128);
     const mockValidatorSignature = ethers.utils.randomBytes(96);
     const mockDepositDataRoot = ethers.utils.randomBytes(32);
     const rocketPool = setupData.rocketPool;
-
-
 
     for (let i = 0; i < nodeOperators.length; i++) {
         const nodeOperator = nodeOperators[i];

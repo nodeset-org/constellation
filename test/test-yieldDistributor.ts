@@ -8,7 +8,7 @@ import { initializeDirectory } from "./test-directory";
 import { string } from "hardhat/internal/core/params/argumentTypes";
 import { operator, whitelist } from "../typechain-types/contracts";
 import { RewardStruct } from "../typechain-types/contracts/Operator/YieldDistributor";
-import { expectNumberE18ToBeApproximately } from "./utils/utils";
+import { expectNumberE18ToBeApproximately, registerNewValidator } from "./utils/utils";
 
 describe("Yield Distributor", function () {
 
@@ -123,6 +123,9 @@ describe("Yield Distributor", function () {
     // we should expect each fee reward to follow the formula:
     // uint operatorRewardEth = (totalEthFee - adminRewardEth) * (operators[i].feePortion / YIELD_PORTION_MAX) / length;
     // todo update the above comment to reflect the new formula
+
+    // register a validator for each operator
+    await registerNewValidator(setupData, [signers.random, signers.random2, signers.random3]);
 
     await expect(tx1).to.emit(yieldDistributor, "RewardDistributed")
       .withArgs([signers.random.address, operatorShare]);
