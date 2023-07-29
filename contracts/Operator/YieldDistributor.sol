@@ -162,9 +162,11 @@ contract YieldDistributor is Base {
                 claim.numOperators) / 1e18;
 
             uint256 operatorsPortion = ProtocolMath.exponentialFunction(
-                operator.currentValidatorCount * 1e18 / maxValidators,
-                claim.amount,
-                k
+                operator.currentValidatorCount * 1e18,
+                maxValidators,
+                k,
+                1,
+                claim.amount
             );
 
             totalReward += operatorsPortion;

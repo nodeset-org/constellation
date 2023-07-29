@@ -60,7 +60,7 @@ describe.only("Incentive Modeling Tests", async () => {
             const xBig = ethers.utils.parseEther(x.toString());
             if(k !== 0) {
                 const result = await model.test(xBig, k, m);
-                expectNumberE18ToBeApproximately(result, ethers.utils.parseEther(evaluateModel(x, k, m).toFixed(18)), 0.001);
+                expectNumberE18ToBeApproximately(result, ethers.utils.parseEther(evaluateModel(x, k, m).toFixed(18)), 0.00000000001);
             } else {
                 await expect(model.test(xBig, k, m)).to.be.revertedWith("ProtocolMath: k must be > 0");
             }

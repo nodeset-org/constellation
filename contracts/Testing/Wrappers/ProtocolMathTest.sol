@@ -7,6 +7,6 @@ import "../../Utils/ProtocolMath.sol";
 contract ProtocolMathTest {
 
     function test(uint256 x, uint256 k, uint256 maxValue) public view returns (uint256) {
-        return ProtocolMath.exponentialFunction(x, k, maxValue);
+        return ProtocolMath.exponentialFunction(x, 1e18, k, 1, maxValue);
     }
 }
