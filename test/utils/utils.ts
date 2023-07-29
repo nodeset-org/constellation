@@ -75,7 +75,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
     // one currently needs 8 eth in the operatorDistribution contract to register a validator for each node operator
     const requiredEth = ethers.utils.parseEther("8").mul(nodeOperators.length);
     if((await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)).lt(requiredEth)) {
-        throw new Error(`Not enough eth in operatorDistributor contract to register ${nodeOperators.length} validators`);
+        throw new Error(`Not enough eth in operatorDistributor contract to register ${nodeOperators.length} validators. Required ${ethers.utils.formatEther(requiredEth)} eth but only have ${ethers.utils.formatEther(await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address))} eth`);
     }
 
     const bondValue = ethers.utils.parseEther("8");
@@ -118,8 +118,10 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         await rocketNodeManagerContract.mockSetNodeOperatorToMinipool(nodeOperator.address, mockMinipool.address);
         await rocketPool.rocketNodeManagerContract.connect(nodeOperator).setSmoothingPoolRegistrationState(true);
 
-        // admin needs to kyc the node operator and register them in the whitelist
-        await setupData.protocol.whitelist.connect(setupData.signers.admin).addOperator(nodeOperator.address);
+        // admin needs to kyc the node operator and register them in the whitelist if they aren't already
+        if(!(await setupData.protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address))) {
+            await setupData.protocol.whitelist.connect(setupData.signers.admin).addOperator(nodeOperator.address);
+        }
 
         // admin will sign mockMinipool's address via signMessage
         const encodedMinipoolAddress = ethers.utils.defaultAbiCoder.encode(["address"], [mockMinipool.address]);

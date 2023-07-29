@@ -78,7 +78,7 @@ describe("Yield Distributor", function () {
   }
 
 
-  it("Distributes fees appropriately", async function () {
+  it.only("Distributes fees appropriately", async function () {
     const setupData = await loadFixture(protocolFixture)
     const { protocol, signers, rocketPool: rp } = setupData;
     const yieldDistributor = protocol.yieldDistributor;
@@ -102,8 +102,8 @@ describe("Yield Distributor", function () {
       signers.random3.getBalance(),
     ]);
 
-    // print Operator.currentValidatorCount
-
+    await signers.ethWhale.sendTransaction({ to: protocol.operatorDistributor.address, value: ethers.utils.parseEther("24") });
+    await registerNewValidator(setupData, [signers.random, signers.random2, signers.random3]);
     console.log("Operator", await protocol.whitelist.getOperatorAtAddress(signers.random.address));
     console.log("Operator 2", await protocol.whitelist.getOperatorAtAddress(signers.random2.address));
     console.log("Operator 3", await protocol.whitelist.getOperatorAtAddress(signers.random3.address));
@@ -123,9 +123,6 @@ describe("Yield Distributor", function () {
     // we should expect each fee reward to follow the formula:
     // uint operatorRewardEth = (totalEthFee - adminRewardEth) * (operators[i].feePortion / YIELD_PORTION_MAX) / length;
     // todo update the above comment to reflect the new formula
-
-    // register a validator for each operator
-    await registerNewValidator(setupData, [signers.random, signers.random2, signers.random3]);
 
     await expect(tx1).to.emit(yieldDistributor, "RewardDistributed")
       .withArgs([signers.random.address, operatorShare]);
