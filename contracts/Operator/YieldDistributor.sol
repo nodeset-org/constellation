@@ -62,7 +62,7 @@ contract YieldDistributor is Base {
     event WarningAlreadyClaimed(address operator, uint256 interval);
 
     constructor(address directory) Base(directory) {
-        k = 7e18;
+        k = 7;
         maxValidators = 5;
     }
 
@@ -161,16 +161,25 @@ contract YieldDistributor is Base {
             uint256 fullEthReward = ((claim.amount * 1e18) /
                 claim.numOperators) / 1e18;
 
+            console.log(operator.currentValidatorCount);
+            console.log(maxValidators);
+            console.log(k);
+            console.log(claim.amount);
+
             uint256 operatorsPortion = ProtocolMath.exponentialFunction(
                 operator.currentValidatorCount,
                 maxValidators,
                 k,
                 1,
-                claim.amount
+                claim.amount,
+                1e18
             );
+
+            console.log("operatorsPortion: %s", operatorsPortion);
 
             totalReward += operatorsPortion;
             dustAccrued += fullEthReward - operatorsPortion;
+            console.log("dustAccrued: %s", dustAccrued);
             hasClaimed[_rewardee][i] = true;
         }
 

@@ -29,17 +29,18 @@ library ProtocolMath {
         uint256 x1,
         uint256 k0,
         uint256 k1,
-        uint256 maxValue
+        uint256 maxValue0,
+        uint256 maxValue1
     ) internal view returns (uint256) {
 
 
         int128 _x = fromRatio(x0, x1); // must be bin64 fixed point
         int128 _k = fromRatio(k0, k1); // must be bin64 fixed point
+        int128 _maxValue = fromRatio(maxValue0, maxValue1); // must be bin64 fixed point
 
         require(_x <= ONE, "ProtocolMath: x must be <= ONE");
         require(_k > 0, "ProtocolMath: k must be > 0");
 
-        int128 _maxValue = ABDKMath64x64.fromUInt(maxValue);
         int128 exp_minus_k = ABDKMath64x64.exp(-_k);
         int128 exp_kx_minus_one = ABDKMath64x64.exp(_k.mul(_x.sub(ONE)));
         int128 numerator = _maxValue.mul(exp_kx_minus_one.sub(exp_minus_k));
