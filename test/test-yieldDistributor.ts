@@ -87,7 +87,8 @@ describe("Yield Distributor", function () {
 
     await simulateYield(setupData, totalEthYield);
 
-    expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).to.equal(totalEthYield);
+    const wethBalance = await protocol.wETH.balanceOf(protocol.yieldDistributor.address);
+    expect(wethBalance).to.equal(totalEthYield);
 
     const totalFee = await yieldDistributor.totalYieldAccrued()
 
@@ -100,6 +101,13 @@ describe("Yield Distributor", function () {
       signers.random2.getBalance(),
       signers.random3.getBalance(),
     ]);
+
+    // print Operator.currentValidatorCount
+
+    console.log("Operator", await protocol.whitelist.getOperatorAtAddress(signers.random.address));
+    console.log("Operator 2", await protocol.whitelist.getOperatorAtAddress(signers.random2.address));
+    console.log("Operator 3", await protocol.whitelist.getOperatorAtAddress(signers.random3.address));
+
     const tx1 = await protocol.yieldDistributor.connect(signers.ethWhale).harvest(signers.random.address, 1, 1);
     const tx2 = await protocol.yieldDistributor.connect(signers.ethWhale).harvest(signers.random2.address, 1, 1);
     const tx3 = await protocol.yieldDistributor.connect(signers.ethWhale).harvest(signers.random3.address, 1, 1);
@@ -114,6 +122,7 @@ describe("Yield Distributor", function () {
 
     // we should expect each fee reward to follow the formula:
     // uint operatorRewardEth = (totalEthFee - adminRewardEth) * (operators[i].feePortion / YIELD_PORTION_MAX) / length;
+    // todo update the above comment to reflect the new formula
 
     await expect(tx1).to.emit(yieldDistributor, "RewardDistributed")
       .withArgs([signers.random.address, operatorShare]);
