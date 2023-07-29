@@ -5,7 +5,7 @@ import { ProtocolMathTest } from "../typechain-types";
 import { evaluateModel, expectNumberE18ToBeApproximately } from "./utils/utils";
 import seedrandom from "seedrandom"
 
-describe.only("Incentive Modeling Tests", async () => {
+describe("Incentive Modeling Tests", async () => {
 
     let model: ProtocolMathTest;
 
