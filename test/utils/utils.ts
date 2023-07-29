@@ -1,6 +1,9 @@
 import {ethers} from "hardhat";
 import {BigNumber} from "ethers";
 import { expect } from "chai";
+import { SetupData } from "../test";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
+import { RocketPool } from "../test";
 
 // optionally include the names of the accounts
 export const printBalances = async (accounts: string[], opts: any = {}) => {
@@ -53,4 +56,20 @@ export const evaluateModel = (x: number, k: number, m: number) => {
     // f(x) = maxValue * (e^(k*(x-1)) - e^-k) / (1 - e^-k)
     // Wow I forgot how easy math is in any other language than solidity, 1 line lol
     return (m * (Math.exp(k * (x - 1)) - Math.exp(-k))) / (1 - Math.exp(-k));
+};
+
+export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: RocketPool) {
+    const mockMinipoolFactory = await ethers.getContractFactory("MockMinipool");
+    const mockMinipool = await mockMinipoolFactory.deploy();
+    await mockMinipool.deployed();
+
+    await mockMinipool.initialise(
+        signer.address,
+    )
+
+    return mockMinipool;
+}
+
+export const registerNewValidator = async (setupData: SetupData, nodeOperators: string[]) => {
+
 };

@@ -1,7 +1,6 @@
 import { expect } from "chai";
 import { ethers, network } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { getAllAddresses, protocolFixture, SetupData } from "../test";
 import { BigNumber as BN } from "ethers";
 import { Protocol } from "../test";
@@ -9,19 +8,7 @@ import { Signers } from "../test";
 import { RocketPool } from "../test";
 import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault, IWETH } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
-import { expectNumberE18ToBeApproximately, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances } from "../utils/utils";
-
-export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: RocketPool) {
-    const mockMinipoolFactory = await ethers.getContractFactory("MockMinipool");
-    const mockMinipool = await mockMinipoolFactory.deploy();
-    await mockMinipool.deployed();
-
-    await mockMinipool.initialise(
-        signer.address,
-    )
-
-    return mockMinipool;
-}
+import { deployMockMinipool, expectNumberE18ToBeApproximately, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances } from "../utils/utils";
 
 
 describe("Node Operator Onboarding", function () {
