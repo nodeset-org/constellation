@@ -13,8 +13,6 @@ import "../Interfaces/RocketTokenRPLInterface.sol";
 import "../Interfaces/Oracles/IXRETHOracle.sol";
 import "../Interfaces/IWETH.sol";
 
-import "hardhat/console.sol";
-
 struct Reward {
     address recipient;
     uint eth;
@@ -161,11 +159,6 @@ contract YieldDistributor is Base {
             uint256 fullEthReward = ((claim.amount * 1e18) /
                 claim.numOperators) / 1e18;
 
-            console.log(operator.currentValidatorCount);
-            console.log(maxValidators);
-            console.log(k);
-            console.log(claim.amount);
-
             uint256 operatorsPortion = ProtocolMath.exponentialFunction(
                 operator.currentValidatorCount,
                 maxValidators,
@@ -175,11 +168,9 @@ contract YieldDistributor is Base {
                 1e18
             );
 
-            console.log("operatorsPortion: %s", operatorsPortion);
 
             totalReward += operatorsPortion;
             dustAccrued += fullEthReward - operatorsPortion;
-            console.log("dustAccrued: %s", dustAccrued);
             hasClaimed[_rewardee][i] = true;
         }
 
