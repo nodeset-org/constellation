@@ -36,7 +36,7 @@ contract OperatorDistributor is Base {
 
     function getAmountFundedEth() public view returns (uint256) {
         uint256 amountFunded;
-        for(uint i = 0; i < minipoolAddresses.length; i++) {
+        for (uint i = 0; i < minipoolAddresses.length; i++) {
             amountFunded += minipoolAmountFundedEth[minipoolAddresses[i]];
         }
         return amountFunded;
@@ -44,7 +44,7 @@ contract OperatorDistributor is Base {
 
     function getAmountFundedRpl() public view returns (uint256) {
         uint256 amountFunded;
-        for(uint i = 0; i < minipoolAddresses.length; i++) {
+        for (uint i = 0; i < minipoolAddresses.length; i++) {
             amountFunded += minipoolAmountFundedRpl[minipoolAddresses[i]];
         }
         return amountFunded;
@@ -89,7 +89,7 @@ contract OperatorDistributor is Base {
     ) external onlyWhitelistOrAdmin {
         // remove all minipools owned by node operator
         address[] memory minipools = nodeOperatorOwnedMinipools[_address];
-        for(uint i = 0; i < minipools.length; i++) {
+        for (uint i = 0; i < minipools.length; i++) {
             removeMinipoolAddress(minipools[i]);
         }
         delete nodeOperatorOwnedMinipools[_address];
@@ -174,7 +174,11 @@ contract OperatorDistributor is Base {
             "OperatorDistributor: insufficient ETH in queue"
         );
 
-        _stakeRPLFor(nodeAddress);
+        //        _stakeRPLFor(nodeAddress);
+        // TODO: reimburse RPL and stake up to 150%
+
+        // register minipool with node operator
+        whitelist.registerNewValidator(nodeAddress);
 
         // new minipool owned by node operator
         nodeOperatorOwnedMinipools[nodeAddress].push(newMinipoolAdress);

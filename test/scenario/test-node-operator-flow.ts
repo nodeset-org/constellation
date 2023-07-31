@@ -1,7 +1,6 @@
 import { expect } from "chai";
 import { ethers, network } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { getAllAddresses, protocolFixture, SetupData } from "../test";
 import { BigNumber as BN } from "ethers";
 import { Protocol } from "../test";
@@ -9,22 +8,10 @@ import { Signers } from "../test";
 import { RocketPool } from "../test";
 import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault, IWETH } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
-import { expectNumberE18ToBeApproximately, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances } from "../utils/utils";
-
-export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: RocketPool) {
-    const mockMinipoolFactory = await ethers.getContractFactory("MockMinipool");
-    const mockMinipool = await mockMinipoolFactory.deploy();
-    await mockMinipool.deployed();
-
-    await mockMinipool.initialise(
-        signer.address,
-    )
-
-    return mockMinipool;
-}
+import { deployMockMinipool, expectNumberE18ToBeApproximately, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances } from "../utils/utils";
 
 
-describe.only("Node Operator Onboarding", function () {
+describe("Node Operator Onboarding", function () {
 
     let setupData: SetupData;
     let protocol: Protocol;
@@ -129,7 +116,7 @@ describe.only("Node Operator Onboarding", function () {
         expectNumberE18ToBeApproximately(await protocol.vCWETH.totalYieldDistributed(), ethers.utils.parseEther(".82"), 0.01);
     });
 
-    it.skip("node operator gets reimbursement", async function () {
+    it("node operator gets reimbursement", async function () {
         const initialRPLBalanceNO = await rocketPool.rplContract.balanceOf(signers.hyperdriver.address);
         const initialEthBalanceNO = await ethers.provider.getBalance(signers.hyperdriver.address);
         const initialRPLBalanceOD = await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address);
@@ -141,9 +128,11 @@ describe.only("Node Operator Onboarding", function () {
         const mockMinipoolAddressHashBytes = ethers.utils.arrayify(mockMinipoolAddressHash);
         const sig = await signers.admin.signMessage(mockMinipoolAddressHashBytes);
 
-
+        let operatorData = await protocol.whitelist.getOperatorAtAddress(signers.hyperdriver.address);
+        expect(operatorData.currentValidatorCount).to.equal(0);
         await protocol.operatorDistributor.reimburseNodeForMinipool(sig, mockMinipool.address);
-        //TODO: should reimburse the NO for RPL as well
+        operatorData = await protocol.whitelist.getOperatorAtAddress(signers.hyperdriver.address);
+        expect(operatorData.currentValidatorCount).to.equal(1);
 
         const finalRPLBalanceNO = await rocketPool.rplContract.balanceOf(signers.hyperdriver.address);
         const finalEthBalanceNO = await ethers.provider.getBalance(signers.hyperdriver.address);
