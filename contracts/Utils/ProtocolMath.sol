@@ -31,9 +31,7 @@ library ProtocolMath {
         uint256 k1,
         uint256 maxValue0,
         uint256 maxValue1
-    ) internal view returns (uint256) {
-
-
+    ) internal pure returns (uint256) {
         int128 _x = fromRatio(x0, x1); // must be bin64 fixed point
         int128 _k = fromRatio(k0, k1); // must be bin64 fixed point
         int128 _maxValue = fromRatio(maxValue0, maxValue1); // must be bin64 fixed point
