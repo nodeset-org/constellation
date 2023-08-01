@@ -76,4 +76,7 @@ abstract contract Base is ReentrancyGuard {
     function getDirectory() internal view returns (Directory) {
         return _directory;
     }
+
+    // TODO:
+    // function getImplementation() external view returns (address) {...
 }
