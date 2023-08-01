@@ -3,10 +3,10 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./Operator.sol";
 import "./OperatorDistributor.sol";
 import "../Whitelist/Whitelist.sol";
 import "../Utils/ProtocolMath.sol";
+import "../Base.sol";
 
 import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";

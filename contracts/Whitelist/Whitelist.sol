@@ -2,8 +2,15 @@
 pragma solidity 0.8.17;
 
 import "../UpgradeableBase.sol";
-import "../Operator/Operator.sol";
 import "../Operator/YieldDistributor.sol";
+
+/// @notice An operator which provides services to the network.
+struct Operator {
+    uint256 operationStartTime;
+    uint256 currentValidatorCount;
+    uint256 intervalStart;
+}
+
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Controls operator access to the protocol.
