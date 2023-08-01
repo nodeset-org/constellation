@@ -15,19 +15,9 @@ contract PriceFetcher is UpgradeableBase {
         );
         (, int24 currentTick, , , , , ) = pool.slot0();
 
-        uint32[] memory secondsAgos = new uint32[](1);
-        secondsAgos[0] = 0;
-
-        int56[] memory tickCumulatives;
-        uint160[] memory secondsPerLiquidityCumulativeX128s;
-
-        (tickCumulatives, secondsPerLiquidityCumulativeX128s) = pool.observe(
-            secondsAgos
-        );
-
         // Calculate the prices
-        uint256 priceNow = TickMath.getSqrtRatioAtTick(currentTick);
-
+        uint160 sqrtPriceX96 = TickMath.getSqrtRatioAtTick(currentTick);
+        uint256 priceNow = uint256(sqrtPriceX96) / (1 << 48); // Here is the fix
         return priceNow;
     }
 }
