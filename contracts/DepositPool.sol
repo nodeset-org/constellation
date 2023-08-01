@@ -41,6 +41,11 @@ contract DepositPool is Base {
         return RocketTokenRPLInterface(_directory.RPL_CONTRACT_ADDRESS()).balanceOf(address(this));
     }
 
+    function getProtocolTvlRatio () public view returns (uint) {
+        uint256 totalEth = WETHVault(getDirectory().getWETHVaultAddress()).totalAssets();
+        uint256 totalRpl = RPLVault(getDirectory().getRPLVaultAddress()).totalAssets();
+    }
+
     ///--------
     /// SETTERS
     ///--------

@@ -3,7 +3,7 @@
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-import "./ABDKMath64x64.sol";
+import "abdk-libraries-solidity/ABDKMath64x64.sol";
 
 pragma solidity ^0.8.0;
 
