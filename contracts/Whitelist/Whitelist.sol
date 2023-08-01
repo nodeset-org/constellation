@@ -145,7 +145,6 @@ contract Whitelist is UpgradeableBase {
         emit OperatorRemoved(nodeOperator);
     }
 
-    function _authorizeUpgrade(address) internal override onlyAdmin {}
 
     //----
     // INTERNAL

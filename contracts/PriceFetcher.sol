@@ -1,22 +1,13 @@
 //SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.17;
 
-import "./Base.sol";
-
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 
-contract PriceFetcher is UUPSUpgradeable, Base {
-    constructor(address directoryAddress) Base(directoryAddress) initializer {}
+import "./UpgradeableBase.sol";
 
-    function initialize() public initializer {
-        __UUPSUpgradeable_init();
-    }
+contract PriceFetcher is UpgradeableBase {
 
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override onlyAdmin {}
+    constructor() initializer {}
 
     function getPrice() public view returns (uint256) {
         IUniswapV3Pool pool = IUniswapV3Pool(

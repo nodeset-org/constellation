@@ -27,4 +27,7 @@ abstract contract UpgradeableBase is UUPSUpgradeable {
     function getImplementation() public view returns (address) {
         return _getImplementation();
     }
+
+    function _authorizeUpgrade(address) internal override onlyAdmin {}
+
 }
