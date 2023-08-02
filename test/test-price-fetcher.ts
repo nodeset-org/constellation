@@ -5,7 +5,7 @@ import { protocolFixture, SetupData } from "./test";
 import { BigNumber as BN } from "ethers";
 
 
-describe.only("Price Fetcher", function () {
+describe("Price Fetcher", function () {
 
 	it("success - fetches correct price for Jan-13-2023 ~51rpl/eth", async function () {
 		const { protocol, signers } = await loadFixture(protocolFixture);
