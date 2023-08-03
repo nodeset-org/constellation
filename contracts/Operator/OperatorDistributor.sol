@@ -4,14 +4,14 @@ pragma solidity 0.8.17;
 import "../Base.sol";
 import "../Whitelist/Whitelist.sol";
 import "../DepositPool.sol";
+import "../PriceFetcher.sol";
+
 import "../Interfaces/RocketPool/IRocketStorage.sol";
 import "../Interfaces/RocketPool/IMinipool.sol";
 import "../Interfaces/RocketPool/IRocketNodeManager.sol";
 import "../Interfaces/RocketPool/IRocketNodeStaking.sol";
 
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
-
-import "hardhat/console.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract OperatorDistributor is Base {
     uint public _queuedEth;
@@ -134,10 +134,10 @@ contract OperatorDistributor is Base {
 
         // validate that the newMinipoolAdress was signed by the admin address
         bytes32 messageHash = keccak256(abi.encode(newMinipoolAdress));
-        bytes32 ethSignedMessageHash = ECDSAUpgradeable.toEthSignedMessageHash(
+        bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(
             messageHash
         );
-        address signer = ECDSAUpgradeable.recover(ethSignedMessageHash, sig);
+        address signer = ECDSA.recover(ethSignedMessageHash, sig);
         require(
             signer == getDirectory().getAdminAddress(),
             "OperatorDistributor: invalid signature"
@@ -195,7 +195,8 @@ contract OperatorDistributor is Base {
         payable(nodeAddress).transfer(bond);
     }
 
-    function harvestNextMinipool() external onlyYieldDistrubutor {
+    /// @notice called during the creation of new intervals to withdraw rewards from minipools and top up rpl stake
+    function processNextMinipool() external onlyYieldDistrubutor {
         if (minipoolAddresses.length == 0) {
             emit WarningNoMiniPoolsToHarvest();
             return;
@@ -205,12 +206,22 @@ contract OperatorDistributor is Base {
 
         IMinipool minipool = IMinipool(minipoolAddresses[index]);
 
+        // process top up
+        address nodeAddress = minipool.getNodeAddress();
+        uint256 rplStaked = IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStake(nodeAddress);
+        uint256 ethStaked = minipool.getNodeDepositBalance();
+        uint256 ethPriceInRpl = PriceFetcher(
+            getDirectory().getPriceFetcherAddress()
+        ).getPrice();
+
+        uint256 stakeRatio = ethStaked * ethPriceInRpl / rplStaked;
+
+        nextMinipoolHavestIndex = index + 1;
+
         if (minipool.userDistributeAllowed()) {
             minipool.distributeBalance(true);
         } else {
             minipool.beginUserDistribute();
         }
-
-        nextMinipoolHavestIndex = index + 1;
     }
 }

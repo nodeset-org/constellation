@@ -10,6 +10,7 @@ import "../Base.sol";
 
 import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";
+import "../Interfaces/RocketPool/IRocketNodeStaking.sol";
 import "../Interfaces/Oracles/IXRETHOracle.sol";
 import "../Interfaces/IWETH.sol";
 
@@ -186,7 +187,7 @@ contract YieldDistributor is Base {
             dustAccrued += totalReward;
         }
 
-        getOperatorDistributor().harvestNextMinipool();
+        getOperatorDistributor().processNextMinipool();
 
         emit RewardDistributed(Reward(_rewardee, totalReward));
     }
@@ -208,7 +209,7 @@ contract YieldDistributor is Base {
         currentIntervalGenesisTime = block.timestamp;
         yieldAccruedInInterval = 0;
 
-        getOperatorDistributor().harvestNextMinipool();
+        getOperatorDistributor().processNextMinipool();
     }
 
     /****
