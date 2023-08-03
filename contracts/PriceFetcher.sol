@@ -10,13 +10,13 @@ contract PriceFetcher is UpgradeableBase {
 
 
     /// @notice Returns the current price of ETH in RPL
-    /// @return The price of ETH in RPL with 18 decimals
+    /// @return The price of ETH denominated in RPL with 18 decimals
     function getPrice() public view returns (uint256) {
         IUniswapV3Pool pool = IUniswapV3Pool(
             getDirectory().UNISWAP_RPL_ETH_POOL_ADDRESS()
         );
         (uint160 sqrtPriceX96, , , , , , ) = pool.slot0();
-        uint256 price = (uint256(sqrtPriceX96)**2) * 1e10 / (2 ** 192);
-        return price * 1e8;
+        uint256 price = (uint256(sqrtPriceX96)**2) * 1e7 / (2 ** 192);
+        return price * 1e11;
     }
 }
