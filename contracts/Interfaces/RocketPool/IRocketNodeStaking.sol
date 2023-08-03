@@ -15,4 +15,9 @@ interface IRocketNodeStaking {
     /// @param _nodeAddress The address of the node operator to stake on behalf of
     /// @param _amount The amount of RPL to stake
     function stakeRPLFor(address _nodeAddress, uint256 _amount) external;
+
+    /// @notice Returns the amount a given node operator has staked
+    /// @param _nodeAddress The address of the node operator to query
+    function getNodeRPLStake(address _nodeAddress) external view returns (uint256);
+
 }
