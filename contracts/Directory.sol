@@ -13,6 +13,7 @@ struct Protocol {
     address payable operatorDistributor;
     address payable yieldDistributor;
     address oracle;
+    address priceFetcher;
     address rocketStorage;
     address rocketNodeManager;
     address rocketNodeStaking;
@@ -37,6 +38,9 @@ contract Directory {
 
     address payable public constant WETH_CONTRACT_ADDRESS =
         payable(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+
+    address payable public constant UNISWAP_RPL_ETH_POOL_ADDRESS =
+        payable(0xe42318eA3b998e8355a3Da364EB9D48eC725Eb45);
 
     address public constant RP_NETWORK_FEES_ADDRESS =
         payable(0x320f3aAB9405e38b955178BBe75c477dECBA0C27);
@@ -112,6 +116,10 @@ contract Directory {
 
     function getRocketNodeStakingAddress() public view returns (address) {
         return _protocol.rocketNodeStaking;
+    }
+
+    function getPriceFetcherAddress() public view returns (address) {
+        return _protocol.priceFetcher;
     }
 
     //----

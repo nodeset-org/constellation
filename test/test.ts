@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH } from "../typechain-types";
+import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher } from "../typechain-types";
 import { initializeDirectory } from "./test-directory";
 
 const protocolParams  = { trustBuildPeriod : ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
@@ -24,6 +24,7 @@ export type Protocol = {
 	operatorDistributor: OperatorDistributor,
 	yieldDistributor: YieldDistributor,
 	oracle: IXRETHOracle,
+	priceFetcher: Contract,
 	wETH: IWETH,
 }
 
@@ -101,7 +102,8 @@ async function deployProtocol(): Promise<Protocol> {
 
 	const wETH = await ethers.getContractAt("IWETH", await directory.getWETHAddress());
 
-	return { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, oracle, wETH};
+	const priceFetcher = await upgrades.deployProxy(await ethers.getContractFactory("PriceFetcher"), [directory.address], { 'initializer' : 'initialize',  'kind' : 'uups', 'unsafeAllow': ['constructor'] });
+	return { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, oracle, priceFetcher, wETH};
 }
 
 async function createSigners(): Promise<Signers> {

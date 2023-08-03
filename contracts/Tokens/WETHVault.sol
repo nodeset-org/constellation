@@ -3,6 +3,9 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
+import "./RPLVault.sol";
+
+import "../PriceFetcher.sol";
 import "../Base.sol";
 import "../DepositPool.sol";
 import "../Operator/YieldDistributor.sol";
@@ -43,6 +46,7 @@ contract WETHVault is Base, ERC4626 {
     uint256 public takerFee2BasePoint = 0.04e5; // node operator taker fee
 
     uint256 public collateralizationRatioBasePoint = 0.02e5; // collateralization ratio
+    uint256 public rplCoverageRatio = 0.15e18; // rpl coverage ratio
 
     uint256 public totalYieldDistributed;
 
@@ -97,6 +101,8 @@ contract WETHVault is Base, ERC4626 {
         uint256 assets,
         uint256 shares
     ) internal virtual override {
+        require(tvlRatioEthRpl() >= rplCoverageRatio, "insufficient RPL coverage");
+
         uint256 fee1 = _feeOnTotal(assets, makerFee1BasePoint);
         uint256 fee2 = _feeOnTotal(assets, makerFee2BasePoint);
 
@@ -212,6 +218,18 @@ contract WETHVault is Base, ERC4626 {
             od.getTvlEth();
     }
 
+    function tvlRatioEthRpl() public view returns (uint256) {
+        uint256 tvlEth = totalAssets();
+        uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress())
+            .totalAssets();
+
+        if(tvlRpl == 0) return 1e18; // if there is no RPL in the vault, return 100% (1e18)
+
+        uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+
+        return tvlEth * ethPriceInRpl * 1e18 / tvlRpl / 1e18;
+    }
+
     /// @notice Returns the minimal amount of asset this contract must contain to be sufficiently collateralized for operations
     function getRequiredCollateral() public view returns (uint256) {
         uint256 currentBalance = ERC20(asset()).balanceOf(address(this));
@@ -246,5 +264,10 @@ contract WETHVault is Base, ERC4626 {
         makerFee2BasePoint = _makerFee2BasePoint;
         takerFee1BasePoint = _takerFee1BasePoint;
         takerFee2BasePoint = _takerFee2BasePoint;
+    }
+
+    function setRplCoverageRatio(uint256 _rplCoverageRatio) external onlyAdmin {
+        require(_rplCoverageRatio <= 1e18, "rpl coverage ratio must be lte 100%");
+        rplCoverageRatio = _rplCoverageRatio;
     }
 }

@@ -62,7 +62,6 @@ describe("Yield Distributor", function () {
         .to.be.revertedWith(await protocol.yieldDistributor.ADMIN_ONLY_ERROR());
 
     })
-
   });
 
   async function simulateYield(setupData: SetupData, yieldAmountEth: BigNumber) {
@@ -74,7 +73,7 @@ describe("Yield Distributor", function () {
 
 
     // simulate yield from validator
-    await signers.ethWhale.sendTransaction({ to: protocol.yieldDistributor.address, value: yieldAmountEth, gasLimit: 1000000 });
+    await signers.ethWhale.sendTransaction({ to: protocol.yieldDistributor.address, value: yieldAmountEth});
   }
 
 
