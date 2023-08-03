@@ -9,7 +9,7 @@ import { removeFeesOnBothVaults, removeFeesOnRPLVault, upgradePriceFetcherToMock
 describe.only("xrETH", function () {
 
   // add tests for deposit and withdraw
-  it("fail - cannot deposit 1 eth at 50 rpl and 500 rpl, tvl ratio returns ~10% if tvlCoverageRatio is 15%", async () => {
+  it("fail - cannot deposit 1 eth at 50 rpl and 500 rpl, tvl ratio returns ~15%", async () => {
     const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
 
     const depositAmountEth = ethers.utils.parseEther("1");
@@ -35,7 +35,7 @@ describe.only("xrETH", function () {
     await expect(protocol.vCWETH.connect(signers.ethWhale).deposit(depositAmountEth, signers.ethWhale.address)).to.be.revertedWith("insufficient RPL coverage");
   })
 
-  it("success - can deposit 5 eth at 50 rpl and 500 rpl, tvl ratio returns ~15% if tvlCoverageRatio is 15%", async () => {
+  it("success - can deposit 5 eth at 50 rpl and 500 rpl, tvl ratio returns ~15%", async () => {
     const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
 
     const depositAmountEth = ethers.utils.parseEther("5");
