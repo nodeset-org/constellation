@@ -6,7 +6,7 @@ import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { removeFeesOnBothVaults, removeFeesOnRPLVault, upgradePriceFetcherToMock } from "./utils/utils";
 
-describe.only("xrETH", function () {
+describe("xrETH", function () {
 
   // add tests for deposit and withdraw
   it("fail - cannot deposit 1 eth at 50 rpl and 500 rpl, tvl ratio returns ~15%", async () => {

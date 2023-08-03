@@ -223,6 +223,8 @@ contract WETHVault is Base, ERC4626 {
         uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress())
             .totalAssets();
 
+        if(tvlRpl == 0) return 1e18; // if there is no RPL in the vault, return 100% (1e18)
+
         uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
 
         return tvlEth * ethPriceInRpl * 1e18 / tvlRpl / 1e18;
