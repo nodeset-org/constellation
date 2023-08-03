@@ -19,6 +19,7 @@ contract OperatorDistributor is Base {
     address[] public minipoolAddresses;
 
     uint256 public nextMinipoolHavestIndex;
+    uint256 public targetStakeRatio = 1.5e18; // 150%
 
     mapping(address => uint256) public minipoolIndexMap;
     mapping(address => uint256) public minipoolAmountFundedEth;
@@ -214,7 +215,20 @@ contract OperatorDistributor is Base {
             getDirectory().getPriceFetcherAddress()
         ).getPrice();
 
-        uint256 stakeRatio = ethStaked * ethPriceInRpl / rplStaked;
+        uint256 stakeRatio = rplStaked == 0 ? 1e18 : ethStaked * ethPriceInRpl * 1e18 / rplStaked;
+        if (stakeRatio < targetStakeRatio) {
+            uint256 requiredStakeRpl = (ethStaked * ethPriceInRpl / targetStakeRatio) - rplStaked;
+
+            // Make sure the contract has enough RPL to stake
+            uint256 currentRplBalance = RocketTokenRPLInterface(_directory.RPL_CONTRACT_ADDRESS()).balanceOf(address(this));
+            if(currentRplBalance >= requiredStakeRpl) {
+                // stakeRPLOnBehalfOf
+            } else {
+            }
+
+            // Here goes the logic to stake the requiredStakeRpl
+        }
+
 
         nextMinipoolHavestIndex = index + 1;
 

@@ -233,7 +233,7 @@ contract WETHVault is Base, ERC4626 {
             getDirectory().getPriceFetcherAddress()
         ).getPrice();
 
-        return (tvlEth * ethPriceInRpl) / tvlRpl;
+        return tvlEth * ethPriceInRpl * 1e18 / tvlRpl;
     }
 
     /// @notice Returns the minimal amount of asset this contract must contain to be sufficiently collateralized for operations
