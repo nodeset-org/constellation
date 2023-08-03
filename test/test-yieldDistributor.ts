@@ -62,7 +62,6 @@ describe("Yield Distributor", function () {
         .to.be.revertedWith(await protocol.yieldDistributor.ADMIN_ONLY_ERROR());
 
     })
-
   });
 
   async function simulateYield(setupData: SetupData, yieldAmountEth: BigNumber) {

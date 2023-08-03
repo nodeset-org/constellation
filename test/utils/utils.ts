@@ -85,6 +85,11 @@ export async function removeFeesOnRPLVault(protocol: Protocol) {
     await protocol.vCRPL.setFees(0, 0);
 }
 
+export async function removeFeesOnBothVaults(protocol: Protocol) {
+    await protocol.vCRPL.setFees(0, 0);
+    await protocol.vCWETH.setFees(0, 0, 0, 0);
+}
+
 export const registerNewValidator = async (setupData: SetupData, nodeOperators: SignerWithAddress[]) => {
 
     // one currently needs 8 eth in the operatorDistribution contract to register a validator for each node operator

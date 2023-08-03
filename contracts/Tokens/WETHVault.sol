@@ -46,6 +46,7 @@ contract WETHVault is Base, ERC4626 {
     uint256 public takerFee2BasePoint = 0.04e5; // node operator taker fee
 
     uint256 public collateralizationRatioBasePoint = 0.02e5; // collateralization ratio
+    uint256 public rplCoverageRatio = 0.15e18; // rpl coverage ratio
 
     uint256 public totalYieldDistributed;
 
@@ -100,6 +101,8 @@ contract WETHVault is Base, ERC4626 {
         uint256 assets,
         uint256 shares
     ) internal virtual override {
+        require(tvlRatioEthRpl() >= rplCoverageRatio, "insufficient RPL coverage");
+
         uint256 fee1 = _feeOnTotal(assets, makerFee1BasePoint);
         uint256 fee2 = _feeOnTotal(assets, makerFee2BasePoint);
 
@@ -259,5 +262,10 @@ contract WETHVault is Base, ERC4626 {
         makerFee2BasePoint = _makerFee2BasePoint;
         takerFee1BasePoint = _takerFee1BasePoint;
         takerFee2BasePoint = _takerFee2BasePoint;
+    }
+
+    function setRplCoverageRatio(uint256 _rplCoverageRatio) external onlyAdmin {
+        require(_rplCoverageRatio <= 1e18, "rpl coverage ratio must be lte 100%");
+        rplCoverageRatio = _rplCoverageRatio;
     }
 }
