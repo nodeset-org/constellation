@@ -7,8 +7,6 @@ import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "./UpgradeableBase.sol";
 
 contract PriceFetcher is UpgradeableBase {
-
-
     /// @notice Returns the current price of ETH in RPL
     /// @return The price of ETH denominated in RPL with 18 decimals
     function getPrice() public view returns (uint256) {

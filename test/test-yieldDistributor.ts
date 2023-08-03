@@ -74,7 +74,7 @@ describe("Yield Distributor", function () {
 
 
     // simulate yield from validator
-    await signers.ethWhale.sendTransaction({ to: protocol.yieldDistributor.address, value: yieldAmountEth, gasLimit: 1000000 });
+    await signers.ethWhale.sendTransaction({ to: protocol.yieldDistributor.address, value: yieldAmountEth});
   }
 
 

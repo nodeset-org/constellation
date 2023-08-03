@@ -3,6 +3,9 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
+import "./RPLVault.sol";
+
+import "../PriceFetcher.sol";
 import "../Base.sol";
 import "../DepositPool.sol";
 import "../Operator/YieldDistributor.sol";
@@ -210,6 +213,16 @@ contract WETHVault is Base, ERC4626 {
             getDistributableYield() +
             dp.getTvlEth() +
             od.getTvlEth();
+    }
+
+    function tvlRatioEthRpl() public view returns (uint256) {
+        uint256 tvlEth = totalAssets();
+        uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress())
+            .totalAssets();
+
+        uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+
+        return tvlEth * ethPriceInRpl * 1e18 / tvlRpl / 1e18;
     }
 
     /// @notice Returns the minimal amount of asset this contract must contain to be sufficiently collateralized for operations

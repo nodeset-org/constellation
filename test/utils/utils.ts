@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
 import { expect } from "chai";
-import { SetupData } from "../test";
+import { Protocol, SetupData } from "../test";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { RocketPool } from "../test";
 
@@ -68,6 +68,21 @@ export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: 
     )
 
     return mockMinipool;
+}
+
+export async function upgradePriceFetcherToMock(protocol: Protocol, price: BigNumber) {
+    const mockPriceFetcherFactory = await ethers.getContractFactory("MockPriceFetcher");
+    const mockPriceFetcher = await mockPriceFetcherFactory.deploy();
+    await mockPriceFetcher.deployed();
+
+    await protocol.priceFetcher.upgradeTo(mockPriceFetcher.address);
+
+    const priceFetcherV2 = await ethers.getContractAt("MockPriceFetcher", protocol.priceFetcher.address);
+    await priceFetcherV2.setPrice(price);
+};
+
+export async function removeFeesOnRPLVault(protocol: Protocol) {
+    await protocol.vCRPL.setFees(0, 0);
 }
 
 export const registerNewValidator = async (setupData: SetupData, nodeOperators: SignerWithAddress[]) => {
