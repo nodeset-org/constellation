@@ -154,14 +154,4 @@ contract Whitelist is UpgradeableBase {
         require(reverseOperatorIndexMap[a] != 0, OPERATOR_NOT_FOUND_ERROR);
         return reverseOperatorIndexMap[a];
     }
-
-    modifier onlyOperatorDistributor() {
-        require(
-            msg.sender == getDirectory().getOperatorDistributorAddress(),
-            "Whitelist: only the OperatorDistributor may call this function!"
-        );
-        _;
-    }
-
-
 }

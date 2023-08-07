@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
 import "./Interfaces/RocketTokenRPLInterface.sol";
 import "./Interfaces/Oracles/IXRETHOracle.sol";
 import "./Interfaces/RocketPool/IRocketStorage.sol";
+import "./UpgradeableBase.sol";
 
 struct Protocol {
     address whitelist;
@@ -21,7 +24,7 @@ struct Protocol {
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Holds references to all protocol contracts
-contract Directory {
+contract Directory is UUPSUpgradeable {
     Protocol private _protocol;
 
     address payable _adminAddress;
@@ -45,26 +48,21 @@ contract Directory {
     address public constant RP_NETWORK_FEES_ADDRESS =
         payable(0x320f3aAB9405e38b955178BBe75c477dECBA0C27);
 
-    bool private _isInitialized = false;
-
-    constructor() {
+    constructor() initializer {
         _adminAddress = payable(msg.sender);
     }
 
-    /// @notice Called once to initialize the protocol after all the contracts have been deployed
-    function initialize(Protocol calldata protocol) public onlyAdmin {
-        require(!_isInitialized, INITIALIZATION_ERROR);
-        _protocol = protocol;
-        _isInitialized = true;
+    function getImplementation() public view returns (address) {
+        return _getImplementation();
+    }
+
+    function _authorizeUpgrade(address) internal view override {
+        require(msg.sender == _adminAddress, ADMIN_ONLY_ERROR);
     }
 
     //----
     // GETTERS
     //----
-
-    function getIsInitialized() public view returns (bool) {
-        return _isInitialized;
-    }
 
     function getAdminAddress() public view returns (address payable) {
         return _adminAddress;
@@ -120,14 +118,5 @@ contract Directory {
 
     function getPriceFetcherAddress() public view returns (address) {
         return _protocol.priceFetcher;
-    }
-
-    //----
-    // ADMIN
-    //----
-
-    modifier onlyAdmin() {
-        require(msg.sender == getAdminAddress(), ADMIN_ONLY_ERROR);
-        _;
     }
 }

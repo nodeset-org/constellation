@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-import "./Base.sol";
+import "./UpgradeableBase.sol";
 import "./Operator/OperatorDistributor.sol";
 import "./Operator/YieldDistributor.sol";
 import "./Interfaces/RocketPool/IRocketNodeStaking.sol";
@@ -15,7 +15,7 @@ import "./Interfaces/IWETH.sol";
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
 /// ETH + RPL intakes from token mints and validator yields and sends to respective ERC4246 vaults.
-contract DepositPool is Base {
+contract DepositPool is UpgradeableBase {
 
     uint256 public splitRatioEth = 0.30e5; // sends 30% to operator distributor and 70% to eth vault
     uint256 public splitRatioRpl = 0.30e5; // sends 30% to operator distributor and 70% to rpl vault
@@ -25,7 +25,7 @@ contract DepositPool is Base {
     event SplitRatioEthUpdated(uint oldValue, uint newValue);
     event SplitRatioRplUpdated(uint oldValue, uint newValue);
 
-    constructor(address directoryAddress) Base(directoryAddress) {}
+    constructor() initializer {}
 
     ///--------
     /// GETTERS

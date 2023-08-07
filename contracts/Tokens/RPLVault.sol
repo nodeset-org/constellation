@@ -1,24 +1,17 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 
-import "../Base.sol";
+import "../UpgradeableBase.sol";
 import "../DepositPool.sol";
 import "../Operator/OperatorDistributor.sol";
 
 /// @custom:security-contact info@nodeoperator.org
-contract RPLVault is Base, ERC4626 {
+contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     string constant NAME = "Constellation RPL";
     string constant SYMBOL = "xRPL"; // Vaulted Constellation RPL
 
-    constructor(
-        address directoryAddress
-    )
-        Base(directoryAddress)
-        ERC20(NAME, SYMBOL)
-        ERC4626(IERC20(Directory(directoryAddress).RPL_CONTRACT_ADDRESS()))
-    {}
 
     using Math for uint256;
 
@@ -26,6 +19,14 @@ contract RPLVault is Base, ERC4626 {
     uint256 public takerFeeBasePoint = 0.05e5; // admin taker fee
 
     uint256 public collateralizationRatioBasePoint = 0.02e5; // collateralization ratio
+
+    constructor() initializer {}
+
+    function initialize(address directoryAddress) public virtual initializer override {
+        super.initialize(directoryAddress);
+        ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(Directory(directoryAddress).RPL_CONTRACT_ADDRESS()));
+        ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
+    }
 
     /** @dev See {IERC4626-previewDeposit}. */
     function previewDeposit(
@@ -123,7 +124,7 @@ contract RPLVault is Base, ERC4626 {
 
     /// @notice Returns the amount of asset this contract must contain to be sufficiently collateralized
     function getRequiredCollateral() public view returns (uint256) {
-        uint256 currentBalance = ERC20(asset()).balanceOf(address(this));
+        uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 fullBalance = DepositPool(_directory.getDepositPoolAddress()).getTvlRpl();
 
         uint256 requiredBalance = collateralizationRatioBasePoint.mulDiv(

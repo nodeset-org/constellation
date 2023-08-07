@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./OperatorDistributor.sol";
 import "../Whitelist/Whitelist.sol";
 import "../Utils/ProtocolMath.sol";
-import "../Base.sol";
+import "../UpgradeableBase.sol";
 
 import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";
@@ -26,7 +26,7 @@ struct Claim {
 
 /// @custom:security-contact info@nodeset.io
 /// @notice distributes rewards in weth to node operators
-contract YieldDistributor is Base {
+contract YieldDistributor is UpgradeableBase {
 
     uint256 public totalYieldAccrued;
     uint256 public yieldAccruedInInterval;
@@ -39,10 +39,9 @@ contract YieldDistributor is Base {
     uint256 public currentIntervalGenesisTime = block.timestamp;
     uint256 public maxIntervalLengthSeconds = 30 days; // NOs will have to wait at most this long for their payday
 
-    uint256 k; // steepness of the curve
-    uint256 maxValidators; // max number of validators used to normalize x axis
+    uint256 k = 7; // steepness of the curve
+    uint256 maxValidators = 5; // max number of validators used to normalize x axis
 
-    bool private _isInitialized = false;
     string public constant INITIALIZATION_ERROR =
         "YieldDistributor: may only initialized once";
     string public constant DIRECTORY_NOT_INITIALIZED_ERROR =
@@ -59,23 +58,13 @@ contract YieldDistributor is Base {
     event RewardDistributed(Reward);
     event WarningAlreadyClaimed(address operator, uint256 interval);
 
-    constructor(address directory) Base(directory) {
-        k = 7;
-        maxValidators = 5;
-    }
-
-    function initialize() public onlyAdmin {
-        require(!_isInitialized, INITIALIZATION_ERROR);
-        require(
-            getDirectory().getIsInitialized(),
-            DIRECTORY_NOT_INITIALIZED_ERROR
-        );
+    function initialize(address _directory) public onlyAdmin override {
+        super.initialize(_directory);
         // approve infinite RPL spends for this address from xRPL
         RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS()).approve(
-            _directory.getRPLVaultAddress(),
+            Directory(_directory).getRPLVaultAddress(),
             type(uint).max
         );
-        _isInitialized = true;
     }
 
     function wethReceived(uint256 weth) external onlyWETHVault {
@@ -98,10 +87,6 @@ contract YieldDistributor is Base {
     /****
      * GETTERS
      */
-
-    function getIsInitialized() public view returns (bool) {
-        return _isInitialized;
-    }
 
 
     function getClaims() public view returns (Claim[] memory) {
@@ -126,7 +111,6 @@ contract YieldDistributor is Base {
         uint256 startInterval,
         uint256 endInterval
     ) public nonReentrant {
-        require(getIsInitialized(), NOT_INITIALIZED_ERROR);
         require(
             startInterval <= endInterval,
             "Start interval must be less than or equal to end interval"
