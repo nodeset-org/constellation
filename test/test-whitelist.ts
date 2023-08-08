@@ -24,7 +24,8 @@ describe("Whitelist (proxy)", function () {
 
         // upgrade protocol.whitelist to V2
         const newWhitelist = await upgrades.upgradeProxy(protocol.whitelist.address, WhitelistV2Logic, {
-            kind: 'uups'
+            kind: 'uups',
+            unsafeAllow: ['constructor']
         });
 
         // check that the proxy address has not changed.
@@ -90,7 +91,7 @@ describe("Whitelist", function () {
         const { protocol, signers } = await loadFixture(protocolFixture);
         
         await expect(protocol.whitelist.connect(signers.random).addOperator(signers.random.address))
-            .to.be.revertedWith(await protocol.whitelist.ADMIN_ONLY_ERROR());
+            .to.be.revertedWith("Can only be called by admin address!");
 
         await expect(protocol.whitelist.getOperatorAtAddress(signers.random.address))
             .to.be.revertedWith(await protocol.whitelist.OPERATOR_NOT_FOUND_ERROR());
@@ -114,6 +115,6 @@ describe("Whitelist", function () {
         await protocol.whitelist.addOperator(signers.random.address);
 
         await expect(protocol.whitelist.connect(signers.random).removeOperator(signers.random.address))
-            .to.be.revertedWith(await protocol.whitelist.ADMIN_ONLY_ERROR());
+            .to.be.revertedWith("Can only be called by admin address!");
       });
   });

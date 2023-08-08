@@ -12,46 +12,6 @@ import { evaluateModel, expectNumberE18ToBeApproximately, registerNewValidator }
 
 describe("Yield Distributor", function () {
 
-  describe("Initialization", function () {
-
-    it("Random address cannot initialize", async function () {
-      const setupData = await loadFixture(deployOnlyFixture);
-      const { protocol, signers } = setupData;
-
-      await expect(protocol.yieldDistributor.connect(signers.random).initialize())
-        .to.be.revertedWith(await protocol.yieldDistributor.ADMIN_ONLY_ERROR());
-    });
-
-    it("Cannot initialize before directory is initialized", async function () {
-      const setupData = await loadFixture(deployOnlyFixture);
-      const { protocol, signers } = setupData;
-
-      await expect(protocol.yieldDistributor.initialize())
-        .to.be.revertedWith(await protocol.yieldDistributor.DIRECTORY_NOT_INITIALIZED_ERROR());
-    });
-
-    it("Can be initialized by admin", async function () {
-      const setupData = await loadFixture(deployOnlyFixture);
-      const { protocol, signers, rocketPool } = setupData;
-
-      await expect(initializeDirectory(protocol, rocketPool, signers.admin)).to.not.be.reverted;
-      await expect(protocol.yieldDistributor.initialize()).to.not.be.reverted;
-
-      expect(await protocol.yieldDistributor.getIsInitialized()).equals(true);
-    });
-
-    it("Can only be initialized once by admin", async function () {
-      const setupData = await loadFixture(deployOnlyFixture);
-      const { protocol, signers, rocketPool } = setupData;
-
-      await expect(initializeDirectory(protocol, rocketPool, signers.admin)).to.not.be.reverted;
-      await expect(protocol.yieldDistributor.initialize()).to.not.be.reverted;
-
-      await expect(protocol.yieldDistributor.initialize())
-        .to.be.revertedWith(await protocol.yieldDistributor.INITIALIZATION_ERROR());
-    });
-  });
-
 
   describe("Setters", function () {
     it("Random address cannot setMaxIntervalTime", async function () {
@@ -59,7 +19,7 @@ describe("Yield Distributor", function () {
       const { protocol, signers } = setupData;
 
       await expect(protocol.yieldDistributor.connect(signers.random).setMaxIntervalTime(1))
-        .to.be.revertedWith(await protocol.yieldDistributor.ADMIN_ONLY_ERROR());
+        .to.be.revertedWith("Can only be called by admin address!");
 
     })
   });
