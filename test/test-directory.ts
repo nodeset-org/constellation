@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { protocolFixture, SetupData, Protocol, deployOnlyFixture, RocketPool } from "./test";
+import { protocolFixture, SetupData, Protocol, RocketPool } from "./test";
 
 describe("Directory", function () {
 
