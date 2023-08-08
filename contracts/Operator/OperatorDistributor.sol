@@ -60,7 +60,7 @@ contract OperatorDistributor is UpgradeableBase {
     // and this contract.
     function getTvlRpl() public view returns (uint) {
         return
-            RocketTokenRPLInterface(_directory.RPL_CONTRACT_ADDRESS())
+            RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS)
                 .balanceOf(address(this)) + getAmountFundedRpl();
     }
 
@@ -105,7 +105,7 @@ contract OperatorDistributor is UpgradeableBase {
 
         // approve the node staking contract to spend the RPL
         RocketTokenRPLInterface rpl = RocketTokenRPLInterface(
-            getDirectory().RPL_CONTRACT_ADDRESS()
+            Constants.RPL_CONTRACT_ADDRESS
         );
         require(
             rpl.approve(

@@ -9,6 +9,7 @@ import "../PriceFetcher.sol";
 import "../UpgradeableBase.sol";
 import "../DepositPool.sol";
 import "../Operator/YieldDistributor.sol";
+import "../Utils/Constants.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
@@ -32,14 +33,14 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     using Math for uint256;
 
-    uint256 public makerFee1BasePoint = 0.01e5; // admin maker fee
-    uint256 public makerFee2BasePoint = 0.02e5; // node operator maker fee
+    uint256 public makerFee1BasePoint; // admin maker fee
+    uint256 public makerFee2BasePoint; // node operator maker fee
 
-    uint256 public takerFee1BasePoint = 0.03e5; // admin taker fee
-    uint256 public takerFee2BasePoint = 0.04e5; // node operator taker fee
+    uint256 public takerFee1BasePoint; // admin taker fee
+    uint256 public takerFee2BasePoint; // node operator taker fee
 
-    uint256 public collateralizationRatioBasePoint = 0.02e5; // collateralization ratio
-    uint256 public rplCoverageRatio = 0.15e18; // rpl coverage ratio
+    uint256 public collateralizationRatioBasePoint; // collateralization ratio
+    uint256 public rplCoverageRatio; // rpl coverage ratio
 
     uint256 public totalYieldDistributed;
 
@@ -51,8 +52,17 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     function initialize(address directoryAddress) public virtual initializer override {
         super.initialize(directoryAddress);
-        ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(Directory(directoryAddress).WETH_CONTRACT_ADDRESS()));
+        ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(Constants.WETH_CONTRACT_ADDRESS));
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
+
+        makerFee1BasePoint = 0.01e5;
+        makerFee2BasePoint = 0.02e5;
+
+        takerFee1BasePoint = 0.03e5;
+        takerFee2BasePoint = 0.04e5;
+
+        collateralizationRatioBasePoint = 0.02e5;
+        rplCoverageRatio = 0.15e18;
     }
 
     /** @dev See {IERC4626-previewDeposit}. */

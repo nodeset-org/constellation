@@ -12,6 +12,7 @@ import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";
 import "../Interfaces/Oracles/IXRETHOracle.sol";
 import "../Interfaces/IWETH.sol";
+import "../Utils/Constants.sol";
 
 struct Reward {
     address recipient;
@@ -35,12 +36,12 @@ contract YieldDistributor is UpgradeableBase {
     mapping(uint256 => Claim) public claims; // claimable yield per interval (in wei)
     mapping(address => mapping(uint256 => bool)) public hasClaimed; // whether an operator has claimed for a given interval
 
-    uint256 public currentInterval = 0;
-    uint256 public currentIntervalGenesisTime = block.timestamp;
-    uint256 public maxIntervalLengthSeconds = 30 days; // NOs will have to wait at most this long for their payday
+    uint256 public currentInterval;
+    uint256 public currentIntervalGenesisTime;
+    uint256 public maxIntervalLengthSeconds; // NOs will have to wait at most this long for their payday
 
-    uint256 k = 7; // steepness of the curve
-    uint256 maxValidators = 5; // max number of validators used to normalize x axis
+    uint256 k; // steepness of the curve
+    uint256 maxValidators; // max number of validators used to normalize x axis
 
     string public constant INITIALIZATION_ERROR =
         "YieldDistributor: may only initialized once";
@@ -58,13 +59,14 @@ contract YieldDistributor is UpgradeableBase {
     event RewardDistributed(Reward);
     event WarningAlreadyClaimed(address operator, uint256 interval);
 
-    function initialize(address _directory) public onlyAdmin override {
+    function initialize(address _directory) public initializer override {
         super.initialize(_directory);
-        // approve infinite RPL spends for this address from xRPL
-        RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS()).approve(
-            Directory(_directory).getRPLVaultAddress(),
-            type(uint).max
-        );
+
+        currentIntervalGenesisTime = block.timestamp;
+        maxIntervalLengthSeconds = 30 days;
+
+        k = 7;
+        maxValidators = 5;
     }
 
     function wethReceived(uint256 weth) external onlyWETHVault {
@@ -162,7 +164,7 @@ contract YieldDistributor is UpgradeableBase {
 
         if (isWhitelisted) {
             SafeERC20.safeTransfer(
-                IWETH(_directory.WETH_CONTRACT_ADDRESS()),
+                IWETH(Constants.WETH_CONTRACT_ADDRESS),
                 _rewardee,
                 totalReward
             );
@@ -249,7 +251,7 @@ contract YieldDistributor is UpgradeableBase {
 
     receive() external payable {
         // mint weth
-        IWETH(_directory.WETH_CONTRACT_ADDRESS()).deposit{value: msg.value}();
+        IWETH(Constants.WETH_CONTRACT_ADDRESS).deposit{value: msg.value}();
         _wethReceived(msg.value);
     }
 }

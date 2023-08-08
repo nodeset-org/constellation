@@ -7,6 +7,7 @@ import "./Interfaces/RocketTokenRPLInterface.sol";
 import "./Interfaces/Oracles/IXRETHOracle.sol";
 import "./Interfaces/RocketPool/IRocketStorage.sol";
 import "./UpgradeableBase.sol";
+import "./Utils/Constants.sol";
 
 struct Protocol {
     address whitelist;
@@ -36,17 +37,6 @@ contract Directory is UUPSUpgradeable {
     string public constant INITIALIZATION_ERROR =
         "Directory: may only initialized once!";
 
-    address payable public constant RPL_CONTRACT_ADDRESS =
-        payable(0xD33526068D116cE69F19A9ee46F0bd304F21A51f);
-
-    address payable public constant WETH_CONTRACT_ADDRESS =
-        payable(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
-
-    address payable public constant UNISWAP_RPL_ETH_POOL_ADDRESS =
-        payable(0xe42318eA3b998e8355a3Da364EB9D48eC725Eb45);
-
-    address public constant RP_NETWORK_FEES_ADDRESS =
-        payable(0x320f3aAB9405e38b955178BBe75c477dECBA0C27);
 
     constructor() initializer {
         _adminAddress = payable(msg.sender);
@@ -92,10 +82,6 @@ contract Directory is UUPSUpgradeable {
         return _protocol.rocketStorage;
     }
 
-    function getWETHAddress() public pure returns (address payable) {
-        return WETH_CONTRACT_ADDRESS;
-    }
-
     function getOperatorDistributorAddress()
         public
         view
@@ -119,4 +105,30 @@ contract Directory is UUPSUpgradeable {
     function getPriceFetcherAddress() public view returns (address) {
         return _protocol.priceFetcher;
     }
+
+    function getWETHAddress() public pure returns (address payable) {
+        return Constants.WETH_CONTRACT_ADDRESS;
+    }
+
+    function getRPLAddress() public pure returns (address) {
+        return Constants.RPL_CONTRACT_ADDRESS;
+    }
+
+    function initialize(Protocol memory newProtocol) public initializer {
+        require(_protocol.whitelist == address(0), INITIALIZATION_ERROR);
+        require(_protocol.wethVault == address(0), INITIALIZATION_ERROR);
+        require(_protocol.rplVault == address(0), INITIALIZATION_ERROR);
+        require(_protocol.depositPool == address(0), INITIALIZATION_ERROR);
+        require(_protocol.operatorDistributor == address(0), INITIALIZATION_ERROR);
+        require(_protocol.yieldDistributor == address(0), INITIALIZATION_ERROR);
+        require(_protocol.oracle == address(0), INITIALIZATION_ERROR);
+        require(_protocol.priceFetcher == address(0), INITIALIZATION_ERROR);
+        require(_protocol.rocketStorage == address(0), INITIALIZATION_ERROR);
+        require(_protocol.rocketNodeManager == address(0), INITIALIZATION_ERROR);
+        require(_protocol.rocketNodeStaking == address(0), INITIALIZATION_ERROR);
+
+        _adminAddress = payable(msg.sender);
+        _protocol = newProtocol;
+    }
+
 }

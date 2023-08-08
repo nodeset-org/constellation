@@ -25,7 +25,7 @@ describe("Node Operator Onboarding", function () {
     let weth: IWETH;
 
     before(async function () {
-        setupData = await protocolFixture();
+        setupData = await loadFixture(protocolFixture);
         protocol = setupData.protocol;
         signers = setupData.signers;
         rocketPool = setupData.rocketPool;
@@ -35,7 +35,7 @@ describe("Node Operator Onboarding", function () {
         xrETH = protocol.vCWETH;
         xRPL = protocol.vCRPL;
         weth = protocol.wETH;
-        rpl = await ethers.getContractAt("IERC20", await protocol.directory.RPL_CONTRACT_ADDRESS());
+        rpl = await ethers.getContractAt("IERC20", await protocol.directory.getRPLAddress());
 
     });
 

@@ -15,17 +15,21 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     using Math for uint256;
 
-    uint256 public makerFeeBasePoint = 0.05e5; // admin maker fee
-    uint256 public takerFeeBasePoint = 0.05e5; // admin taker fee
+    uint256 public makerFeeBasePoint; // admin maker fee
+    uint256 public takerFeeBasePoint; // admin taker fee
 
-    uint256 public collateralizationRatioBasePoint = 0.02e5; // collateralization ratio
+    uint256 public collateralizationRatioBasePoint; // collateralization ratio
 
     constructor() initializer {}
 
     function initialize(address directoryAddress) public virtual initializer override {
         super.initialize(directoryAddress);
-        ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(Directory(directoryAddress).RPL_CONTRACT_ADDRESS()));
+        ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(Constants.RPL_CONTRACT_ADDRESS));
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
+
+        makerFeeBasePoint = 0.05e5;
+        takerFeeBasePoint = 0.05e5;
+        collateralizationRatioBasePoint = 0.02e5;
     }
 
     /** @dev See {IERC4626-previewDeposit}. */
