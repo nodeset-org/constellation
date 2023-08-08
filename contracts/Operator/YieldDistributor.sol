@@ -69,7 +69,7 @@ contract YieldDistributor is UpgradeableBase {
         maxValidators = 5;
     }
 
-    function wethReceived(uint256 weth) external onlyWETHVault {
+    function wethReceived(uint256 weth) external onlyProtocol {
         _wethReceived(weth);
     }
 
@@ -179,7 +179,7 @@ contract YieldDistributor is UpgradeableBase {
 
     /// @notice Ends the current interval and starts a new one
     /// @dev Only called when numOperators changes or maxIntervalLengthSeconds has passed
-    function finalizeInterval() public onlyWhitelistOrAdmin {
+    function finalizeInterval() public onlyProtocolOrAdmin {
         if (yieldAccruedInInterval == 0 && currentInterval > 0) {
             return;
         }

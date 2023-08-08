@@ -76,7 +76,7 @@ contract Whitelist is UpgradeableBase {
 
     function registerNewValidator(
         address nodeOperator
-    ) public onlyOperatorDistributor {
+    ) public onlyProtocol {
         operatorMap[nodeOperator].currentValidatorCount++;
     }
 

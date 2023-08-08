@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./Directory.sol";
+import "./Utils/Constants.sol";
 
 abstract contract UpgradeableBase is UUPSUpgradeable, ReentrancyGuard {
     Directory internal _directory;
@@ -18,7 +19,7 @@ abstract contract UpgradeableBase is UUPSUpgradeable, ReentrancyGuard {
     }
 
     modifier onlyAdmin() {
-        require(msg.sender == _directory.getAdminAddress(), "Can only be called by admin address!");
+        require(_directory.hasRole(Constants.ADMIN_ROLE, msg.sender), "Can only be called by admin address!");
         _;
     }
 
@@ -30,47 +31,21 @@ abstract contract UpgradeableBase is UUPSUpgradeable, ReentrancyGuard {
         _;
     }
 
-    modifier onlyWhitelistOrAdmin() {
+    modifier onlyProtocolOrAdmin() {
         require(
-            msg.sender == _directory.getWhitelistAddress() ||
-                msg.sender == _directory.getAdminAddress(),
+            _directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender) || _directory.hasRole(Constants.ADMIN_ROLE, msg.sender),
             "Can only be called by Whitelist or Admin!"
         );
         _;
     }
 
-    modifier onlyYieldDistrubutor() {
+    modifier onlyProtocol() {
         require(
-            msg.sender == _directory.getYieldDistributorAddress(),
-            "Can only be called by Yield Distributor!"
+            _directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender),
+            "Can only be called by Protocol!"
         );
         _;
     }
-
-    modifier onlyOperatorDistributor() {
-        require(
-            msg.sender == _directory.getOperatorDistributorAddress(),
-            "Can only be called by Operator Distributor!"
-        );
-        _;
-    }
-
-    modifier onlyWETHVault() {
-        require(
-            msg.sender == _directory.getWETHVaultAddress(),
-            "Can only be called by WETH Vault!"
-        );
-        _;
-    }
-
-    modifier onlyRplVault() {
-        require(
-            msg.sender == _directory.getRPLVaultAddress(),
-            "DepositPool: This function may only be called by the xRPL token contract"
-        );
-        _;
-    }
-
 
     function getDirectory() internal view returns (Directory) {
         return _directory;

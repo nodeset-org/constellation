@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 import "./Interfaces/RocketTokenRPLInterface.sol";
 import "./Interfaces/Oracles/IXRETHOracle.sol";
@@ -24,22 +25,13 @@ struct Protocol {
 }
 
 /// @custom:security-contact info@nodeoperator.org
-/// @notice Holds references to all protocol contracts
-contract Directory is UUPSUpgradeable {
+/// @notice Holds references to all protocol contracts and role mechanisms
+contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
+
     Protocol private _protocol;
-
-    address payable _adminAddress;
-
-    string public constant CONTRACT_NOT_FOUND_ERROR =
-        "Directory: contract not found!";
-    string public constant ADMIN_ONLY_ERROR =
-        "Directory: may only be called by admin address!";
-    string public constant INITIALIZATION_ERROR =
-        "Directory: may only initialized once!";
-
+    address public _treasury;
 
     constructor() initializer {
-        _adminAddress = payable(msg.sender);
     }
 
     function getImplementation() public view returns (address) {
@@ -47,16 +39,12 @@ contract Directory is UUPSUpgradeable {
     }
 
     function _authorizeUpgrade(address) internal view override {
-        require(msg.sender == _adminAddress, ADMIN_ONLY_ERROR);
+        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
     }
 
     //----
     // GETTERS
     //----
-
-    function getAdminAddress() public view returns (address payable) {
-        return _adminAddress;
-    }
 
     function getWhitelistAddress() public view returns (address) {
         return _protocol.whitelist;
@@ -114,21 +102,44 @@ contract Directory is UUPSUpgradeable {
         return Constants.RPL_CONTRACT_ADDRESS;
     }
 
-    function initialize(Protocol memory newProtocol) public initializer {
-        require(_protocol.whitelist == address(0), INITIALIZATION_ERROR);
-        require(_protocol.wethVault == address(0), INITIALIZATION_ERROR);
-        require(_protocol.rplVault == address(0), INITIALIZATION_ERROR);
-        require(_protocol.depositPool == address(0), INITIALIZATION_ERROR);
-        require(_protocol.operatorDistributor == address(0), INITIALIZATION_ERROR);
-        require(_protocol.yieldDistributor == address(0), INITIALIZATION_ERROR);
-        require(_protocol.oracle == address(0), INITIALIZATION_ERROR);
-        require(_protocol.priceFetcher == address(0), INITIALIZATION_ERROR);
-        require(_protocol.rocketStorage == address(0), INITIALIZATION_ERROR);
-        require(_protocol.rocketNodeManager == address(0), INITIALIZATION_ERROR);
-        require(_protocol.rocketNodeStaking == address(0), INITIALIZATION_ERROR);
+    function getTreasuryAddress() public view returns (address) {
+        return _treasury;
+    }
 
-        _adminAddress = payable(msg.sender);
+    function initialize(Protocol memory newProtocol) public initializer {
+        require(_protocol.whitelist == address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.wethVault == address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.rplVault == address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.depositPool == address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.operatorDistributor == address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.yieldDistributor == address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.oracle == address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.priceFetcher == address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.rocketStorage == address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.rocketNodeManager == address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.rocketNodeStaking == address(0), Constants.INITIALIZATION_ERROR);
+
+        AccessControlUpgradeable.__AccessControl_init();
+        _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
+        _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.ADMIN_ROLE);
+
+        _grantRole(Constants.ADMIN_ROLE, msg.sender);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, _protocol.whitelist);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, _protocol.wethVault);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, _protocol.rplVault);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, _protocol.depositPool);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, _protocol.operatorDistributor);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, _protocol.yieldDistributor);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, _protocol.oracle);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, _protocol.priceFetcher);
+
+        _treasury = msg.sender;
+
         _protocol = newProtocol;
     }
 
+    function setTreasurer(address newTreasurer) public {
+        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
+        _treasury = newTreasurer;
+    }
 }

@@ -117,7 +117,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 fee1 = _feeOnTotal(assets, makerFee1BasePoint);
         uint256 fee2 = _feeOnTotal(assets, makerFee2BasePoint);
 
-        address recipient1 = _directory.getAdminAddress();
+        address recipient1 = _directory.getTreasuryAddress();
         address payable recipient2 = _directory.getYieldDistributorAddress();
 
         address payable pool = _directory.getDepositPoolAddress();
@@ -165,7 +165,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     ) internal virtual override {
         uint256 fee1 = _feeOnRaw(assets, takerFee1BasePoint);
         uint256 fee2 = _feeOnRaw(assets, takerFee2BasePoint);
-        address recipient1 = _directory.getAdminAddress();
+        address recipient1 = _directory.getTreasuryAddress();
         address payable recipient2 = _directory.getYieldDistributorAddress();
 
         DepositPool(_directory.getDepositPoolAddress()).sendEthToDistributors();

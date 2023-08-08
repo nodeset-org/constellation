@@ -6,9 +6,9 @@ import { protocolFixture, SetupData, Protocol, RocketPool } from "./test";
 
 describe("Directory", function () {
 
-  it("Returns correct admin address", async function () {
+  it("Returns correct default treasury address", async function () {
     const { protocol, signers } = await loadFixture(protocolFixture);
-    expect(await protocol.directory.getAdminAddress()).equal(signers.admin.address);
+    expect(await protocol.directory.getTreasuryAddress()).equal(signers.admin.address);
   });
 
 });

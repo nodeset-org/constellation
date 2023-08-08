@@ -67,7 +67,7 @@ contract OperatorDistributor is UpgradeableBase {
     /// @notice Should be called by admin server when a node operator exists a minipool
     function removeMinipoolAddress(
         address _address
-    ) public onlyWhitelistOrAdmin {
+    ) public onlyProtocolOrAdmin {
         uint index = minipoolIndexMap[_address] - 1;
         require(index < minipoolAddresses.length, "Address not found.");
 
@@ -86,7 +86,7 @@ contract OperatorDistributor is UpgradeableBase {
 
     function removeNodeOperator(
         address _address
-    ) external onlyWhitelistOrAdmin {
+    ) external onlyProtocolOrAdmin {
         // remove all minipools owned by node operator
         address[] memory minipools = nodeOperatorOwnedMinipools[_address];
         for (uint i = 0; i < minipools.length; i++) {
@@ -121,7 +121,7 @@ contract OperatorDistributor is UpgradeableBase {
     }
 
     function reimburseNodeForMinipool(
-        bytes memory sig,
+        bytes memory sig, // sig from admin server
         address newMinipoolAdress
     ) public {
         IMinipool minipool = IMinipool(newMinipoolAdress);
@@ -139,7 +139,7 @@ contract OperatorDistributor is UpgradeableBase {
         );
         address signer = ECDSA.recover(ethSignedMessageHash, sig);
         require(
-            signer == getDirectory().getAdminAddress(),
+            _directory.hasRole(Constants.ADMIN_SERVER_ROLE, signer),
             "OperatorDistributor: invalid signature"
         );
 
@@ -195,7 +195,7 @@ contract OperatorDistributor is UpgradeableBase {
         payable(nodeAddress).transfer(bond);
     }
 
-    function harvestNextMinipool() external onlyYieldDistrubutor {
+    function harvestNextMinipool() external onlyProtocol {
         if (minipoolAddresses.length == 0) {
             emit WarningNoMiniPoolsToHarvest();
             return;

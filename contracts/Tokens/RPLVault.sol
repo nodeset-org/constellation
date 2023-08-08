@@ -73,7 +73,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     ) internal virtual override  {
         uint256 fee = _feeOnTotal(assets, makerFeeBasePoint);
 
-        address recipient1 = _directory.getAdminAddress();
+        address recipient1 = _directory.getTreasuryAddress();
 
         address payable pool = _directory.getDepositPoolAddress();
         DepositPool(pool).sendRplToDistributors();
@@ -96,7 +96,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 shares
     ) internal virtual override {
         uint256 fee = _feeOnRaw(assets, takerFeeBasePoint);
-        address recipient1 = _directory.getAdminAddress();
+        address recipient1 = _directory.getTreasuryAddress();
 
         DepositPool(_directory.getDepositPoolAddress()).sendRplToDistributors();
 
