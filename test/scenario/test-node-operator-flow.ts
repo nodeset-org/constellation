@@ -25,11 +25,6 @@ describe("Node Operator Onboarding", function () {
     let weth: IWETH;
 
     before(async function () {
-        try {
-            setupData = await loadFixture(protocolFixture);
-        } catch (e) {
-            // weird bug where the first time this is run it fails, but the second time it works
-        }
         setupData = await loadFixture(protocolFixture);
 
         protocol = setupData.protocol;

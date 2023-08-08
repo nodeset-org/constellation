@@ -91,51 +91,56 @@ async function getRocketPool(): Promise<RocketPool> {
 }
 
 async function deployProtocol(rocketPool: RocketPool): Promise<Protocol> {
-	upgrades.silenceWarnings();
+	try {
+		upgrades.silenceWarnings();
 
-	const deployer = (await ethers.getSigners())[0];
+		const deployer = (await ethers.getSigners())[0];
 
-	const predictedNonce = 9;
-	const directoryAddress = await getNextContractAddress(deployer, predictedNonce-1)
-	const initNonce = await deployer.getTransactionCount();
+		const predictedNonce = 9;
+		const directoryAddress = await getNextContractAddress(deployer, predictedNonce-1)
+		const initNonce = await deployer.getTransactionCount();
 
-	const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directoryAddress, protocolParams.trustBuildPeriod], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-	const vCWETHProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("WETHVault"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-	const vCWETH = await ethers.getContractAt("WETHVault", vCWETHProxyAbi.address);
-	const vCRPLProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("RPLVault"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-	const vCRPL = await ethers.getContractAt("RPLVault", vCRPLProxyAbi.address);
-	const depositPoolProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("DepositPool"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-	const depositPool = await ethers.getContractAt("DepositPool", depositPoolProxyAbi.address);
-	const operatorDistributorProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("OperatorDistributor"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-	const operatorDistributor = await ethers.getContractAt("OperatorDistributor", operatorDistributorProxyAbi.address);
-	const yieldDistributorProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("YieldDistributor"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-	const yieldDistributor = await ethers.getContractAt("YieldDistributor", yieldDistributorProxyAbi.address);
-	const oracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
-	const priceFetcher = await upgrades.deployProxy(await ethers.getContractFactory("PriceFetcher"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-	const directoryProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("Directory"),
-	[
+		const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directoryAddress, protocolParams.trustBuildPeriod], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+		const vCWETHProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("WETHVault"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+		const vCWETH = await ethers.getContractAt("WETHVault", vCWETHProxyAbi.address);
+		const vCRPLProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("RPLVault"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+		const vCRPL = await ethers.getContractAt("RPLVault", vCRPLProxyAbi.address);
+		const depositPoolProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("DepositPool"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+		const depositPool = await ethers.getContractAt("DepositPool", depositPoolProxyAbi.address);
+		const operatorDistributorProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("OperatorDistributor"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+		const operatorDistributor = await ethers.getContractAt("OperatorDistributor", operatorDistributorProxyAbi.address);
+		const yieldDistributorProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("YieldDistributor"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+		const yieldDistributor = await ethers.getContractAt("YieldDistributor", yieldDistributorProxyAbi.address);
+		const oracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
+		const priceFetcher = await upgrades.deployProxy(await ethers.getContractFactory("PriceFetcher"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+		const directoryProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("Directory"),
 		[
-			whitelist.address,
-			vCWETH.address,
-			vCRPL.address,
-			depositPool.address,
-			operatorDistributor.address,
-			yieldDistributor.address,
-			oracle.address,
-			priceFetcher.address,
-			rocketPool.rockStorageContract.address,
-			rocketPool.rocketNodeManagerContract.address,
-			rocketPool.rocketNodeStakingContract.address,
-		]
-	], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-	const finalNonce = await deployer.getTransactionCount();
-	const directory = await ethers.getContractAt("Directory", directoryProxyAbi.address);
-	expect(finalNonce - initNonce).to.equal(predictedNonce);
-	expect(directory.address).to.hexEqual(directoryAddress);
+			[
+				whitelist.address,
+				vCWETH.address,
+				vCRPL.address,
+				depositPool.address,
+				operatorDistributor.address,
+				yieldDistributor.address,
+				oracle.address,
+				priceFetcher.address,
+				rocketPool.rockStorageContract.address,
+				rocketPool.rocketNodeManagerContract.address,
+				rocketPool.rocketNodeStakingContract.address,
+			]
+		], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+		const finalNonce = await deployer.getTransactionCount();
+		const directory = await ethers.getContractAt("Directory", directoryProxyAbi.address);
+		expect(finalNonce - initNonce).to.equal(predictedNonce);
+		expect(directory.address).to.hexEqual(directoryAddress);
 
-	const wETH = await ethers.getContractAt("IWETH", await directory.getWETHAddress());
+		const wETH = await ethers.getContractAt("IWETH", await directory.getWETHAddress());
 
-	return { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, oracle, priceFetcher, wETH };
+		return { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, oracle, priceFetcher, wETH };
+	} catch {
+		// always fails the first try due to lower level library limitations
+		return await deployProtocol(rocketPool);
+	}
 }
 
 async function createSigners(): Promise<Signers> {
@@ -152,22 +157,6 @@ async function createSigners(): Promise<Signers> {
 		rplWhale: await ethers.getImpersonatedSigner("0x57757e3d981446d585af0d9ae4d7df6d64647806"),
 		hyperdriver: signersArray[7],
 		ethWhale: signersArray[8],
-	};
-}
-
-// this obnoxious double-fixture pattern is necessary because hardhat
-// doesn't allow parameters for fixtures
-// see https://github.com/NomicFoundation/hardhat/issues/3508
-export async function deployOnlyFixture(): Promise<SetupData> {
-
-	const signers = await createSigners();
-	const rocketPool = await getRocketPool();
-	const deployedProtocol = await deployProtocol(rocketPool);
-
-	return {
-		protocol: deployedProtocol,
-		signers,
-		rocketPool,
 	};
 }
 

@@ -1,10 +1,9 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { deployOnlyFixture, Protocol, protocolFixture, SetupData } from "./test";
+import { Protocol, protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { initializeDirectory } from "./test-directory";
 import { string } from "hardhat/internal/core/params/argumentTypes";
 import { operator, whitelist } from "../typechain-types/contracts";
 import { RewardStruct } from "../typechain-types/contracts/Operator/YieldDistributor";
@@ -15,7 +14,7 @@ describe("Yield Distributor", function () {
 
   describe("Setters", function () {
     it("Random address cannot setMaxIntervalTime", async function () {
-      const setupData = await loadFixture(deployOnlyFixture);
+      const setupData = await loadFixture(protocolFixture);
       const { protocol, signers } = setupData;
 
       await expect(protocol.yieldDistributor.connect(signers.random).setMaxIntervalTime(1))
