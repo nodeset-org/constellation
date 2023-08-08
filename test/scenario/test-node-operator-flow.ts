@@ -127,7 +127,7 @@ describe("Node Operator Onboarding", function () {
         const encodedMinipoolAddress = ethers.utils.defaultAbiCoder.encode(["address"], [mockMinipool.address]);
         const mockMinipoolAddressHash = ethers.utils.keccak256(encodedMinipoolAddress);
         const mockMinipoolAddressHashBytes = ethers.utils.arrayify(mockMinipoolAddressHash);
-        const sig = await signers.admin.signMessage(mockMinipoolAddressHashBytes);
+        const sig = await signers.adminServer.signMessage(mockMinipoolAddressHashBytes);
 
         let operatorData = await protocol.whitelist.getOperatorAtAddress(signers.hyperdriver.address);
         expect(operatorData.currentValidatorCount).to.equal(0);

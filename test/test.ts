@@ -40,6 +40,7 @@ export type Signers = {
 	rplWhale: SignerWithAddress,
 	hyperdriver: SignerWithAddress,
 	ethWhale: SignerWithAddress,
+	adminServer: SignerWithAddress,
 }
 
 export type RocketPool = {
@@ -90,13 +91,13 @@ async function getRocketPool(): Promise<RocketPool> {
 	return { rplContract, networkFeesContract, rockStorageContract, rocketNodeManagerContract, rocketNodeStakingContract };
 }
 
-async function deployProtocol(rocketPool: RocketPool): Promise<Protocol> {
+async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise<Protocol> {
+	const predictedNonce = 9;
 	try {
 		upgrades.silenceWarnings();
 
 		const deployer = (await ethers.getSigners())[0];
 
-		const predictedNonce = 9;
 		const directoryAddress = await getNextContractAddress(deployer, predictedNonce-1)
 		const initNonce = await deployer.getTransactionCount();
 
@@ -136,10 +137,17 @@ async function deployProtocol(rocketPool: RocketPool): Promise<Protocol> {
 
 		const wETH = await ethers.getContractAt("IWETH", await directory.getWETHAddress());
 
+		// set adminServer to be ADMIN_SERVER_ROLE
+		const hashedRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
+		await directory.grantRole(ethers.utils.arrayify(hashedRole), signers.adminServer.address);
+
 		return { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, oracle, priceFetcher, wETH };
-	} catch {
-		// always fails the first try due to lower level library limitations
-		return await deployProtocol(rocketPool);
+	} catch(e: any) {
+		const message = e.toString();
+		if(message.includes(`to equal ${predictedNonce}`)) {
+			// always fails the first try due to lower level library limitations
+			return await deployProtocol(rocketPool, signers);
+		}
 	}
 }
 
@@ -157,6 +165,7 @@ async function createSigners(): Promise<Signers> {
 		rplWhale: await ethers.getImpersonatedSigner("0x57757e3d981446d585af0d9ae4d7df6d64647806"),
 		hyperdriver: signersArray[7],
 		ethWhale: signersArray[8],
+		adminServer: signersArray[9],
 	};
 }
 
@@ -164,7 +173,7 @@ export async function protocolFixture(): Promise<SetupData> {
 
 	const signers = await createSigners();
 	const rocketPool = await getRocketPool();
-	const deployedProtocol = await deployProtocol(rocketPool);
+	const deployedProtocol = await deployProtocol(rocketPool, signers);
 
 	return { protocol: deployedProtocol, signers, rocketPool };
 }

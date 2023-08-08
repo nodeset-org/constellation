@@ -107,31 +107,31 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     }
 
     function initialize(Protocol memory newProtocol) public initializer {
-        require(_protocol.whitelist == address(0), Constants.INITIALIZATION_ERROR);
-        require(_protocol.wethVault == address(0), Constants.INITIALIZATION_ERROR);
-        require(_protocol.rplVault == address(0), Constants.INITIALIZATION_ERROR);
-        require(_protocol.depositPool == address(0), Constants.INITIALIZATION_ERROR);
-        require(_protocol.operatorDistributor == address(0), Constants.INITIALIZATION_ERROR);
-        require(_protocol.yieldDistributor == address(0), Constants.INITIALIZATION_ERROR);
-        require(_protocol.oracle == address(0), Constants.INITIALIZATION_ERROR);
-        require(_protocol.priceFetcher == address(0), Constants.INITIALIZATION_ERROR);
-        require(_protocol.rocketStorage == address(0), Constants.INITIALIZATION_ERROR);
-        require(_protocol.rocketNodeManager == address(0), Constants.INITIALIZATION_ERROR);
-        require(_protocol.rocketNodeStaking == address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.whitelist == address(0) && newProtocol.whitelist != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.wethVault == address(0) && newProtocol.wethVault != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.rplVault == address(0) && newProtocol.rplVault != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.depositPool == address(0) && newProtocol.depositPool != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.operatorDistributor == address(0) && newProtocol.operatorDistributor != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.yieldDistributor == address(0) && newProtocol.yieldDistributor != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.oracle == address(0) && newProtocol.oracle != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.priceFetcher == address(0) && newProtocol.priceFetcher != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.rocketStorage == address(0) && newProtocol.rocketStorage != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.rocketNodeManager == address(0) && newProtocol.rocketNodeManager != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.rocketNodeStaking == address(0) && newProtocol.rocketNodeStaking != address(0), Constants.INITIALIZATION_ERROR);
 
         AccessControlUpgradeable.__AccessControl_init();
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.ADMIN_ROLE);
 
         _grantRole(Constants.ADMIN_ROLE, msg.sender);
-        _grantRole(Constants.CORE_PROTOCOL_ROLE, _protocol.whitelist);
-        _grantRole(Constants.CORE_PROTOCOL_ROLE, _protocol.wethVault);
-        _grantRole(Constants.CORE_PROTOCOL_ROLE, _protocol.rplVault);
-        _grantRole(Constants.CORE_PROTOCOL_ROLE, _protocol.depositPool);
-        _grantRole(Constants.CORE_PROTOCOL_ROLE, _protocol.operatorDistributor);
-        _grantRole(Constants.CORE_PROTOCOL_ROLE, _protocol.yieldDistributor);
-        _grantRole(Constants.CORE_PROTOCOL_ROLE, _protocol.oracle);
-        _grantRole(Constants.CORE_PROTOCOL_ROLE, _protocol.priceFetcher);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.whitelist);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.wethVault);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.rplVault);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.depositPool);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.operatorDistributor);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.yieldDistributor);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.oracle);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.priceFetcher);
 
         _treasury = msg.sender;
 

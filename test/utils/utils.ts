@@ -147,7 +147,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         const encodedMinipoolAddress = ethers.utils.defaultAbiCoder.encode(["address"], [mockMinipool.address]);
         const mockMinipoolAddressHash = ethers.utils.keccak256(encodedMinipoolAddress);
         const mockMinipoolAddressHashBytes = ethers.utils.arrayify(mockMinipoolAddressHash);
-        const sig = await setupData.signers.admin.signMessage(mockMinipoolAddressHashBytes);
+        const sig = await setupData.signers.adminServer.signMessage(mockMinipoolAddressHashBytes);
 
         // admin will reimburse the node operator for the minipool
         let operatorData = await setupData.protocol.whitelist.getOperatorAtAddress(nodeOperator.address);
