@@ -47,6 +47,14 @@ abstract contract UpgradeableBase is UUPSUpgradeable, ReentrancyGuard {
         _;
     }
 
+    modifier only24HourTimelock() {
+        require(
+            _directory.hasRole(Constants.TIMELOCK_24_HOUR, msg.sender),
+            "Can only be called by 24 hour timelock!"
+        );
+        _;
+    }
+
     function getDirectory() internal view returns (Directory) {
         return _directory;
     }

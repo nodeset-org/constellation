@@ -29,7 +29,7 @@ struct Protocol {
 contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     Protocol private _protocol;
-    address public _treasury;
+    address private _treasury;
 
     constructor() initializer {
     }
@@ -122,6 +122,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         AccessControlUpgradeable.__AccessControl_init();
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.ADMIN_ROLE);
+        _setRoleAdmin(Constants.TIMELOCK_24_HOUR, Constants.ADMIN_ROLE);
 
         _grantRole(Constants.ADMIN_ROLE, msg.sender);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.whitelist);
