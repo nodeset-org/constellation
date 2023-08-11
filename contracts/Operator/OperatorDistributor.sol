@@ -19,7 +19,7 @@ contract OperatorDistributor is UpgradeableBase {
     address[] public minipoolAddresses;
 
     uint256 public nextMinipoolHavestIndex;
-    uint256 public targetStakeRatio = 1.5e18; // 150%
+    uint256 public targetStakeRatio; // 150%
 
     mapping(address => uint256) public minipoolIndexMap;
     mapping(address => uint256) public minipoolAmountFundedEth;
@@ -27,9 +27,18 @@ contract OperatorDistributor is UpgradeableBase {
 
     mapping(address => address[]) nodeOperatorOwnedMinipools;
 
+    event WarningNoMiniPoolsToHarvest();
+
     constructor() initializer {}
 
-    event WarningNoMiniPoolsToHarvest();
+    function initialize(address _rocketStorageAddress)
+        public
+        initializer
+        override
+    {
+        super.initialize(_rocketStorageAddress);
+        targetStakeRatio = 1.5e18;
+    }
 
     receive() external payable {
         _queuedEth += msg.value;

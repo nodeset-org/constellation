@@ -41,6 +41,7 @@ export type Signers = {
 	hyperdriver: SignerWithAddress,
 	ethWhale: SignerWithAddress,
 	adminServer: SignerWithAddress,
+	timelock24hour: SignerWithAddress,
 }
 
 export type RocketPool = {
@@ -138,15 +139,23 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 		const wETH = await ethers.getContractAt("IWETH", await directory.getWETHAddress());
 
 		// set adminServer to be ADMIN_SERVER_ROLE
-		const hashedRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
-		await directory.grantRole(ethers.utils.arrayify(hashedRole), signers.adminServer.address);
+		const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
+		await directory.grantRole(ethers.utils.arrayify(adminRole), signers.adminServer.address);
 
-		return { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, oracle, priceFetcher, wETH };
+		// set timelock to be TIMELOCK_ROLE
+		const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_24_HOUR"));
+		await directory.grantRole(ethers.utils.arrayify(timelockRole), signers.admin.address);
+
+		const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, oracle, priceFetcher, wETH };
+
+		return returnData;
 	} catch(e: any) {
 		const message = e.toString();
 		if(message.includes(`to equal ${predictedNonce}`)) {
 			// always fails the first try due to lower level library limitations
 			return await deployProtocol(rocketPool, signers);
+		} else {
+			throw e;
 		}
 	}
 }
@@ -166,6 +175,7 @@ async function createSigners(): Promise<Signers> {
 		hyperdriver: signersArray[7],
 		ethWhale: signersArray[8],
 		adminServer: signersArray[9],
+		timelock24hour: signersArray[10],
 	};
 }
 

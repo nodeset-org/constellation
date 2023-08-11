@@ -91,7 +91,7 @@ describe("Whitelist", function () {
         const { protocol, signers } = await loadFixture(protocolFixture);
         
         await expect(protocol.whitelist.connect(signers.random).addOperator(signers.random.address))
-            .to.be.revertedWith("Can only be called by admin address!");
+            .to.be.revertedWith("Can only be called by 24 hour timelock!");
 
         await expect(protocol.whitelist.getOperatorAtAddress(signers.random.address))
             .to.be.revertedWith(await protocol.whitelist.OPERATOR_NOT_FOUND_ERROR());
@@ -115,6 +115,6 @@ describe("Whitelist", function () {
         await protocol.whitelist.addOperator(signers.random.address);
 
         await expect(protocol.whitelist.connect(signers.random).removeOperator(signers.random.address))
-            .to.be.revertedWith("Can only be called by admin address!");
+            .to.be.revertedWith("Can only be called by 24 hour timelock!");
       });
   });
