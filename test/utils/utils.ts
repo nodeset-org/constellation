@@ -147,7 +147,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         const encodedMinipoolAddress = ethers.utils.defaultAbiCoder.encode(["address"], [mockMinipool.address]);
         const mockMinipoolAddressHash = ethers.utils.keccak256(encodedMinipoolAddress);
         const mockMinipoolAddressHashBytes = ethers.utils.arrayify(mockMinipoolAddressHash);
-        const sig = await setupData.signers.admin.signMessage(mockMinipoolAddressHashBytes);
+        const sig = await setupData.signers.adminServer.signMessage(mockMinipoolAddressHashBytes);
 
         // admin will reimburse the node operator for the minipool
         let operatorData = await setupData.protocol.whitelist.getOperatorAtAddress(nodeOperator.address);
@@ -157,3 +157,19 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         expect(operatorData.currentValidatorCount).to.equal(lastCount + 1);
     }
 };
+
+export async function getNextContractAddress(signer: SignerWithAddress, offset = 0) {
+    // Get current nonce of the signer
+    const nonce = (await signer.getTransactionCount()) + offset;
+
+    // Prepare the RLP encoded structure of the to-be-deployed contract
+    const rlpEncoded = require('rlp').encode([signer.address, nonce]);
+
+    // Calculate the hash
+    const contractAddressHash = ethers.utils.keccak256(rlpEncoded);
+
+    // The last 20 bytes of this hash are the address
+    const contractAddress = '0x' + contractAddressHash.slice(-40);
+
+    return contractAddress;
+}

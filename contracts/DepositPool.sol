@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-import "./Base.sol";
+import "./UpgradeableBase.sol";
 import "./Operator/OperatorDistributor.sol";
 import "./Operator/YieldDistributor.sol";
 import "./Interfaces/RocketPool/IRocketNodeStaking.sol";
@@ -11,21 +11,29 @@ import "./Tokens/WETHVault.sol";
 import "./Tokens/RPLVault.sol";
 
 import "./Interfaces/IWETH.sol";
+import "./Utils/Constants.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
 /// ETH + RPL intakes from token mints and validator yields and sends to respective ERC4246 vaults.
-contract DepositPool is Base {
+contract DepositPool is UpgradeableBase {
 
-    uint256 public splitRatioEth = 0.30e5; // sends 30% to operator distributor and 70% to eth vault
-    uint256 public splitRatioRpl = 0.30e5; // sends 30% to operator distributor and 70% to rpl vault
+    uint256 public splitRatioEth; // sends 30% to operator distributor and 70% to eth vault
+    uint256 public splitRatioRpl; // sends 30% to operator distributor and 70% to rpl vault
 
     /// @notice Emitted whenever this contract sends or receives ETH outside of the protocol.
     event TotalValueUpdated(uint oldValue, uint newValue);
     event SplitRatioEthUpdated(uint oldValue, uint newValue);
     event SplitRatioRplUpdated(uint oldValue, uint newValue);
 
-    constructor(address directoryAddress) Base(directoryAddress) {}
+    constructor() initializer {}
+
+    function initialize(address directoryAddress) public virtual initializer override {
+        super.initialize(directoryAddress);
+
+        splitRatioEth = 0.30e5;
+        splitRatioRpl = 0.30e5;
+    }
 
     ///--------
     /// GETTERS
@@ -33,12 +41,12 @@ contract DepositPool is Base {
 
     /// @notice Gets the total ETH and WETH value locked inside the this pool
     function getTvlEth() public view returns (uint) {
-        return address(this).balance + IWETH(_directory.WETH_CONTRACT_ADDRESS()).balanceOf(address(this));
+        return address(this).balance + IWETH(Constants.WETH_CONTRACT_ADDRESS).balanceOf(address(this));
     }
 
     /// @notice Gets the total RPL value locked inside the this pool
     function getTvlRpl() public view returns (uint) {
-        return RocketTokenRPLInterface(_directory.RPL_CONTRACT_ADDRESS()).balanceOf(address(this));
+        return RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS).balanceOf(address(this));
     }
 
     function getProtocolTvlRatio () public view returns (uint) {
@@ -74,7 +82,7 @@ contract DepositPool is Base {
     /// @dev Splits the total ETH balance into WETH tokens and distributes them between the WETHVault and OperatorDistributor based on the splitRatioEth. However, when the requiredCapital from WETHVault is zero, all balance is sent to the OperatorDistributor.
     function sendEthToDistributors() public {
         // convert entire weth balance of this contract to eth
-        IWETH WETH = IWETH(_directory.WETH_CONTRACT_ADDRESS()); // WETH token contract
+        IWETH WETH = IWETH(Constants.WETH_CONTRACT_ADDRESS); // WETH token contract
         WETH.withdraw(WETH.balanceOf(address(this)));
 
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
@@ -118,7 +126,7 @@ contract DepositPool is Base {
             .getOperatorDistributorAddress();
         uint256 requiredCapital = vrpl.getRequiredCollateral();
         RocketTokenRPLInterface RPL = RocketTokenRPLInterface(
-            _directory.RPL_CONTRACT_ADDRESS()
+            Constants.RPL_CONTRACT_ADDRESS
         ); // RPL token contract
         uint256 totalBalance = RPL.balanceOf(address(this));
 

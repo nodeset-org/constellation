@@ -6,13 +6,14 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./OperatorDistributor.sol";
 import "../Whitelist/Whitelist.sol";
 import "../Utils/ProtocolMath.sol";
-import "../Base.sol";
+import "../UpgradeableBase.sol";
 
 import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";
 import "../Interfaces/RocketPool/IRocketNodeStaking.sol";
 import "../Interfaces/Oracles/IXRETHOracle.sol";
 import "../Interfaces/IWETH.sol";
+import "../Utils/Constants.sol";
 
 struct Reward {
     address recipient;
@@ -27,7 +28,7 @@ struct Claim {
 
 /// @custom:security-contact info@nodeset.io
 /// @notice distributes rewards in weth to node operators
-contract YieldDistributor is Base {
+contract YieldDistributor is UpgradeableBase {
 
     uint256 public totalYieldAccrued;
     uint256 public yieldAccruedInInterval;
@@ -36,14 +37,13 @@ contract YieldDistributor is Base {
     mapping(uint256 => Claim) public claims; // claimable yield per interval (in wei)
     mapping(address => mapping(uint256 => bool)) public hasClaimed; // whether an operator has claimed for a given interval
 
-    uint256 public currentInterval = 0;
-    uint256 public currentIntervalGenesisTime = block.timestamp;
-    uint256 public maxIntervalLengthSeconds = 30 days; // NOs will have to wait at most this long for their payday
+    uint256 public currentInterval;
+    uint256 public currentIntervalGenesisTime;
+    uint256 public maxIntervalLengthSeconds; // NOs will have to wait at most this long for their payday
 
     uint256 k; // steepness of the curve
     uint256 maxValidators; // max number of validators used to normalize x axis
 
-    bool private _isInitialized = false;
     string public constant INITIALIZATION_ERROR =
         "YieldDistributor: may only initialized once";
     string public constant DIRECTORY_NOT_INITIALIZED_ERROR =
@@ -60,26 +60,17 @@ contract YieldDistributor is Base {
     event RewardDistributed(Reward);
     event WarningAlreadyClaimed(address operator, uint256 interval);
 
-    constructor(address directory) Base(directory) {
+    function initialize(address _directory) public initializer override {
+        super.initialize(_directory);
+
+        currentIntervalGenesisTime = block.timestamp;
+        maxIntervalLengthSeconds = 30 days;
+
         k = 7;
         maxValidators = 5;
     }
 
-    function initialize() public onlyAdmin {
-        require(!_isInitialized, INITIALIZATION_ERROR);
-        require(
-            getDirectory().getIsInitialized(),
-            DIRECTORY_NOT_INITIALIZED_ERROR
-        );
-        // approve infinite RPL spends for this address from xRPL
-        RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS()).approve(
-            _directory.getRPLVaultAddress(),
-            type(uint).max
-        );
-        _isInitialized = true;
-    }
-
-    function wethReceived(uint256 weth) external onlyWETHVault {
+    function wethReceived(uint256 weth) external onlyProtocol {
         _wethReceived(weth);
     }
 
@@ -99,10 +90,6 @@ contract YieldDistributor is Base {
     /****
      * GETTERS
      */
-
-    function getIsInitialized() public view returns (bool) {
-        return _isInitialized;
-    }
 
 
     function getClaims() public view returns (Claim[] memory) {
@@ -127,7 +114,6 @@ contract YieldDistributor is Base {
         uint256 startInterval,
         uint256 endInterval
     ) public nonReentrant {
-        require(getIsInitialized(), NOT_INITIALIZED_ERROR);
         require(
             startInterval <= endInterval,
             "Start interval must be less than or equal to end interval"
@@ -179,7 +165,7 @@ contract YieldDistributor is Base {
 
         if (isWhitelisted) {
             SafeERC20.safeTransfer(
-                IWETH(_directory.WETH_CONTRACT_ADDRESS()),
+                IWETH(Constants.WETH_CONTRACT_ADDRESS),
                 _rewardee,
                 totalReward
             );
@@ -194,7 +180,7 @@ contract YieldDistributor is Base {
 
     /// @notice Ends the current interval and starts a new one
     /// @dev Only called when numOperators changes or maxIntervalLengthSeconds has passed
-    function finalizeInterval() public onlyWhitelistOrAdmin {
+    function finalizeInterval() public onlyProtocolOrAdmin {
         if (yieldAccruedInInterval == 0 && currentInterval > 0) {
             return;
         }
@@ -266,7 +252,7 @@ contract YieldDistributor is Base {
 
     receive() external payable {
         // mint weth
-        IWETH(_directory.WETH_CONTRACT_ADDRESS()).deposit{value: msg.value}();
+        IWETH(Constants.WETH_CONTRACT_ADDRESS).deposit{value: msg.value}();
         _wethReceived(msg.value);
     }
 }

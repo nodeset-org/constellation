@@ -21,10 +21,10 @@ describe(`DepositPool`, function () {
 			const { protocol, signers } = setupData;
 
 			await expect(protocol.depositPool.connect(signers.random).setSplitRatioEth(1000))
-				.to.be.revertedWith(await protocol.depositPool.ADMIN_ONLY_ERROR());
+				.to.be.revertedWith("Can only be called by admin address!");
 
 			await expect(protocol.depositPool.connect(signers.random).setSplitRatioRpl(1000))
-				.to.be.revertedWith(await protocol.depositPool.ADMIN_ONLY_ERROR());
+				.to.be.revertedWith("Can only be called by admin address!");
 		});
 
 		it("Admin cannot set splitRatioEth or splitRatioRpl to out of range value", async function () {

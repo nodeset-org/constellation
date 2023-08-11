@@ -5,9 +5,10 @@ import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
 import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher } from "../typechain-types";
-import { initializeDirectory } from "./test-directory";
+import { getNextContractAddress } from "./utils/utils";
+import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
 
-const protocolParams  = { trustBuildPeriod : ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
+const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
 
 export type SetupData = {
 	protocol: Protocol,
@@ -39,6 +40,7 @@ export type Signers = {
 	rplWhale: SignerWithAddress,
 	hyperdriver: SignerWithAddress,
 	ethWhale: SignerWithAddress,
+	adminServer: SignerWithAddress,
 }
 
 export type RocketPool = {
@@ -52,13 +54,13 @@ export type RocketPool = {
 export function getAllAddresses(Signers: Signers, Protocol: Protocol, RocketPool: RocketPool) {
 	const allAddresses = [];
 	for (const [key, value] of Object.entries(Signers)) {
-		allAddresses.push({name: key, address: value.address});
+		allAddresses.push({ name: key, address: value.address });
 	}
 	for (const [key, value] of Object.entries(Protocol)) {
-		allAddresses.push({name: key, address: value.address});
+		allAddresses.push({ name: key, address: value.address });
 	}
 	for (const [key, value] of Object.entries(RocketPool)) {
-		allAddresses.push({name: key, address: value.address});
+		allAddresses.push({ name: key, address: value.address });
 	}
 	return allAddresses;
 }
@@ -89,21 +91,64 @@ async function getRocketPool(): Promise<RocketPool> {
 	return { rplContract, networkFeesContract, rockStorageContract, rocketNodeManagerContract, rocketNodeStakingContract };
 }
 
-async function deployProtocol(): Promise<Protocol> {
-	const directory = await (await ethers.getContractFactory("Directory")).deploy();
-	const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directory.address, protocolParams.trustBuildPeriod], { 'initializer' : 'initializeWhitelist',  'kind' : 'uups', 'unsafeAllow': ['constructor'] });
-	const vCWETH = await (await ethers.getContractFactory("WETHVault")).deploy(directory.address);
-	const vCRPL = await (await ethers.getContractFactory("RPLVault")).deploy(directory.address);
-	const depositPool = await (await ethers.getContractFactory("DepositPool")).deploy(directory.address);
-	const operatorDistributor = await (await ethers.getContractFactory("OperatorDistributor")).deploy(directory.address);
-	const yieldDistributor = await (await ethers.getContractFactory("YieldDistributor")).deploy(directory.address);
+async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise<Protocol> {
+	const predictedNonce = 9;
+	try {
+		upgrades.silenceWarnings();
 
-	const oracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
+		const deployer = (await ethers.getSigners())[0];
 
-	const wETH = await ethers.getContractAt("IWETH", await directory.getWETHAddress());
+		const directoryAddress = await getNextContractAddress(deployer, predictedNonce-1)
+		const initNonce = await deployer.getTransactionCount();
 
-	const priceFetcher = await upgrades.deployProxy(await ethers.getContractFactory("PriceFetcher"), [directory.address], { 'initializer' : 'initialize',  'kind' : 'uups', 'unsafeAllow': ['constructor'] });
-	return { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, oracle, priceFetcher, wETH};
+		const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directoryAddress, protocolParams.trustBuildPeriod], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+		const vCWETHProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("WETHVault"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+		const vCWETH = await ethers.getContractAt("WETHVault", vCWETHProxyAbi.address);
+		const vCRPLProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("RPLVault"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+		const vCRPL = await ethers.getContractAt("RPLVault", vCRPLProxyAbi.address);
+		const depositPoolProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("DepositPool"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+		const depositPool = await ethers.getContractAt("DepositPool", depositPoolProxyAbi.address);
+		const operatorDistributorProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("OperatorDistributor"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+		const operatorDistributor = await ethers.getContractAt("OperatorDistributor", operatorDistributorProxyAbi.address);
+		const yieldDistributorProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("YieldDistributor"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+		const yieldDistributor = await ethers.getContractAt("YieldDistributor", yieldDistributorProxyAbi.address);
+		const oracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
+		const priceFetcher = await upgrades.deployProxy(await ethers.getContractFactory("PriceFetcher"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+		const directoryProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("Directory"),
+		[
+			[
+				whitelist.address,
+				vCWETH.address,
+				vCRPL.address,
+				depositPool.address,
+				operatorDistributor.address,
+				yieldDistributor.address,
+				oracle.address,
+				priceFetcher.address,
+				rocketPool.rockStorageContract.address,
+				rocketPool.rocketNodeManagerContract.address,
+				rocketPool.rocketNodeStakingContract.address,
+			]
+		], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+		const finalNonce = await deployer.getTransactionCount();
+		const directory = await ethers.getContractAt("Directory", directoryProxyAbi.address);
+		expect(finalNonce - initNonce).to.equal(predictedNonce);
+		expect(directory.address).to.hexEqual(directoryAddress);
+
+		const wETH = await ethers.getContractAt("IWETH", await directory.getWETHAddress());
+
+		// set adminServer to be ADMIN_SERVER_ROLE
+		const hashedRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
+		await directory.grantRole(ethers.utils.arrayify(hashedRole), signers.adminServer.address);
+
+		return { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, oracle, priceFetcher, wETH };
+	} catch(e: any) {
+		const message = e.toString();
+		if(message.includes(`to equal ${predictedNonce}`)) {
+			// always fails the first try due to lower level library limitations
+			return await deployProtocol(rocketPool, signers);
+		}
+	}
 }
 
 async function createSigners(): Promise<Signers> {
@@ -120,34 +165,15 @@ async function createSigners(): Promise<Signers> {
 		rplWhale: await ethers.getImpersonatedSigner("0x57757e3d981446d585af0d9ae4d7df6d64647806"),
 		hyperdriver: signersArray[7],
 		ethWhale: signersArray[8],
-	};
-}
-
-// this obnoxious double-fixture pattern is necessary because hardhat
-// doesn't allow parameters for fixtures
-// see https://github.com/NomicFoundation/hardhat/issues/3508
-export async function deployOnlyFixture(): Promise<SetupData> {
-
-	const deployedProtocol = await deployProtocol();
-	const signers = await createSigners();
-	const rocketPool = await getRocketPool();
-
-	return {
-		protocol: deployedProtocol,
-		signers,
-		rocketPool,
+		adminServer: signersArray[9],
 	};
 }
 
 export async function protocolFixture(): Promise<SetupData> {
 
-	const deployedProtocol = await deployProtocol();
 	const signers = await createSigners();
 	const rocketPool = await getRocketPool();
+	const deployedProtocol = await deployProtocol(rocketPool, signers);
 
-	await expect(initializeDirectory(deployedProtocol, rocketPool, signers.admin)).to.not.be.reverted;
-	await expect(deployedProtocol.yieldDistributor.initialize())
-	.to.not.be.reverted;
-
-	return { protocol: deployedProtocol, signers, rocketPool};
+	return { protocol: deployedProtocol, signers, rocketPool };
 }

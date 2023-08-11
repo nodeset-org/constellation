@@ -76,7 +76,7 @@ contract Whitelist is UpgradeableBase {
 
     function registerNewValidator(
         address nodeOperator
-    ) public onlyOperatorDistributor {
+    ) public onlyProtocol {
         operatorMap[nodeOperator].currentValidatorCount++;
     }
 
@@ -88,13 +88,13 @@ contract Whitelist is UpgradeableBase {
     // ADMIN
     //----
 
-    function setTrustBuildPeriod(uint8 trustBuildPeriod) public onlyAdmin {
+    function setTrustBuildPeriod(uint8 trustBuildPeriod) public only24HourTimelock {
         uint24 old = _trustBuildPeriod;
         _trustBuildPeriod = trustBuildPeriod;
         emit TrustBuildPeriodUpdated(old, _trustBuildPeriod);
     }
 
-    function addOperator(address a) public onlyAdmin {
+    function addOperator(address a) public only24HourTimelock {
         require(!_permissions[a], OPERATOR_DUPLICATE_ERROR);
 
         _permissions[a] = true;
@@ -118,7 +118,7 @@ contract Whitelist is UpgradeableBase {
         emit OperatorAdded(operator);
     }
 
-    function removeOperator(address nodeOperator) public onlyAdmin {
+    function removeOperator(address nodeOperator) public only24HourTimelock {
         _permissions[nodeOperator] = false;
 
         delete operatorMap[nodeOperator];
@@ -154,14 +154,4 @@ contract Whitelist is UpgradeableBase {
         require(reverseOperatorIndexMap[a] != 0, OPERATOR_NOT_FOUND_ERROR);
         return reverseOperatorIndexMap[a];
     }
-
-    modifier onlyOperatorDistributor() {
-        require(
-            msg.sender == getDirectory().getOperatorDistributorAddress(),
-            "Whitelist: only the OperatorDistributor may call this function!"
-        );
-        _;
-    }
-
-
 }

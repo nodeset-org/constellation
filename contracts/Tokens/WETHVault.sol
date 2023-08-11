@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 
 import "./RPLVault.sol";
 
 import "../PriceFetcher.sol";
-import "../Base.sol";
+import "../UpgradeableBase.sol";
 import "../DepositPool.sol";
 import "../Operator/YieldDistributor.sol";
+import "../Utils/Constants.sol";
 
 /// @custom:security-contact info@nodeoperator.org
-contract WETHVault is Base, ERC4626 {
+contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     string constant NAME = "Constellation ETH";
     string constant SYMBOL = "xrETH"; // Vaulted Constellation Wrapped ETH
 
@@ -29,30 +30,40 @@ contract WETHVault is Base, ERC4626 {
         uint256 weightedPriceSum;
     }
 
-    constructor(
-        address directoryAddress
-    )
-        Base(directoryAddress)
-        ERC20(NAME, SYMBOL)
-        ERC4626(IERC20(Directory(directoryAddress).WETH_CONTRACT_ADDRESS()))
-    {}
 
     using Math for uint256;
 
-    uint256 public makerFee1BasePoint = 0.01e5; // admin maker fee
-    uint256 public makerFee2BasePoint = 0.02e5; // node operator maker fee
+    uint256 public makerFee1BasePoint; // admin maker fee
+    uint256 public makerFee2BasePoint; // node operator maker fee
 
-    uint256 public takerFee1BasePoint = 0.03e5; // admin taker fee
-    uint256 public takerFee2BasePoint = 0.04e5; // node operator taker fee
+    uint256 public takerFee1BasePoint; // admin taker fee
+    uint256 public takerFee2BasePoint; // node operator taker fee
 
-    uint256 public collateralizationRatioBasePoint = 0.02e5; // collateralization ratio
-    uint256 public rplCoverageRatio = 0.15e18; // rpl coverage ratio
+    uint256 public collateralizationRatioBasePoint; // collateralization ratio
+    uint256 public rplCoverageRatio; // rpl coverage ratio
 
     uint256 public totalYieldDistributed;
 
     mapping(address => Position) public positions;
 
     event NewCapitalGain(uint256 amount, address indexed winner); // shares can only appreciate in value
+
+    constructor() initializer {}
+
+    function initialize(address directoryAddress) public virtual initializer override {
+        super.initialize(directoryAddress);
+        ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(Constants.WETH_CONTRACT_ADDRESS));
+        ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
+
+        makerFee1BasePoint = 0.01e5;
+        makerFee2BasePoint = 0.02e5;
+
+        takerFee1BasePoint = 0.03e5;
+        takerFee2BasePoint = 0.04e5;
+
+        collateralizationRatioBasePoint = 0.02e5;
+        rplCoverageRatio = 0.15e18;
+    }
 
     /** @dev See {IERC4626-previewDeposit}. */
     function previewDeposit(
@@ -109,7 +120,7 @@ contract WETHVault is Base, ERC4626 {
         uint256 fee1 = _feeOnTotal(assets, makerFee1BasePoint);
         uint256 fee2 = _feeOnTotal(assets, makerFee2BasePoint);
 
-        address recipient1 = _directory.getAdminAddress();
+        address recipient1 = _directory.getTreasuryAddress();
         address payable recipient2 = _directory.getYieldDistributorAddress();
 
         address payable pool = _directory.getDepositPoolAddress();
@@ -158,7 +169,7 @@ contract WETHVault is Base, ERC4626 {
     ) internal virtual override {
         uint256 fee1 = _feeOnRaw(assets, takerFee1BasePoint);
         uint256 fee2 = _feeOnRaw(assets, takerFee2BasePoint);
-        address recipient1 = _directory.getAdminAddress();
+        address recipient1 = _directory.getTreasuryAddress();
         address payable recipient2 = _directory.getYieldDistributorAddress();
 
         DepositPool(_directory.getDepositPoolAddress()).sendEthToDistributors();
@@ -238,7 +249,7 @@ contract WETHVault is Base, ERC4626 {
 
     /// @notice Returns the minimal amount of asset this contract must contain to be sufficiently collateralized for operations
     function getRequiredCollateral() public view returns (uint256) {
-        uint256 currentBalance = ERC20(asset()).balanceOf(address(this));
+        uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 fullBalance = totalAssets();
 
         uint256 requiredBalance = collateralizationRatioBasePoint.mulDiv(
