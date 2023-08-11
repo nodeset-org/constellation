@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import "../Base.sol";
+import "../UpgradeableBase.sol";
 import "../Whitelist/Whitelist.sol";
 import "../DepositPool.sol";
 import "../Interfaces/RocketPool/IRocketStorage.sol";
@@ -9,11 +9,11 @@ import "../Interfaces/RocketPool/IMinipool.sol";
 import "../Interfaces/RocketPool/IRocketNodeManager.sol";
 import "../Interfaces/RocketPool/IRocketNodeStaking.sol";
 
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "hardhat/console.sol";
 
-contract OperatorDistributor is Base {
+contract OperatorDistributor is UpgradeableBase {
     uint public _queuedEth;
 
     address[] public minipoolAddresses;
@@ -26,7 +26,7 @@ contract OperatorDistributor is Base {
 
     mapping(address => address[]) nodeOperatorOwnedMinipools;
 
-    constructor(address directory) Base(directory) {}
+    constructor() initializer {}
 
     event WarningNoMiniPoolsToHarvest();
 
@@ -60,14 +60,14 @@ contract OperatorDistributor is Base {
     // and this contract.
     function getTvlRpl() public view returns (uint) {
         return
-            RocketTokenRPLInterface(_directory.RPL_CONTRACT_ADDRESS())
+            RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS)
                 .balanceOf(address(this)) + getAmountFundedRpl();
     }
 
     /// @notice Should be called by admin server when a node operator exists a minipool
     function removeMinipoolAddress(
         address _address
-    ) public onlyWhitelistOrAdmin {
+    ) public onlyProtocolOrAdmin {
         uint index = minipoolIndexMap[_address] - 1;
         require(index < minipoolAddresses.length, "Address not found.");
 
@@ -86,7 +86,7 @@ contract OperatorDistributor is Base {
 
     function removeNodeOperator(
         address _address
-    ) external onlyWhitelistOrAdmin {
+    ) external onlyProtocolOrAdmin {
         // remove all minipools owned by node operator
         address[] memory minipools = nodeOperatorOwnedMinipools[_address];
         for (uint i = 0; i < minipools.length; i++) {
@@ -105,7 +105,7 @@ contract OperatorDistributor is Base {
 
         // approve the node staking contract to spend the RPL
         RocketTokenRPLInterface rpl = RocketTokenRPLInterface(
-            getDirectory().RPL_CONTRACT_ADDRESS()
+            Constants.RPL_CONTRACT_ADDRESS
         );
         require(
             rpl.approve(
@@ -121,7 +121,7 @@ contract OperatorDistributor is Base {
     }
 
     function reimburseNodeForMinipool(
-        bytes memory sig,
+        bytes memory sig, // sig from admin server
         address newMinipoolAdress
     ) public {
         IMinipool minipool = IMinipool(newMinipoolAdress);
@@ -134,12 +134,12 @@ contract OperatorDistributor is Base {
 
         // validate that the newMinipoolAdress was signed by the admin address
         bytes32 messageHash = keccak256(abi.encode(newMinipoolAdress));
-        bytes32 ethSignedMessageHash = ECDSAUpgradeable.toEthSignedMessageHash(
+        bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(
             messageHash
         );
-        address signer = ECDSAUpgradeable.recover(ethSignedMessageHash, sig);
+        address signer = ECDSA.recover(ethSignedMessageHash, sig);
         require(
-            signer == getDirectory().getAdminAddress(),
+            _directory.hasRole(Constants.ADMIN_SERVER_ROLE, signer),
             "OperatorDistributor: invalid signature"
         );
 
@@ -195,7 +195,7 @@ contract OperatorDistributor is Base {
         payable(nodeAddress).transfer(bond);
     }
 
-    function harvestNextMinipool() external onlyYieldDistrubutor {
+    function harvestNextMinipool() external onlyProtocol {
         if (minipoolAddresses.length == 0) {
             emit WarningNoMiniPoolsToHarvest();
             return;

@@ -25,7 +25,8 @@ describe("Node Operator Onboarding", function () {
     let weth: IWETH;
 
     before(async function () {
-        setupData = await protocolFixture();
+        setupData = await loadFixture(protocolFixture);
+
         protocol = setupData.protocol;
         signers = setupData.signers;
         rocketPool = setupData.rocketPool;
@@ -35,7 +36,7 @@ describe("Node Operator Onboarding", function () {
         xrETH = protocol.vCWETH;
         xRPL = protocol.vCRPL;
         weth = protocol.wETH;
-        rpl = await ethers.getContractAt("IERC20", await protocol.directory.RPL_CONTRACT_ADDRESS());
+        rpl = await ethers.getContractAt("IERC20", await protocol.directory.getRPLAddress());
 
     });
 
@@ -126,7 +127,7 @@ describe("Node Operator Onboarding", function () {
         const encodedMinipoolAddress = ethers.utils.defaultAbiCoder.encode(["address"], [mockMinipool.address]);
         const mockMinipoolAddressHash = ethers.utils.keccak256(encodedMinipoolAddress);
         const mockMinipoolAddressHashBytes = ethers.utils.arrayify(mockMinipoolAddressHash);
-        const sig = await signers.admin.signMessage(mockMinipoolAddressHashBytes);
+        const sig = await signers.adminServer.signMessage(mockMinipoolAddressHashBytes);
 
         let operatorData = await protocol.whitelist.getOperatorAtAddress(signers.hyperdriver.address);
         expect(operatorData.currentValidatorCount).to.equal(0);
