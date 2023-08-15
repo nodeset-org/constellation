@@ -240,10 +240,11 @@ contract OperatorDistributor is UpgradeableBase {
             uint256 currentRplBalance = RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS).balanceOf(address(this));
             if(currentRplBalance >= requiredStakeRpl) {
                 // stakeRPLOnBehalfOf
+                IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(nodeAddress, requiredStakeRpl);
             } else {
+                // stake what we have
+                IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(nodeAddress, currentRplBalance);
             }
-
-            // Here goes the logic to stake the requiredStakeRpl
         }
 
 
