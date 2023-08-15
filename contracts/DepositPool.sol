@@ -49,11 +49,6 @@ contract DepositPool is UpgradeableBase {
         return RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS).balanceOf(address(this));
     }
 
-    function getProtocolTvlRatio () public view returns (uint) {
-        uint256 totalEth = WETHVault(getDirectory().getWETHVaultAddress()).totalAssets();
-        uint256 totalRpl = RPLVault(getDirectory().getRPLVaultAddress()).totalAssets();
-    }
-
     ///--------
     /// SETTERS
     ///--------
@@ -77,6 +72,10 @@ contract DepositPool is UpgradeableBase {
     ///--------
     /// ACTIONS
     ///--------
+
+    function unstakeRpl(uint256 amount) external onlyAdmin {
+        IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).withdrawRPL(amount);
+    }
 
     /// @notice Sends 30% of the ETH balance to the OperatorDistributor and the rest to the WETHVault.
     /// @dev Splits the total ETH balance into WETH tokens and distributes them between the WETHVault and OperatorDistributor based on the splitRatioEth. However, when the requiredCapital from WETHVault is zero, all balance is sent to the OperatorDistributor.

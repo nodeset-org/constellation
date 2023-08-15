@@ -6,7 +6,6 @@ import "../../Interfaces/RocketPool/IRocketNodeStaking.sol";
 import "../../Interfaces/RocketTokenRPLInterface.sol";
 
 contract MockRocketNodeStaking is IRocketNodeStaking {
-
     uint256 public rplStaked;
 
     function getNodeMinimumRPLStake(
@@ -20,7 +19,9 @@ contract MockRocketNodeStaking is IRocketNodeStaking {
         uint256 _amount
     ) external override {
         // Transfer RPL from msg.sender to this contract
-        RocketTokenRPLInterface rplToken = RocketTokenRPLInterface(0xD33526068D116cE69F19A9ee46F0bd304F21A51f);
+        RocketTokenRPLInterface rplToken = RocketTokenRPLInterface(
+            0xD33526068D116cE69F19A9ee46F0bd304F21A51f
+        );
         rplToken.transferFrom(msg.sender, address(this), _amount);
     }
 
@@ -30,9 +31,16 @@ contract MockRocketNodeStaking is IRocketNodeStaking {
         return rplStaked;
     }
 
-    function setRPLStaked(
-        uint256 _rplStaked
-    ) external {
+    function setRPLStaked(uint256 _rplStaked) external {
         rplStaked = _rplStaked;
+    }
+
+    function withdrawRPL(uint256 _amount) external override {
+        // Transfer RPL from this contract to msg.sender
+        RocketTokenRPLInterface rplToken = RocketTokenRPLInterface(
+            0xD33526068D116cE69F19A9ee46F0bd304F21A51f
+        );
+        rplStaked -= _amount;
+        rplToken.transfer(msg.sender, _amount);
     }
 }
