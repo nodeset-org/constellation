@@ -14,6 +14,10 @@ import "../Interfaces/RocketPool/IRocketNodeStaking.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract OperatorDistributor is UpgradeableBase {
+
+    event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
+    event MinipoolDestroyed(address indexed _minipoolAddress, address indexed _nodeAddress);
+
     uint public _queuedEth;
 
     address[] public minipoolAddresses;
@@ -92,6 +96,8 @@ contract OperatorDistributor is UpgradeableBase {
         // Set amount funded to 0 since it's being returned to DP
         minipoolAmountFundedEth[_address] = 0;
         minipoolAmountFundedRpl[_address] = 0;
+
+        emit MinipoolDestroyed(_address, IMinipool(_address).getNodeAddress());
     }
 
     function removeNodeOperator(
@@ -196,6 +202,8 @@ contract OperatorDistributor is UpgradeableBase {
         // add minipool to minipoolAddresses
         minipoolAddresses.push(newMinipoolAdress);
         minipoolIndexMap[newMinipoolAdress] = minipoolAddresses.length;
+
+        emit MinipoolCreated(newMinipoolAdress, nodeAddress);
 
         // updated amount funded eth
         minipoolAmountFundedEth[newMinipoolAdress] = bond;
