@@ -112,7 +112,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 assets,
         uint256 shares
     ) internal virtual override {
-        require(tvlRatioEthRpl() >= rplCoverageRatio, "insufficient RPL coverage");
+        require(
+            tvlRatioEthRpl() >= rplCoverageRatio,
+            "insufficient RPL coverage"
+        );
 
         uint256 fee1 = _feeOnTotal(assets, makerFee1BasePoint);
         uint256 fee2 = _feeOnTotal(assets, makerFee2BasePoint);
@@ -133,7 +136,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         vars.newValueTimesShares = vars.totalPriceOfShares * 1e18;
         vars.totalShares = positions[receiver].shares + shares;
-        vars.weightedPriceSum = vars.originalValueTimesShares + vars.newValueTimesShares;
+        vars.weightedPriceSum =
+            vars.originalValueTimesShares +
+            vars.newValueTimesShares;
 
         positions[receiver].pricePaidPerShare =
             vars.weightedPriceSum /
@@ -152,7 +157,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         }
         // transfer the rest of the deposit to the pool for utilization
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets - fee1 - fee2);
-
     }
 
     /** @dev See {IERC4626-_deposit}. */
@@ -234,11 +238,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress())
             .totalAssets();
 
-        if(tvlRpl == 0) return 1e18; // if there is no RPL in the vault, return 100% (1e18)
+        if (tvlRpl == 0) return 1e18; // if there is no RPL in the vault, return 100% (1e18)
 
-        uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+        uint256 ethPriceInRpl = PriceFetcher(
+            getDirectory().getPriceFetcherAddress()
+        ).getPrice();
 
-        return tvlEth * ethPriceInRpl * 1e18 / tvlRpl / 1e18;
+        return tvlEth * ethPriceInRpl / tvlRpl;
     }
 
     /// @notice Returns the minimal amount of asset this contract must contain to be sufficiently collateralized for operations
@@ -278,7 +284,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     function setRplCoverageRatio(uint256 _rplCoverageRatio) external onlyAdmin {
-        require(_rplCoverageRatio <= 1e18, "rpl coverage ratio must be lte 100%");
+        require(
+            _rplCoverageRatio <= 1e18,
+            "rpl coverage ratio must be lte 100%"
+        );
         rplCoverageRatio = _rplCoverageRatio;
     }
 }

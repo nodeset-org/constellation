@@ -78,4 +78,8 @@ contract MockMinipool is IMinipool {
 
     function beginUserDistribute() external override {
     }
+
+    function setNodeDepositBalance(uint256 _newBalance) external {
+        _nodeDepositBalance = _newBalance;
+    }
 }

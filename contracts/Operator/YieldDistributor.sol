@@ -10,6 +10,7 @@ import "../UpgradeableBase.sol";
 
 import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";
+import "../Interfaces/RocketPool/IRocketNodeStaking.sol";
 import "../Interfaces/Oracles/IXRETHOracle.sol";
 import "../Interfaces/IWETH.sol";
 import "../Utils/Constants.sol";
@@ -172,7 +173,7 @@ contract YieldDistributor is UpgradeableBase {
             dustAccrued += totalReward;
         }
 
-        getOperatorDistributor().harvestNextMinipool();
+        getOperatorDistributor().processNextMinipool();
 
         emit RewardDistributed(Reward(_rewardee, totalReward));
     }
@@ -194,7 +195,7 @@ contract YieldDistributor is UpgradeableBase {
         currentIntervalGenesisTime = block.timestamp;
         yieldAccruedInInterval = 0;
 
-        getOperatorDistributor().harvestNextMinipool();
+        getOperatorDistributor().processNextMinipool();
     }
 
     /****
