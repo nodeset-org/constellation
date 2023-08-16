@@ -17,6 +17,7 @@ contract OperatorDistributor is UpgradeableBase {
 
     event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
     event MinipoolDestroyed(address indexed _minipoolAddress, address indexed _nodeAddress);
+    event WarningNoMiniPoolsToHarvest();
 
     uint public _queuedEth;
 
@@ -30,8 +31,6 @@ contract OperatorDistributor is UpgradeableBase {
     mapping(address => uint256) public minipoolAmountFundedRpl;
 
     mapping(address => address[]) nodeOperatorOwnedMinipools;
-
-    event WarningNoMiniPoolsToHarvest();
 
     constructor() initializer {}
 
@@ -235,14 +234,15 @@ contract OperatorDistributor is UpgradeableBase {
         uint256 stakeRatio = rplStaked == 0 ? 1e18 : ethStaked * ethPriceInRpl * 1e18 / rplStaked;
         if (stakeRatio < targetStakeRatio) {
             uint256 requiredStakeRpl = (ethStaked * ethPriceInRpl / targetStakeRatio) - rplStaked;
-
             // Make sure the contract has enough RPL to stake
             uint256 currentRplBalance = RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS).balanceOf(address(this));
             if(currentRplBalance >= requiredStakeRpl) {
                 // stakeRPLOnBehalfOf
+                SafeERC20.safeApprove(RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS), _directory.getRocketNodeStakingAddress(), requiredStakeRpl);
                 IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(nodeAddress, requiredStakeRpl);
             } else {
                 // stake what we have
+                SafeERC20.safeApprove(RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS), _directory.getRocketNodeStakingAddress(), currentRplBalance);
                 IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(nodeAddress, currentRplBalance);
             }
         }
@@ -255,5 +255,9 @@ contract OperatorDistributor is UpgradeableBase {
         } else {
             minipool.beginUserDistribute();
         }
+    }
+
+    function getMinipoolAddresses() external view returns (address[] memory) {
+        return minipoolAddresses;
     }
 }

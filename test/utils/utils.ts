@@ -4,6 +4,7 @@ import { expect } from "chai";
 import { Protocol, SetupData } from "../test";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { RocketPool } from "../test";
+import { IMinipool, MockMinipool } from "../../typechain-types";
 
 // optionally include the names of the accounts
 export const printBalances = async (accounts: string[], opts: any = {}) => {
@@ -94,7 +95,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
 
     // one currently needs 8 eth in the operatorDistribution contract to register a validator for each node operator
     const requiredEth = ethers.utils.parseEther("8").mul(nodeOperators.length);
-    if((await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)).lt(requiredEth)) {
+    if ((await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)).lt(requiredEth)) {
         throw new Error(`Not enough eth in operatorDistributor contract to register ${nodeOperators.length} validators. Required ${ethers.utils.formatEther(requiredEth)} eth but only have ${ethers.utils.formatEther(await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address))} eth`);
     }
 
@@ -139,7 +140,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         await rocketPool.rocketNodeManagerContract.connect(nodeOperator).setSmoothingPoolRegistrationState(true);
 
         // admin needs to kyc the node operator and register them in the whitelist if they aren't already
-        if(!(await setupData.protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address))) {
+        if (!(await setupData.protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address))) {
             await setupData.protocol.whitelist.connect(setupData.signers.admin).addOperator(nodeOperator.address);
         }
 
@@ -157,6 +158,35 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         expect(operatorData.currentValidatorCount).to.equal(lastCount + 1);
     }
 };
+
+export async function prepareOperatorDistributionContract(setupData: SetupData, numOperators: Number) {
+    // sends 8 * numOperators eth to operatorDistribution contract
+    const requiredEth = ethers.utils.parseEther("8").mul(BigNumber.from(numOperators));
+    await setupData.signers.admin.sendTransaction({
+        to: setupData.protocol.operatorDistributor.address,
+        value: requiredEth
+    });
+}
+
+export async function getMinipoolsInProtocol(setupData: SetupData): Promise<IMinipool[]> {
+    const minipoolAddresses = await setupData.protocol.operatorDistributor.getMinipoolAddresses();
+    const minipools: IMinipool[] = [];
+    for (let i = 0; i < minipoolAddresses.length; i++) {
+        const minipool = await ethers.getContractAt("IMinipool", minipoolAddresses[i]);
+        minipools.push(minipool);
+    }
+    return minipools;
+}
+
+export async function getMockMinipoolsInProtocol(setupData: SetupData): Promise<MockMinipool[]> {
+    const minipoolAddresses = await setupData.protocol.operatorDistributor.getMinipoolAddresses();
+    const minipools: MockMinipool[] = [];
+    for (let i = 0; i < minipoolAddresses.length; i++) {
+        const minipool = await ethers.getContractAt("MockMinipool", minipoolAddresses[i]);
+        minipools.push(minipool);
+    }
+    return minipools;
+}
 
 export async function getNextContractAddress(signer: SignerWithAddress, offset = 0) {
     // Get current nonce of the signer

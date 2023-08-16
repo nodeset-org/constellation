@@ -42,6 +42,7 @@ export type Signers = {
 	ethWhale: SignerWithAddress,
 	adminServer: SignerWithAddress,
 	timelock24hour: SignerWithAddress,
+	protocolSigner: SignerWithAddress,
 }
 
 export type RocketPool = {
@@ -146,6 +147,10 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 		const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_24_HOUR"));
 		await directory.grantRole(ethers.utils.arrayify(timelockRole), signers.admin.address);
 
+		// set protocolSigner to be PROTOCOL_ROLE
+		const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
+		await directory.grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
+
 		const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, oracle, priceFetcher, wETH };
 
 		return returnData;
@@ -176,6 +181,7 @@ async function createSigners(): Promise<Signers> {
 		ethWhale: signersArray[8],
 		adminServer: signersArray[9],
 		timelock24hour: signersArray[10],
+		protocolSigner: signersArray[11],
 	};
 }
 
