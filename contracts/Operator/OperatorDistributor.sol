@@ -135,6 +135,34 @@ contract OperatorDistributor is UpgradeableBase {
         nodeStaking.stakeRPLFor(_nodeAddress, minimumRplStake);
     }
 
+    function _validateWithdrawalAddress(address _nodeAddress) internal view {
+        IRocketStorage rocketStorage = IRocketStorage(
+            getDirectory().getRocketStorageAddress()
+        );
+
+        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(
+            _nodeAddress
+        );
+
+        address depositPoolAddr = getDirectory().getDepositPoolAddress();
+
+        require(
+            withdrawalAddress == depositPoolAddr,
+            "OperatorDistributor: minipool must delegate control to deposit pool"
+        );
+    }
+
+    /// @notice Should be called by admin to prepare a node for minipool creation
+    /// @dev This function will stake the minimum amount of RPL for the node
+    /// @param _nodeAddress The address of the node operator whose withdrawal address will be set to the deposit pool
+    function prepareNodeForReimbursement(
+        address _nodeAddress
+    ) external onlyProtocolOrAdmin {
+        // stakes (2.4 + 100% padding) eth worth of rpl for the node
+        _validateWithdrawalAddress(_nodeAddress);
+        performTopUp(_nodeAddress, 2.4 ether * 2);
+    }
+
     function reimburseNodeForMinipool(
         bytes memory sig, // sig from admin server
         address newMinipoolAdress
@@ -158,20 +186,7 @@ contract OperatorDistributor is UpgradeableBase {
             "OperatorDistributor: invalid signature"
         );
 
-        IRocketStorage rocketStorage = IRocketStorage(
-            getDirectory().getRocketStorageAddress()
-        );
-
-        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(
-            nodeAddress
-        );
-
-        address depositPoolAddr = getDirectory().getDepositPoolAddress();
-
-        require(
-            withdrawalAddress == depositPoolAddr,
-            "OperatorDistributor: minipool must delegate control to deposit pool"
-        );
+        _validateWithdrawalAddress(nodeAddress);
 
         IRocketNodeManager nodeManager = IRocketNodeManager(
             getDirectory().getRocketNodeManagerAddress()
@@ -189,8 +204,7 @@ contract OperatorDistributor is UpgradeableBase {
             "OperatorDistributor: insufficient ETH in queue"
         );
 
-        //        _stakeRPLFor(nodeAddress);
-        // TODO: reimburse RPL and stake up to 150%
+        performTopUp(nodeAddress, bond);
 
         // register minipool with node operator
         whitelist.registerNewValidator(nodeAddress);
@@ -212,6 +226,35 @@ contract OperatorDistributor is UpgradeableBase {
         payable(nodeAddress).transfer(bond);
     }
 
+    /// @notice This will top up the node operator's RPL stake if it is below the target stake ratio
+    /// @param _nodeAddress The node operator's address
+    /// @param _ethStaked The amount of ETH staked by the node operator
+    function performTopUp(
+        address _nodeAddress,
+        uint256 _ethStaked
+    ) public onlyProtocolOrAdmin {
+        uint256 rplStaked = IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStake(_nodeAddress);
+        uint256 ethPriceInRpl = PriceFetcher(
+            getDirectory().getPriceFetcherAddress()
+        ).getPrice();
+
+        uint256 stakeRatio = rplStaked == 0 ? 1e18 : _ethStaked * ethPriceInRpl * 1e18 / rplStaked;
+        if (stakeRatio < targetStakeRatio) {
+            uint256 requiredStakeRpl = (_ethStaked * ethPriceInRpl / targetStakeRatio) - rplStaked;
+            // Make sure the contract has enough RPL to stake
+            uint256 currentRplBalance = RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS).balanceOf(address(this));
+            if(currentRplBalance >= requiredStakeRpl) {
+                // stakeRPLOnBehalfOf
+                SafeERC20.safeApprove(RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS), _directory.getRocketNodeStakingAddress(), requiredStakeRpl);
+                IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, requiredStakeRpl);
+            } else {
+                // stake what we have
+                SafeERC20.safeApprove(RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS), _directory.getRocketNodeStakingAddress(), currentRplBalance);
+                IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, currentRplBalance);
+            }
+        }
+    }
+
     /// @notice called during the creation of new intervals to withdraw rewards from minipools and top up rpl stake
     function processNextMinipool() external onlyProtocol {
         if (minipoolAddresses.length == 0) {
@@ -225,28 +268,9 @@ contract OperatorDistributor is UpgradeableBase {
 
         // process top up
         address nodeAddress = minipool.getNodeAddress();
-        uint256 rplStaked = IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStake(nodeAddress);
         uint256 ethStaked = minipool.getNodeDepositBalance();
-        uint256 ethPriceInRpl = PriceFetcher(
-            getDirectory().getPriceFetcherAddress()
-        ).getPrice();
 
-        uint256 stakeRatio = rplStaked == 0 ? 1e18 : ethStaked * ethPriceInRpl * 1e18 / rplStaked;
-        if (stakeRatio < targetStakeRatio) {
-            uint256 requiredStakeRpl = (ethStaked * ethPriceInRpl / targetStakeRatio) - rplStaked;
-            // Make sure the contract has enough RPL to stake
-            uint256 currentRplBalance = RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS).balanceOf(address(this));
-            if(currentRplBalance >= requiredStakeRpl) {
-                // stakeRPLOnBehalfOf
-                SafeERC20.safeApprove(RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS), _directory.getRocketNodeStakingAddress(), requiredStakeRpl);
-                IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(nodeAddress, requiredStakeRpl);
-            } else {
-                // stake what we have
-                SafeERC20.safeApprove(RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS), _directory.getRocketNodeStakingAddress(), currentRplBalance);
-                IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(nodeAddress, currentRplBalance);
-            }
-        }
-
+        performTopUp(nodeAddress, ethStaked);
 
         nextMinipoolHavestIndex = index + 1;
 
