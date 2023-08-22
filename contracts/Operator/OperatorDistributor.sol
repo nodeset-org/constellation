@@ -276,11 +276,10 @@ contract OperatorDistributor is UpgradeableBase {
 
         nextMinipoolHavestIndex = index + 1;
 
-        if (minipool.userDistributeAllowed()) {
-            minipool.distributeBalance(true);
-        } else {
-            minipool.beginUserDistribute();
-        }
+        uint256 balance = minipool.getNodeDepositBalance();
+
+        minipool.beginUserDistribute();
+        minipool.distributeBalance(balance > 8 ether);
     }
 
     function getMinipoolAddresses() external view returns (address[] memory) {
