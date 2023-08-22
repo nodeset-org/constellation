@@ -160,7 +160,8 @@ contract OperatorDistributor is UpgradeableBase {
     ) external onlyProtocolOrAdmin {
         // stakes (2.4 + 100% padding) eth worth of rpl for the node
         _validateWithdrawalAddress(_nodeAddress);
-        performTopUp(_nodeAddress, 2.4 ether * 2);
+        uint256 numValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(_nodeAddress);
+        performTopUp(_nodeAddress, 2.4 ether * numValidators);
     }
 
     function reimburseNodeForMinipool(
@@ -204,7 +205,8 @@ contract OperatorDistributor is UpgradeableBase {
             "OperatorDistributor: insufficient ETH in queue"
         );
 
-        performTopUp(nodeAddress, bond);
+        uint256 numValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(nodeAddress);
+        performTopUp(nodeAddress, bond * numValidators);
 
         // register minipool with node operator
         whitelist.registerNewValidator(nodeAddress);
@@ -268,9 +270,9 @@ contract OperatorDistributor is UpgradeableBase {
 
         // process top up
         address nodeAddress = minipool.getNodeAddress();
-        uint256 ethStaked = minipool.getNodeDepositBalance();
 
-        performTopUp(nodeAddress, ethStaked);
+        uint256 numberOfValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(nodeAddress);
+        performTopUp(nodeAddress, 8 * numberOfValidators);
 
         nextMinipoolHavestIndex = index + 1;
 
