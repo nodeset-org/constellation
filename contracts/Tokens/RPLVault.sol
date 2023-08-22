@@ -3,22 +3,28 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 
+import "./WETHVault.sol";
+
 import "../UpgradeableBase.sol";
 import "../DepositPool.sol";
 import "../Operator/OperatorDistributor.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
+
+    using Math for uint256;
+
     string constant NAME = "Constellation RPL";
     string constant SYMBOL = "xRPL"; // Vaulted Constellation RPL
 
-
-    using Math for uint256;
+    bool enforceWethCoverageRatio;
 
     uint256 public makerFeeBasePoint; // admin maker fee
     uint256 public takerFeeBasePoint; // admin taker fee
 
     uint256 public collateralizationRatioBasePoint; // collateralization ratio
+
+    uint256 public wethCoverageRatio; // weth coverage ratio
 
     constructor() initializer {}
 
@@ -30,6 +36,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         makerFeeBasePoint = 0.05e5;
         takerFeeBasePoint = 0.05e5;
         collateralizationRatioBasePoint = 0.02e5;
+        wethCoverageRatio = 1.75e5;
+        enforceWethCoverageRatio = true;
     }
 
     /** @dev See {IERC4626-previewDeposit}. */
@@ -71,6 +79,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 assets,
         uint256 shares
     ) internal virtual override  {
+        WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
+        require(enforceWethCoverageRatio && vweth.tvlRatioEthRpl() >= wethCoverageRatio, "insufficient weth coverage ratio");
+
         uint256 fee = _feeOnTotal(assets, makerFeeBasePoint);
 
         address recipient1 = _directory.getTreasuryAddress();
@@ -152,5 +163,13 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         );
         makerFeeBasePoint = _makerFeeBasePoint;
         takerFeeBasePoint = _takerFeeBasePoint;
+    }
+
+    function setWETHCoverageRatio(uint256 _wethCoverageRatio) external onlyAdmin {
+        wethCoverageRatio = _wethCoverageRatio;
+    }
+
+    function setEnforceWethCoverageRatio(bool _enforceWethCoverageRatio) external onlyAdmin {
+        enforceWethCoverageRatio = _enforceWethCoverageRatio;
     }
 }

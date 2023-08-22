@@ -13,8 +13,8 @@ import "../Utils/Constants.sol";
 
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
-    string constant NAME = "Constellation ETH";
-    string constant SYMBOL = "xrETH"; // Vaulted Constellation Wrapped ETH
+
+    event NewCapitalGain(uint256 amount, address indexed winner); // shares can only appreciate in value
 
     struct Position {
         uint256 shares;
@@ -30,8 +30,12 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 weightedPriceSum;
     }
 
-
     using Math for uint256;
+
+    string constant NAME = "Constellation ETH";
+    string constant SYMBOL = "xrETH"; // Vaulted Constellation Wrapped ETH
+
+    bool public enforceRplCoverageRatio;
 
     uint256 public makerFee1BasePoint; // admin maker fee
     uint256 public makerFee2BasePoint; // node operator maker fee
@@ -45,8 +49,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public totalYieldDistributed;
 
     mapping(address => Position) public positions;
-
-    event NewCapitalGain(uint256 amount, address indexed winner); // shares can only appreciate in value
 
     constructor() initializer {}
 
@@ -63,6 +65,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         collateralizationRatioBasePoint = 0.02e5;
         rplCoverageRatio = 0.15e18;
+
+        enforceRplCoverageRatio = true;
     }
 
     /** @dev See {IERC4626-previewDeposit}. */
@@ -113,7 +117,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 shares
     ) internal virtual override {
         require(
-            tvlRatioEthRpl() >= rplCoverageRatio,
+            enforceRplCoverageRatio && tvlRatioEthRpl() >= rplCoverageRatio,
             "insufficient RPL coverage"
         );
 
@@ -233,6 +237,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             od.getTvlEth();
     }
 
+    /// @notice Returns the ratio of ETH to RPL in the vault
     function tvlRatioEthRpl() public view returns (uint256) {
         uint256 tvlEth = totalAssets();
         uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress())
@@ -284,10 +289,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     function setRplCoverageRatio(uint256 _rplCoverageRatio) external onlyAdmin {
-        require(
-            _rplCoverageRatio <= 1e18,
-            "rpl coverage ratio must be lte 100%"
-        );
         rplCoverageRatio = _rplCoverageRatio;
+    }
+
+    function setEnforceRplCoverageRatio(bool _enforceRplCoverage)
+        external
+        onlyAdmin
+    {
+        enforceRplCoverageRatio = _enforceRplCoverage;
     }
 }

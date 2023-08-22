@@ -70,6 +70,13 @@ contract Whitelist is UpgradeableBase {
         return operatorMap[a];
     }
 
+    function getNumberOfValidators(
+        address a
+    ) public view returns (uint) {
+        require(reverseOperatorIndexMap[a] != 0, OPERATOR_NOT_FOUND_ERROR);
+        return operatorMap[a].currentValidatorCount;
+    }
+
     //----
     // INTERNAL
     //----
