@@ -278,7 +278,6 @@ contract OperatorDistributor is UpgradeableBase {
 
         uint256 balance = minipool.getNodeDepositBalance();
 
-        minipool.beginUserDistribute();
         minipool.distributeBalance(balance > 8 ether);
     }
 
