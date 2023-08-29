@@ -6,9 +6,7 @@ const pako = require('pako');
 const fs = require('fs');
 const Web3 = require('web3');
 
-
 /*** Utility Methods *****************/
-
 
 // Compress / decompress ABIs
 function compressABI(abi) {
@@ -28,85 +26,85 @@ function loadABI(abiFilePath) {
 
 
 // Storage
-const rocketStorage =                       artifacts.require('RocketStorage.sol');
+const rocketStorage =                       ethers.getContractFactory('RocketStorage.sol');
 
 // Network contracts
 const contracts = {
     // Vault
-    rocketVault:                              artifacts.require('RocketVault.sol'),
+    rocketVault:                              ethers.getContractFactory('RocketVault.sol'),
     // Tokens
-    rocketTokenRPLFixedSupply:                artifacts.require('RocketTokenDummyRPL.sol'),
-    rocketTokenRETH:                          artifacts.require('RocketTokenRETH.sol'),
-    rocketTokenRPL:                           artifacts.require('RocketTokenRPL.sol'),
+    rocketTokenRPLFixedSupply:                ethers.getContractFactory('RocketTokenDummyRPL.sol'),
+    rocketTokenRETH:                          ethers.getContractFactory('RocketTokenRETH.sol'),
+    rocketTokenRPL:                           ethers.getContractFactory('RocketTokenRPL.sol'),
     // Auction
-    rocketAuctionManager:                     artifacts.require('RocketAuctionManager.sol'),
+    rocketAuctionManager:                     ethers.getContractFactory('RocketAuctionManager.sol'),
     // Deposit
-    rocketDepositPool:                        artifacts.require('RocketDepositPool.sol'),
+    rocketDepositPool:                        ethers.getContractFactory('RocketDepositPool.sol'),
     // Minipool
-    rocketMinipoolDelegate:                   artifacts.require('RocketMinipoolDelegate.sol'),
-    rocketMinipoolManager:                    artifacts.require('RocketMinipoolManager.sol'),
-    rocketMinipoolQueue:                      artifacts.require('RocketMinipoolQueue.sol'),
-    rocketMinipoolPenalty:                    artifacts.require('RocketMinipoolPenalty.sol'),
+    rocketMinipoolDelegate:                   ethers.getContractFactory('RocketMinipoolDelegate.sol'),
+    rocketMinipoolManager:                    ethers.getContractFactory('RocketMinipoolManager.sol'),
+    rocketMinipoolQueue:                      ethers.getContractFactory('RocketMinipoolQueue.sol'),
+    rocketMinipoolPenalty:                    ethers.getContractFactory('RocketMinipoolPenalty.sol'),
     // Network
-    rocketNetworkBalances:                    artifacts.require('RocketNetworkBalances.sol'),
-    rocketNetworkFees:                        artifacts.require('RocketNetworkFees.sol'),
-    rocketNetworkPrices:                      artifacts.require('RocketNetworkPrices.sol'),
-    rocketNetworkPenalties:                   artifacts.require('RocketNetworkPenalties.sol'),
+    rocketNetworkBalances:                    ethers.getContractFactory('RocketNetworkBalances.sol'),
+    rocketNetworkFees:                        ethers.getContractFactory('RocketNetworkFees.sol'),
+    rocketNetworkPrices:                      ethers.getContractFactory('RocketNetworkPrices.sol'),
+    rocketNetworkPenalties:                   ethers.getContractFactory('RocketNetworkPenalties.sol'),
     // Rewards
-    rocketRewardsPool:                        artifacts.require('RocketRewardsPool.sol'),
-    rocketClaimDAO:                           artifacts.require('RocketClaimDAO.sol'),
+    rocketRewardsPool:                        ethers.getContractFactory('RocketRewardsPool.sol'),
+    rocketClaimDAO:                           ethers.getContractFactory('RocketClaimDAO.sol'),
     // Node
-    rocketNodeDeposit:                        artifacts.require('RocketNodeDeposit.sol'),
-    rocketNodeManager:                        artifacts.require('RocketNodeManager.sol'),
-    rocketNodeStaking:                        artifacts.require('RocketNodeStaking.sol'),
+    rocketNodeDeposit:                        ethers.getContractFactory('RocketNodeDeposit.sol'),
+    rocketNodeManager:                        ethers.getContractFactory('RocketNodeManager.sol'),
+    rocketNodeStaking:                        ethers.getContractFactory('RocketNodeStaking.sol'),
     // DAOs
-    rocketDAOProposal:                        artifacts.require('RocketDAOProposal.sol'),
-    rocketDAONodeTrusted:                     artifacts.require('RocketDAONodeTrusted.sol'),
-    rocketDAONodeTrustedProposals:            artifacts.require('RocketDAONodeTrustedProposals.sol'),
-    rocketDAONodeTrustedActions:              artifacts.require('RocketDAONodeTrustedActions.sol'),
-    rocketDAONodeTrustedUpgrade:              artifacts.require('RocketDAONodeTrustedUpgrade.sol'),
-    rocketDAONodeTrustedSettingsMembers:      artifacts.require('RocketDAONodeTrustedSettingsMembers.sol'),
-    rocketDAONodeTrustedSettingsProposals:    artifacts.require('RocketDAONodeTrustedSettingsProposals.sol'),
-    rocketDAONodeTrustedSettingsMinipool:     artifacts.require('RocketDAONodeTrustedSettingsMinipool.sol'),
-    rocketDAOProtocol:                        artifacts.require('RocketDAOProtocol.sol'),
-    rocketDAOProtocolProposals:               artifacts.require('RocketDAOProtocolProposals.sol'),
-    rocketDAOProtocolActions:                 artifacts.require('RocketDAOProtocolActions.sol'),
-    rocketDAOProtocolSettingsInflation:       artifacts.require('RocketDAOProtocolSettingsInflation.sol'),
-    rocketDAOProtocolSettingsRewards:         artifacts.require('RocketDAOProtocolSettingsRewards.sol'),
-    rocketDAOProtocolSettingsAuction:         artifacts.require('RocketDAOProtocolSettingsAuction.sol'),
-    rocketDAOProtocolSettingsNode:            artifacts.require('RocketDAOProtocolSettingsNode.sol'),
-    rocketDAOProtocolSettingsNetwork:         artifacts.require('RocketDAOProtocolSettingsNetwork.sol'),
-    rocketDAOProtocolSettingsDeposit:         artifacts.require('RocketDAOProtocolSettingsDeposit.sol'),
-    rocketDAOProtocolSettingsMinipool:        artifacts.require('RocketDAOProtocolSettingsMinipool.sol'),
+    rocketDAOProposal:                        ethers.getContractFactory('RocketDAOProposal.sol'),
+    rocketDAONodeTrusted:                     ethers.getContractFactory('RocketDAONodeTrusted.sol'),
+    rocketDAONodeTrustedProposals:            ethers.getContractFactory('RocketDAONodeTrustedProposals.sol'),
+    rocketDAONodeTrustedActions:              ethers.getContractFactory('RocketDAONodeTrustedActions.sol'),
+    rocketDAONodeTrustedUpgrade:              ethers.getContractFactory('RocketDAONodeTrustedUpgrade.sol'),
+    rocketDAONodeTrustedSettingsMembers:      ethers.getContractFactory('RocketDAONodeTrustedSettingsMembers.sol'),
+    rocketDAONodeTrustedSettingsProposals:    ethers.getContractFactory('RocketDAONodeTrustedSettingsProposals.sol'),
+    rocketDAONodeTrustedSettingsMinipool:     ethers.getContractFactory('RocketDAONodeTrustedSettingsMinipool.sol'),
+    rocketDAOProtocol:                        ethers.getContractFactory('RocketDAOProtocol.sol'),
+    rocketDAOProtocolProposals:               ethers.getContractFactory('RocketDAOProtocolProposals.sol'),
+    rocketDAOProtocolActions:                 ethers.getContractFactory('RocketDAOProtocolActions.sol'),
+    rocketDAOProtocolSettingsInflation:       ethers.getContractFactory('RocketDAOProtocolSettingsInflation.sol'),
+    rocketDAOProtocolSettingsRewards:         ethers.getContractFactory('RocketDAOProtocolSettingsRewards.sol'),
+    rocketDAOProtocolSettingsAuction:         ethers.getContractFactory('RocketDAOProtocolSettingsAuction.sol'),
+    rocketDAOProtocolSettingsNode:            ethers.getContractFactory('RocketDAOProtocolSettingsNode.sol'),
+    rocketDAOProtocolSettingsNetwork:         ethers.getContractFactory('RocketDAOProtocolSettingsNetwork.sol'),
+    rocketDAOProtocolSettingsDeposit:         ethers.getContractFactory('RocketDAOProtocolSettingsDeposit.sol'),
+    rocketDAOProtocolSettingsMinipool:        ethers.getContractFactory('RocketDAOProtocolSettingsMinipool.sol'),
     // v1.1
-    rocketMerkleDistributorMainnet:           artifacts.require('RocketMerkleDistributorMainnet.sol'),
-    rocketDAONodeTrustedSettingsRewards:      artifacts.require('RocketDAONodeTrustedSettingsRewards.sol'),
-    rocketSmoothingPool:                      artifacts.require('RocketSmoothingPool.sol'),
-    rocketNodeDistributorFactory:             artifacts.require('RocketNodeDistributorFactory.sol'),
-    rocketNodeDistributorDelegate:            artifacts.require('RocketNodeDistributorDelegate.sol'),
-    rocketMinipoolFactory:                    artifacts.require('RocketMinipoolFactory.sol'),
+    rocketMerkleDistributorMainnet:           ethers.getContractFactory('RocketMerkleDistributorMainnet.sol'),
+    rocketDAONodeTrustedSettingsRewards:      ethers.getContractFactory('RocketDAONodeTrustedSettingsRewards.sol'),
+    rocketSmoothingPool:                      ethers.getContractFactory('RocketSmoothingPool.sol'),
+    rocketNodeDistributorFactory:             ethers.getContractFactory('RocketNodeDistributorFactory.sol'),
+    rocketNodeDistributorDelegate:            ethers.getContractFactory('RocketNodeDistributorDelegate.sol'),
+    rocketMinipoolFactory:                    ethers.getContractFactory('RocketMinipoolFactory.sol'),
     // v1.2
-    rocketMinipoolBase:                       artifacts.require('RocketMinipoolBase.sol'),
-    rocketMinipoolBondReducer:                artifacts.require('RocketMinipoolBondReducer.sol'),
+    rocketMinipoolBase:                       ethers.getContractFactory('RocketMinipoolBase.sol'),
+    rocketMinipoolBondReducer:                ethers.getContractFactory('RocketMinipoolBondReducer.sol'),
     // Utils
-    addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
-    addressSetStorage:                        artifacts.require('AddressSetStorage.sol'),
+    addressQueueStorage:                      ethers.getContractFactory('AddressQueueStorage.sol'),
+    addressSetStorage:                        ethers.getContractFactory('AddressSetStorage.sol'),
 };
 
 // Development helper contracts
-const revertOnTransfer = artifacts.require('RevertOnTransfer.sol');
-const rocketNodeDepositLEB4 = artifacts.require('RocketNodeDepositLEB4.sol');
+const revertOnTransfer = ethers.getContractFactory('RevertOnTransfer.sol');
+const rocketNodeDepositLEB4 = ethers.getContractFactory('RocketNodeDepositLEB4.sol');
 
 // Instance contract ABIs
 const abis = {
     // Minipool
-    rocketMinipool:                           [artifacts.require('RocketMinipoolDelegate.sol'), artifacts.require('RocketMinipoolBase.sol')],
+    rocketMinipool:                           [ethers.getContractFactory('RocketMinipoolDelegate.sol'), ethers.getContractFactory('RocketMinipoolBase.sol')],
 };
 
 // Construct ABI for rocketMinipool
 const rocketMinipoolAbi = []
-    .concat(artifacts.require('RocketMinipoolDelegate.sol').abi)
-    .concat(artifacts.require('RocketMinipoolBase.sol').abi)
+    .concat(ethers.getContractFactory('RocketMinipoolDelegate').abi)
+    .concat(ethers.getContractFactory('RocketMinipoolBase').abi)
     .filter(i => i.type !== 'fallback' && i.type !== 'receive');
 
 rocketMinipoolAbi.push({ stateMutability: 'payable', type: 'fallback'});
@@ -246,7 +244,7 @@ export async function deployRocketPool() {
         console.log('\x1b[31m%s\x1b[0m:', '   Set Storage Address');
         console.log('     ' + (await rocketStorage.deployed()).address);
         // Add Rocket Storage to deployed contracts
-        contracts.rocketStorage = artifacts.require('RocketStorage.sol');
+        contracts.rocketStorage = ethers.getContractFactory('RocketStorage.sol');
         // Now process the rest
         for (let contract in contracts) {
             if(contracts.hasOwnProperty(contract)) {
