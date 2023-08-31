@@ -13,7 +13,7 @@ function compressABI(abi) {
     return Buffer.from(pako.deflate(JSON.stringify(abi))).toString('base64');
 }
 function decompressABI(abi) {
-    return JSON.parse(pako.inflate(Buffer.from(abi, 'base64'), {to: 'string'}));
+    return JSON.parse(pako.inflate(Buffer.from(abi, 'base64'), { to: 'string' }));
 }
 
 // Load ABI files and parse
@@ -26,69 +26,71 @@ function loadABI(abiFilePath) {
 
 
 // Storage
-const rocketStorage =                       ethers.getContractFactory('RocketStorage.sol');
+const rocketStorage = (async () => {
+    return await ethers.getContractFactory('RocketStorage.sol');
+})();
 
 // Network contracts
 const contracts = {
     // Vault
-    rocketVault:                              ethers.getContractFactory('RocketVault.sol'),
+    rocketVault: ethers.getContractFactory('RocketVault.sol'),
     // Tokens
-    rocketTokenRPLFixedSupply:                ethers.getContractFactory('RocketTokenDummyRPL.sol'),
-    rocketTokenRETH:                          ethers.getContractFactory('RocketTokenRETH.sol'),
-    rocketTokenRPL:                           ethers.getContractFactory('RocketTokenRPL.sol'),
+    rocketTokenRPLFixedSupply: ethers.getContractFactory('RocketTokenDummyRPL.sol'),
+    rocketTokenRETH: ethers.getContractFactory('RocketTokenRETH.sol'),
+    rocketTokenRPL: ethers.getContractFactory('RocketTokenRPL.sol'),
     // Auction
-    rocketAuctionManager:                     ethers.getContractFactory('RocketAuctionManager.sol'),
+    rocketAuctionManager: ethers.getContractFactory('RocketAuctionManager.sol'),
     // Deposit
-    rocketDepositPool:                        ethers.getContractFactory('RocketDepositPool.sol'),
+    rocketDepositPool: ethers.getContractFactory('RocketDepositPool.sol'),
     // Minipool
-    rocketMinipoolDelegate:                   ethers.getContractFactory('RocketMinipoolDelegate.sol'),
-    rocketMinipoolManager:                    ethers.getContractFactory('RocketMinipoolManager.sol'),
-    rocketMinipoolQueue:                      ethers.getContractFactory('RocketMinipoolQueue.sol'),
-    rocketMinipoolPenalty:                    ethers.getContractFactory('RocketMinipoolPenalty.sol'),
+    rocketMinipoolDelegate: ethers.getContractFactory('RocketMinipoolDelegate.sol'),
+    rocketMinipoolManager: ethers.getContractFactory('RocketMinipoolManager.sol'),
+    rocketMinipoolQueue: ethers.getContractFactory('RocketMinipoolQueue.sol'),
+    rocketMinipoolPenalty: ethers.getContractFactory('RocketMinipoolPenalty.sol'),
     // Network
-    rocketNetworkBalances:                    ethers.getContractFactory('RocketNetworkBalances.sol'),
-    rocketNetworkFees:                        ethers.getContractFactory('RocketNetworkFees.sol'),
-    rocketNetworkPrices:                      ethers.getContractFactory('RocketNetworkPrices.sol'),
-    rocketNetworkPenalties:                   ethers.getContractFactory('RocketNetworkPenalties.sol'),
+    rocketNetworkBalances: ethers.getContractFactory('RocketNetworkBalances.sol'),
+    rocketNetworkFees: ethers.getContractFactory('RocketNetworkFees.sol'),
+    rocketNetworkPrices: ethers.getContractFactory('RocketNetworkPrices.sol'),
+    rocketNetworkPenalties: ethers.getContractFactory('RocketNetworkPenalties.sol'),
     // Rewards
-    rocketRewardsPool:                        ethers.getContractFactory('RocketRewardsPool.sol'),
-    rocketClaimDAO:                           ethers.getContractFactory('RocketClaimDAO.sol'),
+    rocketRewardsPool: ethers.getContractFactory('RocketRewardsPool.sol'),
+    rocketClaimDAO: ethers.getContractFactory('RocketClaimDAO.sol'),
     // Node
-    rocketNodeDeposit:                        ethers.getContractFactory('RocketNodeDeposit.sol'),
-    rocketNodeManager:                        ethers.getContractFactory('RocketNodeManager.sol'),
-    rocketNodeStaking:                        ethers.getContractFactory('RocketNodeStaking.sol'),
+    rocketNodeDeposit: ethers.getContractFactory('RocketNodeDeposit.sol'),
+    rocketNodeManager: ethers.getContractFactory('RocketNodeManager.sol'),
+    rocketNodeStaking: ethers.getContractFactory('RocketNodeStaking.sol'),
     // DAOs
-    rocketDAOProposal:                        ethers.getContractFactory('RocketDAOProposal.sol'),
-    rocketDAONodeTrusted:                     ethers.getContractFactory('RocketDAONodeTrusted.sol'),
-    rocketDAONodeTrustedProposals:            ethers.getContractFactory('RocketDAONodeTrustedProposals.sol'),
-    rocketDAONodeTrustedActions:              ethers.getContractFactory('RocketDAONodeTrustedActions.sol'),
-    rocketDAONodeTrustedUpgrade:              ethers.getContractFactory('RocketDAONodeTrustedUpgrade.sol'),
-    rocketDAONodeTrustedSettingsMembers:      ethers.getContractFactory('RocketDAONodeTrustedSettingsMembers.sol'),
-    rocketDAONodeTrustedSettingsProposals:    ethers.getContractFactory('RocketDAONodeTrustedSettingsProposals.sol'),
-    rocketDAONodeTrustedSettingsMinipool:     ethers.getContractFactory('RocketDAONodeTrustedSettingsMinipool.sol'),
-    rocketDAOProtocol:                        ethers.getContractFactory('RocketDAOProtocol.sol'),
-    rocketDAOProtocolProposals:               ethers.getContractFactory('RocketDAOProtocolProposals.sol'),
-    rocketDAOProtocolActions:                 ethers.getContractFactory('RocketDAOProtocolActions.sol'),
-    rocketDAOProtocolSettingsInflation:       ethers.getContractFactory('RocketDAOProtocolSettingsInflation.sol'),
-    rocketDAOProtocolSettingsRewards:         ethers.getContractFactory('RocketDAOProtocolSettingsRewards.sol'),
-    rocketDAOProtocolSettingsAuction:         ethers.getContractFactory('RocketDAOProtocolSettingsAuction.sol'),
-    rocketDAOProtocolSettingsNode:            ethers.getContractFactory('RocketDAOProtocolSettingsNode.sol'),
-    rocketDAOProtocolSettingsNetwork:         ethers.getContractFactory('RocketDAOProtocolSettingsNetwork.sol'),
-    rocketDAOProtocolSettingsDeposit:         ethers.getContractFactory('RocketDAOProtocolSettingsDeposit.sol'),
-    rocketDAOProtocolSettingsMinipool:        ethers.getContractFactory('RocketDAOProtocolSettingsMinipool.sol'),
+    rocketDAOProposal: ethers.getContractFactory('RocketDAOProposal.sol'),
+    rocketDAONodeTrusted: ethers.getContractFactory('RocketDAONodeTrusted.sol'),
+    rocketDAONodeTrustedProposals: ethers.getContractFactory('RocketDAONodeTrustedProposals.sol'),
+    rocketDAONodeTrustedActions: ethers.getContractFactory('RocketDAONodeTrustedActions.sol'),
+    rocketDAONodeTrustedUpgrade: ethers.getContractFactory('RocketDAONodeTrustedUpgrade.sol'),
+    rocketDAONodeTrustedSettingsMembers: ethers.getContractFactory('RocketDAONodeTrustedSettingsMembers.sol'),
+    rocketDAONodeTrustedSettingsProposals: ethers.getContractFactory('RocketDAONodeTrustedSettingsProposals.sol'),
+    rocketDAONodeTrustedSettingsMinipool: ethers.getContractFactory('RocketDAONodeTrustedSettingsMinipool.sol'),
+    rocketDAOProtocol: ethers.getContractFactory('RocketDAOProtocol.sol'),
+    rocketDAOProtocolProposals: ethers.getContractFactory('RocketDAOProtocolProposals.sol'),
+    rocketDAOProtocolActions: ethers.getContractFactory('RocketDAOProtocolActions.sol'),
+    rocketDAOProtocolSettingsInflation: ethers.getContractFactory('RocketDAOProtocolSettingsInflation.sol'),
+    rocketDAOProtocolSettingsRewards: ethers.getContractFactory('RocketDAOProtocolSettingsRewards.sol'),
+    rocketDAOProtocolSettingsAuction: ethers.getContractFactory('RocketDAOProtocolSettingsAuction.sol'),
+    rocketDAOProtocolSettingsNode: ethers.getContractFactory('RocketDAOProtocolSettingsNode.sol'),
+    rocketDAOProtocolSettingsNetwork: ethers.getContractFactory('RocketDAOProtocolSettingsNetwork.sol'),
+    rocketDAOProtocolSettingsDeposit: ethers.getContractFactory('RocketDAOProtocolSettingsDeposit.sol'),
+    rocketDAOProtocolSettingsMinipool: ethers.getContractFactory('RocketDAOProtocolSettingsMinipool.sol'),
     // v1.1
-    rocketMerkleDistributorMainnet:           ethers.getContractFactory('RocketMerkleDistributorMainnet.sol'),
-    rocketDAONodeTrustedSettingsRewards:      ethers.getContractFactory('RocketDAONodeTrustedSettingsRewards.sol'),
-    rocketSmoothingPool:                      ethers.getContractFactory('RocketSmoothingPool.sol'),
-    rocketNodeDistributorFactory:             ethers.getContractFactory('RocketNodeDistributorFactory.sol'),
-    rocketNodeDistributorDelegate:            ethers.getContractFactory('RocketNodeDistributorDelegate.sol'),
-    rocketMinipoolFactory:                    ethers.getContractFactory('RocketMinipoolFactory.sol'),
+    rocketMerkleDistributorMainnet: ethers.getContractFactory('RocketMerkleDistributorMainnet.sol'),
+    rocketDAONodeTrustedSettingsRewards: ethers.getContractFactory('RocketDAONodeTrustedSettingsRewards.sol'),
+    rocketSmoothingPool: ethers.getContractFactory('RocketSmoothingPool.sol'),
+    rocketNodeDistributorFactory: ethers.getContractFactory('RocketNodeDistributorFactory.sol'),
+    rocketNodeDistributorDelegate: ethers.getContractFactory('RocketNodeDistributorDelegate.sol'),
+    rocketMinipoolFactory: ethers.getContractFactory('RocketMinipoolFactory.sol'),
     // v1.2
-    rocketMinipoolBase:                       ethers.getContractFactory('RocketMinipoolBase.sol'),
-    rocketMinipoolBondReducer:                ethers.getContractFactory('RocketMinipoolBondReducer.sol'),
+    rocketMinipoolBase: ethers.getContractFactory('RocketMinipoolBase.sol'),
+    rocketMinipoolBondReducer: ethers.getContractFactory('RocketMinipoolBondReducer.sol'),
     // Utils
-    addressQueueStorage:                      ethers.getContractFactory('AddressQueueStorage.sol'),
-    addressSetStorage:                        ethers.getContractFactory('AddressSetStorage.sol'),
+    addressQueueStorage: ethers.getContractFactory('AddressQueueStorage.sol'),
+    addressSetStorage: ethers.getContractFactory('AddressSetStorage.sol'),
 };
 
 // Development helper contracts
@@ -98,19 +100,29 @@ const rocketNodeDepositLEB4 = ethers.getContractFactory('RocketNodeDepositLEB4.s
 // Instance contract ABIs
 const abis = {
     // Minipool
-    rocketMinipool:                           [ethers.getContractFactory('RocketMinipoolDelegate.sol'), ethers.getContractFactory('RocketMinipoolBase.sol')],
+    rocketMinipool: [ethers.getContractFactory('RocketMinipoolDelegate.sol'), ethers.getContractFactory('RocketMinipoolBase.sol')],
 };
 
-// Construct ABI for rocketMinipool
-const rocketMinipoolAbi = []
-    .concat(ethers.getContractFactory('RocketMinipoolDelegate').abi)
-    .concat(ethers.getContractFactory('RocketMinipoolBase').abi)
-    .filter(i => i.type !== 'fallback' && i.type !== 'receive');
+async function getRocketMinipoolAbi() {
+    // Make sure to fetch ABI using await as these are asynchronous operations
+    const rocketMinipoolDelegateAbi = await ethers.getContractFactory('RocketMinipoolDelegate').abi;
+    const rocketMinipoolBaseAbi = await ethers.getContractFactory('RocketMinipoolBase').abi;
 
-rocketMinipoolAbi.push({ stateMutability: 'payable', type: 'fallback'});
-rocketMinipoolAbi.push({ stateMutability: 'payable', type: 'receive'});
+    // Concatenate and filter
+    const concatenatedAbi = rocketMinipoolDelegateAbi.concat(rocketMinipoolBaseAbi);
+    const filteredAbi = concatenatedAbi.filter(i => i && i.type !== 'fallback' && i.type !== 'receive');
+
+    // Push fallback and receive back
+    filteredAbi.push({ stateMutability: 'payable', type: 'fallback' });
+    filteredAbi.push({ stateMutability: 'payable', type: 'receive' });
+
+    return filteredAbi;
+}
 
 /*** Deployment **********************/
+const rocketMinipoolAbi = (async () => {
+    return await getRocketMinipoolAbi();
+})();
 
 
 // Deploy Rocket Pool
@@ -120,8 +132,8 @@ export async function deployRocketPool() {
     let $web3 = new Web3(network.provider);
 
     // Accounts
-    let accounts = await $web3.eth.getAccounts(function(error, result) {
-        if(error != null) {
+    let accounts = await $web3.eth.getAccounts(function (error, result) {
+        if (error != null) {
             console.log(error);
             console.log("Error retrieving accounts.'");
         }
@@ -135,7 +147,7 @@ export async function deployRocketPool() {
     const casperDepositABI = loadABI('./contracts/contract/casper/compiled/Deposit.abi');
 
     // Live deployment
-    if ( network.name === 'live' ) {
+    if (network.name === 'live') {
         // Casper live contract address
         let casperDepositAddress = '0x00000000219ab540356cBB839Cbe05303d7705Fa';
         contracts.casperDeposit = {
@@ -172,10 +184,10 @@ export async function deployRocketPool() {
             {
                 data: fs.readFileSync('./contracts/contract/casper/compiled/Deposit.bin').toString()
             }).send({
-            from: accounts[0],
-            gas: 8000000,
-            gasPrice: '20000000000'
-        });
+                from: accounts[0],
+                gas: 8000000,
+                gasPrice: '20000000000'
+            });
 
         // Set the Casper deposit address
         let casperDepositAddress = casperDepositContract._address;
@@ -197,11 +209,11 @@ export async function deployRocketPool() {
     let rocketStorageInstance = await rocketStorage.deployed();
 
     // Deploy other contracts - have to be inside an async loop
-    const deployContracts = async function() {
+    const deployContracts = async function () {
         for (let contract in contracts) {
             // Only deploy if it hasn't been deployed already like a precompiled
             let instance
-            if(!contracts[contract].hasOwnProperty('precompiled')) {
+            if (!contracts[contract].hasOwnProperty('precompiled')) {
                 switch (contract) {
 
                     // New RPL contract - pass storage address & existing RPL contract address
@@ -239,7 +251,7 @@ export async function deployRocketPool() {
     await deployContracts();
 
     // Register all other contracts with storage and store their abi
-    const addContracts = async function() {
+    const addContracts = async function () {
         // Log RocketStorage
         console.log('\x1b[31m%s\x1b[0m:', '   Set Storage Address');
         console.log('     ' + (await rocketStorage.deployed()).address);
@@ -247,7 +259,7 @@ export async function deployRocketPool() {
         contracts.rocketStorage = ethers.getContractFactory('RocketStorage.sol');
         // Now process the rest
         for (let contract in contracts) {
-            if(contracts.hasOwnProperty(contract)) {
+            if (contracts.hasOwnProperty(contract)) {
                 switch (contract) {
                     default:
                         const address = contract === 'casperDeposit' ? contracts[contract].address : (await contracts[contract].deployed()).address;
@@ -284,12 +296,12 @@ export async function deployRocketPool() {
     };
 
     // Register ABI-only contracts
-    const addABIs = async function() {
+    const addABIs = async function () {
         for (let contract in abis) {
-            if(abis.hasOwnProperty(contract)) {
+            if (abis.hasOwnProperty(contract)) {
                 console.log('\x1b[31m%s\x1b[0m:', '   Set Storage ABI');
-                console.log('     '+contract);
-                if(Array.isArray(abis[contract])) {
+                console.log('     ' + contract);
+                if (Array.isArray(abis[contract])) {
                     // Merge ABIs from multiple artifacts
                     let combinedAbi = [];
                     for (const artifact of abis[contract]) {
@@ -330,7 +342,7 @@ export async function deployRocketPool() {
 
     // Disable direct access to storage now
     await rocketStorageInstance.setDeployedStatus();
-    if(await rocketStorageInstance.getDeployedStatus() !== true) throw 'Storage Access Not Locked Down!!';
+    if (await rocketStorageInstance.getDeployedStatus() !== true) throw 'Storage Access Not Locked Down!!';
 
     // Log it
     console.log('\n');

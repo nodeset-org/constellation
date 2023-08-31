@@ -9,7 +9,6 @@ import {
 // Contracts
 import { RocketDAOProtocolSettingsAuction, RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsInflation, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsRewards } from '../_utils/artifacts';
 
-
 export default function() {
     contract('RocketDAOProtocol', async (accounts) => {
 
