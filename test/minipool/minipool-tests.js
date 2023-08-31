@@ -810,7 +810,7 @@ export default function() {
 
         it(printTitle('node operator', 'can reduce bond amount to a valid deposit amount after reward period'), async () => {
             // Upgrade RocketNodeDeposit to add 4 ETH LEB support
-            const RocketNodeDepositLEB4 = ethers.getContractFactory('RocketNodeDepositLEB4.sol');
+            const RocketNodeDepositLEB4 = artifacts.require('RocketNodeDepositLEB4.sol');
             const rocketNodeDepositLEB4 = await RocketNodeDepositLEB4.deployed();
             await setDaoNodeTrustedBootstrapUpgrade("upgradeContract", "rocketNodeDeposit", RocketNodeDepositLEB4.abi, rocketNodeDepositLEB4.address, {from: owner});
 
@@ -835,7 +835,7 @@ export default function() {
 
         it(printTitle('node operator', 'can not reduce bond amount to a valid deposit amount within reward period'), async () => {
             // Upgrade RocketNodeDeposit to add 4 ETH LEB support
-            const RocketNodeDepositLEB4 = ethers.getContractFactory('RocketNodeDepositLEB4.sol');
+            const RocketNodeDepositLEB4 = artifacts.require('RocketNodeDepositLEB4.sol');
             const rocketNodeDepositLEB4 = await RocketNodeDepositLEB4.deployed();
             await setDaoNodeTrustedBootstrapUpgrade("upgradeContract", "rocketNodeDeposit", RocketNodeDepositLEB4.abi, rocketNodeDepositLEB4.address, {from: owner});
 
