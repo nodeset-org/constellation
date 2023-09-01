@@ -28,11 +28,11 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
-      // forking: {
-      //   url: "https://eth-mainnet.alchemyapi.io/v2/corzgOuIDH87dxZm8NkllrQEsJFUKxCU",
-      //   blockNumber: 16394176
-      // }
-      gasPrice: 25000000000 // This is in wei (25 gwei)
+      gasPrice: 25000000000, // This is in wei (25 gwei)
+      //forking: {
+      //  url: "https://eth-mainnet.alchemyapi.io/v2/corzgOuIDH87dxZm8NkllrQEsJFUKxCU",
+      //  blockNumber: 16394176
+      //},
     },
   },
 
