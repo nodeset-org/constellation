@@ -6,6 +6,11 @@ import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
 import { DepositPool, NodeSetETH, NodeSetRPL, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface } from "../typechain-types";
 import { initializeDirectory } from "./test-directory";
+import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketTokenRPL } from "./_utils/artifacts";
+import { deployRocketPool } from './_helpers/deployment';
+import { suppressLog } from "./_helpers/console";
+import { setDefaultParameters } from "./_helpers/defaults";
+import { endSnapShot, injectGlobalSnapShot, startSnapShot } from './_utils/snapshotting';
 
 const protocolParams  = { trustBuildPeriod : ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
 
@@ -40,13 +45,16 @@ export type RocketPool = {
 }
 
 async function getRocketPool(): Promise<RocketPool> {
+	const RplToken = await RocketTokenRPL.deployed();
 	const rplContract = (await ethers.getContractAt(
-		"RocketTokenRPLInterface",
-		"0xD33526068D116cE69F19A9ee46F0bd304F21A51f"
+		"contracts/Interfaces/RocketTokenRPLInterface.sol:RocketTokenRPLInterface",
+		RplToken.address
 	));
+
+	const NetworkFeesContract = await RocketDAOProtocolSettingsNetwork.deployed();
 	const networkFeesContract = (await ethers.getContractAt(
-		"RocketDAOProtocolSettingsNetworkInterface",
-		"0x320f3aAB9405e38b955178BBe75c477dECBA0C27"
+		"contracts/Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol:RocketDAOProtocolSettingsNetworkInterface",
+		NetworkFeesContract.address
 	));
 	return { rplContract, networkFeesContract };
 }
@@ -81,6 +89,10 @@ async function createSigners(): Promise<Signers> {
 // doesn't allow parameters for fixtures
 // see https://github.com/NomicFoundation/hardhat/issues/3508
 export async function deployOnlyFixture(): Promise<SetupData> {
+	await suppressLog(deployRocketPool);
+	// Set starting parameters for all tests
+	await setDefaultParameters();
+
 	return {
 		protocol: await deployProtocol(),
 		signers: await createSigners(),
@@ -89,6 +101,10 @@ export async function deployOnlyFixture(): Promise<SetupData> {
 }
 
 export async function protocolFixture(): Promise<SetupData> {
+	await suppressLog(deployRocketPool);
+	// Set starting parameters for all tests
+	await setDefaultParameters();
+
 	const deployedProtocol = await deployProtocol(); 
 	const signers = await createSigners();
 	const rocketPool = await getRocketPool();
