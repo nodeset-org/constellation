@@ -19,26 +19,26 @@ export async function initializeDirectory(protocol: Protocol, addressToUse: Sign
 describe("Directory", function () {
 
   it("Can be initialized by admin", async function () {
-    const { protocol, signers } = await loadFixture(deployOnlyFixture);
+    const { protocol, signers } = await deployOnlyFixture();
     await expect(initializeDirectory(protocol, signers.admin)).to.not.be.reverted;
     expect(await protocol.directory.getIsInitialized()).equals(true);
   });
 
   it("Cannot be initialized by random address", async function () {
-    const { protocol, signers } = await loadFixture(deployOnlyFixture);
+    const { protocol, signers } = await deployOnlyFixture();
     await expect(initializeDirectory(protocol, signers.random))
       .to.be.revertedWith(await protocol.directory.ADMIN_ONLY_ERROR());
   });
 
   it("Can only be initialized once by admin", async function () {
-    const { protocol, signers } = await loadFixture(protocolFixture);
+    const { protocol, signers } = await protocolFixture();
 
     await expect(initializeDirectory(protocol, signers.admin))
       .to.be.revertedWith(await protocol.directory.INITIALIZATION_ERROR());
   });
 
   it("Returns correct admin address", async function () {
-    const { protocol, signers } = await loadFixture(protocolFixture);
+    const { protocol, signers } = await protocolFixture();
     expect(await protocol.directory.getAdminAddress()).equal(signers.admin.address);
   });
 
