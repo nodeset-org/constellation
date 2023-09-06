@@ -222,13 +222,13 @@ contract DepositPool is Base {
 
     function getRplBalanceOf(address a) private view returns (uint) {
         return
-            RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS())
+            RocketTokenRPLInterface(getDirectory().getRPLTokenAddress())
                 .balanceOf(address(a));
     }
 
     function sendRPLTo(address to, uint amount) private returns (bool) {
         return
-            RocketTokenRPLInterface(getDirectory().RPL_CONTRACT_ADDRESS())
+            RocketTokenRPLInterface(getDirectory().getRPLTokenAddress())
                 .transfer(to, amount);
     }
 

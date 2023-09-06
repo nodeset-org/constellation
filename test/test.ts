@@ -56,6 +56,7 @@ async function getRocketPool(): Promise<RocketPool> {
 		"contracts/Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol:RocketDAOProtocolSettingsNetworkInterface",
 		NetworkFeesContract.address
 	));
+
 	return { rplContract, networkFeesContract };
 }
 

@@ -51,7 +51,7 @@ contract NodeSetRPL is
 
         // send RPL to DP
         bool success = RocketTokenRPLInterface(
-            getDirectory().RPL_CONTRACT_ADDRESS()
+            getDirectory().getRPLTokenAddress()
         ).transferFrom(to, getDirectory().getDepositPoolAddress(), amount);
         require(success, "xRPL: Failed to transfer RPL to Deposit Pool!");
 

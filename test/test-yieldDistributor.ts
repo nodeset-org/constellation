@@ -230,7 +230,7 @@ describe("Yield Distributor", function () {
     // TODO: do not use hardcoded 5k value
 
     const operatorShare = (totalFee.sub(adminFeeEth)).div(3); // 3 operators used in this test
-    const rpl = await ethers.getContractAt("IERC20", await protocol.directory.RPL_CONTRACT_ADDRESS());
+    const rpl = await ethers.getContractAt("IERC20", await protocol.directory.getRPLTokenAddress());
     const adminFeeRpl = (await rpl.balanceOf(yieldDistributor.address)).mul(5000).div(yield_portion_max);
 
     const tx = await protocol.yieldDistributor.distributeRewards();

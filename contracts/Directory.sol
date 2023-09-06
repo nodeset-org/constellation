@@ -10,6 +10,7 @@ struct Protocol {
     address payable depositPool;
     address payable operatorDistributor;
     address yieldDistributor;
+
 }
 
 /// @custom:security-contact info@nodeoperator.org
@@ -26,8 +27,6 @@ contract Directory {
     string public constant INITIALIZATION_ERROR =
         "Directory: may only initialized once!";
 
-    address payable public constant RPL_CONTRACT_ADDRESS =
-        payable(0xD33526068D116cE69F19A9ee46F0bd304F21A51f);
     address public constant RP_NETWORK_FEES_ADDRESS =
         payable(0x320f3aAB9405e38b955178BBe75c477dECBA0C27);
 
