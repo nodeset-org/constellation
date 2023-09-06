@@ -74,6 +74,7 @@ contract YieldDistributor is Base {
     /// @notice Gets the total protocol ETH commission rate as a fraction of one ether
     /// This is further split into operator and admin rewards in distributeRewards()
     function getEthCommissionRate() public view returns (uint) {
+
         int commission = int(getRocketPoolFee()) + _ethCommissionModifier;
 
         // constrain to 0->1 ether
@@ -201,6 +202,9 @@ contract YieldDistributor is Base {
      */
 
     function getRocketPoolFee() private view returns (uint) {
+        console.log("ADDRESS DAO PROTOCOL");
+
+        console.logAddress(getDirectory().getRocketDAOProtocolSettingsNetwork());
         return
             RocketDAOProtocolSettingsNetworkInterface(
                 getDirectory().getRocketDAOProtocolSettingsNetwork()

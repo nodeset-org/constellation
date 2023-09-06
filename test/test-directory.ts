@@ -5,6 +5,8 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData, Protocol, deployOnlyFixture } from "./test";
 
 export async function initializeDirectory(protocol: Protocol, addressToUse: SignerWithAddress): Promise<any> {
+  console.log("INITALIZDIR")
+  console.log(protocol.rocketDAOProtocolSettingsNetwork.address)
   return await protocol.directory.connect(addressToUse).initialize(
     {
       whitelist: protocol.whitelist.address,

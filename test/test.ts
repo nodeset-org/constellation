@@ -53,11 +53,13 @@ async function getRocketPool(): Promise<RocketPool> {
 	));
 
 	const NetworkFeesContract = await RocketDAOProtocolSettingsNetwork.deployed();
+	console.log("TRUEFFLE ADDR")
+	console.log(NetworkFeesContract.address)
 	const networkFeesContract = (await ethers.getContractAt(
 		"contracts/Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol:RocketDAOProtocolSettingsNetworkInterface",
 		NetworkFeesContract.address
 	));
-
+	console.log(networkFeesContract.address)
 	return { rplContract, networkFeesContract };
 }
 
