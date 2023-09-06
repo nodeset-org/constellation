@@ -203,7 +203,7 @@ contract YieldDistributor is Base {
     function getRocketPoolFee() private view returns (uint) {
         return
             RocketDAOProtocolSettingsNetworkInterface(
-                getDirectory().RP_NETWORK_FEES_ADDRESS()
+                getDirectory().getRocketDAOProtocolSettingsNetwork()
             ).getMaximumNodeFee();
     }
 

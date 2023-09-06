@@ -12,7 +12,8 @@ export async function initializeDirectory(protocol: Protocol, addressToUse: Sign
       rplToken: protocol.xRPL.address,
       depositPool: protocol.depositPool.address,
       operatorDistributor: protocol.operatorDistributor.address,
-      yieldDistributor: protocol.yieldDistributor.address
+      yieldDistributor: protocol.yieldDistributor.address,
+      rocketDAOProtocolSettingsNetwork: protocol.rocketDAOProtocolSettingsNetwork.address
     });
 }
 

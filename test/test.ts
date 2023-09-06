@@ -27,7 +27,8 @@ export type Protocol = {
 	xRPL: NodeSetRPL,
 	depositPool: DepositPool,
 	operatorDistributor: OperatorDistributor,
-	yieldDistributor: YieldDistributor
+	yieldDistributor: YieldDistributor,
+	rocketDAOProtocolSettingsNetwork: RocketDAOProtocolSettingsNetworkInterface
 }
 
 export type Signers = {
@@ -60,7 +61,7 @@ async function getRocketPool(): Promise<RocketPool> {
 	return { rplContract, networkFeesContract };
 }
 
-async function deployProtocol(): Promise<Protocol> {
+async function deployProtocol(rocketPool: RocketPool): Promise<Protocol> {
 	const [admin] = await ethers.getSigners();
 	const directory = await (await ethers.getContractFactory("Directory")).deploy();
 	const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directory.address, protocolParams.trustBuildPeriod], { 'initializer' : 'initializeWhitelist',  'kind' : 'uups', 'unsafeAllow': ['constructor'] });
@@ -70,7 +71,7 @@ async function deployProtocol(): Promise<Protocol> {
 	const operatorDistributor = await (await ethers.getContractFactory("OperatorDistributor")).deploy(directory.address);
 	const yieldDistributor = await (await ethers.getContractFactory("YieldDistributor")).deploy(directory.address);
 
-	return { directory, whitelist, xrETH, xRPL, depositPool, operatorDistributor, yieldDistributor};
+	return { directory, whitelist, xrETH, xRPL, depositPool, operatorDistributor, yieldDistributor, rocketDAOProtocolSettingsNetwork: rocketPool.networkFeesContract};
 }
 
 async function createSigners(): Promise<Signers> {
@@ -94,10 +95,11 @@ export async function deployOnlyFixture(): Promise<SetupData> {
 	// Set starting parameters for all tests
 	await setDefaultParameters();
 
+	const rocketPool = await getRocketPool()
 	return {
-		protocol: await deployProtocol(),
+		protocol: await deployProtocol(rocketPool),
 		signers: await createSigners(),
-		rocketPool: await getRocketPool()
+		rocketPool
 	};
 }
 
@@ -106,9 +108,9 @@ export async function protocolFixture(): Promise<SetupData> {
 	// Set starting parameters for all tests
 	await setDefaultParameters();
 
-	const deployedProtocol = await deployProtocol(); 
-	const signers = await createSigners();
 	const rocketPool = await getRocketPool();
+	const deployedProtocol = await deployProtocol(rocketPool);
+	const signers = await createSigners();
 
 	await expect(initializeDirectory(deployedProtocol, signers.admin)).to.not.be.reverted;
 	await expect(deployedProtocol.yieldDistributor.initialize())

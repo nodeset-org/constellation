@@ -10,7 +10,7 @@ struct Protocol {
     address payable depositPool;
     address payable operatorDistributor;
     address yieldDistributor;
-
+    address rocketDAOProtocolSettingsNetwork;
 }
 
 /// @custom:security-contact info@nodeoperator.org
@@ -26,9 +26,6 @@ contract Directory {
         "Directory: may only be called by admin address!";
     string public constant INITIALIZATION_ERROR =
         "Directory: may only initialized once!";
-
-    address public constant RP_NETWORK_FEES_ADDRESS =
-        payable(0x320f3aAB9405e38b955178BBe75c477dECBA0C27);
 
     bool private _isInitialized = false;
 
@@ -81,6 +78,10 @@ contract Directory {
 
     function getYieldDistributorAddress() public view returns (address) {
         return _protocol.yieldDistributor;
+    }
+
+    function getRocketDAOProtocolSettingsNetwork() public view returns(address) {
+        return _protocol.rocketDAOProtocolSettingsNetwork;
     }
 
     //----
