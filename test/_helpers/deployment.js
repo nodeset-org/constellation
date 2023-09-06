@@ -222,7 +222,6 @@ export async function deployRocketPool() {
 
                     // All other contracts - pass storage address
                     default:
-                        console.log(contract)
                         if(contract === 'rocketStorage') {
                             instance = await contracts[contract].new();
                         } else {
