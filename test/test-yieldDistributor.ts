@@ -92,7 +92,7 @@ describe("Yield Distributor", function () {
     });
   
     it("Admin can set ETH fee modifier", async function () {
-      const setupData = await loadFixture(deployOnlyFixture);
+      const setupData = await protocolFixture();
       const { protocol, signers, rocketPool: rp } = setupData;
   
       let newFee = ethers.utils.parseEther("0.01");
@@ -113,7 +113,7 @@ describe("Yield Distributor", function () {
     });
 
     it("Revert if ETH fee modifier set too high", async function () {
-      const setupData = await loadFixture(deployOnlyFixture);
+      const setupData = await protocolFixture();
       const { protocol, signers, rocketPool: rp } = setupData;
   
       let newFee = (await protocol.yieldDistributor.MAX_ETH_COMMISSION_MODIFIER()).add(ethers.utils.parseEther("0.1"));
@@ -126,7 +126,7 @@ describe("Yield Distributor", function () {
     });
     
     it("Revert if ETH fee modifier set too low", async function () {
-      const setupData = await loadFixture(deployOnlyFixture);
+      const setupData = await protocolFixture();
       const { protocol, signers, rocketPool: rp } = setupData;
 
       const newFee = ((await protocol.yieldDistributor.MAX_ETH_COMMISSION_MODIFIER()).add(ethers.utils.parseEther("0.1"))).mul(-1);
@@ -139,7 +139,7 @@ describe("Yield Distributor", function () {
     });
 
     it("Admin can set ETH fee admin portion", async function () {
-      const setupData = await loadFixture(deployOnlyFixture);
+      const setupData = await deployOnlyFixture();
       const { protocol, signers } = setupData;
   
       const newFee = .75 * await protocol.yieldDistributor.YIELD_PORTION_MAX();
@@ -151,7 +151,7 @@ describe("Yield Distributor", function () {
     });
   
     it("Revert if ETH fee admin portion is out of bounds", async function () {
-      const setupData = await loadFixture(deployOnlyFixture);
+      const setupData = await deployOnlyFixture();
       const { protocol, signers } = setupData;
   
       const previousFee = await protocol.yieldDistributor.connect(signers.random).getEthRewardAdminPortion();

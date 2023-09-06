@@ -7,16 +7,21 @@ import { protocolFixture, SetupData, Protocol, deployOnlyFixture } from "./test"
 export async function initializeDirectory(protocol: Protocol, addressToUse: SignerWithAddress): Promise<any> {
   console.log("INITALIZDIR")
   console.log(protocol.rocketDAOProtocolSettingsNetwork.address)
-  return await protocol.directory.connect(addressToUse).initialize(
-    {
-      whitelist: protocol.whitelist.address,
-      ethToken: protocol.xrETH.address,
-      rplToken: protocol.xRPL.address,
-      depositPool: protocol.depositPool.address,
-      operatorDistributor: protocol.operatorDistributor.address,
-      yieldDistributor: protocol.yieldDistributor.address,
-      rocketDAOProtocolSettingsNetwork: protocol.rocketDAOProtocolSettingsNetwork.address
-    });
+  try {
+    return await protocol.directory.connect(addressToUse).initialize(
+      {
+        whitelist: protocol.whitelist.address,
+        ethToken: protocol.xrETH.address,
+        rplToken: protocol.xRPL.address,
+        depositPool: protocol.depositPool.address,
+        operatorDistributor: protocol.operatorDistributor.address,
+        yieldDistributor: protocol.yieldDistributor.address,
+        rocketDAOProtocolSettingsNetwork: protocol.rocketDAOProtocolSettingsNetwork.address
+      });
+  } finally {
+    console.log("POST INITIALIZTIONS")
+    console.log(await protocol.directory.getRocketDAOProtocolSettingsNetwork())
+  }
 }
 
 describe("Directory", function () {
