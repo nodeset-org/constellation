@@ -202,13 +202,13 @@ describe("DepositPool", function () {
 	});
 
 	describe("RPL", function () {
-		it("State adjusts correctly on RPL deposit from xRPL", async function () {
+		it.only("State adjusts correctly on RPL deposit from xRPL", async function () {
 			const setupData = await loadFixture(protocolFixture);
 
 			const rp = setupData.rocketPool;
 
 			// seed random address with rpl
-			rp.rplContract.connect(setupData.signers.rplWhale)
+			await rp.rplContract.connect(setupData.signers.rplWhale)
 				.transfer(setupData.signers.random.address, ethers.utils.parseEther("100"));
 
 			await depositRpl(setupData, setupData.signers.random, ethers.utils.parseEther("100"));

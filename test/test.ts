@@ -59,7 +59,7 @@ async function getRocketPool(): Promise<RocketPool> {
 		"contracts/Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol:RocketDAOProtocolSettingsNetworkInterface",
 		NetworkFeesContract.address
 	));
-	return { rplContract, networkFeesContract };
+	return { rplContract: (rplContract as RocketTokenRPLInterface), networkFeesContract: (networkFeesContract as RocketDAOProtocolSettingsNetworkInterface) };
 }
 
 async function deployProtocol(rocketPool: RocketPool): Promise<Protocol> {
@@ -83,8 +83,7 @@ async function createSigners(): Promise<Signers> {
 		operator: signersArray[2],
 		random2: signersArray[3],
 		random3: signersArray[4],
-		// Patricio Worthalter (patricioworthalter.eth)
-		rplWhale: await ethers.getImpersonatedSigner("0x57757e3d981446d585af0d9ae4d7df6d64647806")
+		rplWhale: signersArray[5]
 	};
 }
 
@@ -112,25 +111,6 @@ export async function protocolFixture(): Promise<SetupData> {
 	const rocketPool = await getRocketPool();
 	const deployedProtocol = await deployProtocol(rocketPool);
 	const signers = await createSigners();
-
-	// give rplWhale some RPL
-	let currentTime = (await ethers.provider.getBlock('latest')).timestamp;
-
-	const ONE_DAY = 24 * 60 * 60
-	console.log(currentTime)
-	console.log(currentTime + ONE_DAY)
-	let config = {
-		timeInterval: ONE_DAY,
-		timeStart: currentTime + ONE_DAY,
-		timeClaim: currentTime + ONE_DAY + (ONE_DAY * 365),
-		yearlyInflationTarget: 0.05
-	}
-
-	// Set config
-	await rplSetInflationConfig(config, { from: signers.admin.address });
-
-	// Mint inflation now
-	await rplClaimInflation(config, { from: signers.rplWhale.address }, '18900000');
 
 	await rocketPool.rplContract.transfer(signers.rplWhale.address, ethers.utils.parseEther("1000000"));
 
