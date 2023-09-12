@@ -111,13 +111,13 @@ describe("DepositPool", function () {
 
 	describe("Getters and Setters", function () {
 		it("Random address can get maxEthBalance and maxEthBalancePortion", async function () {
-			const setupData = await loadFixture(protocolFixture);
+			const setupData = await protocolFixture();
 			let maxBalance = await setupData.protocol.depositPool.getMaxEthBalance();
 			console.log("maxBalance is " + maxBalance);
 			
 		});
 		it("Random address cannot set maxEthBalancePortion and maxRplBalancePortion", async function () {
-			const setupData = await loadFixture(protocolFixture);
+			const setupData = await protocolFixture();
 			const { protocol, signers } = setupData;
 
 			await expect(protocol.depositPool.connect(signers.random).setMaxEthBalancePortion(1000))
@@ -128,7 +128,7 @@ describe("DepositPool", function () {
 		});
 
 		it("Admin cannot set maxEthBalancePortion or maxRplBalancePortion to out of range value", async function () {
-			const setupData = await loadFixture(protocolFixture);
+			const setupData = await protocolFixture();
 			const { protocol, signers } = setupData;
 
 			let maxEthBalancePortion = await protocol.depositPool.connect(signers.random).getMaxEthBalancePortion();
@@ -142,7 +142,7 @@ describe("DepositPool", function () {
 		});
 
 		it("Admin address can set maxEthBalancePortion and maxRplBalancePortion", async function () {
-			const setupData = await loadFixture(protocolFixture);
+			const setupData = await protocolFixture();
 			const { protocol, signers } = setupData;
 
 			let maxEthBalancePortion = await protocol.depositPool.connect(signers.random).getMaxEthBalancePortion();

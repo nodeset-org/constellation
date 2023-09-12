@@ -6,13 +6,15 @@ import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
 import { DepositPool, NodeSetETH, NodeSetRPL, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface } from "../typechain-types";
 import { initializeDirectory } from "./test-directory";
-import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketTokenRPL } from "./_utils/artifacts";
+import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketTokenRETH, RocketTokenRPL } from "./_utils/artifacts";
 import { deployRocketPool } from './_helpers/deployment';
 import { suppressLog } from "./_helpers/console";
 import { setDefaultParameters } from "./_helpers/defaults";
 import { endSnapShot, injectGlobalSnapShot, startSnapShot } from './_utils/snapshotting';
+import { getCurrentTime } from "./_utils/evm";
+import { rplClaimInflation, rplSetInflationConfig } from "./token/scenario-rpl-inflation";
 
-const protocolParams  = { trustBuildPeriod : ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
+const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
 
 export type SetupData = {
 	protocol: Protocol,
@@ -53,27 +55,24 @@ async function getRocketPool(): Promise<RocketPool> {
 	));
 
 	const NetworkFeesContract = await RocketDAOProtocolSettingsNetwork.deployed();
-	console.log("TRUEFFLE ADDR")
-	console.log(NetworkFeesContract.address)
 	const networkFeesContract = (await ethers.getContractAt(
 		"contracts/Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol:RocketDAOProtocolSettingsNetworkInterface",
 		NetworkFeesContract.address
 	));
-	console.log(networkFeesContract.address)
 	return { rplContract, networkFeesContract };
 }
 
 async function deployProtocol(rocketPool: RocketPool): Promise<Protocol> {
 	const [admin] = await ethers.getSigners();
 	const directory = await (await ethers.getContractFactory("Directory")).deploy();
-	const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directory.address, protocolParams.trustBuildPeriod], { 'initializer' : 'initializeWhitelist',  'kind' : 'uups', 'unsafeAllow': ['constructor'] });
+	const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directory.address, protocolParams.trustBuildPeriod], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 	const xrETH = await (await ethers.getContractFactory("NodeSetETH")).deploy(directory.address);
 	const xRPL = await (await ethers.getContractFactory("NodeSetRPL")).deploy(directory.address);
 	const depositPool = await (await ethers.getContractFactory("DepositPool")).deploy(directory.address);
 	const operatorDistributor = await (await ethers.getContractFactory("OperatorDistributor")).deploy(directory.address);
 	const yieldDistributor = await (await ethers.getContractFactory("YieldDistributor")).deploy(directory.address);
 
-	return { directory, whitelist, xrETH, xRPL, depositPool, operatorDistributor, yieldDistributor, rocketDAOProtocolSettingsNetwork: rocketPool.networkFeesContract};
+	return { directory, whitelist, xrETH, xRPL, depositPool, operatorDistributor, yieldDistributor, rocketDAOProtocolSettingsNetwork: rocketPool.networkFeesContract };
 }
 
 async function createSigners(): Promise<Signers> {
@@ -85,7 +84,7 @@ async function createSigners(): Promise<Signers> {
 		random2: signersArray[3],
 		random3: signersArray[4],
 		// Patricio Worthalter (patricioworthalter.eth)
-		rplWhale: await ethers.getImpersonatedSigner("0x57757e3d981446d585af0d9ae4d7df6d64647806") 
+		rplWhale: await ethers.getImpersonatedSigner("0x57757e3d981446d585af0d9ae4d7df6d64647806")
 	};
 }
 
@@ -114,9 +113,30 @@ export async function protocolFixture(): Promise<SetupData> {
 	const deployedProtocol = await deployProtocol(rocketPool);
 	const signers = await createSigners();
 
+	// give rplWhale some RPL
+	let currentTime = (await ethers.provider.getBlock('latest')).timestamp;
+
+	const ONE_DAY = 24 * 60 * 60
+	console.log(currentTime)
+	console.log(currentTime + ONE_DAY)
+	let config = {
+		timeInterval: ONE_DAY,
+		timeStart: currentTime + ONE_DAY,
+		timeClaim: currentTime + ONE_DAY + (ONE_DAY * 365),
+		yearlyInflationTarget: 0.05
+	}
+
+	// Set config
+	await rplSetInflationConfig(config, { from: signers.admin.address });
+
+	// Mint inflation now
+	await rplClaimInflation(config, { from: signers.rplWhale.address }, '18900000');
+
+	await rocketPool.rplContract.transfer(signers.rplWhale.address, ethers.utils.parseEther("1000000"));
+
 	await expect(initializeDirectory(deployedProtocol, signers.admin)).to.not.be.reverted;
 	await expect(deployedProtocol.yieldDistributor.initialize())
 		.to.not.be.reverted;
-	
-	return { protocol: deployedProtocol, signers, rocketPool};
+
+	return { protocol: deployedProtocol, signers, rocketPool };
 }
