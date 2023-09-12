@@ -5,12 +5,13 @@ import "./Interfaces/RocketTokenRPLInterface.sol";
 
 struct Protocol {
     address whitelist;
-    address payable ethToken; // raspETH
-    address payable rplToken; // xRPL
+    address payable ethVault; // raspETH
+    address payable rplVault; // xRPL
     address payable depositPool;
     address payable operatorDistributor;
     address yieldDistributor;
     address rocketDAOProtocolSettingsNetwork;
+    address payable rplToken;
 }
 
 /// @custom:security-contact info@nodeoperator.org
@@ -56,8 +57,8 @@ contract Directory {
         return _protocol.whitelist;
     }
 
-    function getETHTokenAddress() public view returns (address payable) {
-        return _protocol.ethToken;
+    function getETHVaultAddress() public view returns (address payable) {
+        return _protocol.ethVault;
     }
 
     function getRPLTokenAddress() public view returns (address payable) {

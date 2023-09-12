@@ -30,7 +30,8 @@ export type Protocol = {
 	depositPool: DepositPool,
 	operatorDistributor: OperatorDistributor,
 	yieldDistributor: YieldDistributor,
-	rocketDAOProtocolSettingsNetwork: RocketDAOProtocolSettingsNetworkInterface
+	rocketDAOProtocolSettingsNetwork: RocketDAOProtocolSettingsNetworkInterface,
+	rplContract: RocketTokenRPLInterface
 }
 
 export type Signers = {
@@ -72,7 +73,7 @@ async function deployProtocol(rocketPool: RocketPool): Promise<Protocol> {
 	const operatorDistributor = await (await ethers.getContractFactory("OperatorDistributor")).deploy(directory.address);
 	const yieldDistributor = await (await ethers.getContractFactory("YieldDistributor")).deploy(directory.address);
 
-	return { directory, whitelist, xrETH, xRPL, depositPool, operatorDistributor, yieldDistributor, rocketDAOProtocolSettingsNetwork: rocketPool.networkFeesContract };
+	return { directory, whitelist, xrETH, xRPL, depositPool, operatorDistributor, yieldDistributor, rocketDAOProtocolSettingsNetwork: rocketPool.networkFeesContract, rplContract: rocketPool.rplContract };
 }
 
 async function createSigners(): Promise<Signers> {
@@ -105,7 +106,7 @@ export async function deployOnlyFixture(): Promise<SetupData> {
 
 export async function protocolFixture(): Promise<SetupData> {
 	await suppressLog(deployRocketPool);
-	// Set starting parameters for all tests
+	// Set rocketpool starting parameters for all tests
 	await setDefaultParameters();
 
 	const rocketPool = await getRocketPool();

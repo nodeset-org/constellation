@@ -8,12 +8,13 @@ export async function initializeDirectory(protocol: Protocol, addressToUse: Sign
   return await protocol.directory.connect(addressToUse).initialize(
     {
       whitelist: protocol.whitelist.address,
-      ethToken: protocol.xrETH.address,
-      rplToken: protocol.xRPL.address,
+      ethVault: protocol.xrETH.address,
+      rplVault: protocol.xRPL.address,
       depositPool: protocol.depositPool.address,
       operatorDistributor: protocol.operatorDistributor.address,
       yieldDistributor: protocol.yieldDistributor.address,
-      rocketDAOProtocolSettingsNetwork: protocol.rocketDAOProtocolSettingsNetwork.address
+      rocketDAOProtocolSettingsNetwork: protocol.rocketDAOProtocolSettingsNetwork.address,
+      rplToken: protocol.rplContract.address
     });
 }
 

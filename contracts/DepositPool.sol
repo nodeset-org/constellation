@@ -90,7 +90,7 @@ contract DepositPool is Base {
     ///--------
 
     /// @notice only the token contract can spend DP funds
-    function sendEth(address payable to, uint amount) public onlyEthToken {
+    function sendEth(address payable to, uint amount) public onlyEthVault {
         require(amount <= getMaxEthBalance(), NOT_ENOUGH_ETH_ERROR);
 
         uint old = getTvlEth();
@@ -232,9 +232,9 @@ contract DepositPool is Base {
                 .transfer(to, amount);
     }
 
-    modifier onlyEthToken() {
+    modifier onlyEthVault() {
         require(
-            msg.sender == getDirectory().getETHTokenAddress(),
+            msg.sender == getDirectory().getETHVaultAddress(),
             ONLY_ETH_TOKEN_ERROR
         );
         _;

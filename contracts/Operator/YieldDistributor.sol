@@ -119,7 +119,7 @@ contract YieldDistributor is Base {
         for (uint i = 0; i < length; i++) {
             uint operatorRewardEth = ((totalEthFee - adminRewardEth) *
                 (operators[i].feePortion / YIELD_PORTION_MAX)) / length;
-            NodeSetETH(getDirectory().getETHTokenAddress()).internalMint(
+            NodeSetETH(getDirectory().getETHVaultAddress()).internalMint(
                 operators[i].nodeAddress,
                 operatorRewardEth
             );
@@ -129,7 +129,7 @@ contract YieldDistributor is Base {
         }
 
         // mint xrETH for admin
-        NodeSetETH(getDirectory().getETHTokenAddress()).internalMint(
+        NodeSetETH(getDirectory().getETHVaultAddress()).internalMint(
             getDirectory().getAdminAddress(),
             adminRewardEth
         );

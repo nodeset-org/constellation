@@ -10,6 +10,8 @@ import "../Base.sol";
 import "../DepositPool.sol";
 import "../Interfaces/RocketTokenRPLInterface.sol";
 
+import "hardhat/console.sol";
+
 /// @custom:security-contact info@nodeoperator.org
 /// @notice LSD tracking the network's yield
 contract NodeSetRPL is
@@ -48,6 +50,9 @@ contract NodeSetRPL is
     /// @dev Requires this contract to already have approval from the sender to spend their RPL.
     function mint(address to, uint amount) public {
         require(amount >= _minimumStakeAmount, getMinimumStakeError());
+
+        console.log("RPL ADDDR");
+        console.logAddress(getDirectory().getRPLTokenAddress());
 
         // send RPL to DP
         bool success = RocketTokenRPLInterface(

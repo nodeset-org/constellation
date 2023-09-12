@@ -78,6 +78,8 @@ export async function depositRpl(setupData: SetupData, from: SignerWithAddress, 
 			.to.emit(rp.rplContract, "Approval")
 			.withArgs(from.address, protocol.xRPL.address, amount);
 
+	console.log("rpl address: ", rp.rplContract.address);
+
 	const tx = await protocol.xRPL.connect(from).mint(from.address, amount);
 	await expect(tx)
 		.to.changeTokenBalance(
@@ -95,7 +97,7 @@ export async function depositRpl(setupData: SetupData, from: SignerWithAddress, 
 	
 	let max = await protocol.depositPool.getMaxRplBalance();
 	
-	await expect(maxBalanceAfterDeposit).to.equal(await protocol.depositPool.getMaxRplBalance());
+	expect(maxBalanceAfterDeposit).to.equal(await protocol.depositPool.getMaxRplBalance());
 	
 	let currTvl = await protocol.depositPool.getTvlRpl();
 
