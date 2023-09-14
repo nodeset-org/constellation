@@ -1,8 +1,8 @@
 pragma solidity >0.5.0 <0.9.0;
 
 // SPDX-License-Identifier: GPL-3.0-only
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
+import "oz-contracts-3-4-0/token/ERC20/IERC20.sol";
+import "oz-contracts-3-4-0/token/ERC20/ERC20Burnable.sol";
 
 interface RocketVaultInterface {
     function balanceOf(string memory _networkContractName) external view returns (uint256);

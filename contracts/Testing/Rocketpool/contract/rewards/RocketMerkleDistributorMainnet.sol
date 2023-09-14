@@ -11,7 +11,7 @@ import "../../interface/rewards/RocketRewardsRelayInterface.sol";
 import "../../interface/rewards/RocketSmoothingPoolInterface.sol";
 import "../../interface/RocketVaultWithdrawerInterface.sol";
 
-import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
+import "oz-contracts-3-4-0/cryptography/MerkleProof.sol";
 
 /*
 * On mainnet, the relay and the distributor are the same contract as there is no need for an intermediate contract to

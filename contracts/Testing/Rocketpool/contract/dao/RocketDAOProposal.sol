@@ -5,7 +5,7 @@ pragma solidity 0.7.6;
 import "../RocketBase.sol";
 import "../../interface/dao/RocketDAOProposalInterface.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "oz-contracts-3-4-0/math/SafeMath.sol";
 
 
 // A DAO proposal
@@ -14,15 +14,15 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     using SafeMath for uint;
 
     // Events
-    event ProposalAdded(address indexed proposer, string indexed proposalDAO, uint256 indexed proposalID, bytes payload, uint256 time);  
-    event ProposalVoted(uint256 indexed proposalID, address indexed voter, bool indexed supported, uint256 time);  
+    event ProposalAdded(address indexed proposer, string indexed proposalDAO, uint256 indexed proposalID, bytes payload, uint256 time);
+    event ProposalVoted(uint256 indexed proposalID, address indexed voter, bool indexed supported, uint256 time);
     event ProposalExecuted(uint256 indexed proposalID, address indexed executer, uint256 time);
-    event ProposalCancelled(uint256 indexed proposalID, address indexed canceller, uint256 time);    
+    event ProposalCancelled(uint256 indexed proposalID, address indexed canceller, uint256 time);
 
     // The namespace for any data stored in the trusted node DAO (do not change)
     string constant private daoProposalNameSpace = "dao.proposal.";
 
-    
+
     // Only allow the DAO contract to access
     modifier onlyDAOContract(string memory _daoName) {
         // Load contracts
@@ -39,87 +39,87 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
 
 
     /*** Proposals ****************/
-  
+
     // Get the current total proposals
     function getTotal() override public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "total"))); 
+        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "total")));
     }
 
     // Get the DAO that this proposal belongs too
     function getDAO(uint256 _proposalID) override public view returns (string memory) {
-        return getString(keccak256(abi.encodePacked(daoProposalNameSpace, "dao", _proposalID))); 
+        return getString(keccak256(abi.encodePacked(daoProposalNameSpace, "dao", _proposalID)));
     }
 
     // Get the member who proposed
     function getProposer(uint256 _proposalID) override public view returns (address) {
-        return getAddress(keccak256(abi.encodePacked(daoProposalNameSpace, "proposer", _proposalID))); 
+        return getAddress(keccak256(abi.encodePacked(daoProposalNameSpace, "proposer", _proposalID)));
     }
 
     // Get the proposal message
     function getMessage(uint256 _proposalID) override external view returns (string memory) {
-        return getString(keccak256(abi.encodePacked(daoProposalNameSpace, "message", _proposalID))); 
+        return getString(keccak256(abi.encodePacked(daoProposalNameSpace, "message", _proposalID)));
     }
 
     // Get the start block of this proposal
     function getStart(uint256 _proposalID) override public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "start", _proposalID))); 
-    } 
+        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "start", _proposalID)));
+    }
 
     // Get the end block of this proposal
     function getEnd(uint256 _proposalID) override public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "end", _proposalID))); 
+        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "end", _proposalID)));
     }
 
     // The block where the proposal expires and can no longer be executed if it is successful
     function getExpires(uint256 _proposalID) override public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "expires", _proposalID))); 
+        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "expires", _proposalID)));
     }
 
     // Get the created status of this proposal
     function getCreated(uint256 _proposalID) override external view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "created", _proposalID))); 
+        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "created", _proposalID)));
     }
 
     // Get the votes for count of this proposal
     function getVotesFor(uint256 _proposalID) override public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.for", _proposalID))); 
+        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.for", _proposalID)));
     }
 
     // Get the votes against count of this proposal
     function getVotesAgainst(uint256 _proposalID) override public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.against", _proposalID))); 
+        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.against", _proposalID)));
     }
 
-    // How many votes required for the proposal to succeed 
+    // How many votes required for the proposal to succeed
     function getVotesRequired(uint256 _proposalID) override public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.required", _proposalID))); 
+        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.required", _proposalID)));
     }
 
     // Get the cancelled status of this proposal
     function getCancelled(uint256 _proposalID) override public view returns (bool) {
-        return getBool(keccak256(abi.encodePacked(daoProposalNameSpace, "cancelled", _proposalID))); 
+        return getBool(keccak256(abi.encodePacked(daoProposalNameSpace, "cancelled", _proposalID)));
     }
 
     // Get the executed status of this proposal
     function getExecuted(uint256 _proposalID) override public view returns (bool) {
-        return getBool(keccak256(abi.encodePacked(daoProposalNameSpace, "executed", _proposalID))); 
+        return getBool(keccak256(abi.encodePacked(daoProposalNameSpace, "executed", _proposalID)));
     }
 
     // Get the votes against count of this proposal
     function getPayload(uint256 _proposalID) override public view returns (bytes memory) {
-        return getBytes(keccak256(abi.encodePacked(daoProposalNameSpace, "payload", _proposalID))); 
+        return getBytes(keccak256(abi.encodePacked(daoProposalNameSpace, "payload", _proposalID)));
     }
 
     // Returns true if this proposal has already been voted on by a member
     function getReceiptHasVoted(uint256 _proposalID, address _nodeAddress) override public view returns (bool) {
-        return getBool(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.hasVoted", _proposalID, _nodeAddress))); 
+        return getBool(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.hasVoted", _proposalID, _nodeAddress)));
     }
 
     // Returns true if this proposal was supported by this member
     function getReceiptSupported(uint256 _proposalID, address _nodeAddress) override external view returns (bool) {
-        return getBool(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.supported", _proposalID, _nodeAddress))); 
+        return getBool(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.supported", _proposalID, _nodeAddress)));
     }
-    
+
 
     // Return the state of the specified proposal
     // A successful proposal can be executed immediately
@@ -213,7 +213,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         // Log it
         emit ProposalVoted(_proposalID, _member, _support, block.timestamp);
     }
-    
+
 
     // Execute a proposal if it has passed
     function execute(uint256 _proposalID) override external {

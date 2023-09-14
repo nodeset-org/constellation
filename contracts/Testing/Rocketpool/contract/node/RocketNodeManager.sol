@@ -3,8 +3,8 @@ pragma abicoder v2;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "oz-contracts-3-4-0/math/SafeMath.sol";
+import "oz-contracts-3-4-0/token/ERC20/IERC20.sol";
 
 import "../RocketBase.sol";
 import "../../types/MinipoolStatus.sol";
@@ -22,7 +22,7 @@ import "../../interface/node/RocketNodeDepositInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 
 
-// Node registration and management 
+// Node registration and management
 contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
 
     // Libraries

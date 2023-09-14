@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "oz-contracts-3-4-0/math/SafeMath.sol";
 
 import "../RocketBase.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
@@ -122,7 +122,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         // Check that pre deposit won't fail
         if (msg.value < preLaunchValue) {
             RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-            require(preLaunchValue.sub(msg.value) <= rocketDepositPool.getBalance(), "Deposit pool balance is insufficient for pre deposit");          
+            require(preLaunchValue.sub(msg.value) <= rocketDepositPool.getBalance(), "Deposit pool balance is insufficient for pre deposit");
         }
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, block.timestamp);

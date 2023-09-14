@@ -7,12 +7,12 @@ import "../../../interface/RocketVaultInterface.sol";
 import "../../../interface/dao/protocol/RocketDAOProtocolActionsInterface.sol";
 
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "oz-contracts-3-4-0/math/SafeMath.sol";
+import "oz-contracts-3-4-0/token/ERC20/IERC20.sol";
 
 
 // The Rocket Pool Network DAO Actions - This is a placeholder for the network DAO to come
-contract RocketDAOProtocolActions is RocketBase, RocketDAOProtocolActionsInterface { 
+contract RocketDAOProtocolActions is RocketBase, RocketDAOProtocolActionsInterface {
 
     using SafeMath for uint;
 
@@ -29,5 +29,5 @@ contract RocketDAOProtocolActions is RocketBase, RocketDAOProtocolActionsInterfa
 
     /*** Action Methods ************************/
 
-   
+
 }

@@ -6,14 +6,14 @@ import "./RocketDAOProtocolSettings.sol";
 import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsInflationInterface.sol";
 import "../../../../interface/token/RocketTokenRPLInterface.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "oz-contracts-3-4-0/math/SafeMath.sol";
 
 // RPL Inflation settings in RP which the DAO will have full control over
 contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, RocketDAOProtocolSettingsInflationInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "inflation") {
-        // Set version 
+        // Set version
         version = 1;
          // Set some initial settings on first deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
@@ -24,8 +24,8 @@ contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, Rocket
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);                           // Flag that this contract has been deployed, so default settings don't get reapplied on a contract upgrade
         }
     }
-    
-    
+
+
 
     /*** Set Uint *****************************************/
 
@@ -61,10 +61,10 @@ contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, Rocket
     function getInflationIntervalRate() override external view returns (uint256) {
         return getSettingUint("rpl.inflation.interval.rate");
     }
-    
+
     // The block to start inflation at
     function getInflationIntervalStartTime() override public view returns (uint256) {
-        return getSettingUint("rpl.inflation.interval.start"); 
+        return getSettingUint("rpl.inflation.interval.start");
     }
 
 }
