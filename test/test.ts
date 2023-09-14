@@ -9,6 +9,8 @@ import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
 import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
 import { setDefaultParameters } from "./rocketpool/_helpers/defaults";
+import { suppressLog } from "./rocketpool/_helpers/console";
+import { deployRocketPool } from "./rocketpool/_helpers/deployment";
 
 const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
 
@@ -103,8 +105,6 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 	try {
 		upgrades.silenceWarnings();
 
-		await setDefaultParameters();
-
 		const deployer = (await ethers.getSigners())[0];
 
 		const directoryAddress = await getNextContractAddress(deployer, predictedNonce-1)
@@ -192,6 +192,8 @@ async function createSigners(): Promise<Signers> {
 }
 
 export async function protocolFixture(): Promise<SetupData> {
+	await suppressLog(deployRocketPool);
+	await setDefaultParameters();
 
 	const signers = await createSigners();
 	const rocketPool = await getRocketPool();
