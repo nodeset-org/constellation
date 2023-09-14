@@ -222,7 +222,11 @@ export async function deployRocketPool() {
 
                     // All other contracts - pass storage address
                     default:
-                        instance = await contracts[contract].new(rocketStorageInstance.address);
+                        if(contract === 'rocketStorage') {
+                            instance = await contracts[contract].new();
+                        } else {
+                            instance = await contracts[contract].new(rocketStorageInstance.address);
+                        }
                         contracts[contract].setAsDeployed(instance);
                         // Slight hack to allow gas optimisation using immutable addresses for non-upgradable contracts
                         if (contract === 'rocketVault' || contract === 'rocketTokenRETH') {

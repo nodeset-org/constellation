@@ -78,7 +78,7 @@ async function getRocketPool(): Promise<RocketPool> {
 		RplToken.address
 	)) as RocketTokenRPLInterface;
 
-	const RocketDAOProtocolSettingsNet = RocketDAOProtocolSettingsNetwork.deployed();
+	const RocketDAOProtocolSettingsNet = await RocketDAOProtocolSettingsNetwork.deployed();
 	const networkFeesContract = (await ethers.getContractAt(
 		"contracts/Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol:RocketDAOProtocolSettingsNetworkInterface",
 		RocketDAOProtocolSettingsNet.address
