@@ -113,7 +113,7 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 		const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directoryAddress, protocolParams.trustBuildPeriod], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 		const vCWETHProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("WETHVault"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
 		const vCWETH = await ethers.getContractAt("WETHVault", vCWETHProxyAbi.address);
-		const vCRPLProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("RPLVault"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+		const vCRPLProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("RPLVault"), [directoryAddress, rocketPool.rplContract.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
 		const vCRPL = await ethers.getContractAt("RPLVault", vCRPLProxyAbi.address);
 		const depositPoolProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("DepositPool"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
 		const depositPool = await ethers.getContractAt("DepositPool", depositPoolProxyAbi.address);
@@ -137,6 +137,7 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 				rocketPool.rockStorageContract.address,
 				rocketPool.rocketNodeManagerContract.address,
 				rocketPool.rocketNodeStakingContract.address,
+				rocketPool.rplContract.address,
 			]
 		], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 		const finalNonce = await deployer.getTransactionCount();

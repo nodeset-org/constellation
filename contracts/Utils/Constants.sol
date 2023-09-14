@@ -3,10 +3,6 @@ pragma solidity 0.8.17;
 
 library Constants {
 
-    // ETHEREUM MAINNET
-    address payable internal constant RPL_CONTRACT_ADDRESS =
-        payable(0xD33526068D116cE69F19A9ee46F0bd304F21A51f);
-
     address payable internal constant WETH_CONTRACT_ADDRESS =
         payable(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 

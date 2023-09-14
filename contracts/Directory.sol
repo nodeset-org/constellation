@@ -22,6 +22,7 @@ struct Protocol {
     address rocketStorage;
     address rocketNodeManager;
     address rocketNodeStaking;
+    address rplToken;
 }
 
 /// @custom:security-contact info@nodeoperator.org
@@ -98,8 +99,8 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return Constants.WETH_CONTRACT_ADDRESS;
     }
 
-    function getRPLAddress() public pure returns (address) {
-        return Constants.RPL_CONTRACT_ADDRESS;
+    function getRPLAddress() public view returns (address) {
+        return _protocol.rplToken;
     }
 
     function getTreasuryAddress() public view returns (address) {

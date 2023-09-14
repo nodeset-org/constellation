@@ -46,7 +46,7 @@ contract DepositPool is UpgradeableBase {
 
     /// @notice Gets the total RPL value locked inside the this pool
     function getTvlRpl() public view returns (uint) {
-        return RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS).balanceOf(address(this));
+        return RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this));
     }
 
     ///--------
@@ -125,7 +125,7 @@ contract DepositPool is UpgradeableBase {
             .getOperatorDistributorAddress();
         uint256 requiredCapital = vrpl.getRequiredCollateral();
         RocketTokenRPLInterface RPL = RocketTokenRPLInterface(
-            Constants.RPL_CONTRACT_ADDRESS
+            _directory.getRPLAddress()
         ); // RPL token contract
         uint256 totalBalance = RPL.balanceOf(address(this));
 

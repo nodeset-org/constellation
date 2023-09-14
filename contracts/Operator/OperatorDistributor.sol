@@ -73,7 +73,7 @@ contract OperatorDistributor is UpgradeableBase {
     // and this contract.
     function getTvlRpl() public view returns (uint) {
         return
-            RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS)
+            RocketTokenRPLInterface(_directory.getRPLAddress())
                 .balanceOf(address(this)) + getAmountFundedRpl();
     }
 
@@ -120,7 +120,7 @@ contract OperatorDistributor is UpgradeableBase {
 
         // approve the node staking contract to spend the RPL
         RocketTokenRPLInterface rpl = RocketTokenRPLInterface(
-            Constants.RPL_CONTRACT_ADDRESS
+            _directory.getRPLAddress()
         );
         require(
             rpl.approve(
@@ -244,14 +244,14 @@ contract OperatorDistributor is UpgradeableBase {
         if (stakeRatio < targetStakeRatio) {
             uint256 requiredStakeRpl = (_ethStaked * ethPriceInRpl / targetStakeRatio) - rplStaked;
             // Make sure the contract has enough RPL to stake
-            uint256 currentRplBalance = RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS).balanceOf(address(this));
+            uint256 currentRplBalance = RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this));
             if(currentRplBalance >= requiredStakeRpl) {
                 // stakeRPLOnBehalfOf
-                SafeERC20.safeApprove(RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS), _directory.getRocketNodeStakingAddress(), requiredStakeRpl);
+                SafeERC20.safeApprove(RocketTokenRPLInterface(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), requiredStakeRpl);
                 IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, requiredStakeRpl);
             } else {
                 // stake what we have
-                SafeERC20.safeApprove(RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS), _directory.getRocketNodeStakingAddress(), currentRplBalance);
+                SafeERC20.safeApprove(RocketTokenRPLInterface(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), currentRplBalance);
                 IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, currentRplBalance);
             }
         }

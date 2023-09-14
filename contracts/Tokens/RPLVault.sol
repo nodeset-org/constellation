@@ -28,9 +28,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     constructor() initializer {}
 
-    function initialize(address directoryAddress) public virtual initializer override {
+    function initializeVault(address directoryAddress, address rplToken) public virtual initializer {
         super.initialize(directoryAddress);
-        ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(Constants.RPL_CONTRACT_ADDRESS));
+        ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(rplToken));
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
         makerFeeBasePoint = 0.05e5;
