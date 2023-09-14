@@ -25,7 +25,7 @@ describe("Node Operator Onboarding", function () {
     let weth: IWETH;
 
     before(async function () {
-        setupData = await loadFixture(protocolFixture);
+        setupData = await protocolFixture();
 
         protocol = setupData.protocol;
         signers = setupData.signers;

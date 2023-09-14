@@ -46,7 +46,7 @@ describe("Whitelist (proxy)", function () {
 
 describe("Whitelist", function () {
     it("Admin can add address to whitelist", async function () {
-        const { protocol, signers } = await loadFixture(protocolFixture);
+        const { protocol, signers } = await protocolFixture();
 
         const currentBlock = await ethers.provider.getBlockNumber();
         const timestamp = (await ethers.provider.getBlock(currentBlock)).timestamp + 86400;
@@ -88,7 +88,7 @@ describe("Whitelist", function () {
     });
 
     it("Non-admin cannot add address to whitelist", async function () {
-        const { protocol, signers } = await loadFixture(protocolFixture);
+        const { protocol, signers } = await protocolFixture();
         
         await expect(protocol.whitelist.connect(signers.random).addOperator(signers.random.address))
             .to.be.revertedWith("Can only be called by 24 hour timelock!");
@@ -98,7 +98,7 @@ describe("Whitelist", function () {
     });
 
     it("Admin can remove NO from whitelist", async function () {
-        const { protocol, signers } = await loadFixture(protocolFixture);
+        const { protocol, signers } = await protocolFixture();
         
         await protocol.whitelist.addOperator(signers.random.address);
         
@@ -110,7 +110,7 @@ describe("Whitelist", function () {
     });
 
     it("Non-admin cannot remove NO from whitelist", async function () {
-        const { protocol, signers } = await loadFixture(protocolFixture);
+        const { protocol, signers } = await protocolFixture();
        
         await protocol.whitelist.addOperator(signers.random.address);
 

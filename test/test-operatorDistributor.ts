@@ -10,7 +10,7 @@ import { IMinipool, MockMinipool } from "../typechain-types";
 
 	it("Tops up the RPL stake if it is below the minimum", async function () {
 		// load fixture
-		const setupData = await loadFixture(protocolFixture);
+		const setupData = await protocolFixture();
 		const { protocol, signers, rocketPool } = setupData;
 		const { operatorDistributor } = protocol;
 		const { rocketNodeStakingContract } = rocketPool;
