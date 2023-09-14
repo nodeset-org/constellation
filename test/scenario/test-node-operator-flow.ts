@@ -36,7 +36,7 @@ describe("Node Operator Onboarding", function () {
         xrETH = protocol.vCWETH;
         xRPL = protocol.vCRPL;
         weth = protocol.wETH;
-        rpl = await ethers.getContractAt("IERC20", await protocol.directory.getRPLAddress());
+        rpl = await ethers.getContractAt("@openzeppelin/contracts/token/ERC20/IERC20.sol:IERC20", await protocol.directory.getRPLAddress()) as IERC20;
 
     });
 

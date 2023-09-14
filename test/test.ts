@@ -69,13 +69,13 @@ export function getAllAddresses(Signers: Signers, Protocol: Protocol, RocketPool
 
 async function getRocketPool(): Promise<RocketPool> {
 	const rplContract = (await ethers.getContractAt(
-		"RocketTokenRPLInterface",
+		"contracts/Interfaces/RocketTokenRPLInterface.sol:RocketTokenRPLInterface",
 		"0xD33526068D116cE69F19A9ee46F0bd304F21A51f"
-	));
+	)) as RocketTokenRPLInterface;
 	const networkFeesContract = (await ethers.getContractAt(
-		"RocketDAOProtocolSettingsNetworkInterface",
+		"contracts/Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol:RocketDAOProtocolSettingsNetworkInterface",
 		"0x320f3aAB9405e38b955178BBe75c477dECBA0C27"
-	));
+	)) as RocketDAOProtocolSettingsNetworkInterface;
 
 	// deploy mock rocket storage
 	const rocketStorageFactory = await ethers.getContractFactory("MockRocketStorage");
