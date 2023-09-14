@@ -7,6 +7,7 @@ import { Directory } from "../typechain-types/contracts/Directory";
 import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
+import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
 
 const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
 
@@ -68,13 +69,16 @@ export function getAllAddresses(Signers: Signers, Protocol: Protocol, RocketPool
 }
 
 async function getRocketPool(): Promise<RocketPool> {
+	const RplToken = await RocketTokenRPL.deployed();
 	const rplContract = (await ethers.getContractAt(
 		"contracts/Interfaces/RocketTokenRPLInterface.sol:RocketTokenRPLInterface",
-		"0xD33526068D116cE69F19A9ee46F0bd304F21A51f"
+		RplToken.address
 	)) as RocketTokenRPLInterface;
+
+	const RocketDAOProtocolSettingsNet = RocketDAOProtocolSettingsNetwork.deployed();
 	const networkFeesContract = (await ethers.getContractAt(
 		"contracts/Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol:RocketDAOProtocolSettingsNetworkInterface",
-		"0x320f3aAB9405e38b955178BBe75c477dECBA0C27"
+		RocketDAOProtocolSettingsNet.address
 	)) as RocketDAOProtocolSettingsNetworkInterface;
 
 	// deploy mock rocket storage
@@ -175,13 +179,12 @@ async function createSigners(): Promise<Signers> {
 		random3: signersArray[4],
 		random4: signersArray[5],
 		random5: signersArray[6],
-		// Patricio Worthalter (patricioworthalter.eth)
-		rplWhale: await ethers.getImpersonatedSigner("0x57757e3d981446d585af0d9ae4d7df6d64647806"),
 		hyperdriver: signersArray[7],
 		ethWhale: signersArray[8],
 		adminServer: signersArray[9],
 		timelock24hour: signersArray[10],
 		protocolSigner: signersArray[11],
+		rplWhale: signersArray[12],
 	};
 }
 
