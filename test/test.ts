@@ -8,6 +8,7 @@ import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
 import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
+import { setDefaultParameters } from "./rocketpool/_helpers/defaults";
 
 const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
 
@@ -101,6 +102,8 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 	const predictedNonce = 9;
 	try {
 		upgrades.silenceWarnings();
+
+		await setDefaultParameters();
 
 		const deployer = (await ethers.getSigners())[0];
 
