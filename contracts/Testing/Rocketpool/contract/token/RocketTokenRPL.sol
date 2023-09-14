@@ -51,6 +51,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         rplFixedSupplyContract = IERC20(_rocketTokenRPLFixedSupplyAddress);
         // Mint the 18m tokens that currently exist and allow them to be sent to people burning existing fixed supply RPL
         _mint(address(this), totalInitialSupply);
+        _mint(msg.sender, totalInitialSupply);
     }
 
     /**
