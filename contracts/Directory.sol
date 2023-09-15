@@ -23,6 +23,7 @@ struct Protocol {
     address rocketNodeManager;
     address rocketNodeStaking;
     address rplToken;
+    address payable weth;
 }
 
 /// @custom:security-contact info@nodeoperator.org
@@ -95,8 +96,8 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.priceFetcher;
     }
 
-    function getWETHAddress() public pure returns (address payable) {
-        return Constants.WETH_CONTRACT_ADDRESS;
+    function getWETHAddress() public view returns (address payable) {
+        return _protocol.weth;
     }
 
     function getRPLAddress() public view returns (address) {

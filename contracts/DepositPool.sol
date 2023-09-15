@@ -41,7 +41,7 @@ contract DepositPool is UpgradeableBase {
 
     /// @notice Gets the total ETH and WETH value locked inside the this pool
     function getTvlEth() public view returns (uint) {
-        return address(this).balance + IWETH(Constants.WETH_CONTRACT_ADDRESS).balanceOf(address(this));
+        return address(this).balance + IWETH(_directory.getWETHAddress()).balanceOf(address(this));
     }
 
     /// @notice Gets the total RPL value locked inside the this pool
@@ -81,7 +81,7 @@ contract DepositPool is UpgradeableBase {
     /// @dev Splits the total ETH balance into WETH tokens and distributes them between the WETHVault and OperatorDistributor based on the splitRatioEth. However, when the requiredCapital from WETHVault is zero, all balance is sent to the OperatorDistributor.
     function sendEthToDistributors() public {
         // convert entire weth balance of this contract to eth
-        IWETH WETH = IWETH(Constants.WETH_CONTRACT_ADDRESS); // WETH token contract
+        IWETH WETH = IWETH(_directory.getWETHAddress()); // WETH token contract
         WETH.withdraw(WETH.balanceOf(address(this)));
 
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());

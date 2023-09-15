@@ -54,7 +54,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     function initialize(address directoryAddress) public virtual initializer override {
         super.initialize(directoryAddress);
-        ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(Constants.WETH_CONTRACT_ADDRESS));
+        ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(_directory.getWETHAddress()));
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
         makerFee1BasePoint = 0.01e5;
