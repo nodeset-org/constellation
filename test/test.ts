@@ -104,14 +104,17 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 	const predictedNonce = 9;
 	try {
 		upgrades.silenceWarnings();
+		// deploy weth
+		const WETH = await ethers.getContractFactory("WETH");
+		const wETH = await WETH.deploy();
+		await wETH.deployed();
 
 		const deployer = (await ethers.getSigners())[0];
 
 		const directoryAddress = await getNextContractAddress(deployer, predictedNonce-1)
 		const initNonce = await deployer.getTransactionCount();
-
 		const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directoryAddress, protocolParams.trustBuildPeriod], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-		const vCWETHProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("WETHVault"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+		const vCWETHProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("WETHVault"), [directoryAddress, wETH.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
 		const vCWETH = await ethers.getContractAt("WETHVault", vCWETHProxyAbi.address);
 		const vCRPLProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("RPLVault"), [directoryAddress, rocketPool.rplContract.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
 		const vCRPL = await ethers.getContractAt("RPLVault", vCRPLProxyAbi.address);
@@ -138,14 +141,13 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 				rocketPool.rocketNodeManagerContract.address,
 				rocketPool.rocketNodeStakingContract.address,
 				rocketPool.rplContract.address,
+				wETH.address,
 			]
 		], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 		const finalNonce = await deployer.getTransactionCount();
 		const directory = await ethers.getContractAt("Directory", directoryProxyAbi.address);
 		expect(finalNonce - initNonce).to.equal(predictedNonce);
 		expect(directory.address).to.hexEqual(directoryAddress);
-
-		const wETH = await ethers.getContractAt("IWETH", await directory.getWETHAddress());
 
 		// set adminServer to be ADMIN_SERVER_ROLE
 		const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
