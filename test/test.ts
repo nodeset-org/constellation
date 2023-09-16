@@ -109,6 +109,11 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 		const wETH = await WETH.deploy();
 		await wETH.deployed();
 
+		// deploy mock uniswap v3 pool
+		const UniswapV3Pool = await ethers.getContractFactory("MockUniswapV3Pool");
+		const uniswapV3Pool = await UniswapV3Pool.deploy();
+		await uniswapV3Pool.deployed();
+
 		const deployer = (await ethers.getSigners())[0];
 
 		const directoryAddress = await getNextContractAddress(deployer, predictedNonce-1)
@@ -142,6 +147,7 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 				rocketPool.rocketNodeStakingContract.address,
 				rocketPool.rplContract.address,
 				wETH.address,
+				uniswapV3Pool.address
 			]
 		], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 		const finalNonce = await deployer.getTransactionCount();

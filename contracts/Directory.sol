@@ -24,6 +24,7 @@ struct Protocol {
     address rocketNodeStaking;
     address rplToken;
     address payable weth;
+    address uniswapV3Pool;
 }
 
 /// @custom:security-contact info@nodeoperator.org
@@ -106,6 +107,10 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     function getTreasuryAddress() public view returns (address) {
         return _treasury;
+    }
+
+    function getUniswapV3PoolAddress() public view returns (address) {
+        return _protocol.uniswapV3Pool;
     }
 
     function initialize(Protocol memory newProtocol) public initializer {
