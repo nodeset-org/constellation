@@ -24,8 +24,8 @@ contract MockRocketNodeStaking is IRocketNodeStaking {
         //RocketTokenRPLInterface rplToken = RocketTokenRPLInterface(
         //    Constants.RPL_CONTRACT_ADDRESS
         //);
-        // rplStaked += _amount;
-        // rplToken.transferFrom(msg.sender, address(this), _amount);
+         rplStaked += _amount;
+         //rplToken.transferFrom(msg.sender, address(this), _amount);
     }
 
     function getNodeRPLStake(

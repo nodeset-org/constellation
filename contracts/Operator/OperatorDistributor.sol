@@ -245,6 +245,7 @@ contract OperatorDistributor is UpgradeableBase {
             uint256 requiredStakeRpl = (_ethStaked * ethPriceInRpl / targetStakeRatio) - rplStaked;
             // Make sure the contract has enough RPL to stake
             uint256 currentRplBalance = RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this));
+            SafeERC20.safeApprove(RocketTokenRPLInterface(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), 0);
             if(currentRplBalance >= requiredStakeRpl) {
                 // stakeRPLOnBehalfOf
                 SafeERC20.safeApprove(RocketTokenRPLInterface(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), requiredStakeRpl);
