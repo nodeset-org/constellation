@@ -6,8 +6,8 @@ contract MockUniswapV3Pool {
 
     uint256 public sqrtPriceX96;
 
-    constructor(uint256 _sqrtPriceX96) {
-        sqrtPriceX96 = _sqrtPriceX96;
+    constructor() {
+        sqrtPriceX96 = 566508141052302349635711194631; // value from mainnet at some point in time
     }
 
     function setSqrtPriceX96(uint256 _sqrtPriceX96) external {
