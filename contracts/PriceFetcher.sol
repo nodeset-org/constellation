@@ -7,6 +7,7 @@ import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 
 import "./UpgradeableBase.sol";
 import "./Utils/Constants.sol";
+import "hardhat/console.sol";
 
 contract PriceFetcher is UpgradeableBase {
     /// @notice Returns the average price of ETH denominated in RPL with 18 decimals from 45 to 60 minutes ago
@@ -16,6 +17,7 @@ contract PriceFetcher is UpgradeableBase {
             Constants.UNISWAP_RPL_ETH_POOL_ADDRESS
         );
         (uint160 sqrtPriceX96, , , , , , ) = pool.slot0();
+        console.log("sqrtPriceX96: %s", sqrtPriceX96);
         uint256 price = ((uint256(sqrtPriceX96) ** 2) * 1e7) / (2 ** 192);
         return price * 1e11;
     }
