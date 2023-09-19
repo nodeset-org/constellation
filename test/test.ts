@@ -7,7 +7,7 @@ import { Directory } from "../typechain-types/contracts/Directory";
 import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
-import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
+import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketStorage, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
 import { setDefaultParameters } from "./rocketpool/_helpers/defaults";
 import { suppressLog } from "./rocketpool/_helpers/console";
 import { deployRocketPool } from "./rocketpool/_helpers/deployment";
@@ -84,10 +84,11 @@ async function getRocketPool(): Promise<RocketPool> {
 		RocketDAOProtocolSettingsNet.address
 	)) as RocketDAOProtocolSettingsNetworkInterface;
 
-	// deploy mock rocket storage
-	const rocketStorageFactory = await ethers.getContractFactory("MockRocketStorage");
-	const rockStorageContract = (await rocketStorageFactory.deploy()) as IRocketStorage;
-	await rockStorageContract.deployed();
+	const RocketStorageDeployment = await RocketStorage.deployed();
+	const rockStorageContract = (await ethers.getContractAt(
+		"RocketStorage",
+		RocketStorageDeployment.address
+	)) as IRocketStorage;
 
 	const rocketNodeManagerFactory = await ethers.getContractFactory("MockRocketNodeManager");
 	const rocketNodeManagerContract = (await rocketNodeManagerFactory.deploy()) as IRocketNodeManager;

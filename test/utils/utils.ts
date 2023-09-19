@@ -132,7 +132,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         )
 
 
-        await rocketPool.rockStorageContract.setWithdrawalAddress(nodeOperator.address, setupData.protocol.depositPool.address, true);
+        await rocketPool.rockStorageContract.connect(nodeOperator).setWithdrawalAddress(nodeOperator.address, setupData.protocol.depositPool.address, true);
 
         // NO sets smoothing pool registration state to true
         const rocketNodeManagerContract = await ethers.getContractAt("MockRocketNodeManager", rocketPool.rocketNodeManagerContract.address);

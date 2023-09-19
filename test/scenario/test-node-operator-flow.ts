@@ -63,7 +63,7 @@ describe("Node Operator Onboarding", function () {
         expect(await mockMinipool.getStatus()).to.equal(1);
 
         // hyperdriver sets withdrawal address to be Nodeset's deposit pool
-        await rocketPool.rockStorageContract.setWithdrawalAddress(signers.hyperdriver.address, protocol.depositPool.address, true);
+        await rocketPool.rockStorageContract.connect(signers.hyperdriver).setWithdrawalAddress(signers.hyperdriver.address, protocol.depositPool.address, true);
         expect(await rocketPool.rockStorageContract.getNodeWithdrawalAddress(signers.hyperdriver.address)).to.equal(protocol.depositPool.address);
 
         // NO sets smoothing pool registration state to true
