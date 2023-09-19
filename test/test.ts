@@ -7,10 +7,11 @@ import { Directory } from "../typechain-types/contracts/Directory";
 import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
-import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketStorage, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
+import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketNodeManager, RocketStorage, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
 import { setDefaultParameters } from "./rocketpool/_helpers/defaults";
 import { suppressLog } from "./rocketpool/_helpers/console";
 import { deployRocketPool } from "./rocketpool/_helpers/deployment";
+import { RocketNodeManagerInterface } from "../typechain-types/contracts/interface/node";
 
 const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
 
@@ -53,7 +54,7 @@ export type RocketPool = {
 	rplContract: RocketTokenRPLInterface, //RocketTokenRPLInterface
 	networkFeesContract: RocketDAOProtocolSettingsNetworkInterface,
 	rockStorageContract: IRocketStorage,
-	rocketNodeManagerContract: IRocketNodeManager,
+	rocketNodeManagerContract: RocketNodeManagerInterface,
 	rocketNodeStakingContract: IRocketNodeStaking,
 }
 
@@ -90,9 +91,11 @@ async function getRocketPool(): Promise<RocketPool> {
 		RocketStorageDeployment.address
 	)) as IRocketStorage;
 
-	const rocketNodeManagerFactory = await ethers.getContractFactory("MockRocketNodeManager");
-	const rocketNodeManagerContract = (await rocketNodeManagerFactory.deploy()) as IRocketNodeManager;
-	await rocketNodeManagerContract.deployed();
+	const RocketNodeManagerDeployment = await RocketNodeManager.deployed();
+	const rocketNodeManagerContract = await ethers.getContractAt(
+		"RocketNodeManagerInterface",
+		RocketNodeManagerDeployment.address
+	) as RocketNodeManagerInterface;
 
 	const rocketNodeStakingFactory = await ethers.getContractFactory("MockRocketNodeStaking");
 	const rocketNodeStakingContract = (await rocketNodeStakingFactory.deploy()) as IRocketNodeStaking;
