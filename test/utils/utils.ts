@@ -135,7 +135,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         await rocketPool.rockStorageContract.connect(nodeOperator).setWithdrawalAddress(nodeOperator.address, setupData.protocol.depositPool.address, true);
 
         // NO sets smoothing pool registration state to true
-        await rocketPool.rocketNodeManagerContract.connect(nodeOperator.address).registerNode("Australia/Brisbane");
+        await rocketPool.rocketNodeManagerContract.connect(nodeOperator).registerNode("Australia/Brisbane");
         await rocketPool.rocketNodeManagerContract.connect(nodeOperator).setSmoothingPoolRegistrationState(true);
 
         // admin needs to kyc the node operator and register them in the whitelist if they aren't already
