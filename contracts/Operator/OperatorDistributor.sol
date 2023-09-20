@@ -245,15 +245,21 @@ contract OperatorDistributor is UpgradeableBase {
             uint256 requiredStakeRpl = (_ethStaked * ethPriceInRpl / targetStakeRatio) - rplStaked;
             // Make sure the contract has enough RPL to stake
             uint256 currentRplBalance = RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this));
-            SafeERC20.safeApprove(RocketTokenRPLInterface(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), 0);
             if(currentRplBalance >= requiredStakeRpl) {
+                if(requiredStakeRpl == 0) {
+                    return;
+                }
                 // stakeRPLOnBehalfOf
-                SafeERC20.safeApprove(RocketTokenRPLInterface(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), requiredStakeRpl);
-                IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, requiredStakeRpl);
+                // transfer RPL to deposit pool
+                RocketTokenRPLInterface(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), requiredStakeRpl);
+                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_nodeAddress, requiredStakeRpl);
             } else {
+                if(currentRplBalance == 0) {
+                    return;
+                }
                 // stake what we have
-                SafeERC20.safeApprove(RocketTokenRPLInterface(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), currentRplBalance);
-                IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, currentRplBalance);
+                RocketTokenRPLInterface(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), currentRplBalance);
+                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_nodeAddress, currentRplBalance);
             }
         }
     }

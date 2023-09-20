@@ -7,7 +7,7 @@ import { Directory } from "../typechain-types/contracts/Directory";
 import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
-import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketNodeManager, RocketStorage, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
+import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketNodeManager, RocketNodeStaking, RocketStorage, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
 import { setDefaultParameters } from "./rocketpool/_helpers/defaults";
 import { suppressLog } from "./rocketpool/_helpers/console";
 import { deployRocketPool } from "./rocketpool/_helpers/deployment";
@@ -97,9 +97,11 @@ async function getRocketPool(): Promise<RocketPool> {
 		RocketNodeManagerDeployment.address
 	) as RocketNodeManagerInterface;
 
-	const rocketNodeStakingFactory = await ethers.getContractFactory("MockRocketNodeStaking");
-	const rocketNodeStakingContract = (await rocketNodeStakingFactory.deploy()) as IRocketNodeStaking;
-	await rocketNodeStakingContract.deployed();
+	const RocketNodeStakingDeployment = await RocketNodeStaking.deployed();;
+	const rocketNodeStakingContract = await ethers.getContractAt(
+		"RocketNodeStaking",
+		RocketNodeStakingDeployment.address
+	) as IRocketNodeStaking;
 
 	return { rplContract, networkFeesContract, rockStorageContract, rocketNodeManagerContract, rocketNodeStakingContract };
 }

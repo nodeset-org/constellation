@@ -77,6 +77,12 @@ contract DepositPool is UpgradeableBase {
         IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).withdrawRPL(amount);
     }
 
+    function stakeRPLFor(address _nodeAddress, uint256 _amount) external onlyProtocolOrAdmin {
+        SafeERC20.safeApprove(RocketTokenRPLInterface(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), 0);
+        SafeERC20.safeApprove(RocketTokenRPLInterface(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), _amount);
+        IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, _amount);
+    }
+
     /// @notice Sends 30% of the ETH balance to the OperatorDistributor and the rest to the WETHVault.
     /// @dev Splits the total ETH balance into WETH tokens and distributes them between the WETHVault and OperatorDistributor based on the splitRatioEth. However, when the requiredCapital from WETHVault is zero, all balance is sent to the OperatorDistributor.
     function sendEthToDistributors() public {
