@@ -14,7 +14,7 @@ import { IMinipool, MockMinipool } from "../typechain-types";
 		const { protocol, signers, rocketPool } = setupData;
 		const { operatorDistributor } = protocol;
 		const { rocketNodeStakingContract } = rocketPool;
-		const mockRocketNodeStaking = await ethers.getContractAt("MockRocketNodeStaking", rocketNodeStakingContract.address);
+		const mockRocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", rocketNodeStakingContract.address);
 
 		await prepareOperatorDistributionContract(setupData, 2);
 		await registerNewValidator(setupData, [signers.random, signers.random2])
@@ -28,17 +28,15 @@ import { IMinipool, MockMinipool } from "../typechain-types";
 			const minipool = minipools[i];
 			await minipool.setNodeDepositBalance(ethers.utils.parseEther("1"));
 		}
-		expect(await mockRocketNodeStaking.rplStaked()).to.equal(0);
+
+		expect(await mockRocketNodeStaking.getNodeRPLStake(signers.random.address)).to.equal(0);
 
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 
-		//const stakedRplFinal = await rocketPool.rplContract.balanceOf(mockRocketNodeStaking.address);
-		//expect(stakedRplFinal).gt(0);
-		// TODO: UNCOMMENT THIS WHEN ALL MOCKS ARE DONE
-		expect(await mockRocketNodeStaking.rplStaked()).gt(0);
+		expect(await mockRocketNodeStaking.getNodeRPLStake(signers.random.address)).gt(0);
 
 	});
 
