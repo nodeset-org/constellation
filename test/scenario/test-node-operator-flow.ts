@@ -46,7 +46,6 @@ describe("Node Operator Onboarding", function () {
         const mockValidatorSignature = ethers.utils.randomBytes(96);
         const mockDepositDataRoot = ethers.utils.randomBytes(32);
         mockMinipool = await deployMockMinipool(signers.hyperdriver, rocketPool);
-
         // mock pretends any sender is rocketNodeDeposit
         await mockMinipool.preDeposit(
             bondValue,
@@ -57,7 +56,6 @@ describe("Node Operator Onboarding", function () {
                 value: bondValue
             }
         )
-
         expect(await mockMinipool.getNodeAddress()).to.equal(signers.hyperdriver.address);
         expect(await mockMinipool.getNodeDepositBalance()).to.equal(bondValue);
         expect(await mockMinipool.getStatus()).to.equal(1);
@@ -67,11 +65,10 @@ describe("Node Operator Onboarding", function () {
         expect(await rocketPool.rockStorageContract.getNodeWithdrawalAddress(signers.hyperdriver.address)).to.equal(protocol.depositPool.address);
 
         // NO sets smoothing pool registration state to true
-        const rocketNodeManagerContract = await ethers.getContractAt("MockRocketNodeManager", rocketPool.rocketNodeManagerContract.address);
-        await rocketNodeManagerContract.mockSetNodeOperatorToMinipool(signers.hyperdriver.address, mockMinipool.address);
+        await rocketPool.rocketNodeManagerContract.connect(signers.hyperdriver).registerNode("Australia/Brisbane");
         await rocketPool.rocketNodeManagerContract.connect(signers.hyperdriver).setSmoothingPoolRegistrationState(true);
-        expect(await rocketPool.rocketNodeManagerContract.getSmoothingPoolRegistrationState(signers.hyperdriver.address)).to.equal(true);
-
+        const smoothingPool = await rocketPool.rocketNodeManagerContract.callStatic.getSmoothingPoolRegistrationState(signers.hyperdriver.address);
+        expect(smoothingPool).to.equal(true);
         // waiting to be funded remaining eth by rocket pool...
 
     });
