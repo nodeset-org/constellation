@@ -28,6 +28,9 @@ contract OperatorDistributor is UpgradeableBase {
     uint256 public nextMinipoolHavestIndex;
     uint256 public targetStakeRatio; // 150%
 
+    uint256 public numMinipoolsProcessedPerInterval;
+
+
     mapping(address => uint256) public minipoolIndexMap;
     mapping(address => uint256) public minipoolAmountFundedEth;
     mapping(address => uint256) public minipoolAmountFundedRpl;
@@ -43,6 +46,7 @@ contract OperatorDistributor is UpgradeableBase {
     {
         super.initialize(_rocketStorageAddress);
         targetStakeRatio = 1.5e18;
+        numMinipoolsProcessedPerInterval = 1;
     }
 
     receive() external payable {
@@ -274,9 +278,18 @@ contract OperatorDistributor is UpgradeableBase {
             return;
         }
 
-        uint256 index = nextMinipoolHavestIndex % minipoolAddresses.length;
+        for(uint i = 0; i < numMinipoolsProcessedPerInterval; i++) {
+            _processNextMinipool();
+        }
+    }
 
+    function _processNextMinipool() internal {
+        uint256 index = nextMinipoolHavestIndex % minipoolAddresses.length;
         IMinipool minipool = IMinipool(minipoolAddresses[index]);
+
+        if(minipool.getStatus() != MinipoolStatus.Staking) {
+            return;
+        }
 
         // process top up
         address nodeAddress = minipool.getNodeAddress();
@@ -286,13 +299,13 @@ contract OperatorDistributor is UpgradeableBase {
 
         nextMinipoolHavestIndex = index + 1;
 
-        if (minipool.userDistributeAllowed()) {
-            minipool.distributeBalance(true);
-        } else {
-            if(minipool.getStatus() == MinipoolStatus.Staking) {
-                minipool.beginUserDistribute();
-            }
-        }
+        uint256 balance = minipool.getNodeDepositBalance();
+        minipool.distributeBalance(balance > 8 ether);
+
+    }
+
+    function setNumMinipoolsProcessedPerInterval(uint256 _numMinipoolsProcessedPerInterval) external onlyAdmin {
+        numMinipoolsProcessedPerInterval = _numMinipoolsProcessedPerInterval;
     }
 
     function getMinipoolAddresses() external view returns (address[] memory) {
