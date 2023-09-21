@@ -25,6 +25,8 @@ describe("Node Operator Onboarding", function () {
     let rpl: IERC20;
     let weth: IWETH;
 
+    const bondValue = ethers.utils.parseEther("8");
+
     before(async function () {
         setupData = await protocolFixture();
 
@@ -42,7 +44,6 @@ describe("Node Operator Onboarding", function () {
     });
 
     it("node operator creates minipool", async function () {
-        const bondValue = ethers.utils.parseEther("8");
         mockMinipool = await deployMockMinipool(signers.hyperdriver, rocketPool, signers, bondValue);
 
         expect(await mockMinipool.getNodeAddress()).to.equal(signers.hyperdriver.address);
@@ -127,7 +128,7 @@ describe("Node Operator Onboarding", function () {
         const finalEthBalanceOD = await ethers.provider.getBalance(protocol.operatorDistributor.address);
 
         const expectedReimbursementRPL = await rocketPool.rocketNodeStakingContract.getNodeMinimumRPLStake(signers.hyperdriver.address);
-        const expectedReimbursementEth = await mockMinipool.getPreLaunchValue();
+        const expectedReimbursementEth = bondValue
 
         //expect(finalRPLBalanceNO.sub(initialRPLBalanceNO)).to.equal(expectedReimbursementRPL);
         expect(finalEthBalanceNO.sub(initialEthBalanceNO)).to.equal(expectedReimbursementEth);

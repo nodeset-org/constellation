@@ -13,6 +13,8 @@ import "../Interfaces/RocketPool/IRocketNodeStaking.sol";
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+import "hardhat/console.sol";
+
 contract OperatorDistributor is UpgradeableBase {
 
     event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
@@ -242,7 +244,8 @@ contract OperatorDistributor is UpgradeableBase {
 
         uint256 stakeRatio = rplStaked == 0 ? 1e18 : _ethStaked * ethPriceInRpl * 1e18 / rplStaked;
         if (stakeRatio < targetStakeRatio) {
-            uint256 requiredStakeRpl = (_ethStaked * ethPriceInRpl / targetStakeRatio) - rplStaked;
+            uint256 minuend = (_ethStaked * ethPriceInRpl / targetStakeRatio);
+            uint256 requiredStakeRpl = minuend < rplStaked ? 0 : minuend - rplStaked;
             // Make sure the contract has enough RPL to stake
             uint256 currentRplBalance = RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this));
             if(currentRplBalance >= requiredStakeRpl) {
@@ -286,7 +289,9 @@ contract OperatorDistributor is UpgradeableBase {
         if (minipool.userDistributeAllowed()) {
             minipool.distributeBalance(true);
         } else {
-            minipool.beginUserDistribute();
+            if(minipool.getStatus() == MinipoolStatus.Staking) {
+                minipool.beginUserDistribute();
+            }
         }
     }
 
