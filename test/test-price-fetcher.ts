@@ -8,7 +8,7 @@ import { BigNumber as BN } from "ethers";
 describe("Price Fetcher", function () {
 
 	it("success - fetches correct price for Jan-13-2023 ~51rpl/eth", async function () {
-		const { protocol, signers } = await loadFixture(protocolFixture);
+		const { protocol, signers } = await protocolFixture();
 
 		const priceFetcher = protocol.priceFetcher;
 

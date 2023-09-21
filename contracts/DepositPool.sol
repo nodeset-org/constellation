@@ -41,12 +41,12 @@ contract DepositPool is UpgradeableBase {
 
     /// @notice Gets the total ETH and WETH value locked inside the this pool
     function getTvlEth() public view returns (uint) {
-        return address(this).balance + IWETH(Constants.WETH_CONTRACT_ADDRESS).balanceOf(address(this));
+        return address(this).balance + IWETH(_directory.getWETHAddress()).balanceOf(address(this));
     }
 
     /// @notice Gets the total RPL value locked inside the this pool
     function getTvlRpl() public view returns (uint) {
-        return RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS).balanceOf(address(this));
+        return RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this));
     }
 
     ///--------
@@ -77,11 +77,17 @@ contract DepositPool is UpgradeableBase {
         IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).withdrawRPL(amount);
     }
 
+    function stakeRPLFor(address _nodeAddress, uint256 _amount) external onlyProtocolOrAdmin {
+        SafeERC20.safeApprove(RocketTokenRPLInterface(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), 0);
+        SafeERC20.safeApprove(RocketTokenRPLInterface(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), _amount);
+        IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, _amount);
+    }
+
     /// @notice Sends 30% of the ETH balance to the OperatorDistributor and the rest to the WETHVault.
     /// @dev Splits the total ETH balance into WETH tokens and distributes them between the WETHVault and OperatorDistributor based on the splitRatioEth. However, when the requiredCapital from WETHVault is zero, all balance is sent to the OperatorDistributor.
     function sendEthToDistributors() public {
         // convert entire weth balance of this contract to eth
-        IWETH WETH = IWETH(Constants.WETH_CONTRACT_ADDRESS); // WETH token contract
+        IWETH WETH = IWETH(_directory.getWETHAddress()); // WETH token contract
         WETH.withdraw(WETH.balanceOf(address(this)));
 
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
@@ -125,7 +131,7 @@ contract DepositPool is UpgradeableBase {
             .getOperatorDistributorAddress();
         uint256 requiredCapital = vrpl.getRequiredCollateral();
         RocketTokenRPLInterface RPL = RocketTokenRPLInterface(
-            Constants.RPL_CONTRACT_ADDRESS
+            _directory.getRPLAddress()
         ); // RPL token contract
         uint256 totalBalance = RPL.balanceOf(address(this));
 

@@ -13,6 +13,8 @@ import "../Interfaces/RocketPool/IRocketNodeStaking.sol";
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+import "hardhat/console.sol";
+
 contract OperatorDistributor is UpgradeableBase {
 
     event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
@@ -77,7 +79,7 @@ contract OperatorDistributor is UpgradeableBase {
     // and this contract.
     function getTvlRpl() public view returns (uint) {
         return
-            RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS)
+            RocketTokenRPLInterface(_directory.getRPLAddress())
                 .balanceOf(address(this)) + getAmountFundedRpl();
     }
 
@@ -124,7 +126,7 @@ contract OperatorDistributor is UpgradeableBase {
 
         // approve the node staking contract to spend the RPL
         RocketTokenRPLInterface rpl = RocketTokenRPLInterface(
-            Constants.RPL_CONTRACT_ADDRESS
+            _directory.getRPLAddress()
         );
         require(
             rpl.approve(
@@ -246,17 +248,25 @@ contract OperatorDistributor is UpgradeableBase {
 
         uint256 stakeRatio = rplStaked == 0 ? 1e18 : _ethStaked * ethPriceInRpl * 1e18 / rplStaked;
         if (stakeRatio < targetStakeRatio) {
-            uint256 requiredStakeRpl = (_ethStaked * ethPriceInRpl / targetStakeRatio) - rplStaked;
+            uint256 minuend = (_ethStaked * ethPriceInRpl / targetStakeRatio);
+            uint256 requiredStakeRpl = minuend < rplStaked ? 0 : minuend - rplStaked;
             // Make sure the contract has enough RPL to stake
-            uint256 currentRplBalance = RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS).balanceOf(address(this));
+            uint256 currentRplBalance = RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this));
             if(currentRplBalance >= requiredStakeRpl) {
+                if(requiredStakeRpl == 0) {
+                    return;
+                }
                 // stakeRPLOnBehalfOf
-                SafeERC20.safeApprove(RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS), _directory.getRocketNodeStakingAddress(), requiredStakeRpl);
-                IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, requiredStakeRpl);
+                // transfer RPL to deposit pool
+                RocketTokenRPLInterface(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), requiredStakeRpl);
+                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_nodeAddress, requiredStakeRpl);
             } else {
+                if(currentRplBalance == 0) {
+                    return;
+                }
                 // stake what we have
-                SafeERC20.safeApprove(RocketTokenRPLInterface(Constants.RPL_CONTRACT_ADDRESS), _directory.getRocketNodeStakingAddress(), currentRplBalance);
-                IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, currentRplBalance);
+                RocketTokenRPLInterface(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), currentRplBalance);
+                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_nodeAddress, currentRplBalance);
             }
         }
     }
@@ -275,8 +285,11 @@ contract OperatorDistributor is UpgradeableBase {
 
     function _processNextMinipool() internal {
         uint256 index = nextMinipoolHavestIndex % minipoolAddresses.length;
-
         IMinipool minipool = IMinipool(minipoolAddresses[index]);
+
+        if(minipool.getStatus() != MinipoolStatus.Staking) {
+            return;
+        }
 
         // process top up
         address nodeAddress = minipool.getNodeAddress();
@@ -287,8 +300,8 @@ contract OperatorDistributor is UpgradeableBase {
         nextMinipoolHavestIndex = index + 1;
 
         uint256 balance = minipool.getNodeDepositBalance();
-
         minipool.distributeBalance(balance > 8 ether);
+
     }
 
     function setNumMinipoolsProcessedPerInterval(uint256 _numMinipoolsProcessedPerInterval) external onlyAdmin {

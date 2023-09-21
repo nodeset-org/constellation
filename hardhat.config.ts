@@ -3,6 +3,7 @@ import "@nomicfoundation/hardhat-toolbox";
 import '@openzeppelin/hardhat-upgrades';
 import "hardhat-contract-sizer";
 import "hardhat-gas-reporter";
+import '@nomiclabs/hardhat-truffle5';
 
 // init dotenv
 import dotenv from "dotenv";
@@ -21,17 +22,36 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 200,
           },
-        }
+        },
       },
+      {
+        version: '0.7.6',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 15000,
+          },
+        },
+      }
     ]
   },
+  //networks: {
+  //  hardhat: {
+  //    forking: {
+  //      url: process.env.MAINNET_URL as string,
+  //      blockNumber: parseInt(process.env.MAINNET_FORK_NUMBER as string),
+  //    }
+  //  }
+  //},
+
   networks: {
     hardhat: {
-      forking: {
-        url: process.env.MAINNET_URL as string,
-        blockNumber: parseInt(process.env.MAINNET_FORK_NUMBER as string),
-      }
-    }
+      gasPrice: 25000000000, // This is in wei (25 gwei)
+    },
+  },
+
+  mocha: {
+    timeout: 0,
   },
 
   contractSizer: {

@@ -13,7 +13,7 @@ contract PriceFetcher is UpgradeableBase {
     /// @return The price of ETH denominated in RPL with 18 decimals
     function getPrice() public view returns (uint256) {
         IUniswapV3Pool pool = IUniswapV3Pool(
-            Constants.UNISWAP_RPL_ETH_POOL_ADDRESS
+            _directory.getUniswapV3PoolAddress()
         );
         (uint160 sqrtPriceX96, , , , , , ) = pool.slot0();
         uint256 price = ((uint256(sqrtPriceX96) ** 2) * 1e7) / (2 ** 192);

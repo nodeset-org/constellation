@@ -9,7 +9,7 @@ describe(`DepositPool`, function () {
 
 	describe("Getters and Setters", function () {
 		it("Random address can get splitRatioEth and splitRatioRpl", async function () {
-			const setupData = await loadFixture(protocolFixture);
+			const setupData = await protocolFixture();
 			let splitRatioEth = await setupData.protocol.depositPool.splitRatioEth();
 			let splitRatioRpl = await setupData.protocol.depositPool.splitRatioRpl();
 
@@ -17,7 +17,7 @@ describe(`DepositPool`, function () {
 			expect(splitRatioRpl).gt(0);
 		});
 		it("Random address cannot set splitRatioEth and splitRatioRpl", async function () {
-			const setupData = await loadFixture(protocolFixture);
+			const setupData = await protocolFixture();
 			const { protocol, signers } = setupData;
 
 			await expect(protocol.depositPool.connect(signers.random).setSplitRatioEth(1000))
@@ -28,7 +28,7 @@ describe(`DepositPool`, function () {
 		});
 
 		it("Admin cannot set splitRatioEth or splitRatioRpl to out of range value", async function () {
-			const setupData = await loadFixture(protocolFixture);
+			const setupData = await protocolFixture();
 			const { protocol, signers } = setupData;
 
 			let splitRatioEth = await protocol.depositPool.connect(signers.random).splitRatioEth();
@@ -45,7 +45,7 @@ describe(`DepositPool`, function () {
 		});
 
 		it("Admin address can set splitRatioEth and splitRatioRpl", async function () {
-			const setupData = await loadFixture(protocolFixture);
+			const setupData = await protocolFixture();
 			const { protocol, signers } = setupData;
 
 			let splitRatioEth = await protocol.depositPool.connect(signers.random).splitRatioEth();

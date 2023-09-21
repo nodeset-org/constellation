@@ -22,6 +22,9 @@ struct Protocol {
     address rocketStorage;
     address rocketNodeManager;
     address rocketNodeStaking;
+    address rplToken;
+    address payable weth;
+    address uniswapV3Pool;
 }
 
 /// @custom:security-contact info@nodeoperator.org
@@ -94,16 +97,20 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.priceFetcher;
     }
 
-    function getWETHAddress() public pure returns (address payable) {
-        return Constants.WETH_CONTRACT_ADDRESS;
+    function getWETHAddress() public view returns (address payable) {
+        return _protocol.weth;
     }
 
-    function getRPLAddress() public pure returns (address) {
-        return Constants.RPL_CONTRACT_ADDRESS;
+    function getRPLAddress() public view returns (address) {
+        return _protocol.rplToken;
     }
 
     function getTreasuryAddress() public view returns (address) {
         return _treasury;
+    }
+
+    function getUniswapV3PoolAddress() public view returns (address) {
+        return _protocol.uniswapV3Pool;
     }
 
     function initialize(Protocol memory newProtocol) public initializer {

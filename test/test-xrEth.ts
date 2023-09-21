@@ -10,7 +10,7 @@ describe("xrETH", function () {
 
   // add tests for deposit and withdraw
   it("fail - cannot deposit 1 eth at 50 rpl and 500 rpl, tvl ratio returns ~15%", async () => {
-    const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
+    const { protocol, signers, rocketPool } = await protocolFixture();
 
     const depositAmountEth = ethers.utils.parseEther("1");
     await signers.ethWhale.sendTransaction({ to: protocol.depositPool.address, value: depositAmountEth });
@@ -36,7 +36,7 @@ describe("xrETH", function () {
   })
 
   it("success - can deposit 5 eth at 50 rpl and 500 rpl, tvl ratio returns ~15%", async () => {
-    const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
+    const { protocol, signers, rocketPool } = await protocolFixture();
 
     const depositAmountEth = ethers.utils.parseEther("5");
     await signers.ethWhale.sendTransaction({ to: protocol.depositPool.address, value: depositAmountEth });
@@ -69,7 +69,7 @@ describe("xrETH", function () {
 
   describe("admin functions", () => {
     it("success - admin can set tvlCoverageRatio", async () => {
-      const { protocol, signers } = await loadFixture(protocolFixture);
+      const { protocol, signers } = await protocolFixture();
 
       const tvlCoverageRatio = ethers.utils.parseEther("0.1542069");
       await protocol.vCWETH.setRplCoverageRatio(tvlCoverageRatio);
@@ -79,7 +79,7 @@ describe("xrETH", function () {
     });
 
     it("fail - non-admin cannot set tvlCoverageRatio", async () => {
-      const { protocol, signers } = await loadFixture(protocolFixture);
+      const { protocol, signers } = await protocolFixture();
 
       const tvlCoverageRatio = ethers.utils.parseEther("0.1542069");
       await expect(protocol.vCWETH.connect(signers.ethWhale).setRplCoverageRatio(tvlCoverageRatio)).to.be.revertedWith("Can only be called by admin address!");

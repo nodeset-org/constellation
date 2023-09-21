@@ -165,7 +165,7 @@ contract YieldDistributor is UpgradeableBase {
 
         if (isWhitelisted) {
             SafeERC20.safeTransfer(
-                IWETH(Constants.WETH_CONTRACT_ADDRESS),
+                IWETH(_directory.getWETHAddress()),
                 _rewardee,
                 totalReward
             );
@@ -252,7 +252,7 @@ contract YieldDistributor is UpgradeableBase {
 
     receive() external payable {
         // mint weth
-        IWETH(Constants.WETH_CONTRACT_ADDRESS).deposit{value: msg.value}();
+        IWETH(_directory.getWETHAddress()).deposit{value: msg.value}();
         _wethReceived(msg.value);
     }
 }

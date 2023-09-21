@@ -7,6 +7,11 @@ import { Directory } from "../typechain-types/contracts/Directory";
 import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
+import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketNodeManager, RocketNodeStaking, RocketStorage, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
+import { setDefaultParameters } from "./rocketpool/_helpers/defaults";
+import { suppressLog } from "./rocketpool/_helpers/console";
+import { deployRocketPool } from "./rocketpool/_helpers/deployment";
+import { RocketNodeManagerInterface } from "../typechain-types/contracts/interface/node";
 
 const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
 
@@ -49,7 +54,7 @@ export type RocketPool = {
 	rplContract: RocketTokenRPLInterface, //RocketTokenRPLInterface
 	networkFeesContract: RocketDAOProtocolSettingsNetworkInterface,
 	rockStorageContract: IRocketStorage,
-	rocketNodeManagerContract: IRocketNodeManager,
+	rocketNodeManagerContract: RocketNodeManagerInterface,
 	rocketNodeStakingContract: IRocketNodeStaking,
 }
 
@@ -68,27 +73,35 @@ export function getAllAddresses(Signers: Signers, Protocol: Protocol, RocketPool
 }
 
 async function getRocketPool(): Promise<RocketPool> {
+	const RplToken = await RocketTokenRPL.deployed();
 	const rplContract = (await ethers.getContractAt(
-		"RocketTokenRPLInterface",
-		"0xD33526068D116cE69F19A9ee46F0bd304F21A51f"
-	));
+		"contracts/Interfaces/RocketTokenRPLInterface.sol:RocketTokenRPLInterface",
+		RplToken.address
+	)) as RocketTokenRPLInterface;
+
+	const RocketDAOProtocolSettingsNet = await RocketDAOProtocolSettingsNetwork.deployed();
 	const networkFeesContract = (await ethers.getContractAt(
-		"RocketDAOProtocolSettingsNetworkInterface",
-		"0x320f3aAB9405e38b955178BBe75c477dECBA0C27"
-	));
+		"contracts/Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol:RocketDAOProtocolSettingsNetworkInterface",
+		RocketDAOProtocolSettingsNet.address
+	)) as RocketDAOProtocolSettingsNetworkInterface;
 
-	// deploy mock rocket storage
-	const rocketStorageFactory = await ethers.getContractFactory("MockRocketStorage");
-	const rockStorageContract = (await rocketStorageFactory.deploy()) as IRocketStorage;
-	await rockStorageContract.deployed();
+	const RocketStorageDeployment = await RocketStorage.deployed();
+	const rockStorageContract = (await ethers.getContractAt(
+		"RocketStorage",
+		RocketStorageDeployment.address
+	)) as IRocketStorage;
 
-	const rocketNodeManagerFactory = await ethers.getContractFactory("MockRocketNodeManager");
-	const rocketNodeManagerContract = (await rocketNodeManagerFactory.deploy()) as IRocketNodeManager;
-	await rocketNodeManagerContract.deployed();
+	const RocketNodeManagerDeployment = await RocketNodeManager.deployed();
+	const rocketNodeManagerContract = await ethers.getContractAt(
+		"RocketNodeManagerInterface",
+		RocketNodeManagerDeployment.address
+	) as RocketNodeManagerInterface;
 
-	const rocketNodeStakingFactory = await ethers.getContractFactory("MockRocketNodeStaking");
-	const rocketNodeStakingContract = (await rocketNodeStakingFactory.deploy()) as IRocketNodeStaking;
-	await rocketNodeStakingContract.deployed();
+	const RocketNodeStakingDeployment = await RocketNodeStaking.deployed();;
+	const rocketNodeStakingContract = await ethers.getContractAt(
+		"RocketNodeStaking",
+		RocketNodeStakingDeployment.address
+	) as IRocketNodeStaking;
 
 	return { rplContract, networkFeesContract, rockStorageContract, rocketNodeManagerContract, rocketNodeStakingContract };
 }
@@ -97,16 +110,24 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 	const predictedNonce = 9;
 	try {
 		upgrades.silenceWarnings();
+		// deploy weth
+		const WETH = await ethers.getContractFactory("WETH");
+		const wETH = await WETH.deploy();
+		await wETH.deployed();
+
+		// deploy mock uniswap v3 pool
+		const UniswapV3Pool = await ethers.getContractFactory("MockUniswapV3Pool");
+		const uniswapV3Pool = await UniswapV3Pool.deploy();
+		await uniswapV3Pool.deployed();
 
 		const deployer = (await ethers.getSigners())[0];
 
 		const directoryAddress = await getNextContractAddress(deployer, predictedNonce-1)
 		const initNonce = await deployer.getTransactionCount();
-
 		const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directoryAddress, protocolParams.trustBuildPeriod], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-		const vCWETHProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("WETHVault"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+		const vCWETHProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("WETHVault"), [directoryAddress, wETH.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
 		const vCWETH = await ethers.getContractAt("WETHVault", vCWETHProxyAbi.address);
-		const vCRPLProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("RPLVault"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+		const vCRPLProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("RPLVault"), [directoryAddress, rocketPool.rplContract.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
 		const vCRPL = await ethers.getContractAt("RPLVault", vCRPLProxyAbi.address);
 		const depositPoolProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("DepositPool"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
 		const depositPool = await ethers.getContractAt("DepositPool", depositPoolProxyAbi.address);
@@ -130,14 +151,15 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 				rocketPool.rockStorageContract.address,
 				rocketPool.rocketNodeManagerContract.address,
 				rocketPool.rocketNodeStakingContract.address,
+				rocketPool.rplContract.address,
+				wETH.address,
+				uniswapV3Pool.address
 			]
 		], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 		const finalNonce = await deployer.getTransactionCount();
 		const directory = await ethers.getContractAt("Directory", directoryProxyAbi.address);
 		expect(finalNonce - initNonce).to.equal(predictedNonce);
 		expect(directory.address).to.hexEqual(directoryAddress);
-
-		const wETH = await ethers.getContractAt("IWETH", await directory.getWETHAddress());
 
 		// set adminServer to be ADMIN_SERVER_ROLE
 		const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
@@ -152,6 +174,10 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 		await directory.grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
 
 		const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, oracle, priceFetcher, wETH };
+
+		// send all rpl from admin to rplWhale
+		const rplWhaleBalance = await rocketPool.rplContract.balanceOf(signers.admin.address);
+		await rocketPool.rplContract.transfer(signers.rplWhale.address, rplWhaleBalance);
 
 		return returnData;
 	} catch(e: any) {
@@ -175,17 +201,18 @@ async function createSigners(): Promise<Signers> {
 		random3: signersArray[4],
 		random4: signersArray[5],
 		random5: signersArray[6],
-		// Patricio Worthalter (patricioworthalter.eth)
-		rplWhale: await ethers.getImpersonatedSigner("0x57757e3d981446d585af0d9ae4d7df6d64647806"),
 		hyperdriver: signersArray[7],
 		ethWhale: signersArray[8],
 		adminServer: signersArray[9],
 		timelock24hour: signersArray[10],
 		protocolSigner: signersArray[11],
+		rplWhale: signersArray[12],
 	};
 }
 
 export async function protocolFixture(): Promise<SetupData> {
+	await suppressLog(deployRocketPool);
+	await setDefaultParameters();
 
 	const signers = await createSigners();
 	const rocketPool = await getRocketPool();
