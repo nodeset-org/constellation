@@ -6,7 +6,7 @@ import { BigNumber as BN } from "ethers";
 import { getMinipoolsInProtocol, getMockMinipoolsInProtocol, prepareOperatorDistributionContract, registerNewValidator, upgradePriceFetcherToMock } from "./utils/utils";
 import { IMinipool, MockMinipool } from "../typechain-types";
 
- describe("Operator Distributor", function () {
+describe("Operator Distributor", function () {
 
 	// TODO: Why does this only work when the test is run on its own?
 	it.skip("Tops up the RPL stake if it is below the minimum", async function () {
