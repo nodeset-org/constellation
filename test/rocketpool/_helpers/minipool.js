@@ -114,15 +114,15 @@ export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt =
     let depositDataRoot = getDepositDataRoot(depositData);
 
     if (txOptions.value.eq(bondAmount)) {
-        await rocketNodeDeposit.deposit(bondAmount, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+        await rocketNodeDeposit.deposit(bondAmount, 0, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
     } else {
-        await rocketNodeDeposit.depositWithCredit(bondAmount, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+        await rocketNodeDeposit.depositWithCredit(bondAmount, 0, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
     }
 
     const ethMatched2 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
 
     // Expect node's ETH matched to be increased by (32 - bondAmount)
-    assertBN.equal(ethMatched2.sub(ethMatched1), '32'.ether.sub(bondAmount), 'Incorrect ETH matched');
+    assertBN.equal(ethMatched2.sub(ethMatched1), ethers.utils.parseEther("32").sub(bondAmount), 'Incorrect ETH matched');
 
     return RocketMinipoolDelegate.at('0x' + minipoolAddress);
 }

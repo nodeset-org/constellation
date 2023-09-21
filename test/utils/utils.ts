@@ -1,10 +1,14 @@
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
 import { expect } from "chai";
-import { Protocol, SetupData } from "../test";
+import { Protocol, SetupData, Signers } from "../test";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { RocketPool } from "../test";
 import { IMinipool, MockMinipool } from "../../typechain-types";
+import { createMinipool, getMinipoolMinimumRPLStake } from "../rocketpool/_helpers/minipool";
+import { nodeStakeRPL, registerNode } from "../rocketpool/_helpers/node";
+import { mintRPL } from "../rocketpool/_helpers/tokens";
+import { userDeposit } from "../rocketpool/_helpers/deposit";
 
 // optionally include the names of the accounts
 export const printBalances = async (accounts: string[], opts: any = {}) => {
@@ -59,16 +63,26 @@ export const evaluateModel = (x: number, k: number, m: number) => {
     return (m * (Math.exp(k * (x - 1)) - Math.exp(-k))) / (1 - Math.exp(-k));
 };
 
-export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: RocketPool) {
-    const mockMinipoolFactory = await ethers.getContractFactory("MockMinipool");
-    const mockMinipool = await mockMinipoolFactory.deploy();
-    await mockMinipool.deployed();
+export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: RocketPool, signers: Signers, bondValue: BigNumber) {
+    await registerNode({ from: signer.address });
 
-    await mockMinipool.initialise(
-        signer.address,
-    )
+    // Stake RPL to cover minipools
+    let minipoolRplStake = await getMinipoolMinimumRPLStake();
+    let rplStake =  ethers.BigNumber.from(minipoolRplStake.toString()).mul(3);
+    rocketPool.rplContract.connect(signers.rplWhale).transfer(signer.address, rplStake);
+    await nodeStakeRPL(rplStake, { from: signer.address });
 
-    return mockMinipool;
+    const mockMinipool = await createMinipool({
+        from: signer.address,
+        value: bondValue,
+    });
+
+    await userDeposit({from: signer.address, value: bondValue});
+
+    let scrubPeriod = (60 * 60 * 24); // 24 hours
+
+
+    return await ethers.getContractAt("RocketMinipoolInterface", mockMinipool.address);
 }
 
 export async function upgradePriceFetcherToMock(protocol: Protocol, price: BigNumber) {
@@ -100,37 +114,12 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
     }
 
     const bondValue = ethers.utils.parseEther("8");
-    const mockValidatorPubkey = ethers.utils.randomBytes(128);
-    const mockValidatorSignature = ethers.utils.randomBytes(96);
-    const mockDepositDataRoot = ethers.utils.randomBytes(32);
     const rocketPool = setupData.rocketPool;
 
     for (let i = 0; i < nodeOperators.length; i++) {
         const nodeOperator = nodeOperators[i];
 
-        const mockMinipool = await deployMockMinipool(nodeOperator, rocketPool);
-
-        // mock pretends any sender is rocketNodeDeposit
-        await mockMinipool.preDeposit(
-            bondValue,
-            mockValidatorPubkey,
-            mockValidatorSignature,
-            mockDepositDataRoot,
-            {
-                value: bondValue
-            }
-        )
-        // mock pretends any sender is rocketNodeDeposit
-        await mockMinipool.preDeposit(
-            bondValue,
-            mockValidatorPubkey,
-            mockValidatorSignature,
-            mockDepositDataRoot,
-            {
-                value: bondValue
-            }
-        )
-
+        const mockMinipool = await deployMockMinipool(nodeOperator, rocketPool, setupData.signers, bondValue);
 
         await rocketPool.rockStorageContract.connect(nodeOperator).setWithdrawalAddress(nodeOperator.address, setupData.protocol.depositPool.address, true);
 
