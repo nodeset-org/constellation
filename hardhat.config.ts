@@ -54,8 +54,6 @@ const config: HardhatUserConfig = {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY as string],
     },
   },
-},
-
   mocha: {
     timeout: 0,
   },
@@ -66,5 +64,6 @@ const config: HardhatUserConfig = {
     disambiguatePaths: false,
   },
 };
+
 
 export default config;

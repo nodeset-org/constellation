@@ -13,7 +13,7 @@ import { suppressLog } from "./rocketpool/_helpers/console";
 import { deployRocketPool } from "./rocketpool/_helpers/deployment";
 import { RocketNodeManagerInterface } from "../typechain-types/contracts/interface/node";
 
-const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
+export const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
 
 export type SetupData = {
 	protocol: Protocol,
@@ -72,7 +72,7 @@ export function getAllAddresses(Signers: Signers, Protocol: Protocol, RocketPool
 	return allAddresses;
 }
 
-async function getRocketPool(): Promise<RocketPool> {
+export async function getRocketPool(): Promise<RocketPool> {
 	const RplToken = await RocketTokenRPL.deployed();
 	const rplContract = (await ethers.getContractAt(
 		"contracts/Interfaces/RocketTokenRPLInterface.sol:RocketTokenRPLInterface",
