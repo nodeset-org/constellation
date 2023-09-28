@@ -12,14 +12,15 @@ async function main() {
     console.log("Deploying contracts with the account:", deployer.address);
     console.log("Account balance:", (await deployer.getBalance()).toString());
 
-    console.log("deploying rocket pool")
-    await deployRocketPool();
-
-    console.log("configuring rocket pool parameters")
-    await setDefaultParameters();
 
     // load required rocket pool contracts
-    const { rplContract, networkFeesContract, rockStorageContract, rocketNodeManagerContract, rocketNodeStakingContract } = await getRocketPool()
+    const { rplContract, networkFeesContract, rockStorageContract, rocketNodeManagerContract, rocketNodeStakingContract } = {
+        rplContract: await ethers.getContractAt("contracts/Interfaces/RocketTokenRPLInterface.sol:RocketTokenRPLInterface", "0x012222D4F3AE9E665761b26B67CA87B74c21E552"),
+        networkFeesContract: await ethers.getContractAt("contracts/Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol:RocketDAOProtocolSettingsNetworkInterface", "0x04c1dc9b7469466c271Ec61052e777cCbe85567a"),
+        rockStorageContract: await ethers.getContractAt("RocketStorage", "0x5467C31426F096e18e174C91dEA078bdc2e0aabD"),
+        rocketNodeManagerContract: await ethers.getContractAt("RocketNodeManagerInterface", "0x4263d1Eb9bBa3335057E8093346091d92fa20C19"),
+        rocketNodeStakingContract: await ethers.getContractAt("RocketNodeStaking", "0xc8b48F10b5656AD586924BC695c0ABD05dE5Aa44")
+    }
 
     console.log("rocketpool contracts of interest")
     console.log("rplContract", rplContract.address)
