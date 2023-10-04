@@ -10,6 +10,7 @@ struct Operator {
     uint256 operationStartTime;
     uint256 currentValidatorCount;
     uint256 intervalStart;
+    address operatorController; // designated address to control the node operator's settings and collect rewards
 }
 
 
@@ -23,9 +24,10 @@ contract Whitelist is UpgradeableBase {
 
     mapping(address => bool) internal _permissions;
 
-    mapping(address => Operator) public operatorMap;
-    mapping(uint => address) public operatorIndexMap;
-    mapping(address => uint) public reverseOperatorIndexMap;
+    mapping(address => address) public operatorControllerToNodeMap;
+    mapping(address => Operator) public nodeMap;
+    mapping(uint256 => address) public nodeIndexMap;
+    mapping(address => uint256) public reverseNodeIndexMap;
 
     uint256 public numOperators;
 
@@ -46,15 +48,15 @@ contract Whitelist is UpgradeableBase {
     function getOperatorAtAddress(
         address a
     ) public view returns (Operator memory) {
-        require(reverseOperatorIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
-        return operatorMap[a];
+        require(reverseNodeIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
+        return nodeMap[a];
     }
 
     function getNumberOfValidators(
         address a
     ) public view returns (uint) {
-        require(reverseOperatorIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
-        return operatorMap[a].currentValidatorCount;
+        require(reverseNodeIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
+        return nodeMap[a].currentValidatorCount;
     }
 
     //----
@@ -64,11 +66,11 @@ contract Whitelist is UpgradeableBase {
     function registerNewValidator(
         address nodeOperator
     ) public onlyProtocol {
-        operatorMap[nodeOperator].currentValidatorCount++;
+        nodeMap[nodeOperator].currentValidatorCount++;
     }
 
     function getOperatorAddress(uint index) public view returns (address) {
-        return operatorIndexMap[index];
+        return nodeIndexMap[index];
     }
 
     //----
@@ -89,12 +91,12 @@ contract Whitelist is UpgradeableBase {
         distributor.finalizeInterval();
 
         uint256 nextInterval = distributor.currentInterval();
-        Operator memory operator = Operator(block.timestamp, 0, nextInterval);
+        Operator memory operator = Operator(block.timestamp, 0, nextInterval, a);
         // operator will be entitled to rewards in the next interval
 
-        operatorMap[a] = operator;
-        operatorIndexMap[numOperators] = a;
-        reverseOperatorIndexMap[a] = numOperators + 1;
+        nodeMap[a] = operator;
+        nodeIndexMap[numOperators] = a;
+        reverseNodeIndexMap[a] = numOperators + 1;
 
         emit OperatorAdded(operator);
     }
@@ -102,10 +104,10 @@ contract Whitelist is UpgradeableBase {
     function removeOperator(address nodeOperator) public only24HourTimelock {
         _permissions[nodeOperator] = false;
 
-        delete operatorMap[nodeOperator];
-        uint index = reverseOperatorIndexMap[nodeOperator] - 1;
-        delete operatorIndexMap[index];
-        delete reverseOperatorIndexMap[nodeOperator];
+        delete nodeMap[nodeOperator];
+        uint index = reverseNodeIndexMap[nodeOperator] - 1;
+        delete nodeIndexMap[index];
+        delete reverseNodeIndexMap[nodeOperator];
 
 
         OperatorDistributor odistributor = OperatorDistributor(
@@ -126,13 +128,24 @@ contract Whitelist is UpgradeableBase {
         emit OperatorRemoved(nodeOperator);
     }
 
+    function setOperatorController(address controller) public {
+        address node = operatorControllerToNodeMap[msg.sender];
+        if(node == address(0)) {
+            node = msg.sender;
+        }
+        require(msg.sender == nodeMap[node].operatorController, Constants.OPERATOR_CONTROLLER_SET_FORBIDDEN_ERROR);
+        nodeMap[node].operatorController = controller;
+        operatorControllerToNodeMap[controller] = node;
+        operatorControllerToNodeMap[msg.sender] = address(0);
+    }
+
 
     //----
     // INTERNAL
     //----
 
     function getOperatorIndex(address a) private view returns (uint) {
-        require(reverseOperatorIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
-        return reverseOperatorIndexMap[a];
+        require(reverseNodeIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
+        return reverseNodeIndexMap[a];
     }
 }

@@ -20,4 +20,6 @@ library Constants {
         "Whitelist: Provided address is not an allowed operator!";
     string public constant OPERATOR_DUPLICATE_ERROR =
         "Whitelist: Provided address is already an allowed operator!";
+    string public constant OPERATOR_CONTROLLER_SET_FORBIDDEN_ERROR =
+        "Whitelist: Operator controller may only be set by the operator controller!";
 }
