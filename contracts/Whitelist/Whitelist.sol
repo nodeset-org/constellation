@@ -19,8 +19,9 @@ struct Operator {
 /// Only modifiable by admin. Upgradeable and intended to be replaced by a ZK-ID check when possible.
 contract Whitelist is UpgradeableBase {
 
-    event OperatorAdded(Operator newOperator);
-    event OperatorRemoved(address a);
+    event OperatorAdded(Operator);
+    event OperatorRemoved(address);
+    event OperatorControllerUpdated(address indexed oldController, address indexed newController);
 
     mapping(address => bool) internal _permissions;
 
@@ -88,11 +89,10 @@ contract Whitelist is UpgradeableBase {
 
         numOperators++;
 
-        distributor.finalizeInterval();
+        distributor.finalizeInterval(); // operator controller will be entitled to rewards in the next interval
 
         uint256 nextInterval = distributor.currentInterval();
         Operator memory operator = Operator(block.timestamp, 0, nextInterval, a);
-        // operator will be entitled to rewards in the next interval
 
         nodeMap[a] = operator;
         nodeIndexMap[numOperators] = a;
@@ -137,6 +137,7 @@ contract Whitelist is UpgradeableBase {
         nodeMap[node].operatorController = controller;
         operatorControllerToNodeMap[controller] = node;
         operatorControllerToNodeMap[msg.sender] = address(0);
+        emit OperatorControllerUpdated(msg.sender, controller);
     }
 
 
