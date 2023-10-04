@@ -51,7 +51,7 @@ async function main() {
     const initNonce = await deployer.getTransactionCount();
     console.log("init nonce", initNonce)
 
-    const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directoryAddress, protocolParams.trustBuildPeriod], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+    const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directoryAddress], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
     console.log("whitelist address", whitelist.address)
 
     // wait for whitelist deploy to be mined
