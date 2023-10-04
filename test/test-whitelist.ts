@@ -94,7 +94,7 @@ describe("Whitelist", function () {
             .to.be.revertedWith("Can only be called by 24 hour timelock!");
 
         await expect(protocol.whitelist.getOperatorAtAddress(signers.random.address))
-            .to.be.revertedWith(await protocol.whitelist.OPERATOR_NOT_FOUND_ERROR());
+            .to.be.revertedWith("Whitelist: Provided address is not an allowed operator!");
     });
 
     it("Admin can remove NO from whitelist", async function () {
@@ -106,7 +106,7 @@ describe("Whitelist", function () {
             .to.emit(protocol.whitelist, "OperatorRemoved").withArgs(signers.random.address);
 
         await expect(protocol.whitelist.getOperatorAtAddress(signers.random.address))
-            .to.be.revertedWith(await protocol.whitelist.OPERATOR_NOT_FOUND_ERROR());
+            .to.be.revertedWith("Whitelist: Provided address is not an allowed operator!");
     });
 
     it("Non-admin cannot remove NO from whitelist", async function () {
