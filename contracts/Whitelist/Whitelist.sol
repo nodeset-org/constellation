@@ -13,7 +13,6 @@ struct Operator {
     address operatorController; // designated address to control the node operator's settings and collect rewards
 }
 
-
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Controls operator access to the protocol.
 /// Only modifiable by admin. Upgradeable and intended to be replaced by a ZK-ID check when possible.
@@ -139,7 +138,6 @@ contract Whitelist is UpgradeableBase {
         operatorControllerToNodeMap[msg.sender] = address(0);
         emit OperatorControllerUpdated(msg.sender, controller);
     }
-
 
     //----
     // INTERNAL
