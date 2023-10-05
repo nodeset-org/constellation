@@ -10,8 +10,6 @@ import { RewardStruct } from "../typechain-types/contracts/Operator/YieldDistrib
 import { evaluateModel, expectNumberE18ToBeApproximately, registerNewValidator } from "./utils/utils";
 
 describe("Yield Distributor", function () {
-
-
   describe("Setters", function () {
     it("Random address cannot setMaxIntervalTime", async function () {
       const setupData = await protocolFixture();
@@ -19,7 +17,6 @@ describe("Yield Distributor", function () {
 
       await expect(protocol.yieldDistributor.connect(signers.random).setMaxIntervalTime(1))
         .to.be.revertedWith("Can only be called by admin address!");
-
     })
   });
 
@@ -29,7 +26,6 @@ describe("Yield Distributor", function () {
     await protocol.whitelist.addOperator(signers.random.address);
     await protocol.whitelist.addOperator(signers.random2.address);
     await protocol.whitelist.addOperator(signers.random3.address);
-
 
     // simulate yield from validator
     await signers.ethWhale.sendTransaction({ to: protocol.yieldDistributor.address, value: yieldAmountEth});
