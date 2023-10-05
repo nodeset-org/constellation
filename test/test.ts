@@ -13,7 +13,7 @@ import { suppressLog } from "./rocketpool/_helpers/console";
 import { deployRocketPool } from "./rocketpool/_helpers/deployment";
 import { RocketNodeManagerInterface } from "../typechain-types/contracts/interface/node";
 
-const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
+export const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
 
 export type SetupData = {
 	protocol: Protocol,
@@ -72,7 +72,7 @@ export function getAllAddresses(Signers: Signers, Protocol: Protocol, RocketPool
 	return allAddresses;
 }
 
-async function getRocketPool(): Promise<RocketPool> {
+export async function getRocketPool(): Promise<RocketPool> {
 	const RplToken = await RocketTokenRPL.deployed();
 	const rplContract = (await ethers.getContractAt(
 		"contracts/Interfaces/RocketTokenRPLInterface.sol:RocketTokenRPLInterface",
@@ -124,7 +124,7 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 
 		const directoryAddress = await getNextContractAddress(deployer, predictedNonce-1)
 		const initNonce = await deployer.getTransactionCount();
-		const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directoryAddress, protocolParams.trustBuildPeriod], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+		const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directoryAddress], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 		const vCWETHProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("WETHVault"), [directoryAddress, wETH.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
 		const vCWETH = await ethers.getContractAt("WETHVault", vCWETHProxyAbi.address);
 		const vCRPLProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("RPLVault"), [directoryAddress, rocketPool.rplContract.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });

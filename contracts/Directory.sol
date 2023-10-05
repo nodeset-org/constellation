@@ -150,4 +150,14 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
         _treasury = newTreasurer;
     }
+
+    function setOracle(address newOracle) public {
+        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
+        _protocol.oracle = newOracle;
+    }
+
+    function setAll(Protocol memory newProtocol) public {
+        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
+        _protocol = newProtocol;
+    }
 }

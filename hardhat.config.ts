@@ -48,10 +48,18 @@ const config: HardhatUserConfig = {
     hardhat: {
       gasPrice: 25000000000, // This is in wei (25 gwei)
     },
-  },
 
+    goerli: {
+      url: process.env.GOERLI_URL as string,
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY as string],
+    },
+  },
   mocha: {
     timeout: 0,
+  },
+
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY as string,
   },
 
   contractSizer: {
@@ -60,5 +68,6 @@ const config: HardhatUserConfig = {
     disambiguatePaths: false,
   },
 };
+
 
 export default config;

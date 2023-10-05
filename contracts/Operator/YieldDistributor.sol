@@ -30,6 +30,9 @@ struct Claim {
 /// @notice distributes rewards in weth to node operators
 contract YieldDistributor is UpgradeableBase {
 
+    event RewardDistributed(Reward);
+    event WarningAlreadyClaimed(address operator, uint256 interval);
+
     uint256 public totalYieldAccrued;
     uint256 public yieldAccruedInInterval;
     uint256 public dustAccrued;
@@ -43,22 +46,6 @@ contract YieldDistributor is UpgradeableBase {
 
     uint256 k; // steepness of the curve
     uint256 maxValidators; // max number of validators used to normalize x axis
-
-    string public constant INITIALIZATION_ERROR =
-        "YieldDistributor: may only initialized once";
-    string public constant DIRECTORY_NOT_INITIALIZED_ERROR =
-        "YieldDistributor: Directory must be initialized first";
-    string public constant NOT_INITIALIZED_ERROR =
-        "YieldDistributor: Must be initialized first";
-    string public constant ETH_COMMISSION_MODIFIER_OUT_OF_BOUNDS_ERROR =
-        "YieldDistributor: ETH fee modifier must be <= MAX_ETH_COMMISSION_MODIFIER and >= -MAX_ETH_COMMISSION_MODIFIER ";
-    string public constant ETH_REWARD_ADMIN_PORTION_OUT_OF_BOUNDS_ERROR =
-        "YieldDistributor: ETH fee portion must be between 0 and YIELD_PORTION_MAX";
-    string public constant ALREADY_DISTRIBUTING_ERROR =
-        "YieldDistributor: Already distributing rewards";
-
-    event RewardDistributed(Reward);
-    event WarningAlreadyClaimed(address operator, uint256 interval);
 
     function initialize(address _directory) public initializer override {
         super.initialize(_directory);
@@ -107,19 +94,19 @@ contract YieldDistributor is UpgradeableBase {
     /// @notice Distributes rewards accrued between two intervals to a single rewardee
     /// @dev The caller should check for the most gas-efficient way to distribute rewards
     /// @param _rewardee The address of the rewardee to distribute rewards to
-    /// @param startInterval The interval to start distributing rewards from
-    /// @param endInterval The interval to stop distributing rewards at
+    /// @param _startInterval The interval to start distributing rewards from
+    /// @param _endInterval The interval to stop distributing rewards at
     function harvest(
         address _rewardee,
-        uint256 startInterval,
-        uint256 endInterval
+        uint256 _startInterval,
+        uint256 _endInterval
     ) public nonReentrant {
         require(
-            startInterval <= endInterval,
+            _startInterval <= _endInterval,
             "Start interval must be less than or equal to end interval"
         );
         require(
-            endInterval < currentInterval,
+            _endInterval < currentInterval,
             "End interval must be less than current interval"
         );
         require(_rewardee != address(0), "rewardee cannot be zero address");
@@ -128,14 +115,16 @@ contract YieldDistributor is UpgradeableBase {
             _rewardee
         );
         require(
-            operator.intervalStart <= startInterval,
-            "Rewardee has not been an operator since startInterval"
+            operator.intervalStart <= _startInterval,
+            "Rewardee has not been an operator since _startInterval"
         );
 
         bool isWhitelisted = whitelist.getIsAddressInWhitelist(_rewardee);
 
+        _rewardee = operator.operatorController;
+
         uint256 totalReward = 0;
-        for (uint256 i = startInterval; i <= endInterval; i++) {
+        for (uint256 i = _startInterval; i <= _endInterval; i++) {
             if (hasClaimed[_rewardee][i]) {
                 emit WarningAlreadyClaimed(_rewardee, i);
                 continue;

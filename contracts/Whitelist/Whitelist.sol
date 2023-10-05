@@ -3,12 +3,14 @@ pragma solidity 0.8.17;
 
 import "../UpgradeableBase.sol";
 import "../Operator/YieldDistributor.sol";
+import "../Utils/Constants.sol";
 
 /// @notice An operator which provides services to the network.
 struct Operator {
     uint256 operationStartTime;
     uint256 currentValidatorCount;
     uint256 intervalStart;
+    address operatorController; // designated address to control the node operator's settings and collect rewards
 }
 
 
@@ -16,30 +18,24 @@ struct Operator {
 /// @notice Controls operator access to the protocol.
 /// Only modifiable by admin. Upgradeable and intended to be replaced by a ZK-ID check when possible.
 contract Whitelist is UpgradeableBase {
-    mapping(address => bool) private _permissions;
-    mapping(address => Operator) public operatorMap;
-    mapping(uint => address) public operatorIndexMap;
-    mapping(address => uint) public reverseOperatorIndexMap;
 
-    event OperatorAdded(Operator newOperator);
-    event OperatorRemoved(address a);
+    event OperatorAdded(Operator);
+    event OperatorRemoved(address);
+    event OperatorControllerUpdated(address indexed oldController, address indexed newController);
 
-    uint public numOperators;
+    mapping(address => bool) internal _permissions;
 
-    uint24 private _trustBuildPeriod;
-    event TrustBuildPeriodUpdated(uint24 oldValue, uint24 newValue);
+    mapping(address => address) public operatorControllerToNodeMap;
+    mapping(address => Operator) public nodeMap;
+    mapping(uint256 => address) public nodeIndexMap;
+    mapping(address => uint256) public reverseNodeIndexMap;
 
-    string public constant OPERATOR_NOT_FOUND_ERROR =
-        "Whitelist: Provided address is not an allowed operator!";
-    string public constant OPERATOR_DUPLICATE_ERROR =
-        "Whitelist: Provided address is already an allowed operator!";
+    uint256 public numOperators;
 
     function initializeWhitelist(
-        address directoryAddress,
-        uint24 trustBuildPeriod
+        address directoryAddress
     ) public initializer {
         super.initialize(directoryAddress);
-        _trustBuildPeriod = trustBuildPeriod;
     }
 
     //----
@@ -50,31 +46,18 @@ contract Whitelist is UpgradeableBase {
         return _permissions[a];
     }
 
-    function getTrustBuildPeriod() public view returns (uint) {
-        return _trustBuildPeriod;
-    }
-
-    function getRewardShare(
-        Operator calldata operator
-    ) public view returns (uint) {
-        uint timeSinceStart = (block.timestamp - operator.operationStartTime);
-        uint portion = timeSinceStart / getTrustBuildPeriod();
-        if (portion < 1) return portion;
-        else return 100; // max percentage of rewards is 100%
-    }
-
     function getOperatorAtAddress(
         address a
     ) public view returns (Operator memory) {
-        require(reverseOperatorIndexMap[a] != 0, OPERATOR_NOT_FOUND_ERROR);
-        return operatorMap[a];
+        require(reverseNodeIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
+        return nodeMap[a];
     }
 
     function getNumberOfValidators(
         address a
     ) public view returns (uint) {
-        require(reverseOperatorIndexMap[a] != 0, OPERATOR_NOT_FOUND_ERROR);
-        return operatorMap[a].currentValidatorCount;
+        require(reverseNodeIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
+        return nodeMap[a].currentValidatorCount;
     }
 
     //----
@@ -84,25 +67,19 @@ contract Whitelist is UpgradeableBase {
     function registerNewValidator(
         address nodeOperator
     ) public onlyProtocol {
-        operatorMap[nodeOperator].currentValidatorCount++;
+        nodeMap[nodeOperator].currentValidatorCount++;
     }
 
     function getOperatorAddress(uint index) public view returns (address) {
-        return operatorIndexMap[index];
+        return nodeIndexMap[index];
     }
 
     //----
     // ADMIN
     //----
 
-    function setTrustBuildPeriod(uint8 trustBuildPeriod) public only24HourTimelock {
-        uint24 old = _trustBuildPeriod;
-        _trustBuildPeriod = trustBuildPeriod;
-        emit TrustBuildPeriodUpdated(old, _trustBuildPeriod);
-    }
-
     function addOperator(address a) public only24HourTimelock {
-        require(!_permissions[a], OPERATOR_DUPLICATE_ERROR);
+        require(!_permissions[a], Constants.OPERATOR_DUPLICATE_ERROR);
 
         _permissions[a] = true;
 
@@ -112,15 +89,14 @@ contract Whitelist is UpgradeableBase {
 
         numOperators++;
 
-        distributor.finalizeInterval();
+        distributor.finalizeInterval(); // operator controller will be entitled to rewards in the next interval
 
         uint256 nextInterval = distributor.currentInterval();
-        Operator memory operator = Operator(block.timestamp, 0, nextInterval);
-        // operator will be entitled to rewards in the next interval
+        Operator memory operator = Operator(block.timestamp, 0, nextInterval, a);
 
-        operatorMap[a] = operator;
-        operatorIndexMap[numOperators] = a;
-        reverseOperatorIndexMap[a] = numOperators + 1;
+        nodeMap[a] = operator;
+        nodeIndexMap[numOperators] = a;
+        reverseNodeIndexMap[a] = numOperators + 1;
 
         emit OperatorAdded(operator);
     }
@@ -128,10 +104,10 @@ contract Whitelist is UpgradeableBase {
     function removeOperator(address nodeOperator) public only24HourTimelock {
         _permissions[nodeOperator] = false;
 
-        delete operatorMap[nodeOperator];
-        uint index = reverseOperatorIndexMap[nodeOperator] - 1;
-        delete operatorIndexMap[index];
-        delete reverseOperatorIndexMap[nodeOperator];
+        delete nodeMap[nodeOperator];
+        uint index = reverseNodeIndexMap[nodeOperator] - 1;
+        delete nodeIndexMap[index];
+        delete reverseNodeIndexMap[nodeOperator];
 
 
         OperatorDistributor odistributor = OperatorDistributor(
@@ -152,13 +128,25 @@ contract Whitelist is UpgradeableBase {
         emit OperatorRemoved(nodeOperator);
     }
 
+    function setOperatorController(address controller) public {
+        address node = operatorControllerToNodeMap[msg.sender];
+        if(node == address(0)) {
+            node = msg.sender;
+        }
+        require(msg.sender == nodeMap[node].operatorController, Constants.OPERATOR_CONTROLLER_SET_FORBIDDEN_ERROR);
+        nodeMap[node].operatorController = controller;
+        operatorControllerToNodeMap[controller] = node;
+        operatorControllerToNodeMap[msg.sender] = address(0);
+        emit OperatorControllerUpdated(msg.sender, controller);
+    }
+
 
     //----
     // INTERNAL
     //----
 
     function getOperatorIndex(address a) private view returns (uint) {
-        require(reverseOperatorIndexMap[a] != 0, OPERATOR_NOT_FOUND_ERROR);
-        return reverseOperatorIndexMap[a];
+        require(reverseNodeIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
+        return reverseNodeIndexMap[a];
     }
 }

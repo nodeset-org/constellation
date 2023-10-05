@@ -13,8 +13,6 @@ import "../Interfaces/RocketPool/IRocketNodeStaking.sol";
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import "hardhat/console.sol";
-
 contract OperatorDistributor is UpgradeableBase {
 
     event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
@@ -29,7 +27,6 @@ contract OperatorDistributor is UpgradeableBase {
     uint256 public targetStakeRatio; // 150%
 
     uint256 public numMinipoolsProcessedPerInterval;
-
 
     mapping(address => uint256) public minipoolIndexMap;
     mapping(address => uint256) public minipoolAmountFundedEth;
