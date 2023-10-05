@@ -1,12 +1,8 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { Protocol, protocolFixture, SetupData } from "./test";
+import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { string } from "hardhat/internal/core/params/argumentTypes";
-import { operator, whitelist } from "../typechain-types/contracts";
-import { RewardStruct } from "../typechain-types/contracts/Operator/YieldDistributor";
 import { evaluateModel, expectNumberE18ToBeApproximately, registerNewValidator } from "./utils/utils";
 
 describe("Yield Distributor", function () {
