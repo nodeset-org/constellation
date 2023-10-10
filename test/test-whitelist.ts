@@ -137,4 +137,36 @@ describe("Whitelist", function () {
         await expect(protocol.whitelist.connect(signers.random).removeOperator(signers.random.address))
             .to.be.revertedWith("Can only be called by 24 hour timelock!");
     });
+
+    it("Admin can batch add addresses to whitelist", async function () {
+        const { protocol, signers } = await protocolFixture();
+
+        await expect(protocol.whitelist.addOperators([signers.random.address, signers.random2.address]))
+            .to.emit(protocol.whitelist, 'OperatorsAdded').withArgs([signers.random.address, signers.random2.address]);
+    });
+
+    it("Non-admin cannot batch add addresses to whitelist", async function () {
+        const { protocol, signers } = await protocolFixture();
+
+        await expect(protocol.whitelist.connect(signers.random).addOperators([signers.random.address, signers.random2.address]))
+            .to.be.revertedWith("Can only be called by 24 hour timelock!");
+    });
+
+    it("Admin can batch remove addresses from whitelist", async function () {
+        const { protocol, signers } = await protocolFixture();
+
+        await protocol.whitelist.addOperators([signers.random.address, signers.random2.address]);
+
+        await expect(protocol.whitelist.removeOperators([signers.random.address, signers.random2.address]))
+            .to.emit(protocol.whitelist, 'OperatorsRemoved').withArgs([signers.random.address, signers.random2.address]);
+    });
+
+    it("Non-admin cannot batch remove addresses from whitelist", async function () {
+        const { protocol, signers } = await protocolFixture();
+
+        await protocol.whitelist.addOperators([signers.random.address, signers.random2.address]);
+
+        await expect(protocol.whitelist.connect(signers.random).removeOperators([signers.random.address, signers.random2.address]))
+            .to.be.revertedWith("Can only be called by 24 hour timelock!");
+    });
 });

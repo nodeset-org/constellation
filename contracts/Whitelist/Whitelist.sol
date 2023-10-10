@@ -13,14 +13,17 @@ struct Operator {
     address operatorController; // designated address to control the node operator's settings and collect rewards
 }
 
-
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Controls operator access to the protocol.
 /// Only modifiable by admin. Upgradeable and intended to be replaced by a ZK-ID check when possible.
 contract Whitelist is UpgradeableBase {
 
     event OperatorAdded(Operator);
+    event OperatorsAdded(address[] operators);
+
     event OperatorRemoved(address);
+    event OperatorsRemoved(address[] operators);
+
     event OperatorControllerUpdated(address indexed oldController, address indexed newController);
 
     mapping(address => bool) internal _permissions;
@@ -78,9 +81,7 @@ contract Whitelist is UpgradeableBase {
     // ADMIN
     //----
 
-    function addOperator(address a) public only24HourTimelock {
-        require(!_permissions[a], Constants.OPERATOR_DUPLICATE_ERROR);
-
+    function _addOperator(address a) internal returns (Operator memory) {
         _permissions[a] = true;
 
         YieldDistributor distributor = YieldDistributor(
@@ -98,11 +99,16 @@ contract Whitelist is UpgradeableBase {
         nodeIndexMap[numOperators] = a;
         reverseNodeIndexMap[a] = numOperators + 1;
 
-        emit OperatorAdded(operator);
+        return operator;
     }
 
-    function removeOperator(address nodeOperator) public only24HourTimelock {
-        _permissions[nodeOperator] = false;
+    function addOperator(address a) public only24HourTimelock {
+        require(!_permissions[a], Constants.OPERATOR_DUPLICATE_ERROR);
+        emit OperatorAdded(_addOperator(a));
+    }
+
+    function _removeOperator(address nodeOperator) internal {
+         _permissions[nodeOperator] = false;
 
         delete nodeMap[nodeOperator];
         uint index = reverseNodeIndexMap[nodeOperator] - 1;
@@ -124,8 +130,30 @@ contract Whitelist is UpgradeableBase {
         ydistributor.finalizeInterval();
 
         numOperators--;
+    }
 
+    function removeOperator(address nodeOperator) public only24HourTimelock {
+        _removeOperator(nodeOperator);
         emit OperatorRemoved(nodeOperator);
+    }
+
+    /// @notice Batches the addition of operators.
+    function addOperators(address[] memory operators) public only24HourTimelock {
+        for(uint i = 0; i < operators.length; i++) {
+            require(!_permissions[operators[i]], Constants.OPERATOR_DUPLICATE_ERROR);
+        }
+        for (uint i = 0; i < operators.length; i++) {
+            _addOperator(operators[i]);
+        }
+        emit OperatorsAdded(operators);
+    }
+
+    /// @notice Batches the removal of operators.
+    function removeOperators(address[] memory operators) public only24HourTimelock {
+        for (uint i = 0; i < operators.length; i++) {
+            _removeOperator(operators[i]);
+        }
+        emit OperatorsRemoved(operators);
     }
 
     function setOperatorController(address controller) public {
@@ -139,7 +167,6 @@ contract Whitelist is UpgradeableBase {
         operatorControllerToNodeMap[msg.sender] = address(0);
         emit OperatorControllerUpdated(msg.sender, controller);
     }
-
 
     //----
     // INTERNAL
