@@ -62,6 +62,7 @@ abstract contract RocketBase {
     }
     
 
+
     /**
     * @dev Throws if called by any account other than a guardian account (temporary account allowed access to settings before DAO is fully enabled)
     */
@@ -70,7 +71,7 @@ abstract contract RocketBase {
         _;
     }
 
-    /**
+ /**
     * @dev Throws if called by any sender that isn't a registered node or the their respective withdrawal address
     */
     modifier onlyRegisteredNodeOrWithdrawalAddress(address _nodeAddress) {
