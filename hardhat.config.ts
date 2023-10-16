@@ -4,6 +4,7 @@ import '@openzeppelin/hardhat-upgrades';
 import "hardhat-contract-sizer";
 import "hardhat-gas-reporter";
 import '@nomiclabs/hardhat-truffle5';
+import 'solidity-docgen';
 
 // init dotenv
 import dotenv from "dotenv";
