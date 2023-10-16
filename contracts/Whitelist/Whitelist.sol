@@ -17,14 +17,16 @@ struct Operator {
 /// @notice Controls operator access to the protocol.
 /// Only modifiable by admin. Upgradeable and intended to be replaced by a ZK-ID check when possible.
 contract Whitelist is UpgradeableBase {
-
     event OperatorAdded(Operator);
     event OperatorsAdded(address[] operators);
 
     event OperatorRemoved(address);
     event OperatorsRemoved(address[] operators);
 
-    event OperatorControllerUpdated(address indexed oldController, address indexed newController);
+    event OperatorControllerUpdated(
+        address indexed oldController,
+        address indexed newController
+    );
 
     mapping(address => bool) internal _permissions;
 
@@ -35,9 +37,9 @@ contract Whitelist is UpgradeableBase {
 
     uint256 public numOperators;
 
-    function initializeWhitelist(
-        address directoryAddress
-    ) public initializer {
+    /// @notice Initializes the Whitelist contract with a directory address.
+    /// @param directoryAddress The address of the directory contract.
+    function initializeWhitelist(address directoryAddress) public initializer {
         super.initialize(directoryAddress);
     }
 
@@ -45,21 +47,41 @@ contract Whitelist is UpgradeableBase {
     // GETTERS
     //----
 
+    /// @notice Checks if an address is in the whitelist.
+    /// @dev This function allows users to query whether a specific address is in the whitelist.
+    /// @param a The address to check.
+    /// @return True if the address is in the whitelist, otherwise false.
     function getIsAddressInWhitelist(address a) public view returns (bool) {
         return _permissions[a];
     }
 
+    /// @notice Retrieves the Operator struct associated with a specific address.
+    /// @dev This function allows users to retrieve detailed information about an operator
+    ///      based on their address.
+    /// @param a The address of the operator to retrieve information for.
+    /// @return An Operator struct containing details about the operator.
+    /// @dev Throws an error if the specified address is not found in the whitelist.
     function getOperatorAtAddress(
         address a
     ) public view returns (Operator memory) {
-        require(reverseNodeIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
+        require(
+            reverseNodeIndexMap[a] != 0,
+            Constants.OPERATOR_NOT_FOUND_ERROR
+        );
         return nodeMap[a];
     }
 
-    function getNumberOfValidators(
-        address a
-    ) public view returns (uint) {
-        require(reverseNodeIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
+    /// @notice Retrieves the number of validators associated with a specific operator address.
+    /// @dev This function allows users to query the number of validators managed by an operator
+    ///      based on their address.
+    /// @param a The address of the operator to retrieve the number of validators for.
+    /// @return The number of validators associated with the specified operator.
+    /// @dev Throws an error if the specified address is not found in the whitelist.
+    function getNumberOfValidators(address a) public view returns (uint) {
+        require(
+            reverseNodeIndexMap[a] != 0,
+            Constants.OPERATOR_NOT_FOUND_ERROR
+        );
         return nodeMap[a].currentValidatorCount;
     }
 
@@ -67,12 +89,20 @@ contract Whitelist is UpgradeableBase {
     // INTERNAL
     //----
 
-    function registerNewValidator(
-        address nodeOperator
-    ) public onlyProtocol {
+    /// @notice Registers a new validator under a specific node operator.
+    /// @dev This function allows the protocol to register a new validator under a node operator's address.
+    ///      Only accessible to authorized protocol administrators.
+    /// @param nodeOperator The address of the node operator to register the new validator under.
+    /// @dev Increases the validator count for the specified node operator.
+    function registerNewValidator(address nodeOperator) public onlyProtocol {
         nodeMap[nodeOperator].currentValidatorCount++;
     }
 
+    /// @notice Retrieves the address of an operator based on its index.
+    /// @dev This function allows users to obtain the address of an operator using its index.
+    /// @param index The index of the operator whose address is being retrieved.
+    /// @return The address of the operator associated with the specified index.
+    /// @dev If the index is invalid or does not correspond to any operator, the result will be an empty address.
     function getOperatorAddress(uint index) public view returns (address) {
         return nodeIndexMap[index];
     }
@@ -81,6 +111,11 @@ contract Whitelist is UpgradeableBase {
     // ADMIN
     //----
 
+    /// @notice Internal function to add a new operator to the whitelist.
+    /// @dev This function is used internally to add a new operator to the whitelist, including updating permissions, initializing operator data,
+    ///      and emitting the 'OperatorAdded' event.
+    /// @param a The address of the operator to be added.
+    /// @return An Operator struct containing details about the newly added operator.
     function _addOperator(address a) internal returns (Operator memory) {
         _permissions[a] = true;
 
@@ -93,7 +128,12 @@ contract Whitelist is UpgradeableBase {
         distributor.finalizeInterval(); // operator controller will be entitled to rewards in the next interval
 
         uint256 nextInterval = distributor.currentInterval();
-        Operator memory operator = Operator(block.timestamp, 0, nextInterval, a);
+        Operator memory operator = Operator(
+            block.timestamp,
+            0,
+            nextInterval,
+            a
+        );
 
         nodeMap[a] = operator;
         nodeIndexMap[numOperators] = a;
@@ -102,19 +142,27 @@ contract Whitelist is UpgradeableBase {
         return operator;
     }
 
+    /// @notice Adds a new operator to the whitelist.
+    /// @dev This function can only be called by a 24-hour timelock and ensures that the operator being added is not a duplicate.
+    ///      It emits the 'OperatorAdded' event to notify when an operator has been successfully added.
+    /// @param a The address of the operator to be added.
+    /// @dev Throws an error if the operator being added already exists in the whitelist.
     function addOperator(address a) public only24HourTimelock {
         require(!_permissions[a], Constants.OPERATOR_DUPLICATE_ERROR);
         emit OperatorAdded(_addOperator(a));
     }
 
+    /// @notice Internal function to remove an operator from the whitelist.
+    /// @dev This function is used internally to remove an operator from the whitelist, including updating permissions, clearing operator data,
+    ///      and notifying the OperatorDistributor and YieldDistributor contracts.
+    /// @param nodeOperator The address of the operator to be removed.
     function _removeOperator(address nodeOperator) internal {
-         _permissions[nodeOperator] = false;
+        _permissions[nodeOperator] = false;
 
         delete nodeMap[nodeOperator];
         uint index = reverseNodeIndexMap[nodeOperator] - 1;
         delete nodeIndexMap[index];
         delete reverseNodeIndexMap[nodeOperator];
-
 
         OperatorDistributor odistributor = OperatorDistributor(
             payable(getDirectory().getOperatorDistributorAddress())
@@ -126,21 +174,34 @@ contract Whitelist is UpgradeableBase {
             payable(getDirectory().getYieldDistributorAddress())
         );
 
-
         ydistributor.finalizeInterval();
 
         numOperators--;
     }
 
+    /// @notice Removes an operator from the whitelist.
+    /// @dev This function can only be called by a 24-hour timelock and is used to remove an operator from the whitelist.
+    ///      It emits the 'OperatorRemoved' event to notify when an operator has been successfully removed.
+    /// @param nodeOperator The address of the operator to be removed.
+    /// @dev Throws no errors during execution.
     function removeOperator(address nodeOperator) public only24HourTimelock {
         _removeOperator(nodeOperator);
         emit OperatorRemoved(nodeOperator);
     }
 
-    /// @notice Batches the addition of operators.
-    function addOperators(address[] memory operators) public only24HourTimelock {
-        for(uint i = 0; i < operators.length; i++) {
-            require(!_permissions[operators[i]], Constants.OPERATOR_DUPLICATE_ERROR);
+    /// @notice Batch addition of operators to the whitelist.
+    /// @dev This function can only be called by a 24-hour timelock and allows multiple operators to be added to the whitelist simultaneously.
+    ///      It checks for duplicates among the provided addresses, adds valid operators, and emits the 'OperatorsAdded' event.
+    /// @param operators An array of addresses representing the operators to be added.
+    /// @dev Throws an error if any of the operators being added already exist in the whitelist.
+    function addOperators(
+        address[] memory operators
+    ) public only24HourTimelock {
+        for (uint i = 0; i < operators.length; i++) {
+            require(
+                !_permissions[operators[i]],
+                Constants.OPERATOR_DUPLICATE_ERROR
+            );
         }
         for (uint i = 0; i < operators.length; i++) {
             _addOperator(operators[i]);
@@ -148,20 +209,34 @@ contract Whitelist is UpgradeableBase {
         emit OperatorsAdded(operators);
     }
 
-    /// @notice Batches the removal of operators.
-    function removeOperators(address[] memory operators) public only24HourTimelock {
+    /// @notice Batch removal of operators from the whitelist.
+    /// @dev This function can only be called by a 24-hour timelock and allows multiple operators to be removed from the whitelist simultaneously.
+    ///      It removes valid operators and emits the 'OperatorsRemoved' event.
+    /// @param operators An array of addresses representing the operators to be removed.
+    /// @dev Throws no errors during execution.
+    function removeOperators(
+        address[] memory operators
+    ) public only24HourTimelock {
         for (uint i = 0; i < operators.length; i++) {
             _removeOperator(operators[i]);
         }
         emit OperatorsRemoved(operators);
     }
 
+    /// @notice Sets the operator controller for a node operator.
+    /// @dev This function allows a node operator or their authorized controller to set a new operator controller address.
+    ///      The function updates the mapping of operator controllers to node addresses and emits the 'OperatorControllerUpdated' event.
+    /// @param controller The address of the new operator controller.
+    /// @dev Throws an error if the sender is not the current operator controller for the specified node.
     function setOperatorController(address controller) public {
         address node = operatorControllerToNodeMap[msg.sender];
-        if(node == address(0)) {
+        if (node == address(0)) {
             node = msg.sender;
         }
-        require(msg.sender == nodeMap[node].operatorController, Constants.OPERATOR_CONTROLLER_SET_FORBIDDEN_ERROR);
+        require(
+            msg.sender == nodeMap[node].operatorController,
+            Constants.OPERATOR_CONTROLLER_SET_FORBIDDEN_ERROR
+        );
         nodeMap[node].operatorController = controller;
         operatorControllerToNodeMap[controller] = node;
         operatorControllerToNodeMap[msg.sender] = address(0);
@@ -172,8 +247,16 @@ contract Whitelist is UpgradeableBase {
     // INTERNAL
     //----
 
+    /// @notice Retrieves the index of an operator based on its address.
+    /// @dev This private function allows the contract to obtain the index of an operator using its address.
+    /// @param a The address of the operator to retrieve the index for.
+    /// @return The index of the operator associated with the specified address.
+    /// @dev Throws an error if the specified address is not found in the whitelist.
     function getOperatorIndex(address a) private view returns (uint) {
-        require(reverseNodeIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
+        require(
+            reverseNodeIndexMap[a] != 0,
+            Constants.OPERATOR_NOT_FOUND_ERROR
+        );
         return reverseNodeIndexMap[a];
     }
 }
