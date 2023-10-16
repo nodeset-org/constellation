@@ -45,6 +45,10 @@ const config: HardhatUserConfig = {
   //  }
   //},
 
+  docgen: {
+    exclude: ["Testing/*", "Interfaces/*"],
+  },
+
   networks: {
     hardhat: {
       gasPrice: 25000000000, // This is in wei (25 gwei)
