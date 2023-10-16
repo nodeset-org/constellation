@@ -46,7 +46,7 @@ const config: HardhatUserConfig = {
   //},
 
   docgen: {
-    exclude: ["Testing/*", "Interfaces/*"],
+    exclude: ["Testing", "Interfaces"],
   },
 
   networks: {
