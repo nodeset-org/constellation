@@ -176,9 +176,6 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 		await directory.grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
 
 		// set directory treasury to deployer to prevent tests from failing
-		console.log("directory treasury address: ", await directory.getTreasuryAddress());
-		console.log("deployer address: ", deployer.address);
-		console.log("admin treasury address: ", adminTreasury.address);
 		expect(await directory.getTreasuryAddress()).to.equal(adminTreasury.address);
 		await directory.setTreasury(deployer.address);
 
