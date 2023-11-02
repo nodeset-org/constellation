@@ -107,7 +107,7 @@ export async function getRocketPool(): Promise<RocketPool> {
 }
 
 async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise<Protocol> {
-	const predictedNonce = 9;
+	const predictedNonce = 10;
 	try {
 		upgrades.silenceWarnings();
 		// deploy weth
@@ -137,6 +137,7 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 		const yieldDistributor = await ethers.getContractAt("YieldDistributor", yieldDistributorProxyAbi.address);
 		const oracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
 		const priceFetcher = await upgrades.deployProxy(await ethers.getContractFactory("PriceFetcher"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+		const adminTreasury = await upgrades.deployProxy(await ethers.getContractFactory("AdminTreasury"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 		const directoryProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("Directory"),
 		[
 			[
@@ -154,7 +155,8 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 				rocketPool.rplContract.address,
 				wETH.address,
 				uniswapV3Pool.address
-			]
+			],
+			adminTreasury.address,
 		], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 		const finalNonce = await deployer.getTransactionCount();
 		const directory = await ethers.getContractAt("Directory", directoryProxyAbi.address);
@@ -172,6 +174,13 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 		// set protocolSigner to be PROTOCOL_ROLE
 		const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
 		await directory.grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
+
+		// set directory treasury to deployer to prevent tests from failing
+		console.log("directory treasury address: ", await directory.getTreasuryAddress());
+		console.log("deployer address: ", deployer.address);
+		console.log("admin treasury address: ", adminTreasury.address);
+		expect(await directory.getTreasuryAddress()).to.equal(adminTreasury.address);
+		await directory.setTreasury(deployer.address);
 
 		const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, oracle, priceFetcher, wETH };
 
