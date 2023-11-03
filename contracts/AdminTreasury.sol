@@ -25,8 +25,7 @@ contract AdminTreasury is UpgradeableBase {
     /// @param _tokenAddress The address of the ERC20 token contract.
     /// @param _to The address to which the tokens will be sent.
     function claimToken(address _tokenAddress, address _to) external onlyAdmin nonReentrant {
-        uint256 _balance = IERC20(_tokenAddress).balanceOf(address(this));
-        IERC20(_tokenAddress).transfer(_to, _balance);
+        this.claimToken(_tokenAddress, _to, IERC20(_tokenAddress).balanceOf(address(this)));
     }
 
     /// @notice Allows the admin to claim a specified amount of ERC20 tokens and send them to a given address.
@@ -44,8 +43,7 @@ contract AdminTreasury is UpgradeableBase {
     /// @notice Enables the admin to claim all ETH held by the contract and send it to a specified address.
     /// @param _to The payable address to which the ETH will be sent.
     function claimEth(address payable _to) external onlyAdmin nonReentrant {
-        uint256 _balance = address(this).balance;
-        _to.transfer(_balance);
+        this.claimEth(_to, address(this).balance);
     }
 
     /// @notice Allows the admin to claim a specified amount of ETH and send it to a given address.
@@ -80,10 +78,7 @@ contract AdminTreasury is UpgradeableBase {
             Constants.BAD_TREASURY_BATCH_CALL
         );
         for (uint256 i = 0; i < _targets.length; i++) {
-            (bool _success, ) = _targets[i].call{value: msg.value}(
-                _functionData[i]
-            );
-            require(_success, Constants.BAD_TREASURY_EXECUTION_ERROR);
+            this.execute(_targets[i], _functionData[i]);
         }
     }
 }
