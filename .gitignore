@@ -15,3 +15,6 @@ artifacts
 
 #OpenZeppelin
 .openzeppelin/unknown-*.json
+
+#Ephmeral build files
+dist
