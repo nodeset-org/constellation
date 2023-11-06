@@ -21,11 +21,39 @@ contract AdminTreasury is UpgradeableBase {
         super.initialize(_directoryAddress);
     }
 
+    function _claimTokenInternal(
+        address _tokenAddress,
+        address _to,
+        uint256 _amount
+    ) internal {
+        IERC20(_tokenAddress).transfer(_to, _amount);
+    }
+
+    function _claimEthInternal(address payable _to, uint256 _amount) internal {
+        _to.transfer(_amount);
+    }
+
+    function _executeInternal(
+        address _target,
+        bytes memory _functionData,
+        uint256 _value
+    ) internal {
+        (bool _success, ) = _target.call{value: _value}(_functionData);
+        require(_success, Constants.BAD_TREASURY_EXECUTION_ERROR);
+    }
+
     /// @notice Allows the admin to claim all ERC20 tokens of a particular type and send them to a specified address.
     /// @param _tokenAddress The address of the ERC20 token contract.
     /// @param _to The address to which the tokens will be sent.
-    function claimToken(address _tokenAddress, address _to) external onlyAdmin nonReentrant {
-        this.claimToken(_tokenAddress, _to, IERC20(_tokenAddress).balanceOf(address(this)));
+    function claimToken(
+        address _tokenAddress,
+        address _to
+    ) external onlyAdmin nonReentrant {
+        _claimTokenInternal(
+            _tokenAddress,
+            _to,
+            IERC20(_tokenAddress).balanceOf(address(this))
+        );
     }
 
     /// @notice Allows the admin to claim a specified amount of ERC20 tokens and send them to a given address.
@@ -37,20 +65,23 @@ contract AdminTreasury is UpgradeableBase {
         address _to,
         uint256 _amount
     ) external onlyAdmin nonReentrant {
-        IERC20(_tokenAddress).transfer(_to, _amount);
+        _claimTokenInternal(_tokenAddress, _to, _amount);
     }
 
     /// @notice Enables the admin to claim all ETH held by the contract and send it to a specified address.
     /// @param _to The payable address to which the ETH will be sent.
     function claimEth(address payable _to) external onlyAdmin nonReentrant {
-        this.claimEth(_to, address(this).balance);
+        _claimEthInternal(_to, address(this).balance);
     }
 
     /// @notice Allows the admin to claim a specified amount of ETH and send it to a given address.
     /// @param _to The payable address to which the ETH will be transferred.
     /// @param _amount The amount of ETH to transfer.
-    function claimEth(address payable _to, uint256 _amount) external onlyAdmin nonReentrant {
-        _to.transfer(_amount);
+    function claimEth(
+        address payable _to,
+        uint256 _amount
+    ) external onlyAdmin nonReentrant {
+        _claimEthInternal(_to, _amount);
     }
 
     /// @notice Executes a call to another contract with provided data, with the possibility to send ETH.
@@ -61,8 +92,7 @@ contract AdminTreasury is UpgradeableBase {
         address _target,
         bytes calldata _functionData
     ) external payable onlyAdmin nonReentrant {
-        (bool _success, ) = _target.call{value: msg.value}(_functionData);
-        require(_success, Constants.BAD_TREASURY_EXECUTION_ERROR);
+        _executeInternal(_target, _functionData, msg.value);
     }
 
     /// @notice Batch executes multiple calls to contracts with provided data and ETH.
@@ -78,7 +108,7 @@ contract AdminTreasury is UpgradeableBase {
             Constants.BAD_TREASURY_BATCH_CALL
         );
         for (uint256 i = 0; i < _targets.length; i++) {
-            this.execute(_targets[i], _functionData[i]);
+            _executeInternal(_targets[i], _functionData[i], msg.value);
         }
     }
 }

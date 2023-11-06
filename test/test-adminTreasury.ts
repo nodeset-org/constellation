@@ -4,7 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { AdminTreasury, MockERC20 } from "../typechain-types"; // Adjust this import according to your project's structure
+import { AdminTreasury, Directory, MockERC20 } from "../typechain-types"; // Adjust this import according to your project's structure
 import { IERC20 } from "../typechain-types/oz-contracts-3-4-0/token/ERC20";
 
 describe("adminTreasury", function () {
@@ -12,7 +12,7 @@ describe("adminTreasury", function () {
   let admin: SignerWithAddress;
   let nonAdmin: SignerWithAddress;
   let token: MockERC20;
-  let initialDirectoryAddress: string;
+  let directory: Directory;
 
   beforeEach(async function () {
     const setupData = await protocolFixture();
@@ -27,6 +27,7 @@ describe("adminTreasury", function () {
     const AdminTreasury = await ethers.getContractFactory("AdminTreasury");
 
     const directoryAddress = setupData.protocol.directory.address;
+    directory = setupData.protocol.directory;
 
     adminTreasury = await upgrades.deployProxy(
       AdminTreasury,
@@ -34,7 +35,6 @@ describe("adminTreasury", function () {
       { kind: 'uups', unsafeAllow: ["constructor"], initializer: "initialize" }
     ) as AdminTreasury;
 
-    initialDirectoryAddress = directoryAddress;
 
     await adminTreasury.deployed();
   });
@@ -42,12 +42,16 @@ describe("adminTreasury", function () {
   describe("initialize", function () {
     it("should initialize with the correct directory address", async function () {
       const setDirectoryAddress = await adminTreasury.getDirectory();
-      expect(setDirectoryAddress).to.equal(initialDirectoryAddress);
+      expect(setDirectoryAddress).to.equal(directory.address);
     });
   });
 
   describe("claimToken", function () {
     it("should allow admin to claim all tokens", async function () {
+
+      const adminRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("ADMIN_ROLE"))), admin.address);
+      expect(adminRole).to.equal(true);
+
       const totalSupply = await token.totalSupply();
       await token.transfer(adminTreasury.address, totalSupply);
       await adminTreasury.connect(admin)['claimToken(address,address)'](token.address, admin.address);

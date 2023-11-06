@@ -113,7 +113,8 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.uniswapV3Pool;
     }
 
-    function initialize(Protocol memory newProtocol, address treasury) public initializer {
+    function initialize(Protocol memory newProtocol, address treasury, address admin) public initializer {
+        require(msg.sender != admin, Constants.INITIALIZATION_ERROR);
         require(_protocol.whitelist == address(0) && newProtocol.whitelist != address(0), Constants.INITIALIZATION_ERROR);
         require(_protocol.wethVault == address(0) && newProtocol.wethVault != address(0), Constants.INITIALIZATION_ERROR);
         require(_protocol.rplVault == address(0) && newProtocol.rplVault != address(0), Constants.INITIALIZATION_ERROR);
@@ -135,7 +136,8 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.TIMELOCK_24_HOUR, Constants.ADMIN_ROLE);
 
-        _grantRole(Constants.ADMIN_ROLE, msg.sender);
+        _grantRole(Constants.ADMIN_ROLE, admin);
+
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.whitelist);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.wethVault);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.rplVault);
@@ -144,6 +146,8 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.yieldDistributor);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.oracle);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.priceFetcher);
+
+        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
         _treasury = treasury;
 
