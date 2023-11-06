@@ -1,3 +1,0 @@
-# Administrator
-
-Broadly speaking, the Admin Address is responsible for keeping the protocol stable and thriving. This most obviously happens by adjusting [protocol parameters](../Protocol%20Parameter%20Justifications.md) like fee splits and the Deposit Pool size. However, the [Admin Address]("Admin Address.md") is also responsible for growing and maintaining the Node Operator set. In extreme cases of Node Operator negligence, for example, Admin Address can kick a Node Operator from the network so the protocol can recover any assigned funds. The Admin Address receives a portion of protocol revenue as compensation for this role.
