@@ -157,9 +157,16 @@ async function main() {
     };
 
      // Save the formatted variable names and addresses to a file in NAME=VALUE format
-    const dataToSave = Object.keys(contractAddresses).map((name) => `${name}=${contractAddresses[name]}`);
-    fs.writeFileSync('contract_addresses.env', dataToSave.join('\n'));
+    const directoryPath = path.join(__dirname, '../dist'); // Construct the path to the "dist" directory
+    const file = path.join(directoryPath, 'contract_addresses.data'); // Combine the directory path with the filename
 
+    // Check if the directory exists, and if not, create it
+    if (!fs.existsSync(directoryPath)) {
+      fs.mkdirSync(directoryPath);
+    }
+    const dataToSave = Object.keys(contractAddresses).map((name) => `${name}=${contractAddresses[name]}`);
+    fs.writeFileSync(file, dataToSave.join('\n'));
+    
     // wait for directory deploy to be mined
     await directoryProxyAbi.deployTransaction.wait();
 
