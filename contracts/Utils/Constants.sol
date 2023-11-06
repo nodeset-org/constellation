@@ -22,9 +22,4 @@ library Constants {
         "Whitelist: Provided address is already an allowed operator!";
     string public constant OPERATOR_CONTROLLER_SET_FORBIDDEN_ERROR =
         "Whitelist: Operator controller may only be set by the operator controller!";
-
-    string public constant BAD_TREASURY_EXECUTION_ERROR =
-       "Treasury: execution reverted.";
-    string public constant BAD_TREASURY_BATCH_CALL =
-       "Treasury: array length mismatch.";
 }

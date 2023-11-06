@@ -12,8 +12,8 @@ import "./Utils/Constants.sol";
 
 struct Protocol {
     address whitelist;
-    address payable wethVault;
-    address payable rplVault;
+    address payable wethVault; // raspETH
+    address payable rplVault; // xRPL
     address payable depositPool;
     address payable operatorDistributor;
     address payable yieldDistributor;
@@ -113,7 +113,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.uniswapV3Pool;
     }
 
-    function initialize(Protocol memory newProtocol, address treasury) public initializer {
+    function initialize(Protocol memory newProtocol) public initializer {
         require(_protocol.whitelist == address(0) && newProtocol.whitelist != address(0), Constants.INITIALIZATION_ERROR);
         require(_protocol.wethVault == address(0) && newProtocol.wethVault != address(0), Constants.INITIALIZATION_ERROR);
         require(_protocol.rplVault == address(0) && newProtocol.rplVault != address(0), Constants.INITIALIZATION_ERROR);
@@ -125,10 +125,6 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         require(_protocol.rocketStorage == address(0) && newProtocol.rocketStorage != address(0), Constants.INITIALIZATION_ERROR);
         require(_protocol.rocketNodeManager == address(0) && newProtocol.rocketNodeManager != address(0), Constants.INITIALIZATION_ERROR);
         require(_protocol.rocketNodeStaking == address(0) && newProtocol.rocketNodeStaking != address(0), Constants.INITIALIZATION_ERROR);
-        require(_protocol.rplToken == address(0) && newProtocol.rplToken != address(0), Constants.INITIALIZATION_ERROR);
-        require(_protocol.weth == address(0) && newProtocol.weth != address(0), Constants.INITIALIZATION_ERROR);
-        require(_protocol.uniswapV3Pool == address(0) && newProtocol.uniswapV3Pool != address(0), Constants.INITIALIZATION_ERROR);
-        require(_treasury == address(0) && treasury != address(0), Constants.INITIALIZATION_ERROR);
 
         AccessControlUpgradeable.__AccessControl_init();
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
@@ -145,14 +141,14 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.oracle);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.priceFetcher);
 
-        _treasury = treasury;
+        _treasury = msg.sender;
 
         _protocol = newProtocol;
     }
 
-    function setTreasury(address newTreasury) public {
+    function setTreasurer(address newTreasurer) public {
         require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
-        _treasury = newTreasury;
+        _treasury = newTreasurer;
     }
 
     function setOracle(address newOracle) public {
