@@ -12,8 +12,8 @@ import "./Utils/Constants.sol";
 
 struct Protocol {
     address whitelist;
-    address payable wethVault; // raspETH
-    address payable rplVault; // xRPL
+    address payable wethVault;
+    address payable rplVault;
     address payable depositPool;
     address payable operatorDistributor;
     address payable yieldDistributor;
@@ -126,72 +126,31 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.uniswapV3Pool;
     }
 
-    /// @notice Initializes the Directory contract with the addresses of various protocol contracts.
-    /// @param newProtocol A Protocol struct containing addresses of protocol contracts.
-    /// @dev This function sets initial contract addresses and grants admin roles to core protocol contracts.
-    ///      It can only be called once during contract deployment.
-    function initialize(Protocol memory newProtocol) public initializer {
-        require(
-            _protocol.whitelist == address(0) &&
-                newProtocol.whitelist != address(0),
-            Constants.INITIALIZATION_ERROR
-        );
-        require(
-            _protocol.wethVault == address(0) &&
-                newProtocol.wethVault != address(0),
-            Constants.INITIALIZATION_ERROR
-        );
-        require(
-            _protocol.rplVault == address(0) &&
-                newProtocol.rplVault != address(0),
-            Constants.INITIALIZATION_ERROR
-        );
-        require(
-            _protocol.depositPool == address(0) &&
-                newProtocol.depositPool != address(0),
-            Constants.INITIALIZATION_ERROR
-        );
-        require(
-            _protocol.operatorDistributor == address(0) &&
-                newProtocol.operatorDistributor != address(0),
-            Constants.INITIALIZATION_ERROR
-        );
-        require(
-            _protocol.yieldDistributor == address(0) &&
-                newProtocol.yieldDistributor != address(0),
-            Constants.INITIALIZATION_ERROR
-        );
-        require(
-            _protocol.oracle == address(0) && newProtocol.oracle != address(0),
-            Constants.INITIALIZATION_ERROR
-        );
-        require(
-            _protocol.priceFetcher == address(0) &&
-                newProtocol.priceFetcher != address(0),
-            Constants.INITIALIZATION_ERROR
-        );
-        require(
-            _protocol.rocketStorage == address(0) &&
-                newProtocol.rocketStorage != address(0),
-            Constants.INITIALIZATION_ERROR
-        );
-        require(
-            _protocol.rocketNodeManager == address(0) &&
-                newProtocol.rocketNodeManager != address(0),
-            Constants.INITIALIZATION_ERROR
-        );
-        require(
-            _protocol.rocketNodeStaking == address(0) &&
-                newProtocol.rocketNodeStaking != address(0),
-            Constants.INITIALIZATION_ERROR
-        );
+    function initialize(Protocol memory newProtocol, address treasury, address admin) public initializer {
+        require(msg.sender != admin, Constants.INITIALIZATION_ERROR);
+        require(_protocol.whitelist == address(0) && newProtocol.whitelist != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.wethVault == address(0) && newProtocol.wethVault != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.rplVault == address(0) && newProtocol.rplVault != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.depositPool == address(0) && newProtocol.depositPool != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.operatorDistributor == address(0) && newProtocol.operatorDistributor != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.yieldDistributor == address(0) && newProtocol.yieldDistributor != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.oracle == address(0) && newProtocol.oracle != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.priceFetcher == address(0) && newProtocol.priceFetcher != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.rocketStorage == address(0) && newProtocol.rocketStorage != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.rocketNodeManager == address(0) && newProtocol.rocketNodeManager != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.rocketNodeStaking == address(0) && newProtocol.rocketNodeStaking != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.rplToken == address(0) && newProtocol.rplToken != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.weth == address(0) && newProtocol.weth != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.uniswapV3Pool == address(0) && newProtocol.uniswapV3Pool != address(0), Constants.INITIALIZATION_ERROR);
+        require(_treasury == address(0) && treasury != address(0), Constants.INITIALIZATION_ERROR);
 
         AccessControlUpgradeable.__AccessControl_init();
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.TIMELOCK_24_HOUR, Constants.ADMIN_ROLE);
 
-        _grantRole(Constants.ADMIN_ROLE, msg.sender);
+        _grantRole(Constants.ADMIN_ROLE, admin);
+
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.whitelist);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.wethVault);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.rplVault);
@@ -204,17 +163,16 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.oracle);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.priceFetcher);
 
-        _treasury = msg.sender;
+        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
+
+        _treasury = treasury;
 
         _protocol = newProtocol;
     }
 
-    function setTreasurer(address newTreasurer) public {
-        require(
-            hasRole(Constants.ADMIN_ROLE, msg.sender),
-            Constants.ADMIN_ONLY_ERROR
-        );
-        _treasury = newTreasurer;
+    function setTreasury(address newTreasury) public {
+        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
+        _treasury = newTreasury;
     }
 
     function setOracle(address newOracle) public {

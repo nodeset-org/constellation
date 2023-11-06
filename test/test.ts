@@ -35,6 +35,7 @@ export type Protocol = {
 }
 
 export type Signers = {
+	deployer: SignerWithAddress,
 	admin: SignerWithAddress,
 	random: SignerWithAddress,
 	operator: SignerWithAddress,
@@ -107,7 +108,7 @@ export async function getRocketPool(): Promise<RocketPool> {
 }
 
 async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise<Protocol> {
-	const predictedNonce = 9;
+	const predictedNonce = 10;
 	try {
 		upgrades.silenceWarnings();
 		// deploy weth
@@ -137,6 +138,7 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 		const yieldDistributor = await ethers.getContractAt("YieldDistributor", yieldDistributorProxyAbi.address);
 		const oracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
 		const priceFetcher = await upgrades.deployProxy(await ethers.getContractFactory("PriceFetcher"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+		const adminTreasury = await upgrades.deployProxy(await ethers.getContractFactory("AdminTreasury"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 		const directoryProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("Directory"),
 		[
 			[
@@ -154,7 +156,9 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 				rocketPool.rplContract.address,
 				wETH.address,
 				uniswapV3Pool.address
-			]
+			],
+			adminTreasury.address,
+			signers.admin.address,
 		], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 		const finalNonce = await deployer.getTransactionCount();
 		const directory = await ethers.getContractAt("Directory", directoryProxyAbi.address);
@@ -163,15 +167,19 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 
 		// set adminServer to be ADMIN_SERVER_ROLE
 		const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
-		await directory.grantRole(ethers.utils.arrayify(adminRole), signers.adminServer.address);
+		await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(adminRole), signers.adminServer.address);
 
 		// set timelock to be TIMELOCK_ROLE
 		const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_24_HOUR"));
-		await directory.grantRole(ethers.utils.arrayify(timelockRole), signers.admin.address);
+		await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRole), signers.admin.address);
 
 		// set protocolSigner to be PROTOCOL_ROLE
 		const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
-		await directory.grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
+		await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
+
+		// set directory treasury to deployer to prevent tests from failing
+		expect(await directory.getTreasuryAddress()).to.equal(adminTreasury.address);
+		await directory.connect(signers.admin).setTreasury(deployer.address);
 
 		const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, oracle, priceFetcher, wETH };
 
@@ -194,7 +202,8 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 async function createSigners(): Promise<Signers> {
 	const signersArray: SignerWithAddress[] = (await ethers.getSigners());
 	return {
-		admin: signersArray[0], // contracts are deployed using the first signer/account by default
+		deployer: signersArray[0],
+		admin: signersArray[13], // contracts are deployed using the first signer/account by default
 		random: signersArray[1],
 		operator: signersArray[2],
 		random2: signersArray[3],

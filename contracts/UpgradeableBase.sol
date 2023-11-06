@@ -55,7 +55,7 @@ abstract contract UpgradeableBase is UUPSUpgradeable, ReentrancyGuard {
         _;
     }
 
-    function getDirectory() internal view returns (Directory) {
+    function getDirectory() public view returns (Directory) {
         return _directory;
     }
 
