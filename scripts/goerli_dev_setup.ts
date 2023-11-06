@@ -1,3 +1,4 @@
+import fs from 'fs';
 import { ethers, upgrades } from "hardhat";
 import { getRocketPool, protocolFixture, protocolParams } from "../test/test";
 import { setDefaultParameters } from "../test/rocketpool/_helpers/defaults";
@@ -133,8 +134,31 @@ async function main() {
                 uniswapV3Pool.address
             ]
         ], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+        console.log("directoryProxyAbi address", directoryProxyAbi.address)
 
-    console.log("directoryProxyAbi address", directoryProxyAbi.address)
+      // const directoryProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("Directory"),
+      // Object.values(contractAddresses), { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+      
+    const contractAddresses = {
+      WHITELIST: whitelist.address,
+      VCWETH: vCWETH.address,
+      VCRPL: vCRPL.address,
+      DEPOSIT_POOL: depositPool.address,
+      OPERATOR_DISTRIBUTOR: operatorDistributor.address,
+      YIELD_DISTRIBUTOR: yieldDistributor.address,
+      ORACLE: oracle.address,
+      PRICE_FETCHER: priceFetcher.address,
+      ROCK_STORAGE_CONTRACT: rockStorageContract.address,
+      ROCKET_NODE_MANAGER_CONTRACT: rocketNodeManagerContract.address,
+      ROCKET_NODE_STAKING_CONTRACT: rocketNodeStakingContract.address,
+      RPL_CONTRACT: rplContract.address,
+      WETH: wETH.address,
+      UNISWAP_V3_POOL: uniswapV3Pool.address,
+    };
+
+     // Save the formatted variable names and addresses to a file in NAME=VALUE format
+    const dataToSave = Object.keys(contractAddresses).map((name) => `${name}=${contractAddresses[name]}`);
+    fs.writeFileSync('contract_addresses.env', dataToSave.join('\n'));
 
     // wait for directory deploy to be mined
     await directoryProxyAbi.deployTransaction.wait();
