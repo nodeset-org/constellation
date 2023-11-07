@@ -32,7 +32,7 @@ contract OperatorDistributor is UpgradeableBase {
     address[] public minipoolAddresses;
 
     uint256 public nextMinipoolHavestIndex;
-    uint256 public targetStakeRatio; // 150%
+    uint256 public targetStakeRatio;
 
     uint256 public numMinipoolsProcessedPerInterval;
 
@@ -57,7 +57,7 @@ contract OperatorDistributor is UpgradeableBase {
         address _rocketStorageAddress
     ) public override initializer {
         super.initialize(_rocketStorageAddress);
-        targetStakeRatio = 1.5e18;
+        targetStakeRatio = 1.5e18; // 150%
         numMinipoolsProcessedPerInterval = 1;
 
         // defaulting these to 8eth to only allow LEB8 minipools
