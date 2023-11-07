@@ -45,4 +45,5 @@ library Constants {
         "OperatorDistributor: minipool must be registered in smoothing pool";
     string public constant INSUFFICIENT_ETH_IN_QUEUE_ERROR =
         "OperatorDistributor: insufficient ETH in queue";
+    string public constant BAD_BOND_BOUNDS = "OperatorDistributor: Bad bond bounds";
 }

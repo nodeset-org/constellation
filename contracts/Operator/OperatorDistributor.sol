@@ -448,6 +448,12 @@ contract OperatorDistributor is UpgradeableBase {
         numMinipoolsProcessedPerInterval = _numMinipoolsProcessedPerInterval;
     }
 
+    function setBondRequirments(uint256 _upperBound, uint256 _lowerBound) onlyAdmin external {
+        require(_upperBound >= _lowerBound && _lowerBound <= _upperBound, Constants.BAD_BOND_BOUNDS);
+        upperBondRequirement = _upperBound;
+        lowerBondRequirement = _lowerBound;
+    }
+
     /**
      * @notice Retrieves the list of minipool addresses managed by the contract.
      * @dev This function provides a way to fetch all the current minipool addresses in memory.
