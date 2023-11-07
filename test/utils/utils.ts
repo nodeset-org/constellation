@@ -96,13 +96,13 @@ export async function upgradePriceFetcherToMock(protocol: Protocol, price: BigNu
     await priceFetcherV2.setPrice(price);
 };
 
-export async function removeFeesOnRPLVault(protocol: Protocol) {
-    await protocol.vCRPL.setFees(0, 0);
+export async function removeFeesOnRPLVault(setupData: SetupData) {
+    await setupData.protocol.vCRPL.connect(setupData.signers.admin).setFees(0, 0);
 }
 
-export async function removeFeesOnBothVaults(protocol: Protocol) {
-    await protocol.vCRPL.setFees(0, 0);
-    await protocol.vCWETH.setFees(0, 0, 0, 0);
+export async function removeFeesOnBothVaults(setupData: SetupData) {
+    await setupData.protocol.vCRPL.connect(setupData.signers.admin).setFees(0, 0);
+    await setupData.protocol.vCWETH.connect(setupData.signers.admin).setFees(0, 0, 0, 0);
 }
 
 export const registerNewValidator = async (setupData: SetupData, nodeOperators: SignerWithAddress[]) => {

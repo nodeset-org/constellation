@@ -8,7 +8,7 @@ describe("Directory", function () {
 
   it("Returns correct default treasury address", async function () {
     const { protocol, signers } = await protocolFixture();
-    expect(await protocol.directory.getTreasuryAddress()).equal(signers.admin.address);
+    expect(await protocol.directory.getTreasuryAddress()).equal(signers.deployer.address);
   });
 
 });

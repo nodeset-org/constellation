@@ -19,9 +19,9 @@ describe("Yield Distributor", function () {
   async function simulateYield(setupData: SetupData, yieldAmountEth: BigNumber) {
     const { protocol, signers, rocketPool: rp } = setupData;
 
-    await protocol.whitelist.addOperator(signers.random.address);
-    await protocol.whitelist.addOperator(signers.random2.address);
-    await protocol.whitelist.addOperator(signers.random3.address);
+    await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address);
+    await protocol.whitelist.connect(signers.admin).addOperator(signers.random2.address);
+    await protocol.whitelist.connect(signers.admin).addOperator(signers.random3.address);
 
     // simulate yield from validator
     await signers.ethWhale.sendTransaction({ to: protocol.yieldDistributor.address, value: yieldAmountEth});

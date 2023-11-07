@@ -10,12 +10,13 @@ describe("xrETH", function () {
 
   // add tests for deposit and withdraw
   it("fail - cannot deposit 1 eth at 50 rpl and 500 rpl, tvl ratio returns ~15%", async () => {
-    const { protocol, signers, rocketPool } = await protocolFixture();
+    const setupData = await protocolFixture();
+    const { protocol, signers, rocketPool } = setupData;
 
     const depositAmountEth = ethers.utils.parseEther("1");
     await signers.ethWhale.sendTransaction({ to: protocol.depositPool.address, value: depositAmountEth });
 
-    await removeFeesOnRPLVault(protocol);
+    await removeFeesOnRPLVault(setupData);
 
     const depositAmountRpl = ethers.utils.parseEther("500");
     await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, depositAmountRpl);
@@ -36,12 +37,13 @@ describe("xrETH", function () {
   })
 
   it("success - can deposit 5 eth at 50 rpl and 500 rpl, tvl ratio returns ~15%", async () => {
-    const { protocol, signers, rocketPool } = await protocolFixture();
+    const setupData = await protocolFixture();
+    const { protocol, signers, rocketPool } = setupData;
 
     const depositAmountEth = ethers.utils.parseEther("5");
     await signers.ethWhale.sendTransaction({ to: protocol.depositPool.address, value: depositAmountEth });
 
-    await removeFeesOnBothVaults(protocol);
+    await removeFeesOnBothVaults(setupData);
 
     const depositAmountRpl = ethers.utils.parseEther("500");
     await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, depositAmountRpl);
@@ -72,7 +74,7 @@ describe("xrETH", function () {
       const { protocol, signers } = await protocolFixture();
 
       const tvlCoverageRatio = ethers.utils.parseEther("0.1542069");
-      await protocol.vCWETH.setRplCoverageRatio(tvlCoverageRatio);
+      await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(tvlCoverageRatio);
 
       const tvlCoverageRatioFromContract = await protocol.vCWETH.rplCoverageRatio();
       expect(tvlCoverageRatioFromContract).equals(tvlCoverageRatio);
