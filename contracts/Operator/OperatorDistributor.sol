@@ -16,6 +16,7 @@ import "../Interfaces/RocketPool/IRocketNodeStaking.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract OperatorDistributor is UpgradeableBase {
+
     event MinipoolCreated(
         address indexed _minipoolAddress,
         address indexed _nodeAddress
@@ -34,6 +35,9 @@ contract OperatorDistributor is UpgradeableBase {
     uint256 public targetStakeRatio; // 150%
 
     uint256 public numMinipoolsProcessedPerInterval;
+
+    uint256 public upperBondRequirement;
+    uint256 public lowerBondRequirement;
 
     mapping(address => uint256) public minipoolIndexMap;
     mapping(address => uint256) public minipoolAmountFundedEth;
@@ -55,6 +59,10 @@ contract OperatorDistributor is UpgradeableBase {
         super.initialize(_rocketStorageAddress);
         targetStakeRatio = 1.5e18;
         numMinipoolsProcessedPerInterval = 1;
+
+        // defaulting these to 8eth to only allow LEB8 minipools
+        upperBondRequirement = 8 ether;
+        lowerBondRequirement = 8 ether;
     }
 
     /**
@@ -236,6 +244,16 @@ contract OperatorDistributor is UpgradeableBase {
     }
 
     /**
+     *
+     */
+    function validateBondRequirements(uint256 bond) public view {
+        require(
+            bond >= lowerBondRequirement && bond <= upperBondRequirement,
+            Constants.MINIPOOL_INVALID_BOND_ERROR
+        );
+    }
+
+    /**
      * @notice Reimburses a node for minipool creation, validates the minipool and handles necessary staking.
      * @dev The function goes through multiple validation steps:
      * 1. Checks if the node is in the whitelist.
@@ -261,10 +279,7 @@ contract OperatorDistributor is UpgradeableBase {
 
         uint256 bond = minipool.getNodeDepositBalance();
 
-        require(
-            bond == 8 ether,
-            Constants.MINIPOOL_NOT_LEB8_ERROR
-        );
+        validateBondRequirements(bond);
 
         // validate that the newMinipoolAdress was signed by the admin address
         bytes32 messageHash = keccak256(abi.encode(newMinipoolAdress));

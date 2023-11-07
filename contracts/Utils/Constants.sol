@@ -37,6 +37,8 @@ library Constants {
         "OperatorDistributor: minipool node operator not in whitelist";
     string public constant MINIPOOL_NOT_LEB8_ERROR =
         "OperatorDistributor: minipool must be LEB8";
+    string public constant MINIPOOL_INVALID_BOND_ERROR =
+        "OperatorDistributor: minipool must have a valid bond";
     string public constant BAD_ADMIN_SERVER_SIGNATURE_ERROR =
         "OperatorDistributor: invalid signature";
     string public constant MINIPOOL_NOT_REGISTERED_ERROR =
