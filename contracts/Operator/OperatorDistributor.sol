@@ -6,6 +6,8 @@ import "../Whitelist/Whitelist.sol";
 import "../DepositPool.sol";
 import "../PriceFetcher.sol";
 
+import "../Utils/Constants.sol";
+
 import "../Interfaces/RocketPool/IRocketStorage.sol";
 import "../Interfaces/RocketPool/IMinipool.sol";
 import "../Interfaces/RocketPool/IRocketNodeManager.sol";
@@ -254,7 +256,14 @@ contract OperatorDistributor is UpgradeableBase {
         Whitelist whitelist = Whitelist(getDirectory().getWhitelistAddress());
         require(
             whitelist.getIsAddressInWhitelist(nodeAddress),
-            "OperatorDistributor: minipool node operator not in whitelist"
+            Constants.MINIPOOL_NODE_NOT_WHITELISTED_ERROR
+        );
+
+        uint256 bond = minipool.getNodeDepositBalance();
+
+        require(
+            bond == 8 ether,
+            Constants.MINIPOOL_NOT_LEB8_ERROR
         );
 
         // validate that the newMinipoolAdress was signed by the admin address
@@ -265,7 +274,7 @@ contract OperatorDistributor is UpgradeableBase {
         address signer = ECDSA.recover(ethSignedMessageHash, sig);
         require(
             _directory.hasRole(Constants.ADMIN_SERVER_ROLE, signer),
-            "OperatorDistributor: invalid signature"
+            Constants.BAD_ADMIN_SERVER_SIGNATURE_ERROR
         );
 
         _validateWithdrawalAddress(nodeAddress);
@@ -276,15 +285,11 @@ contract OperatorDistributor is UpgradeableBase {
 
         require(
             nodeManager.getSmoothingPoolRegistrationState(nodeAddress),
-            "OperatorDistributor: minipool must be registered in smoothing pool"
+            Constants.MINIPOOL_NOT_REGISTERED_ERROR
         );
 
-        uint256 bond = minipool.getNodeDepositBalance();
 
-        require(
-            _queuedEth >= bond,
-            "OperatorDistributor: insufficient ETH in queue"
-        );
+        require(_queuedEth >= bond, Constants.INSUFFICIENT_ETH_IN_QUEUE_ERROR);
 
         uint256 numValidators = Whitelist(_directory.getWhitelistAddress())
             .getNumberOfValidators(nodeAddress);
