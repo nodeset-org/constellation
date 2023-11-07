@@ -85,12 +85,12 @@ export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: 
     return await ethers.getContractAt("RocketMinipoolInterface", mockMinipool.address);
 }
 
-export async function upgradePriceFetcherToMock(protocol: Protocol, price: BigNumber) {
+export async function upgradePriceFetcherToMock(signers: Signers, protocol: Protocol, price: BigNumber) {
     const mockPriceFetcherFactory = await ethers.getContractFactory("MockPriceFetcher");
     const mockPriceFetcher = await mockPriceFetcherFactory.deploy();
     await mockPriceFetcher.deployed();
 
-    await protocol.priceFetcher.upgradeTo(mockPriceFetcher.address);
+    await protocol.priceFetcher.connect(signers.admin).upgradeTo(mockPriceFetcher.address);
 
     const priceFetcherV2 = await ethers.getContractAt("MockPriceFetcher", protocol.priceFetcher.address);
     await priceFetcherV2.setPrice(price);
@@ -140,7 +140,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         // admin will reimburse the node operator for the minipool
         let operatorData = await setupData.protocol.whitelist.getOperatorAtAddress(nodeOperator.address);
         const lastCount = operatorData.currentValidatorCount;
-        await setupData.protocol.operatorDistributor.reimburseNodeForMinipool(sig, mockMinipool.address);
+        await setupData.protocol.operatorDistributor.connect(setupData.signers.admin).reimburseNodeForMinipool(sig, mockMinipool.address);
         operatorData = await setupData.protocol.whitelist.getOperatorAtAddress(nodeOperator.address);
         expect(operatorData.currentValidatorCount).to.equal(lastCount + 1);
     }

@@ -67,7 +67,7 @@ describe("Whitelist", function () {
     it("Anyone can read from operator list", async function () {
         const { protocol, signers } = await protocolFixture();
 
-        await protocol.whitelist.addOperator(signers.random.address);
+        await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address);
 
         const operator: OperatorStruct = await protocol.whitelist.connect(signers.random)
             .getOperatorAtAddress(signers.random.address);
@@ -122,7 +122,7 @@ describe("Whitelist", function () {
 
         await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address);
 
-        await expect(protocol.whitelist.removeOperator(signers.random.address))
+        await expect(protocol.whitelist.connect(signers.admin).removeOperator(signers.random.address))
             .to.emit(protocol.whitelist, "OperatorRemoved").withArgs(signers.random.address);
 
         await expect(protocol.whitelist.getOperatorAtAddress(signers.random.address))
@@ -157,7 +157,7 @@ describe("Whitelist", function () {
 
         await protocol.whitelist.connect(signers.admin).addOperators([signers.random.address, signers.random2.address]);
 
-        await expect(protocol.whitelist.removeOperators([signers.random.address, signers.random2.address]))
+        await expect(protocol.whitelist.connect(signers.admin).removeOperators([signers.random.address, signers.random2.address]))
             .to.emit(protocol.whitelist, 'OperatorsRemoved').withArgs([signers.random.address, signers.random2.address]);
     });
 

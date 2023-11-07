@@ -28,7 +28,7 @@ describe("xrETH", function () {
     const totalAssetRPL = await protocol.vCRPL.totalAssets();
     expect(totalAssetRPL).equals(depositAmountRpl);
 
-    await upgradePriceFetcherToMock(protocol, ethers.utils.parseEther("50"));
+    await upgradePriceFetcherToMock(signers, protocol, ethers.utils.parseEther("50"));
 
     const tvlRatio = await protocol.vCWETH.tvlRatioEthRpl();
     expect(tvlRatio).equals(ethers.utils.parseEther("0.1"));
@@ -55,7 +55,7 @@ describe("xrETH", function () {
     const totalAssetRPL = await protocol.vCRPL.totalAssets();
     expect(totalAssetRPL).equals(depositAmountRpl);
 
-    await upgradePriceFetcherToMock(protocol, ethers.utils.parseEther("50"));
+    await upgradePriceFetcherToMock(signers, protocol, ethers.utils.parseEther("50"));
 
     const tvlRatio = await protocol.vCWETH.tvlRatioEthRpl();
     expect(tvlRatio).equals(ethers.utils.parseEther("0.5"));
