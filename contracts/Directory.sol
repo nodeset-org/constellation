@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "./Interfaces/RocketTokenRPLInterface.sol";
 import "./Interfaces/Oracles/IXRETHOracle.sol";
 import "./Interfaces/RocketPool/IRocketStorage.sol";
+import "./Interfaces/ISanctions.sol";
 import "./UpgradeableBase.sol";
 import "./Utils/Constants.sol";
 
@@ -25,6 +26,7 @@ struct Protocol {
     address rplToken;
     address payable weth;
     address uniswapV3Pool;
+    address sanctions;
 }
 
 /// @custom:security-contact info@nodeoperator.org
@@ -143,6 +145,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         require(_protocol.weth == address(0) && newProtocol.weth != address(0), Constants.INITIALIZATION_ERROR);
         require(_protocol.uniswapV3Pool == address(0) && newProtocol.uniswapV3Pool != address(0), Constants.INITIALIZATION_ERROR);
         require(_treasury == address(0) && treasury != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.sanctions == address(0) && newProtocol.sanctions != address(0), Constants.INITIALIZATION_ERROR);
 
         AccessControlUpgradeable.__AccessControl_init();
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
