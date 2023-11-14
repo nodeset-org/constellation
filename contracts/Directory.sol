@@ -196,4 +196,8 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         );
         _protocol = newProtocol;
     }
+
+    function validate(address _account) returns(bool) {
+        return ISanctions(_protocol.sanctions).isSanctioned(_account);
+    }
 }
