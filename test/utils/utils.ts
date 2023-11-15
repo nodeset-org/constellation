@@ -9,6 +9,8 @@ import { createMinipool, getMinipoolMinimumRPLStake } from "../rocketpool/_helpe
 import { nodeStakeRPL, registerNode } from "../rocketpool/_helpers/node";
 import { mintRPL } from "../rocketpool/_helpers/tokens";
 import { userDeposit } from "../rocketpool/_helpers/deposit";
+import { ContractTransaction } from "@ethersproject/contracts";
+import { Contract, EventFilter, utils } from 'ethers';
 
 // optionally include the names of the accounts
 export const printBalances = async (accounts: string[], opts: any = {}) => {
@@ -189,4 +191,27 @@ export async function getNextContractAddress(signer: SignerWithAddress, offset =
     const contractAddress = '0x' + contractAddressHash.slice(-40);
 
     return contractAddress;
+}
+
+export async function getEventNames(tx: ContractTransaction, contract: Contract): Promise<string[]> {
+    let emittedEvents: string[] = [];
+    let emittedArgs: any[] = [];
+
+    const receipt = await tx.wait();
+
+    if (receipt.events) {
+        for (let i = 0; i < receipt.events.length; i++) {
+            const event = receipt.events[i];
+            if(event.event) { // Check if event name is available
+                emittedEvents.push(event.event);
+            } else if(event.topics && event.topics.length > 0) { // Decode the raw log
+                const eventDescription = contract.interface.getEvent(event.topics[0]);
+                emittedEvents.push(eventDescription.name);
+                const decodedData = contract.interface.decodeEventLog(eventDescription, event.data, event.topics);
+                emittedArgs.push(decodedData)
+            }
+        }
+    }
+
+    return emittedEvents
 }

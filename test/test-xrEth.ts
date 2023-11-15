@@ -4,7 +4,8 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { removeFeesOnBothVaults, removeFeesOnRPLVault, upgradePriceFetcherToMock } from "./utils/utils";
+import { getEventNames, removeFeesOnBothVaults, removeFeesOnRPLVault, upgradePriceFetcherToMock } from "./utils/utils";
+import { ContractTransaction } from "@ethersproject/contracts";
 
 describe("xrETH", function () {
 
@@ -87,5 +88,34 @@ describe("xrETH", function () {
       await expect(protocol.vCWETH.connect(signers.ethWhale).setRplCoverageRatio(tvlCoverageRatio)).to.be.revertedWith("Can only be called by admin address!");
     });
   });
+
+  describe.only("sanctions checks", () => {
+
+    it("success - allows deposits from non-sanctioned senders and origins", async () => {
+      const { protocol, signers } = await protocolFixture();
+
+      const depositAmountEth = ethers.utils.parseEther("5");
+
+      await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmountEth });
+      await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, depositAmountEth);
+      const tx = await protocol.vCWETH.connect(signers.ethWhale).deposit(depositAmountEth, signers.ethWhale.address);
+      const events = await getEventNames(tx, protocol.directory);
+      expect(events.includes("SanctionViolation")).equals(false);
+    })
+
+    it("fail - should fail siliently with event logging", async () => {
+      const { protocol, signers } = await protocolFixture();
+
+      const depositAmountEth = ethers.utils.parseEther("5");
+
+      await protocol.sanctions.addBlacklist(signers.ethWhale.address);
+
+      await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmountEth });
+      await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, depositAmountEth);
+      const tx = await protocol.vCWETH.connect(signers.ethWhale).deposit(depositAmountEth, signers.ethWhale.address);
+      const events = await getEventNames(tx, protocol.directory);
+      expect(events.includes("SanctionViolation")).equals(true);
+    })
+  })
 
 });
