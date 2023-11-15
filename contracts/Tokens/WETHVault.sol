@@ -166,6 +166,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 assets,
         uint256 shares
     ) internal virtual override {
+        if(_directory.isSanctioned(caller, receiver)) {
+            return;
+        }
+
         require(
             enforceRplCoverageRatio && tvlRatioEthRpl() >= rplCoverageRatio,
             "insufficient RPL coverage"
@@ -233,6 +237,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 assets,
         uint256 shares
     ) internal virtual override {
+        if(_directory.isSanctioned(caller, receiver)) {
+            return;
+        }
+
         uint256 fee1 = _feeOnRaw(assets, takerFee1BasePoint);
         uint256 fee2 = _feeOnRaw(assets, takerFee2BasePoint);
         address recipient1 = _directory.getTreasuryAddress();

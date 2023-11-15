@@ -34,6 +34,11 @@ struct Protocol {
 /// @dev The Directory contract is a central component of the protocol, managing contract addresses and access control roles.
 ///      It provides the ability to set contract addresses during initialization, manage treasury, and update the Oracle contract.
 contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
+
+    event SanctionViolation(address account, address eoa_origin);
+
+    event SanctionViolation(address eoa_origin);
+
     Protocol private _protocol;
     address private _treasury;
 
@@ -197,7 +202,35 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _protocol = newProtocol;
     }
 
-    function validate(address _account) public returns(bool) {
-        return ISanctions(_protocol.sanctions).isSanctioned(_account);
+    function isSanctioned(address _account) public returns(bool) {
+        address[] memory accounts = new address[](1);
+        accounts[0] = _account;
+        return _checkSanctions(accounts);
+    }
+
+    function isSanctioned(address _account1, address _account2) public returns(bool) {
+        address[] memory accounts = new address[](2);
+        accounts[0] = _account1;
+        accounts[1] = _account2;
+        return _checkSanctions(accounts);
+    }
+
+    function isSanctioned(address[] memory _accounts) public returns(bool) {
+        return _checkSanctions(_accounts);
+    }
+
+    function _checkSanctions(address[] memory _accounts) internal returns(bool) {
+        bool sanctioned = false;
+        for(uint i = 0; i < _accounts.length; i++) {
+            if(_accounts[i] != address(0) && ISanctions(_protocol.sanctions).isSanctioned(_accounts[i])) {
+                emit SanctionViolation(_accounts[i], tx.origin);
+                sanctioned = true;
+            }
+        }
+        if(sanctioned || ISanctions(_protocol.sanctions).isSanctioned(tx.origin)) {
+            emit SanctionViolation(tx.origin);
+            return true;
+        }
+        return false;
     }
 }
