@@ -4,146 +4,86 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-
-export async function mint_xrEth(setupData: SetupData, from: SignerWithAddress, amount: BigNumber) {
-  const { protocol, signers } = setupData;
-    
-  return from.sendTransaction({ to: protocol.xrETH.address, value: amount, gasLimit: 1000000 });
-}
+import { removeFeesOnBothVaults, removeFeesOnRPLVault, upgradePriceFetcherToMock } from "./utils/utils";
 
 describe("xrETH", function () {
 
-  describe("Mint", function () {
+  // add tests for deposit and withdraw
+  it("fail - cannot deposit 1 eth at 50 rpl and 500 rpl, tvl ratio returns ~15%", async () => {
+    const { protocol, signers, rocketPool } = await protocolFixture();
 
-    it("Mins below minimum revert", async function () {
-      const setupData = await loadFixture(protocolFixture);
-      const { protocol, signers } = setupData;
+    const depositAmountEth = ethers.utils.parseEther("1");
+    await signers.ethWhale.sendTransaction({ to: protocol.depositPool.address, value: depositAmountEth });
 
-      let amount = (await protocol.xrETH.getMinimumStakeAmount()).sub(BigNumber.from(1));
-      await expect(mint_xrEth(setupData, signers.random, amount))
-        .to.be.revertedWith(await protocol.xrETH.getMinimumStakeError());
-    });
+    await removeFeesOnRPLVault(protocol);
 
-    it("Mints >= minimum succeed", async function () {
-      const setupData = await loadFixture(protocolFixture);
-      const { protocol, signers } = setupData;
+    const depositAmountRpl = ethers.utils.parseEther("500");
+    await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, depositAmountRpl);
+    await protocol.vCRPL.connect(signers.rplWhale).deposit(depositAmountRpl, signers.rplWhale.address);
 
-      let amount = ethers.utils.parseEther("100");
-      const tx = mint_xrEth(setupData, signers.random, amount);
-      await expect(tx).to.changeEtherBalance(signers.random, amount.mul(-1));
-      await expect(tx).to.changeTokenBalance(protocol.xrETH, signers.random, amount);
-      await expect(tx).to.emit(protocol.xrETH, "Transfer").withArgs("0x0000000000000000000000000000000000000000", signers.random.address, amount);
-    });
-  });
-  
-  describe("Transfer", function () {
-    it("Holder can send token", async function () {
-      const setupData = await loadFixture(protocolFixture);
-      const { protocol, signers } = setupData;
-  
-      let amount = ethers.utils.parseEther("100");
-      await expect(mint_xrEth(setupData, signers.random, amount)).to.not.be.reverted;
-  
-      const tx = protocol.xrETH.connect(signers.random).transfer(signers.random2.address, amount);
-      await expect(tx).to.changeTokenBalances(protocol.xrETH, [signers.random, signers.random2], [amount.mul(-1), amount]);
-      await expect(tx).to.emit(protocol.xrETH, "Transfer").withArgs(signers.random.address, signers.random2.address, amount);
-    });
-  
-    it("Unapproved address cannot send token on behalf of other address", async function () {
-      const setupData = await loadFixture(protocolFixture);
-      const { protocol, signers } = setupData;
-  
-      let amount = ethers.utils.parseEther("100");
-      await expect(mint_xrEth(setupData, signers.random, amount)).to.not.be.reverted;
-  
-      await expect(protocol.xrETH.connect(signers.random2).transferFrom(signers.random.address, signers.random2.address, amount))
-        .to.be.revertedWith("ERC20: insufficient allowance");
-    });
+    const totalAssetETH = await protocol.vCWETH.totalAssets();
+    expect(totalAssetETH).equals(depositAmountEth);
 
-    it("Approved address can send token on behalf of other address", async function () {
-      const setupData = await loadFixture(protocolFixture);
-      const { protocol, signers } = setupData;
-  
-      let amount = ethers.utils.parseEther("100");
-      await expect(mint_xrEth(setupData, signers.random, amount)).to.not.be.reverted;
-  
-      protocol.xrETH.connect(signers.random).approve(signers.random2.address, amount);
-  
-      const tx = protocol.xrETH.connect(signers.random2).transferFrom(signers.random.address, signers.random2.address, amount);
+    const totalAssetRPL = await protocol.vCRPL.totalAssets();
+    expect(totalAssetRPL).equals(depositAmountRpl);
 
-      await expect(tx).to.changeTokenBalances(protocol.xrETH, [signers.random, signers.random2], [amount.mul(-1), amount]);
-      await expect(tx).to.emit(protocol.xrETH, "Transfer").withArgs(signers.random.address, signers.random2.address, amount);
-    });
+    await upgradePriceFetcherToMock(protocol, ethers.utils.parseEther("50"));
+
+    const tvlRatio = await protocol.vCWETH.tvlRatioEthRpl();
+    expect(tvlRatio).equals(ethers.utils.parseEther("0.1"));
+
+    await expect(protocol.vCWETH.connect(signers.ethWhale).deposit(depositAmountEth, signers.ethWhale.address)).to.be.revertedWith("insufficient RPL coverage");
+  })
+
+  it("success - can deposit 5 eth at 50 rpl and 500 rpl, tvl ratio returns ~15%", async () => {
+    const { protocol, signers, rocketPool } = await protocolFixture();
+
+    const depositAmountEth = ethers.utils.parseEther("5");
+    await signers.ethWhale.sendTransaction({ to: protocol.depositPool.address, value: depositAmountEth });
+
+    await removeFeesOnBothVaults(protocol);
+
+    const depositAmountRpl = ethers.utils.parseEther("500");
+    await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, depositAmountRpl);
+    await protocol.vCRPL.connect(signers.rplWhale).deposit(depositAmountRpl, signers.rplWhale.address);
+
+    const totalAssetETH = await protocol.vCWETH.totalAssets();
+    expect(totalAssetETH).equals(depositAmountEth);
+
+    const totalAssetRPL = await protocol.vCRPL.totalAssets();
+    expect(totalAssetRPL).equals(depositAmountRpl);
+
+    await upgradePriceFetcherToMock(protocol, ethers.utils.parseEther("50"));
+
+    const tvlRatio = await protocol.vCWETH.tvlRatioEthRpl();
+    expect(tvlRatio).equals(ethers.utils.parseEther("0.5"));
+
+    await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmountEth });
+    await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, depositAmountEth);
+    await protocol.vCWETH.connect(signers.ethWhale).deposit(depositAmountEth, signers.ethWhale.address);
+
+    const totalAssetETHAfterDeposit = await protocol.vCWETH.totalAssets();
+
+    expect(totalAssetETHAfterDeposit).equals(depositAmountEth.mul(2));
   });
 
-  describe("Burn", function () {
-    it("Revert if burn amount exceeds balance", async function () {
-      const setupData = await loadFixture(protocolFixture);
-      const { protocol, signers } = setupData;
+  describe("admin functions", () => {
+    it("success - admin can set tvlCoverageRatio", async () => {
+      const { protocol, signers } = await protocolFixture();
 
-      let amount = ethers.utils.parseEther("100");
+      const tvlCoverageRatio = ethers.utils.parseEther("0.1542069");
+      await protocol.vCWETH.setRplCoverageRatio(tvlCoverageRatio);
 
-      await expect(mint_xrEth(setupData, signers.random, amount)).to.not.be.reverted;
-
-      await expect(protocol.xrETH.connect(signers.random).burn(amount.add(1)))
-        .to.be.revertedWith("ERC20: burn amount exceeds balance");
+      const tvlCoverageRatioFromContract = await protocol.vCWETH.rplCoverageRatio();
+      expect(tvlCoverageRatioFromContract).equals(tvlCoverageRatio);
     });
 
-    it("Burn reverts if the DepositPool lacks enough ETH", async function () {
-      const setupData = await loadFixture(protocolFixture);
-      const { protocol, signers } = setupData;
+    it("fail - non-admin cannot set tvlCoverageRatio", async () => {
+      const { protocol, signers } = await protocolFixture();
 
-      let amount = ethers.utils.parseEther("100");
-      await expect(mint_xrEth(setupData, signers.random, amount)).to.not.be.reverted;
-    
-      await expect(protocol.xrETH.connect(signers.random).burn(amount))
-        .to.be.revertedWith(await protocol.depositPool.NOT_ENOUGH_ETH_ERROR());
+      const tvlCoverageRatio = ethers.utils.parseEther("0.1542069");
+      await expect(protocol.vCWETH.connect(signers.ethWhale).setRplCoverageRatio(tvlCoverageRatio)).to.be.revertedWith("Can only be called by admin address!");
     });
-   
-    it("Valid burn gives equivalent amount of ETH when redemption value is 1", async function () {
-      const setupData = await loadFixture(protocolFixture);
-      const { protocol, signers } = setupData;
-
-      let mintAmount = ethers.utils.parseEther("100");
-      await expect(mint_xrEth(setupData, signers.random, mintAmount)).to.not.be.reverted;
-
-      let burnAmount = (await protocol.depositPool.getMaxEthBalance()).sub(1);
-
-      const tx = protocol.xrETH.connect(signers.random).burn(burnAmount);
-      await expect(tx).to.changeTokenBalance(protocol.xrETH, signers.random, burnAmount.mul(-1));
-      await expect(tx).to.changeEtherBalance(signers.random, burnAmount);
-      await expect(tx).to.emit(protocol.xrETH, "Transfer").withArgs(signers.random.address, "0x0000000000000000000000000000000000000000", burnAmount);
-    });
-
-    it("Unapproved address cannot burn on behalf of other address", async function () {
-      const setupData = await loadFixture(protocolFixture);
-      const { protocol, signers } = setupData;
-  
-      let amount = ethers.utils.parseEther("100");
-      await expect(mint_xrEth(setupData, signers.random, amount)).to.not.be.reverted;
-  
-      await expect(protocol.xrETH.connect(signers.random2).burnFrom(signers.random.address, amount))
-        .to.be.revertedWith("ERC20: insufficient allowance");
-    });
-
-    it("Approved address can burn on behalf of other address", async function () {
-      const setupData = await loadFixture(protocolFixture);
-      const { protocol, signers } = setupData;
-  
-      let mintAmount = ethers.utils.parseEther("100");
-      await expect(mint_xrEth(setupData, signers.random, mintAmount)).to.not.be.reverted;
-  
-      let burnAmount = (await protocol.depositPool.getMaxEthBalance()).sub(1);
-      protocol.xrETH.connect(signers.random).approve(signers.random2.address, burnAmount);    
-  
-      const tx = protocol.xrETH.connect(signers.random2).burnFrom(signers.random.address, burnAmount);
-      await expect(tx).to.changeTokenBalance(protocol.xrETH, signers.random, burnAmount.mul(-1));
-      await expect(tx).to.changeEtherBalance(signers.random, burnAmount)
-      await expect(tx).to.emit(protocol.xrETH, "Transfer").withArgs(signers.random.address, "0x0000000000000000000000000000000000000000", burnAmount);
-    });
-  });  
-
-  it.skip("Redemption value adjusts correctly for yield", async function () {
-    expect.fail();
   });
+
 });
