@@ -1,4 +1,4 @@
-pragma solidity 0.7.6;
+pragma solidity >0.5.0 <0.9.0;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -16,7 +16,7 @@ abstract contract RocketBase {
     uint8 public version;
 
     // The main storage contract where primary persistant storage is maintained
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);
+    RocketStorageInterface rocketStorage = RocketStorageInterface(address(0));
 
 
     /*** Modifiers **********************************************************/
@@ -62,7 +62,6 @@ abstract contract RocketBase {
     }
     
 
-
     /**
     * @dev Throws if called by any account other than a guardian account (temporary account allowed access to settings before DAO is fully enabled)
     */
@@ -71,13 +70,8 @@ abstract contract RocketBase {
         _;
     }
 
- /**
-    * @dev Throws if called by any sender that isn't a registered node or the their respective withdrawal address
-    */
-    modifier onlyRegisteredNodeOrWithdrawalAddress(address _nodeAddress) {
-        require(getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress))) || _nodeAddress == rocketStorage.getNodeWithdrawalAddress(_nodeAddress), "Invalid minipool owner");
-        _;
-    }
+
+
 
     /*** Methods **********************************************************/
 

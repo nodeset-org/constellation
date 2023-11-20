@@ -20,7 +20,7 @@ contract RocketTokenDummyRPL is ERC20, Ownable {
 
 
     /**** Libs *****************/
-
+    
     using SafeMath for uint;
 
 

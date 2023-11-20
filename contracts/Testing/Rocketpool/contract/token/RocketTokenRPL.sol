@@ -2,13 +2,12 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "oz-contracts-3-4-0/token/ERC20/ERC20Burnable.sol";
-import "oz-contracts-3-4-0/token/ERC20/IERC20.sol";
-
 import "../RocketBase.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsInflationInterface.sol";
 import "../../interface/token/RocketTokenRPLInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
+import "../util/ERC20Burnable.sol";
+import "../util/SafeMath.sol";
 
 // RPL Governance and utility token
 // Inlfationary with rate determined by DAO
@@ -51,7 +50,6 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         rplFixedSupplyContract = IERC20(_rocketTokenRPLFixedSupplyAddress);
         // Mint the 18m tokens that currently exist and allow them to be sent to people burning existing fixed supply RPL
         _mint(address(this), totalInitialSupply);
-        _mint(msg.sender, totalInitialSupply);
     }
 
     /**
@@ -193,7 +191,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         emit RPLInflationLog(msg.sender, newTokens, inflationCalcTime);
         // return number minted
         return newTokens;
-    }
+    }   
 
    /**
    * @dev Swap current RPL fixed supply tokens for new RPL 1:1 to the same address from the user calling it
