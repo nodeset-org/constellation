@@ -196,7 +196,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     /// @dev This function allows an administrator to update all protocol contract addresses simultaneously.
     function setAll(Protocol memory newProtocol) public {
         require(
-            hasRole(Constants.ADMIN_ROLE, msg.sender),
+            hasRole(Constants.TIMELOCK_24_HOUR, msg.sender),
             Constants.ADMIN_ONLY_ERROR
         );
         _protocol = newProtocol;
