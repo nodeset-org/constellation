@@ -40,7 +40,7 @@ async function deployAndInitializeContract(contractName: string, contractPath: s
   return await ethers.getContractAt(contractPath.split(':').pop(), proxyAbi.address);
 }
 
-async function deployOracle() {
+async function deployOracleMock() {
   const oracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
   await oracle.deployTransaction.wait();
   writeAddressToOutput("ORACLE",oracle.address)
@@ -105,7 +105,7 @@ async function main() {
     const depositPool         = await deployAndInitializeContract("DEPOSIT_POOOL","DepositPool", [directoryAddress], { initializer: 'initialize', unsafeAllow: ['constructor', 'delegatecall']});
     const operatorDistributor = await deployAndInitializeContract("OPERATOR_DISTRIBUTOR","OperatorDistributor", [directoryAddress], { initializer: 'initialize', unsafeAllow: ['constructor', 'delegatecall']});
     const yieldDistributor    = await deployAndInitializeContract("YIELD_DISTRIBUTOR","YieldDistributor", [directoryAddress], { initializer: 'initialize', unsafeAllow: ['constructor', 'delegatecall']});
-    const oracle              = await deployOracle()
+    const oracle              = await deployOracleMock()
     const priceFetcher        = await deployAndInitializeContract("PRICE_FETCH","PriceFetcher",[directoryAddress],{ initializer: 'initialize',unsafeAllow: ['constructor']});
     const directory           = await deployAndInitializeContract("DIRECTORY","Directory", [[ whitelist.address, vCWETH.address, vCRPL.address,
                                                                                               depositPool.address, operatorDistributor.address, yieldDistributor.address,
