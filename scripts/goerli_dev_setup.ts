@@ -50,7 +50,9 @@ async function writeAddressToOutput(contractName: string, contractAddress: strin
   const directoryPath = path.join(__dirname, '../dist')
   const file = path.join(directoryPath, 'contract_addresses.data')
   if (!fs.existsSync(directoryPath)) { fs.mkdirSync(directoryPath)}
-  const recordData = `${contractName}=${contractAddress}\n`;
+  const timestamp = new Date().toISOString();
+  const network = "GOERLI"; // Replace with the actual network name
+  const recordData = `${contractName}:${contractAddress}:${network}:${timestamp}\n`;
   fs.appendFileSync(file, recordData)
   console.log(recordData)
 }
@@ -76,12 +78,12 @@ async function loadRocketPoolContracts() {
   const rockStorageContract       = await ethers.getContractAt("RocketStorage", "0x5467C31426F096e18e174C91dEA078bdc2e0aabD");
   const rocketNodeManagerContract = await ethers.getContractAt("RocketNodeManagerInterface", "0x4263d1Eb9bBa3335057E8093346091d92fa20C19");
   const rocketNodeStakingContract = await ethers.getContractAt("RocketNodeStaking", "0xc8b48F10b5656AD586924BC695c0ABD05dE5Aa44");
-  const enriched_contracts        = { RPL: rplContract.address,
+  const enriched_contract_data    = { RPL: rplContract.address,
                                       NETWORK_FEES: networkFeesContract.address,
                                       ROCK_STORAGE: rockStorageContract.address,
                                       ROCKET_NODE_MANAGER: rocketNodeManagerContract.address,
                                       ROCKET_NODE_STAKING: rocketNodeStakingContract.address };
-  for (const [contractName, contractAddress] of Object.entries(contracts)) { await writeAddressToOutput(contractName, contractAddress)}
+  for (const [contractName, contractAddress] of Object.entries(enriched_contract_data)) { await writeAddressToOutput(contractName, contractAddress)}
   return { rplContract, networkFeesContract, rockStorageContract, rocketNodeManagerContract, rocketNodeStakingContract};
 }
 
