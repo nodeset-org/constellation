@@ -91,9 +91,7 @@ async function main() {
     console.log("Deploying contracts with the account:", deployer.address);
     console.log("Account balance:", (await deployer.getBalance()).toString());
 
-    const { rplContract,networkFeesContract, rockStorageContract, 
-            rocketNodeManagerContract, rocketNodeStakingContract} = await loadRocketPoolContracts();
-    
+    const { rplContract,networkFeesContract, rockStorageContract, rocketNodeManagerContract, rocketNodeStakingContract} = await loadRocketPoolContracts();    
     upgrades.silenceWarnings();
     const wETH                = await deployContract("WETH","WETH");
     const uniswapV3Pool       = await deployContract("UNISWAP_V3_POOL","MockUniswapV3Pool");  
