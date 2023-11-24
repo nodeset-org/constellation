@@ -1,4 +1,5 @@
 import fs from 'fs';
+import * as path from 'path';
 import { ethers, upgrades } from "hardhat";
 import { getRocketPool, protocolFixture, protocolParams } from "../test/test";
 import { setDefaultParameters } from "../test/rocketpool/_helpers/defaults";
@@ -7,196 +8,115 @@ import { getNextContractAddress } from "../test/utils/utils";
 import { IXRETHOracle } from "../typechain-types";
 import { expect } from "chai";
 
+async function predictNextContractAddress(deployer, predictedNonce) {
+  const directoryAddress = await getNextContractAddress(deployer, predictedNonce - 1);
+  console.log("predicted directory address", directoryAddress);
+  return directoryAddress;
+}
+
+async function getInitialNonce(deployer) {
+  const initNonce = await deployer.getTransactionCount();
+  console.log("init nonce", initNonce);
+  return initNonce;
+}
+
+async function deployContract(contractName: string, contractPath: string) {
+  const ContractFactory = await ethers.getContractFactory(contractPath);
+  const contract = await ContractFactory.deploy();
+  await contract.deployed();
+  await contract.deployTransaction.wait();
+  writeAddressToOutput(contractName,contract.address)
+  return contract;
+}
+
+async function deployAndInitializeContract(contractName: string, contractPath: string, initializerArgs, config) {
+  const initializer = config.initializer || 'initialize';
+  const kind = config.kind || 'uups';
+  const unsafeAllow = config.unsafeAllow || ['constructor'];
+  const ContractFactory = await ethers.getContractFactory(contractPath);
+  const proxyAbi = await upgrades.deployProxy(ContractFactory, initializerArgs, {initializer,kind,unsafeAllow});
+  await proxyAbi.deployTransaction.wait();
+  writeAddressToOutput(contractName,proxyAbi.address)
+  return await ethers.getContractAt(contractPath.split(':').pop(), proxyAbi.address);
+}
+
+async function deployOracle() {
+  const oracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
+  await oracle.deployTransaction.wait();
+  writeAddressToOutput("oracle",oracle.address)
+  return oracle
+}
+async function writeAddressToOutput(contractName: string, contractAddress: string) {
+  const directoryPath = path.join(__dirname, '../dist')
+  const file = path.join(directoryPath, 'contract_addresses.data')
+  if (!fs.existsSync(directoryPath)) { fs.mkdirSync(directoryPath)}
+  const recordData = `${contractName}=${contractAddress}\n`;
+  fs.appendFileSync(file, recordData)
+  console.log(recordData)
+}
+
+async function verifyDeployment(deployer, initNonce, predictedNonce, directory, directoryAddress) {
+  const finalNonce = await deployer.getTransactionCount();
+  console.log("final nonce", finalNonce);
+  console.log("waiting 30 seconds for everything to deploy");
+  await new Promise(resolve => setTimeout(resolve, 30000));
+  expect(finalNonce - initNonce).to.equal(predictedNonce);
+  expect(directory.address).to.hexEqual(directoryAddress); // Ensure directoryAddress is defined in scope
+}
+
+async function setRole(contract: ethers.Contract, roleName: string, address: string) {
+  const roleBytes32 = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(roleName));
+  await contract.grantRole(ethers.utils.arrayify(roleBytes32), address);
+  console.log(`${roleName} role set for address ${address}`);
+}
+
+async function loadRocketPoolContracts() {
+  const rplContract               = await ethers.getContractAt("contracts/Interfaces/RocketTokenRPLInterface.sol:RocketTokenRPLInterface", "0x012222D4F3AE9E665761b26B67CA87B74c21E552");
+  const networkFeesContract       = await ethers.getContractAt("contracts/Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol:RocketDAOProtocolSettingsNetworkInterface", "0x04c1dc9b7469466c271Ec61052e777cCbe85567a");
+  const rockStorageContract       = await ethers.getContractAt("RocketStorage", "0x5467C31426F096e18e174C91dEA078bdc2e0aabD");
+  const rocketNodeManagerContract = await ethers.getContractAt("RocketNodeManagerInterface", "0x4263d1Eb9bBa3335057E8093346091d92fa20C19");
+  const rocketNodeStakingContract = await ethers.getContractAt("RocketNodeStaking", "0xc8b48F10b5656AD586924BC695c0ABD05dE5Aa44");
+  const enriched_contracts        = { RPL: rplContract.address,
+                                      NETWORK_FEES: networkFeesContract.address,
+                                      ROCK_STORAGE: rockStorageContract.address,
+                                      ROCKET_NODE_MANAGER: rocketNodeManagerContract.address,
+                                      ROCKET_NODE_STAKING: rocketNodeStakingContract.address };
+  for (const [contractName, contractAddress] of Object.entries(contracts)) { await writeAddressToOutput(contractName, contractAddress)}
+  return { rplContract, networkFeesContract, rockStorageContract, rocketNodeManagerContract, rocketNodeStakingContract};
+}
+
 async function main() {
     const predictedNonce = 9;
     const [deployer] = await ethers.getSigners();
     console.log("Deploying contracts with the account:", deployer.address);
     console.log("Account balance:", (await deployer.getBalance()).toString());
 
-
-    // load required rocket pool contracts
-    const { rplContract, networkFeesContract, rockStorageContract, rocketNodeManagerContract, rocketNodeStakingContract } = {
-        rplContract: await ethers.getContractAt("contracts/Interfaces/RocketTokenRPLInterface.sol:RocketTokenRPLInterface", "0x012222D4F3AE9E665761b26B67CA87B74c21E552"),
-        networkFeesContract: await ethers.getContractAt("contracts/Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol:RocketDAOProtocolSettingsNetworkInterface", "0x04c1dc9b7469466c271Ec61052e777cCbe85567a"),
-        rockStorageContract: await ethers.getContractAt("RocketStorage", "0x5467C31426F096e18e174C91dEA078bdc2e0aabD"),
-        rocketNodeManagerContract: await ethers.getContractAt("RocketNodeManagerInterface", "0x4263d1Eb9bBa3335057E8093346091d92fa20C19"),
-        rocketNodeStakingContract: await ethers.getContractAt("RocketNodeStaking", "0xc8b48F10b5656AD586924BC695c0ABD05dE5Aa44")
-    }
-
-    console.log("rocketpool contracts of interest")
-    console.log("rplContract", rplContract.address)
-    console.log("networkFeesContract", networkFeesContract.address)
-    console.log("rockStorageContract", rockStorageContract.address)
-    console.log("rocketNodeManagerContract", rocketNodeManagerContract.address)
-
-    upgrades.silenceWarnings();
-    // deploy weth
-    const WETH = await ethers.getContractFactory("WETH");
-    const wETH = await WETH.deploy();
-    await wETH.deployed();
-
-    // wait for weth deploy to be mined
-    await wETH.deployTransaction.wait();
-
-    // deploy mock uniswap v3 pool
-    const UniswapV3Pool = await ethers.getContractFactory("MockUniswapV3Pool");
-    const uniswapV3Pool = await UniswapV3Pool.deploy();
-    await uniswapV3Pool.deployed();
-
-    // wait for uniswap v3 pool deploy to be mined
-    await uniswapV3Pool.deployTransaction.wait();
-
-    const directoryAddress = await getNextContractAddress(deployer, predictedNonce - 1)
-    console.log("predicted directory address", directoryAddress)
-
-    const initNonce = await deployer.getTransactionCount();
-    console.log("init nonce", initNonce)
-
-    const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directoryAddress], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-    console.log("whitelist address", whitelist.address)
-
-    // wait for whitelist deploy to be mined
-    await whitelist.deployTransaction.wait();
-
-    const vCWETHProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("WETHVault"), [directoryAddress, wETH.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-    console.log("vCWETHProxyAbi address", vCWETHProxyAbi.address)
-
-    // wait for vCWETH deploy to be mined
-    await vCWETHProxyAbi.deployTransaction.wait();
-
-    const vCWETH = await ethers.getContractAt("WETHVault", vCWETHProxyAbi.address);
-    console.log("vCWETH address", vCWETH.address)
-
-    const vCRPLProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("RPLVault"), [directoryAddress, rplContract.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-    console.log("vCRPLProxyAbi address", vCRPLProxyAbi.address)
-
-    // wait for vCRPL deploy to be mined
-    await vCRPLProxyAbi.deployTransaction.wait();
-
-    const vCRPL = await ethers.getContractAt("RPLVault", vCRPLProxyAbi.address);
-    console.log("vCRPL address", vCRPL.address)
-
-    const depositPoolProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("DepositPool"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-    console.log("depositPoolProxyAbi address", depositPoolProxyAbi.address)
-
-    // wait for depositPool deploy to be mined
-    await depositPoolProxyAbi.deployTransaction.wait();
-
-    const depositPool = await ethers.getContractAt("DepositPool", depositPoolProxyAbi.address);
-    console.log("depositPool address", depositPool.address)
-
-    const operatorDistributorProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("OperatorDistributor"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-    console.log("operatorDistributorProxyAbi address", operatorDistributorProxyAbi.address)
-
-    // wait for operatorDistributor deploy to be mined
-    await operatorDistributorProxyAbi.deployTransaction.wait();
-
-    const operatorDistributor = await ethers.getContractAt("OperatorDistributor", operatorDistributorProxyAbi.address);
-    console.log("operatorDistributor address", operatorDistributor.address)
-
-    const yieldDistributorProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("YieldDistributor"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-    console.log("yieldDistributorProxyAbi address", yieldDistributorProxyAbi.address)
-
-    // wait for yieldDistributor deploy to be mined
-    await yieldDistributorProxyAbi.deployTransaction.wait();
-
-    const yieldDistributor = await ethers.getContractAt("YieldDistributor", yieldDistributorProxyAbi.address);
-    console.log("yieldDistributor address", yieldDistributor.address)
-
-    const oracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
-    console.log("oracle address", oracle.address)
-
-    // wait for oracle deploy to be mined
-    await oracle.deployTransaction.wait();
-
-    const priceFetcher = await upgrades.deployProxy(await ethers.getContractFactory("PriceFetcher"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-    console.log("priceFetcher address", priceFetcher.address)
-
-    // wait for priceFetcher deploy to be mined
-    await priceFetcher.deployTransaction.wait();
-
-    const directoryProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("Directory"),
-        [
-            [
-                whitelist.address,
-                vCWETH.address,
-                vCRPL.address,
-                depositPool.address,
-                operatorDistributor.address,
-                yieldDistributor.address,
-                oracle.address,
-                priceFetcher.address,
-                rockStorageContract.address,
-                rocketNodeManagerContract.address,
-                rocketNodeStakingContract.address,
-                rplContract.address,
-                wETH.address,
-                uniswapV3Pool.address
-            ]
-        ], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-        console.log("directoryProxyAbi address", directoryProxyAbi.address)
-
-      // const directoryProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("Directory"),
-      // Object.values(contractAddresses), { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-      
-    const contractAddresses = {
-      WHITELIST: whitelist.address,
-      VCWETH: vCWETH.address,
-      VCRPL: vCRPL.address,
-      DEPOSIT_POOL: depositPool.address,
-      OPERATOR_DISTRIBUTOR: operatorDistributor.address,
-      YIELD_DISTRIBUTOR: yieldDistributor.address,
-      ORACLE: oracle.address,
-      PRICE_FETCHER: priceFetcher.address,
-      ROCK_STORAGE_CONTRACT: rockStorageContract.address,
-      ROCKET_NODE_MANAGER_CONTRACT: rocketNodeManagerContract.address,
-      ROCKET_NODE_STAKING_CONTRACT: rocketNodeStakingContract.address,
-      RPL_CONTRACT: rplContract.address,
-      WETH: wETH.address,
-      UNISWAP_V3_POOL: uniswapV3Pool.address,
-    };
-
-     // Save the formatted variable names and addresses to a file in NAME=VALUE format
-    const directoryPath = path.join(__dirname, '../dist'); // Construct the path to the "dist" directory
-    const file = path.join(directoryPath, 'contract_addresses.data'); // Combine the directory path with the filename
-
-    // Check if the directory exists, and if not, create it
-    if (!fs.existsSync(directoryPath)) {
-      fs.mkdirSync(directoryPath);
-    }
-    const dataToSave = Object.keys(contractAddresses).map((name) => `${name}=${contractAddresses[name]}`);
-    fs.writeFileSync(file, dataToSave.join('\n'));
+    const { rplContract,networkFeesContract, rockStorageContract, 
+            rocketNodeManagerContract, rocketNodeStakingContract} = await loadRocketPoolContracts();
     
-    // wait for directory deploy to be mined
-    await directoryProxyAbi.deployTransaction.wait();
-
-    const finalNonce = await deployer.getTransactionCount();
-    console.log("final nonce", finalNonce)
-
-    const directory = await ethers.getContractAt("Directory", directoryProxyAbi.address);
-    console.log("directory address", directory.address)
-
-    // wait 30 seconds to ensure everything is deployed
-    console.log("waiting 30 seconds for everything to deploy")
-    await new Promise(r => setTimeout(r, 30000));
-
-    expect(finalNonce - initNonce).to.equal(predictedNonce);
-    expect(directory.address).to.hexEqual(directoryAddress);
-
-    // set adminServer to be ADMIN_SERVER_ROLE
-    const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
-    await directory.grantRole(ethers.utils.arrayify(adminRole), deployer.address);
-    console.log("admin role set")
-
-    // set timelock to be TIMELOCK_ROLE
-    const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_24_HOUR"));
-    await directory.grantRole(ethers.utils.arrayify(timelockRole), deployer.address);
-    console.log("timelock role set")
-
-    // set protocolSigner to be PROTOCOL_ROLE
-    const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
-    await directory.grantRole(ethers.utils.arrayify(protocolRole), deployer.address);
-    console.log("protocol role set")
+    upgrades.silenceWarnings();
+    const wETH                = await deployContract("WETH","WETH");
+    const uniswapV3Pool       = await deployContract("UNISWAP_V3_POOL","MockUniswapV3Pool");  
+    const directoryAddress    = await predictNextContractAddress(deployer, predictedNonce);
+    const initNonce           = await getInitialNonce(deployer);
+    const whitelist           = await deployAndInitializeContract("WHITLIST","contracts/Whitelist/Whitelist.sol:Whitelist", [directoryAddress], { initializer: 'initializeWhitelist', unsafeAllow: ['constructor']});
+    const vCWETH              = await deployAndInitializeContract("VCWETH","WETHVault", [directoryAddress, wETH.address], { initializer: 'initializeVault', unsafeAllow: ['constructor', 'delegatecall'] });
+    const vCRPL               = await deployAndInitializeContract("VCRPL","RPLVault", [directoryAddress, rplContract.address], { initializer: 'initializeVault', unsafeAllow: ['constructor', 'delegatecall']});
+    const depositPool         = await deployAndInitializeContract("DEPOSIT_POOOL","DepositPool", [directoryAddress], { initializer: 'initialize', unsafeAllow: ['constructor', 'delegatecall']});
+    const operatorDistributor = await deployAndInitializeContract("OPERATOR_DISTRIBUTOR","OperatorDistributor", [directoryAddress], { initializer: 'initialize', unsafeAllow: ['constructor', 'delegatecall']});
+    const yieldDistributor    = await deployAndInitializeContract("YIELD_DISTRIBUTOR","YieldDistributor", [directoryAddress], { initializer: 'initialize', unsafeAllow: ['constructor', 'delegatecall']});
+    const oracle              = await deployOracle()
+    const priceFetcher        = await deployAndInitializeContract("PRICE_FETCH","PriceFetcher",[directoryAddress],{ initializer: 'initialize',unsafeAllow: ['constructor']});
+    const directory           = await deployAndInitializeContract("DIRECTORY","Directory", [[ whitelist.address, vCWETH.address, vCRPL.address,
+                                                                                              depositPool.address, operatorDistributor.address, yieldDistributor.address,
+                                                                                              oracle.address, priceFetcher.address, rockStorageContract.address,
+                                                                                              rocketNodeManagerContract.address, rocketNodeStakingContract.address, rplContract.address,
+                                                                                              wETH.address, uniswapV3Pool.address]],
+                                                                                            { initializer: 'initialize', unsafeAllow: ['constructor']});
+    await verifyDeployment(deployer, initNonce, predictedNonce, directory, directoryAddress);
+    await setRole(directory, "ADMIN_SERVER_ROLE", deployer.address);
+    await setRole(directory, "TIMELOCK_24_HOUR", deployer.address);
+    await setRole(directory, "CORE_PROTOCOL_ROLE", deployer.address); 
 }
 
 main()
