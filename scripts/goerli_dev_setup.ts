@@ -43,7 +43,7 @@ async function deployAndInitializeContract(contractName: string, contractPath: s
 async function deployOracle() {
   const oracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
   await oracle.deployTransaction.wait();
-  writeAddressToOutput("oracle",oracle.address)
+  writeAddressToOutput("ORACLE",oracle.address)
   return oracle
 }
 async function writeAddressToOutput(contractName: string, contractAddress: string) {
