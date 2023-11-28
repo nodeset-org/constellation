@@ -4,14 +4,13 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher } from "../typechain-types";
+import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, RocketNodeManagerInterface } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
 import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketNodeManager, RocketNodeStaking, RocketStorage, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
 import { setDefaultParameters } from "./rocketpool/_helpers/defaults";
 import { suppressLog } from "./rocketpool/_helpers/console";
 import { deployRocketPool } from "./rocketpool/_helpers/deployment";
-import { RocketNodeManagerInterface } from "../typechain-types/contracts/interface/node";
 
 export const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
 
@@ -100,7 +99,7 @@ export async function getRocketPool(): Promise<RocketPool> {
 
 	const RocketNodeStakingDeployment = await RocketNodeStaking.deployed();;
 	const rocketNodeStakingContract = await ethers.getContractAt(
-		"RocketNodeStaking",
+		"IRocketNodeStaking",
 		RocketNodeStakingDeployment.address
 	) as IRocketNodeStaking;
 
