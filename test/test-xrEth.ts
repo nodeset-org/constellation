@@ -4,18 +4,20 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { removeFeesOnBothVaults, removeFeesOnRPLVault, upgradePriceFetcherToMock } from "./utils/utils";
+import { getEventNames, removeFeesOnBothVaults, removeFeesOnRPLVault, upgradePriceFetcherToMock } from "./utils/utils";
+import { ContractTransaction } from "@ethersproject/contracts";
 
 describe("xrETH", function () {
 
   // add tests for deposit and withdraw
   it("fail - cannot deposit 1 eth at 50 rpl and 500 rpl, tvl ratio returns ~15%", async () => {
-    const { protocol, signers, rocketPool } = await protocolFixture();
+    const setupData = await protocolFixture();
+    const { protocol, signers, rocketPool } = setupData;
 
     const depositAmountEth = ethers.utils.parseEther("1");
     await signers.ethWhale.sendTransaction({ to: protocol.depositPool.address, value: depositAmountEth });
 
-    await removeFeesOnRPLVault(protocol);
+    await removeFeesOnRPLVault(setupData);
 
     const depositAmountRpl = ethers.utils.parseEther("500");
     await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, depositAmountRpl);
@@ -27,7 +29,7 @@ describe("xrETH", function () {
     const totalAssetRPL = await protocol.vCRPL.totalAssets();
     expect(totalAssetRPL).equals(depositAmountRpl);
 
-    await upgradePriceFetcherToMock(protocol, ethers.utils.parseEther("50"));
+    await upgradePriceFetcherToMock(signers, protocol, ethers.utils.parseEther("50"));
 
     const tvlRatio = await protocol.vCWETH.tvlRatioEthRpl();
     expect(tvlRatio).equals(ethers.utils.parseEther("0.1"));
@@ -36,12 +38,13 @@ describe("xrETH", function () {
   })
 
   it("success - can deposit 5 eth at 50 rpl and 500 rpl, tvl ratio returns ~15%", async () => {
-    const { protocol, signers, rocketPool } = await protocolFixture();
+    const setupData = await protocolFixture();
+    const { protocol, signers, rocketPool } = setupData;
 
     const depositAmountEth = ethers.utils.parseEther("5");
     await signers.ethWhale.sendTransaction({ to: protocol.depositPool.address, value: depositAmountEth });
 
-    await removeFeesOnBothVaults(protocol);
+    await removeFeesOnBothVaults(setupData);
 
     const depositAmountRpl = ethers.utils.parseEther("500");
     await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, depositAmountRpl);
@@ -53,7 +56,7 @@ describe("xrETH", function () {
     const totalAssetRPL = await protocol.vCRPL.totalAssets();
     expect(totalAssetRPL).equals(depositAmountRpl);
 
-    await upgradePriceFetcherToMock(protocol, ethers.utils.parseEther("50"));
+    await upgradePriceFetcherToMock(signers, protocol, ethers.utils.parseEther("50"));
 
     const tvlRatio = await protocol.vCWETH.tvlRatioEthRpl();
     expect(tvlRatio).equals(ethers.utils.parseEther("0.5"));
@@ -72,7 +75,7 @@ describe("xrETH", function () {
       const { protocol, signers } = await protocolFixture();
 
       const tvlCoverageRatio = ethers.utils.parseEther("0.1542069");
-      await protocol.vCWETH.setRplCoverageRatio(tvlCoverageRatio);
+      await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(tvlCoverageRatio);
 
       const tvlCoverageRatioFromContract = await protocol.vCWETH.rplCoverageRatio();
       expect(tvlCoverageRatioFromContract).equals(tvlCoverageRatio);
@@ -85,5 +88,34 @@ describe("xrETH", function () {
       await expect(protocol.vCWETH.connect(signers.ethWhale).setRplCoverageRatio(tvlCoverageRatio)).to.be.revertedWith("Can only be called by admin address!");
     });
   });
+
+  describe.only("sanctions checks", () => {
+
+    it("success - allows deposits from non-sanctioned senders and origins", async () => {
+      const { protocol, signers } = await protocolFixture();
+
+      const depositAmountEth = ethers.utils.parseEther("5");
+
+      await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmountEth });
+      await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, depositAmountEth);
+      const tx = await protocol.vCWETH.connect(signers.ethWhale).deposit(depositAmountEth, signers.ethWhale.address);
+      const events = await getEventNames(tx, protocol.directory);
+      expect(events.includes("SanctionViolation")).equals(false);
+    })
+
+    it("fail - should fail siliently with event logging", async () => {
+      const { protocol, signers } = await protocolFixture();
+
+      const depositAmountEth = ethers.utils.parseEther("5");
+
+      await protocol.sanctions.addBlacklist(signers.ethWhale.address);
+
+      await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmountEth });
+      await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, depositAmountEth);
+      const tx = await protocol.vCWETH.connect(signers.ethWhale).deposit(depositAmountEth, signers.ethWhale.address);
+      const events = await getEventNames(tx, protocol.directory);
+      expect(events.includes("SanctionViolation")).equals(true);
+    })
+  })
 
 });

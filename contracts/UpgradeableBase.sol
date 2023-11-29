@@ -8,6 +8,7 @@ import "./Directory.sol";
 import "./Utils/Constants.sol";
 
 abstract contract UpgradeableBase is UUPSUpgradeable, ReentrancyGuard {
+
     Directory internal _directory;
 
     function initialize(address directoryAddress) public virtual initializer {

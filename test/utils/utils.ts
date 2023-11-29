@@ -9,6 +9,8 @@ import { createMinipool, getMinipoolMinimumRPLStake } from "../rocketpool/_helpe
 import { nodeStakeRPL, registerNode } from "../rocketpool/_helpers/node";
 import { mintRPL } from "../rocketpool/_helpers/tokens";
 import { userDeposit } from "../rocketpool/_helpers/deposit";
+import { ContractTransaction } from "@ethersproject/contracts";
+import { Contract, EventFilter, utils } from 'ethers';
 
 // optionally include the names of the accounts
 export const printBalances = async (accounts: string[], opts: any = {}) => {
@@ -85,24 +87,24 @@ export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: 
     return await ethers.getContractAt("RocketMinipoolInterface", mockMinipool.address);
 }
 
-export async function upgradePriceFetcherToMock(protocol: Protocol, price: BigNumber) {
+export async function upgradePriceFetcherToMock(signers: Signers, protocol: Protocol, price: BigNumber) {
     const mockPriceFetcherFactory = await ethers.getContractFactory("MockPriceFetcher");
     const mockPriceFetcher = await mockPriceFetcherFactory.deploy();
     await mockPriceFetcher.deployed();
 
-    await protocol.priceFetcher.upgradeTo(mockPriceFetcher.address);
+    await protocol.priceFetcher.connect(signers.admin).upgradeTo(mockPriceFetcher.address);
 
     const priceFetcherV2 = await ethers.getContractAt("MockPriceFetcher", protocol.priceFetcher.address);
     await priceFetcherV2.setPrice(price);
 };
 
-export async function removeFeesOnRPLVault(protocol: Protocol) {
-    await protocol.vCRPL.setFees(0, 0);
+export async function removeFeesOnRPLVault(setupData: SetupData) {
+    await setupData.protocol.vCRPL.connect(setupData.signers.admin).setFees(0, 0);
 }
 
-export async function removeFeesOnBothVaults(protocol: Protocol) {
-    await protocol.vCRPL.setFees(0, 0);
-    await protocol.vCWETH.setFees(0, 0, 0, 0);
+export async function removeFeesOnBothVaults(setupData: SetupData) {
+    await setupData.protocol.vCRPL.connect(setupData.signers.admin).setFees(0, 0);
+    await setupData.protocol.vCWETH.connect(setupData.signers.admin).setFees(0, 0, 0, 0);
 }
 
 export const registerNewValidator = async (setupData: SetupData, nodeOperators: SignerWithAddress[]) => {
@@ -140,7 +142,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         // admin will reimburse the node operator for the minipool
         let operatorData = await setupData.protocol.whitelist.getOperatorAtAddress(nodeOperator.address);
         const lastCount = operatorData.currentValidatorCount;
-        await setupData.protocol.operatorDistributor.reimburseNodeForMinipool(sig, mockMinipool.address);
+        await setupData.protocol.operatorDistributor.connect(setupData.signers.admin).reimburseNodeForMinipool(sig, mockMinipool.address);
         operatorData = await setupData.protocol.whitelist.getOperatorAtAddress(nodeOperator.address);
         expect(operatorData.currentValidatorCount).to.equal(lastCount + 1);
     }
@@ -189,4 +191,27 @@ export async function getNextContractAddress(signer: SignerWithAddress, offset =
     const contractAddress = '0x' + contractAddressHash.slice(-40);
 
     return contractAddress;
+}
+
+export async function getEventNames(tx: ContractTransaction, contract: Contract): Promise<string[]> {
+    let emittedEvents: string[] = [];
+    let emittedArgs: any[] = [];
+
+    const receipt = await tx.wait();
+
+    if (receipt.events) {
+        for (let i = 0; i < receipt.events.length; i++) {
+            const event = receipt.events[i];
+            if(event.event) { // Check if event name is available
+                emittedEvents.push(event.event);
+            } else if(event.topics && event.topics.length > 0) { // Decode the raw log
+                const eventDescription = contract.interface.getEvent(event.topics[0]);
+                emittedEvents.push(eventDescription.name);
+                const decodedData = contract.interface.decodeEventLog(eventDescription, event.data, event.topics);
+                emittedArgs.push(decodedData)
+            }
+        }
+    }
+
+    return emittedEvents
 }

@@ -8,7 +8,7 @@ import { BigNumber } from "ethers";
 
 describe("Whitelist (proxy)", function () {
     it("Admin can update contract", async function () {
-        const { protocol } = await protocolFixture();
+        const { protocol, signers } = await protocolFixture();
 
         const initialAddress = protocol.whitelist.address;
 
@@ -20,7 +20,7 @@ describe("Whitelist (proxy)", function () {
             initialSlotValues.push(await ethers.provider.getStorageAt(initialAddress, i));
         }
 
-        const WhitelistV2Logic = await ethers.getContractFactory("WhitelistV2");
+        const WhitelistV2Logic = await ethers.getContractFactory("WhitelistV2", signers.admin);
 
         // upgrade protocol.whitelist to V2
         const newWhitelist = await upgrades.upgradeProxy(protocol.whitelist.address, WhitelistV2Logic, {
@@ -60,14 +60,14 @@ describe("Whitelist", function () {
             1,
         ];
 
-        await expect(protocol.whitelist.addOperator(signers.random.address))
+        await expect(protocol.whitelist.connect(signers.admin).addOperator(signers.random.address))
             .to.emit(protocol.whitelist, 'OperatorAdded').withArgs(operator);
     });
 
     it("Anyone can read from operator list", async function () {
         const { protocol, signers } = await protocolFixture();
 
-        await protocol.whitelist.addOperator(signers.random.address);
+        await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address);
 
         const operator: OperatorStruct = await protocol.whitelist.connect(signers.random)
             .getOperatorAtAddress(signers.random.address);
@@ -89,7 +89,7 @@ describe("Whitelist", function () {
 
     it("Node operator can only update operator controller once", async () => {
         const { protocol, signers } = await protocolFixture();
-        await protocol.whitelist.addOperator(signers.random.address);
+        await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address);
         await expect(protocol.whitelist.connect(signers.random).setOperatorController(signers.random2.address))
             .to.emit(protocol.whitelist, "OperatorControllerUpdated").withArgs(signers.random.address, signers.random2.address);
         await expect(protocol.whitelist.connect(signers.random).setOperatorController(signers.random2.address))
@@ -98,7 +98,7 @@ describe("Whitelist", function () {
 
     it("Node operator can only updated by operator controller", async () => {
         const { protocol, signers } = await protocolFixture();
-        await protocol.whitelist.addOperator(signers.random.address);
+        await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address);
         await expect(protocol.whitelist.connect(signers.random).setOperatorController(signers.random2.address))
             .to.emit(protocol.whitelist, "OperatorControllerUpdated").withArgs(signers.random.address, signers.random2.address);
         await expect(protocol.whitelist.connect(signers.random).setOperatorController(signers.random2.address))
@@ -120,9 +120,9 @@ describe("Whitelist", function () {
     it("Admin can remove NO from whitelist", async function () {
         const { protocol, signers } = await protocolFixture();
 
-        await protocol.whitelist.addOperator(signers.random.address);
+        await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address);
 
-        await expect(protocol.whitelist.removeOperator(signers.random.address))
+        await expect(protocol.whitelist.connect(signers.admin).removeOperator(signers.random.address))
             .to.emit(protocol.whitelist, "OperatorRemoved").withArgs(signers.random.address);
 
         await expect(protocol.whitelist.getOperatorAtAddress(signers.random.address))
@@ -132,7 +132,7 @@ describe("Whitelist", function () {
     it("Non-admin cannot remove NO from whitelist", async function () {
         const { protocol, signers } = await protocolFixture();
 
-        await protocol.whitelist.addOperator(signers.random.address);
+        await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address);
 
         await expect(protocol.whitelist.connect(signers.random).removeOperator(signers.random.address))
             .to.be.revertedWith("Can only be called by 24 hour timelock!");
@@ -141,7 +141,7 @@ describe("Whitelist", function () {
     it("Admin can batch add addresses to whitelist", async function () {
         const { protocol, signers } = await protocolFixture();
 
-        await expect(protocol.whitelist.addOperators([signers.random.address, signers.random2.address]))
+        await expect(protocol.whitelist.connect(signers.admin).addOperators([signers.random.address, signers.random2.address]))
             .to.emit(protocol.whitelist, 'OperatorsAdded').withArgs([signers.random.address, signers.random2.address]);
     });
 
@@ -155,16 +155,16 @@ describe("Whitelist", function () {
     it("Admin can batch remove addresses from whitelist", async function () {
         const { protocol, signers } = await protocolFixture();
 
-        await protocol.whitelist.addOperators([signers.random.address, signers.random2.address]);
+        await protocol.whitelist.connect(signers.admin).addOperators([signers.random.address, signers.random2.address]);
 
-        await expect(protocol.whitelist.removeOperators([signers.random.address, signers.random2.address]))
+        await expect(protocol.whitelist.connect(signers.admin).removeOperators([signers.random.address, signers.random2.address]))
             .to.emit(protocol.whitelist, 'OperatorsRemoved').withArgs([signers.random.address, signers.random2.address]);
     });
 
     it("Non-admin cannot batch remove addresses from whitelist", async function () {
         const { protocol, signers } = await protocolFixture();
 
-        await protocol.whitelist.addOperators([signers.random.address, signers.random2.address]);
+        await protocol.whitelist.connect(signers.admin).addOperators([signers.random.address, signers.random2.address]);
 
         await expect(protocol.whitelist.connect(signers.random).removeOperators([signers.random.address, signers.random2.address]))
             .to.be.revertedWith("Can only be called by 24 hour timelock!");

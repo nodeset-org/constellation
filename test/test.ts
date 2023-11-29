@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, RocketNodeManagerInterface } from "../typechain-types";
+import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
 import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketNodeManager, RocketNodeStaking, RocketStorage, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
@@ -31,6 +31,7 @@ export type Protocol = {
 	oracle: IXRETHOracle,
 	priceFetcher: Contract,
 	wETH: IWETH,
+	sanctions: MockSanctions
 }
 
 export type Signers = {
@@ -115,6 +116,11 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 		const wETH = await WETH.deploy();
 		await wETH.deployed();
 
+		// deploy mock sanctions
+		const Sanctions = await ethers.getContractFactory("MockSanctions");
+		const sanctions = await Sanctions.deploy();
+		await sanctions.deployed();
+
 		// deploy mock uniswap v3 pool
 		const UniswapV3Pool = await ethers.getContractFactory("MockUniswapV3Pool");
 		const uniswapV3Pool = await UniswapV3Pool.deploy();
@@ -154,7 +160,8 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 				rocketPool.rocketNodeStakingContract.address,
 				rocketPool.rplContract.address,
 				wETH.address,
-				uniswapV3Pool.address
+				uniswapV3Pool.address,
+				sanctions.address,
 			],
 			adminTreasury.address,
 			signers.admin.address,
@@ -180,10 +187,10 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 		expect(await directory.getTreasuryAddress()).to.equal(adminTreasury.address);
 		await directory.connect(signers.admin).setTreasury(deployer.address);
 
-		const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, oracle, priceFetcher, wETH };
+		const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
 
 		// send all rpl from admin to rplWhale
-		const rplWhaleBalance = await rocketPool.rplContract.balanceOf(signers.admin.address);
+		const rplWhaleBalance = await rocketPool.rplContract.balanceOf(signers.deployer.address);
 		await rocketPool.rplContract.transfer(signers.rplWhale.address, rplWhaleBalance);
 
 		return returnData;
