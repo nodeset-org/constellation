@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "./Interfaces/RocketTokenRPLInterface.sol";
 import "./Interfaces/Oracles/IXRETHOracle.sol";
 import "./Interfaces/RocketPool/IRocketStorage.sol";
+import "./Interfaces/ISanctions.sol";
 import "./UpgradeableBase.sol";
 import "./Utils/Constants.sol";
 
@@ -25,6 +26,7 @@ struct Protocol {
     address rplToken;
     address payable weth;
     address uniswapV3Pool;
+    address sanctions;
 }
 
 /// @custom:security-contact info@nodeoperator.org
@@ -32,8 +34,14 @@ struct Protocol {
 /// @dev The Directory contract is a central component of the protocol, managing contract addresses and access control roles.
 ///      It provides the ability to set contract addresses during initialization, manage treasury, and update the Oracle contract.
 contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
+
+    event SanctionViolation(address account, address eoa_origin);
+    event SanctionViolation(address eoa_origin);
+    event SanctionsDisabled();
+
     Protocol private _protocol;
     address private _treasury;
+    bool private _enabledSanctions;
 
     constructor() initializer {}
 
@@ -143,6 +151,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         require(_protocol.weth == address(0) && newProtocol.weth != address(0), Constants.INITIALIZATION_ERROR);
         require(_protocol.uniswapV3Pool == address(0) && newProtocol.uniswapV3Pool != address(0), Constants.INITIALIZATION_ERROR);
         require(_treasury == address(0) && treasury != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.sanctions == address(0) && newProtocol.sanctions != address(0), Constants.INITIALIZATION_ERROR);
 
         AccessControlUpgradeable.__AccessControl_init();
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
@@ -166,13 +175,24 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
         _treasury = treasury;
-
         _protocol = newProtocol;
+
+        _enabledSanctions = true;
     }
 
     function setTreasury(address newTreasury) public {
         require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
         _treasury = newTreasury;
+    }
+
+    function disableSanctions() public {
+        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
+        _enabledSanctions = false;
+    }
+
+    function enableSanctions() public {
+        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
+        _enabledSanctions = true;
     }
 
     function setOracle(address newOracle) public {
@@ -188,9 +208,45 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     /// @dev This function allows an administrator to update all protocol contract addresses simultaneously.
     function setAll(Protocol memory newProtocol) public {
         require(
-            hasRole(Constants.ADMIN_ROLE, msg.sender),
+            hasRole(Constants.TIMELOCK_24_HOUR, msg.sender),
             Constants.ADMIN_ONLY_ERROR
         );
         _protocol = newProtocol;
+    }
+
+    function isSanctioned(address _account) public returns(bool) {
+        address[] memory accounts = new address[](1);
+        accounts[0] = _account;
+        return _checkSanctions(accounts);
+    }
+
+    function isSanctioned(address _account1, address _account2) public returns(bool) {
+        address[] memory accounts = new address[](2);
+        accounts[0] = _account1;
+        accounts[1] = _account2;
+        return _checkSanctions(accounts);
+    }
+
+    function isSanctioned(address[] memory _accounts) public returns(bool) {
+        return _checkSanctions(_accounts);
+    }
+
+    function _checkSanctions(address[] memory _accounts) internal returns(bool) {
+        if(!_enabledSanctions) {
+            emit SanctionsDisabled();
+            return false;
+        }
+        bool sanctioned = false;
+        for(uint i = 0; i < _accounts.length; i++) {
+            if(_accounts[i] != address(0) && ISanctions(_protocol.sanctions).isSanctioned(_accounts[i])) {
+                emit SanctionViolation(_accounts[i], tx.origin);
+                sanctioned = true;
+            }
+        }
+        if(sanctioned || ISanctions(_protocol.sanctions).isSanctioned(tx.origin)) {
+            emit SanctionViolation(tx.origin);
+            return true;
+        }
+        return false;
     }
 }

@@ -6,6 +6,8 @@ import "../Whitelist/Whitelist.sol";
 import "../DepositPool.sol";
 import "../PriceFetcher.sol";
 
+import "../Utils/Constants.sol";
+
 import "../Interfaces/RocketPool/IRocketStorage.sol";
 import "../Interfaces/RocketPool/IMinipool.sol";
 import "../Interfaces/RocketPool/IRocketNodeManager.sol";
@@ -14,6 +16,7 @@ import "../Interfaces/RocketPool/IRocketNodeStaking.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract OperatorDistributor is UpgradeableBase {
+
     event MinipoolCreated(
         address indexed _minipoolAddress,
         address indexed _nodeAddress
@@ -29,9 +32,12 @@ contract OperatorDistributor is UpgradeableBase {
     address[] public minipoolAddresses;
 
     uint256 public nextMinipoolHavestIndex;
-    uint256 public targetStakeRatio; // 150%
+    uint256 public targetStakeRatio;
 
     uint256 public numMinipoolsProcessedPerInterval;
+
+    uint256 public upperBondRequirement;
+    uint256 public lowerBondRequirement;
 
     mapping(address => uint256) public minipoolIndexMap;
     mapping(address => uint256) public minipoolAmountFundedEth;
@@ -51,8 +57,12 @@ contract OperatorDistributor is UpgradeableBase {
         address _rocketStorageAddress
     ) public override initializer {
         super.initialize(_rocketStorageAddress);
-        targetStakeRatio = 1.5e18;
+        targetStakeRatio = 1.5e18; // 150%
         numMinipoolsProcessedPerInterval = 1;
+
+        // defaulting these to 8eth to only allow LEB8 minipools
+        upperBondRequirement = 8 ether;
+        lowerBondRequirement = 8 ether;
     }
 
     /**
@@ -234,6 +244,16 @@ contract OperatorDistributor is UpgradeableBase {
     }
 
     /**
+     *
+     */
+    function validateBondRequirements(uint256 bond) public view {
+        require(
+            bond >= lowerBondRequirement && bond <= upperBondRequirement,
+            Constants.MINIPOOL_INVALID_BOND_ERROR
+        );
+    }
+
+    /**
      * @notice Reimburses a node for minipool creation, validates the minipool and handles necessary staking.
      * @dev The function goes through multiple validation steps:
      * 1. Checks if the node is in the whitelist.
@@ -254,8 +274,12 @@ contract OperatorDistributor is UpgradeableBase {
         Whitelist whitelist = Whitelist(getDirectory().getWhitelistAddress());
         require(
             whitelist.getIsAddressInWhitelist(nodeAddress),
-            "OperatorDistributor: minipool node operator not in whitelist"
+            Constants.MINIPOOL_NODE_NOT_WHITELISTED_ERROR
         );
+
+        uint256 bond = minipool.getNodeDepositBalance();
+
+        validateBondRequirements(bond);
 
         // validate that the newMinipoolAdress was signed by the admin address
         bytes32 messageHash = keccak256(abi.encode(newMinipoolAdress));
@@ -265,7 +289,7 @@ contract OperatorDistributor is UpgradeableBase {
         address signer = ECDSA.recover(ethSignedMessageHash, sig);
         require(
             _directory.hasRole(Constants.ADMIN_SERVER_ROLE, signer),
-            "OperatorDistributor: invalid signature"
+            Constants.BAD_ADMIN_SERVER_SIGNATURE_ERROR
         );
 
         _validateWithdrawalAddress(nodeAddress);
@@ -276,15 +300,11 @@ contract OperatorDistributor is UpgradeableBase {
 
         require(
             nodeManager.getSmoothingPoolRegistrationState(nodeAddress),
-            "OperatorDistributor: minipool must be registered in smoothing pool"
+            Constants.MINIPOOL_NOT_REGISTERED_ERROR
         );
 
-        uint256 bond = minipool.getNodeDepositBalance();
 
-        require(
-            _queuedEth >= bond,
-            "OperatorDistributor: insufficient ETH in queue"
-        );
+        require(_queuedEth >= bond, Constants.INSUFFICIENT_ETH_IN_QUEUE_ERROR);
 
         uint256 numValidators = Whitelist(_directory.getWhitelistAddress())
             .getNumberOfValidators(nodeAddress);
@@ -426,6 +446,12 @@ contract OperatorDistributor is UpgradeableBase {
         uint256 _numMinipoolsProcessedPerInterval
     ) external onlyAdmin {
         numMinipoolsProcessedPerInterval = _numMinipoolsProcessedPerInterval;
+    }
+
+    function setBondRequirments(uint256 _upperBound, uint256 _lowerBound) onlyAdmin external {
+        require(_upperBound >= _lowerBound && _lowerBound <= _upperBound, Constants.BAD_BOND_BOUNDS);
+        upperBondRequirement = _upperBound;
+        lowerBondRequirement = _lowerBound;
     }
 
     /**

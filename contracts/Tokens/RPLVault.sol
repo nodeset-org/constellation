@@ -117,6 +117,10 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 assets,
         uint256 shares
     ) internal virtual override {
+        if(_directory.isSanctioned(caller, receiver)) {
+            return;
+        }
+
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
         require(
             enforceWethCoverageRatio &&
@@ -158,6 +162,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 assets,
         uint256 shares
     ) internal virtual override {
+        if(_directory.isSanctioned(caller, receiver)) {
+            return;
+        }
         uint256 fee = _feeOnRaw(assets, takerFeeBasePoint);
         address recipient1 = _directory.getTreasuryAddress();
 

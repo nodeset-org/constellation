@@ -6,10 +6,9 @@ import { BigNumber as BN } from "ethers";
 import { Protocol } from "../test";
 import { Signers } from "../test";
 import { RocketPool } from "../test";
-import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault, IWETH } from "../../typechain-types";
+import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault, IWETH, RocketMinipoolInterface } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
 import { deployMockMinipool, expectNumberE18ToBeApproximately, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances } from "../utils/utils";
-import { RocketMinipoolInterface } from "../../typechain-types/contracts/interface/minipool";
 
 
 describe("Node Operator Onboarding", function () {
@@ -45,7 +44,6 @@ describe("Node Operator Onboarding", function () {
 
     it("node operator creates minipool", async function () {
         mockMinipool = await deployMockMinipool(signers.hyperdriver, rocketPool, signers, bondValue);
-
         expect(await mockMinipool.getNodeAddress()).to.equal(signers.hyperdriver.address);
         expect(await mockMinipool.getNodeDepositBalance()).to.equal(bondValue);
         // expect(await mockMinipool.getStatus()).to.equal(1);
@@ -118,7 +116,7 @@ describe("Node Operator Onboarding", function () {
 
         let operatorData = await protocol.whitelist.getOperatorAtAddress(signers.hyperdriver.address);
         expect(operatorData.currentValidatorCount).to.equal(0);
-        await protocol.operatorDistributor.reimburseNodeForMinipool(sig, mockMinipool.address);
+        await protocol.operatorDistributor.connect(signers.admin).reimburseNodeForMinipool(sig, mockMinipool.address);
         operatorData = await protocol.whitelist.getOperatorAtAddress(signers.hyperdriver.address);
         expect(operatorData.currentValidatorCount).to.equal(1);
 
