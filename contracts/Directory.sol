@@ -36,11 +36,12 @@ struct Protocol {
 contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     event SanctionViolation(address account, address eoa_origin);
-
     event SanctionViolation(address eoa_origin);
+    event SanctionsDisabled();
 
     Protocol private _protocol;
     address private _treasury;
+    bool private _enabledSanctions;
 
     constructor() initializer {}
 
@@ -174,13 +175,24 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
         _treasury = treasury;
-
         _protocol = newProtocol;
+
+        _enabledSanctions = true;
     }
 
     function setTreasury(address newTreasury) public {
         require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
         _treasury = newTreasury;
+    }
+
+    function disableSanctions() public {
+        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
+        _enabledSanctions = false;
+    }
+
+    function enableSanctions() public {
+        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
+        _enabledSanctions = true;
     }
 
     function setOracle(address newOracle) public {
@@ -220,6 +232,10 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     }
 
     function _checkSanctions(address[] memory _accounts) internal returns(bool) {
+        if(!_enabledSanctions) {
+            emit SanctionsDisabled();
+            return false;
+        }
         bool sanctioned = false;
         for(uint i = 0; i < _accounts.length; i++) {
             if(_accounts[i] != address(0) && ISanctions(_protocol.sanctions).isSanctioned(_accounts[i])) {
