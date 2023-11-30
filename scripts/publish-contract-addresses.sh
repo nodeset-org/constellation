@@ -1,7 +1,8 @@
 #!/bin/bash
 DATA_FILE="../dist/contract_addresses.data"
 SECRET_NAMESPACE="dev/goerli"
-BUCKET_NAME="constellation/contract_addresses"
+BUCKET_NAME="constellation"
+BUCKET_DIR="contract_addresses"
 
 # Check if S3 bucket exists
 if ! aws s3 ls "s3://$BUCKET_NAME" > /dev/null 2>&1 ; then
