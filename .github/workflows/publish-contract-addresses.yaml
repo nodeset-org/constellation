@@ -29,15 +29,13 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: us-east-1  # Modify the region as needed
 
-      #- name: Run Tests
-      #  run: npx hardhat test
+      - name: Run Tests
+        run: npx hardhat test
 
-      #- name: Deploy to Environment (if needed)
-      #  run: npx hardhat run ./scripts/goerli_dev_setup.ts --network hardhat
+      - name: Deploy to Environment (if needed)
+        run: npx hardhat run ./scripts/goerli_dev_setup.ts --network hardhat
 
       - name: Run publish-contract-addresses.sh
         run: chmod +x ./scripts/publish-contract-addresses.sh && ./scripts/publish-contract-addresses.sh
       - name: Run get-contract-addresses-secrets.sh
         run: chmod +x ./scripts/get-contract-addresses-secrets.sh && ./scripts/get-contract-addresses-secrets.sh
-      - name: Run query_contract_addresses.sh 
-        run: chmod +x ./scripts/query_contract_addresses.sh  && ./scripts/query_contract_addresses.sh 
