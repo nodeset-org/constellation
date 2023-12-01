@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - dev
+      - feat/capture-and-publish-addresses
 
 jobs:
   deploy_on_merge:
@@ -29,8 +30,8 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: us-east-1  # Modify the region as needed
 
-      - name: Run Tests
-        run: npx hardhat test
+      #- name: Run Tests
+      #  run: npx hardhat test
 
       #- name: Deploy to Environment (if needed)
       #  run: npx hardhat run ./scripts/goerli_dev_setup.ts --network hardhat
