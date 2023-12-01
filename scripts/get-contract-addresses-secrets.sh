@@ -8,5 +8,5 @@ secrets_list=$(aws secretsmanager list-secrets --query "SecretList[?starts_with(
 for secret_name in $secrets_list; do
   secret_value=$(aws secretsmanager get-secret-value --secret-id "$secret_name" --query "SecretString" --output text)
   echo "Secret Name: $secret_name"
-  echo "Secret Value: $secret_value"
+  #echo "Secret Value: $secret_value"
 done
