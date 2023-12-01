@@ -7,20 +7,19 @@ on:
       - feat/capture-and-publish-addresses
 
 jobs:
-  deploy_on_merge:
+  build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: 18
+      #- name: Set up Node.js
+      #  uses: actions/setup-node@v2
+      #  with:
+      #    node-version: 18
 
-      - name: Install Dependencies
-        run: npm install
+      #- name: Install Dependencies
+      #  run: npm install
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
