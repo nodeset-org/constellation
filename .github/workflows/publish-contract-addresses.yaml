@@ -13,13 +13,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      #- name: Set up Node.js
-      #  uses: actions/setup-node@v2
-      #  with:
-      #    node-version: 18
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18
 
-      #- name: Install Dependencies
-      #  run: npm install
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Tests
+        run: npx hardhat test
+
+      - name: Deploy to Environment (if needed)
+        run: npx hardhat run ./scripts/goerli_dev_setup.ts --network hardhat
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -27,13 +33,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: us-east-1  # Modify the region as needed
-
-      - name: Run Tests
-        run: npx hardhat test
-
-      - name: Deploy to Environment (if needed)
-        run: npx hardhat run ./scripts/goerli_dev_setup.ts --network hardhat
+          aws-region: us-east-1  # Modify the region as needed        
 
       - name: Run publish-contract-addresses.sh
         run: chmod +x ./scripts/publish-contract-addresses.sh && ./scripts/publish-contract-addresses.sh
