@@ -1,5 +1,5 @@
 #!/bin/bash
-DATA_FILE="../dist/contracts.data"
+DATA_FILE="dist/contracts.data"
 SECRET_NAMESPACE="dev/goerli"
 BUCKET_NAME="constellation-metadata"
 if ! aws s3 ls "s3://$BUCKET_NAME" > /dev/null 2>&1; then
