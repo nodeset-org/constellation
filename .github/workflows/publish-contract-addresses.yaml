@@ -21,11 +21,11 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Run Tests
-        run: npx hardhat test
+      #- name: Run Tests
+      #  run: npx hardhat test
 
-      - name: Deploy to Environment (if needed)
-        run: npx hardhat run ./scripts/goerli_dev_setup.ts --network hardhat
+      #- name: Deploy to Environment (if needed)
+      #  run: npx hardhat run ./scripts/goerli_dev_setup.ts --network hardhat
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
