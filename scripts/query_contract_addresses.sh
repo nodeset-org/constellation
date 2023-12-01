@@ -1,8 +1,8 @@
+#!/bin/bash
 set -e
-BUCKET_NAME="constellation"
-BUCKET_DIR="contract_addresses"
-LOCAL_FILE="contract_addresses.data"
-DATA_FILE="$BUCKET_DIR/$LOCAL_FILE"
+BUCKET_NAME="constellation-metadata"
+LOCAL_FILE="contracts.data"
+DATA_FILE="$LOCAL_FILE"
 CONTRACT_NAMES=("All Contracts" "WETH" "UNISWAP_V3_POOL" "WHITELIST" "VCWETH" "VCRPL" "DEPOSIT_POOL" "OPERATOR_DISTRIBUTOR" "YIELD_DISTRIBUTOR" "ORACLE_MOCK" "PRICE_FETCHER" "DIRECTORY")
 
 echo "Select the contract to search:"
@@ -19,8 +19,8 @@ done
 if [ -n "$CONTRACT_NAME" ]; then
     echo "Querying for $CONTRACT_NAME"
     echo "Downloading updated file..."
-    TMP_FILE="$LOCAL_FILE.tmp"
-    STATUS_CODE=$(curl -o "$TMP_FILE" -w '%{http_code}' "https://$BUCKET_NAME.s3.amazonaws.com/$DATA_FILE")
+    TEMP_FILE="$LOCAL_FILE.temp"
+    STATUS_CODE=$(curl -o "$TEMP_FILE" -w '%{http_code}' "https://$BUCKET_NAME.s3.amazonaws.com/$DATA_FILE")
     if [ "$STATUS_CODE" -eq 200 ]; then
       echo "Download successful. Updating local file."
       mv "$TEMP_FILE" "$LOCAL_FILE"
