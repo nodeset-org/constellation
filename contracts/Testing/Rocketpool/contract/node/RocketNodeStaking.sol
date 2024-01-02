@@ -247,12 +247,11 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         return getBool(keccak256(abi.encodePacked("rpl.locking.allowed", _nodeAddress)));
     }
 
-    /// @notice Accept an RPL stake
-    ///         Only accepts calls from registered nodes
-    ///         Requires call to have approved this contract to spend RPL
+    /// @notice Accept an RPL stake from the node operator's own address
+    ///         Requires the node's RPL withdrawal address to be unset
     /// @param _amount The amount of RPL to stake
-    function stakeRPL(uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(msg.sender) {
-        _stakeRPL(msg.sender, _amount);
+    function stakeRPL(uint256 _amount) override external {
+        stakeRPLFor(msg.sender, _amount);
     }
 
     /// @notice Accept an RPL stake from any address for a specified node
@@ -260,7 +259,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     ///         Requires caller to be on the node operator's allow list (see `setStakeForAllowed`)
     /// @param _nodeAddress The address of the node operator to stake on behalf of
     /// @param _amount The amount of RPL to stake
-    function stakeRPLFor(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(_nodeAddress) {
+    function stakeRPLFor(address _nodeAddress, uint256 _amount) override public onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(_nodeAddress) {
        // Must be node's RPL withdrawal address if set or the node's address or an allow listed address or rocketMerkleDistributorMainnet
        if (msg.sender != getAddress(keccak256(abi.encodePacked("contract.address", "rocketMerkleDistributorMainnet")))) {
            RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
@@ -269,7 +268,8 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
                address rplWithdrawalAddress = rocketNodeManager.getNodeRPLWithdrawalAddress(_nodeAddress);
                fromNode = msg.sender == rplWithdrawalAddress;
            } else {
-               fromNode = msg.sender == _nodeAddress;
+               address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
+               fromNode = (msg.sender == _nodeAddress) || (msg.sender == withdrawalAddress);
            }
            if (!fromNode) {
                require(getBool(keccak256(abi.encodePacked("node.stake.for.allowed", _nodeAddress, msg.sender))), "Not allowed to stake for");
@@ -302,9 +302,9 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @param _allowed Whether the address is allowed or denied
     function setStakeRPLForAllowed(address _nodeAddress, address _caller, bool _allowed) override public onlyLatestContract("rocketNodeStaking", address(this)) onlyRPLWithdrawalAddressOrNode(_nodeAddress) {
         // Set the value
-        setBool(keccak256(abi.encodePacked("node.stake.for.allowed", msg.sender, _caller)), _allowed);
+        setBool(keccak256(abi.encodePacked("node.stake.for.allowed", _nodeAddress, _caller)), _allowed);
         // Log it
-        emit StakeRPLForAllowed(msg.sender, _caller, _allowed, block.timestamp);
+        emit StakeRPLForAllowed(_nodeAddress, _caller, _allowed, block.timestamp);
     }
 
     /// @dev Internal logic for staking RPL
@@ -408,20 +408,20 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         RocketDAOProtocolSettingsRewardsInterface rocketDAOProtocolSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check cooldown period (one claim period) has passed since RPL last staked
-        require(block.timestamp - getNodeRPLStakedTime(msg.sender) >= rocketDAOProtocolSettingsRewards.getRewardsClaimIntervalTime(), "The withdrawal cooldown period has not passed");
+        require(block.timestamp - getNodeRPLStakedTime(_nodeAddress) >= rocketDAOProtocolSettingsRewards.getRewardsClaimIntervalTime(), "The withdrawal cooldown period has not passed");
         // Get & check node's current RPL stake
-        uint256 rplStake = getNodeRPLStake(msg.sender);
-        uint256 lockedStake = getNodeRPLLocked(msg.sender);
+        uint256 rplStake = getNodeRPLStake(_nodeAddress);
+        uint256 lockedStake = getNodeRPLLocked(_nodeAddress);
         require(rplStake >= _amount, "Withdrawal amount exceeds node's staked RPL balance");
-        // Check withdrawal would not undercollateralize node
-        require(rplStake - _amount - lockedStake >= getNodeMaximumRPLStake(msg.sender), "Node's staked RPL balance after withdrawal is less than required balance");
+        // Check withdrawal would not under collateralise node
+        require(rplStake - _amount - lockedStake >= getNodeMaximumRPLStake(_nodeAddress), "Node's staked RPL balance after withdrawal is less than required balance");
         // Update RPL stake amounts
         decreaseTotalRPLStake(_amount);
-        decreaseNodeRPLStake(msg.sender, _amount);
+        decreaseNodeRPLStake(_nodeAddress, _amount);
         // Transfer RPL tokens to node's RPL withdrawal address (if unset, defaults to primary withdrawal address)
         rocketVault.withdrawToken(rplWithdrawalAddress, IERC20(getContractAddress("rocketTokenRPL")), _amount);
         // Emit RPL withdrawn event
-        emit RPLWithdrawn(msg.sender, _amount, block.timestamp);
+        emit RPLWithdrawn(_nodeAddress, _amount, block.timestamp);
     }
 
     /// @notice Slash a node's RPL by an ETH amount

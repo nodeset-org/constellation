@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin4/contracts/utils/math/Math.sol";
 
 import "../RocketBase.sol";
 import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
@@ -18,6 +18,9 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
 
     // Constants
     bytes32 immutable internal priceKey;
+
+    // Events
+    event DelegateSet(address nodeOperator, address delegate, uint256 time);
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
@@ -72,6 +75,9 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
     /// @param _nodeAddress Address of the node operator
     /// @param _block Block number to query
     function getVotingPower(address _nodeAddress, uint32 _block) external override view returns (uint256) {
+        // Validate block number
+        require(_block <= block.number, "Block must be in the past");
+
         // Check if the node operator has enabled voting
         if (!getBool(keccak256(abi.encodePacked("node.voting.enabled", _nodeAddress)))) {
             return 0;
@@ -102,11 +108,11 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         key = keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress));
         uint256 rplStake = uint256(rocketNetworkSnapshots.lookupRecent(key, uint32(_block), 5));
 
-        return calculateVotingPower(rplStake, ethMatched, ethProvided, rplPrice);
+        return calculateVotingPower(rplStake, ethProvided, rplPrice);
     }
 
     /// @dev Calculates and returns a node's voting power based on the given inputs
-    function calculateVotingPower(uint256 rplStake, uint256 matchedETH, uint256 providedETH, uint256 rplPrice) internal view returns (uint256) {
+    function calculateVotingPower(uint256 rplStake, uint256 providedETH, uint256 rplPrice) internal view returns (uint256) {
         // Get contracts
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         // RPL stake cannot exceed maximum
@@ -123,6 +129,7 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         bytes32 key = keccak256(abi.encodePacked("node.delegate", msg.sender));
         rocketNetworkSnapshots.push(key, uint32(block.number), uint224(uint160(_newDelegate)));
+        emit DelegateSet(msg.sender, _newDelegate, block.timestamp);
     }
 
     function getDelegate(address _nodeAddress, uint32 _block) external override view returns (address) {

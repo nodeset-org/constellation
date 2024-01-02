@@ -106,7 +106,7 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
     function finalise(uint256 _proposalID) override external onlyLatestContract("rocketDAOProtocolProposal", address(this)) {
         // Check state
         require(getState(_proposalID) == ProposalState.Vetoed, "Proposal has not been vetoed");
-        bytes32 finalisedKey = keccak256(abi.encodePacked(daoProposalNameSpace, "cancelled", _proposalID));
+        bytes32 finalisedKey = keccak256(abi.encodePacked(daoProposalNameSpace, "finalised", _proposalID));
         require(getBool(finalisedKey) == false, "Proposal already finalised");
         setBool(finalisedKey, true);
         // Burn the proposer's bond
@@ -174,25 +174,26 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
         return getString(keccak256(abi.encodePacked(daoProposalNameSpace, "message", _proposalID)));
     }
 
-    /// @notice Get the start block of this proposal
+    /// @notice Get the start of this proposal as a timestamp
     /// @param _proposalID The ID of the proposal to query
     function getStart(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "start", _proposalID)));
     }
 
-    /// @notice Get the end of phase1 block of this proposal
+    /// @notice Get the end of phase1 of this proposal as a timestamp
     /// @param _proposalID The ID of the proposal to query
     function getPhase1End(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "phase1End", _proposalID)));
     }
 
-    /// @notice Get the end of phase2 block of this proposal
+    /// @notice Get the end of phase2 of this proposal as a timestamp
     /// @param _proposalID The ID of the proposal to query
+    /// @return timestamp for the end of phase2
     function getPhase2End(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "phase2End", _proposalID)));
     }
 
-    /// @notice The block where the proposal expires and can no longer be executed if it is successful
+    /// @notice The timestamp where the proposal expires and can no longer be executed if it is successful
     /// @param _proposalID The ID of the proposal to query
     function getExpires(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "expires", _proposalID)));
@@ -266,7 +267,7 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
         return votesVeto >= quorum;
     }
 
-    /// @notice Get the votes against count of this proposal
+    /// @notice Get the proposal payload
     /// @param _proposalID The ID of the proposal to query
     function getPayload(uint256 _proposalID) override public view returns (bytes memory) {
         return getBytes(keccak256(abi.encodePacked(daoProposalNameSpace, "payload", _proposalID)));
@@ -279,7 +280,7 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
         return getReceiptDirection(_proposalID, _nodeAddress) != VoteDirection.NoVote;
     }
 
-    /// @notice Returns true if this proposal was supported by this node
+    /// @notice Returns the direction a node voted on a given proposal
     /// @param _proposalID The ID of the proposal to query
     /// @param _nodeAddress The node operator address to query
     function getReceiptDirection(uint256 _proposalID, address _nodeAddress) override public view returns (VoteDirection) {
@@ -349,6 +350,8 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
     /// @param _payload A calldata payload to execute after the proposal is successful
     /// @return The new proposal's ID
     function _propose(string memory _proposalMessage, uint256 _blockNumber, uint256 _totalVotingPower, bytes calldata _payload) internal returns (uint256) {
+        // Validate block number
+        require(_blockNumber <= block.number, "Block must be in the past");
         // Load contracts
         RocketDAOProtocolSettingsProposalsInterface rocketDAOProtocolSettingsProposals = RocketDAOProtocolSettingsProposalsInterface(getContractAddress("rocketDAOProtocolSettingsProposals"));
         require(_blockNumber + rocketDAOProtocolSettingsProposals.getProposalMaxBlockAge() > block.number, "Block too old");
