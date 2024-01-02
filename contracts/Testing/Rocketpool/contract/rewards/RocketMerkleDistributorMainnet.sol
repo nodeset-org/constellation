@@ -10,7 +10,7 @@ import "../../interface/rewards/RocketSmoothingPoolInterface.sol";
 import "../../interface/RocketVaultWithdrawerInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 
-import "@openzeppelin4/contracts/utils/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 /// @dev On mainnet, the relay and the distributor are the same contract as there is no need for an intermediate contract to
 ///      handle cross-chain messaging.

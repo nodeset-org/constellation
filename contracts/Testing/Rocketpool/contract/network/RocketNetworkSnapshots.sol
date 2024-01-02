@@ -3,7 +3,7 @@
 // Adapted from OpenZeppelin `Checkpoints` contract
 pragma solidity 0.8.18;
 
-import "@openzeppelin4/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "../RocketBase.sol";
 import "../../interface/network/RocketNetworkSnapshotsInterface.sol";

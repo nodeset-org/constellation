@@ -6,7 +6,7 @@ import "../../../interface/dao/protocol/RocketDAOProtocolVerifierInterface.sol";
 import "../../../interface/network/RocketNetworkVotingInterface.sol";
 import "../../../interface/node/RocketNodeManagerInterface.sol";
 
-import "@openzeppelin4/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../../../interface/token/RocketTokenRPLInterface.sol";
 import "../../../interface/dao/protocol/RocketDAOProtocolProposalsInterface.sol";
 import "../../../interface/dao/RocketDAOProposalInterface.sol";
