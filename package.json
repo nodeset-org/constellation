@@ -52,6 +52,7 @@
     "hardhat-contract-sizer": "^2.10.0",
     "hardhat-gas-reporter": "^1.0.9",
     "oz-contracts-3-4-0": "npm:@openzeppelin/contracts@^3.4.0",
+    "oz-contracts-340": "npm:@openzeppelin/contracts@^3.4.0",
     "rlp": "^3.0.0",
     "seedrandom": "^3.0.5"
   }

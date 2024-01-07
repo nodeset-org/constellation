@@ -11,7 +11,7 @@ import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsInterfa
 import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsProposalsInterface.sol";
 import "../../../interface/dao/RocketDAOProposalInterface.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "./util/SafeMath.sol";
 
 
 // The Trusted Node DAO Proposals 
