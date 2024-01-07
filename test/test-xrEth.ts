@@ -89,7 +89,7 @@ describe("xrETH", function () {
     });
   });
 
-  describe.only("sanctions checks", () => {
+  describe("sanctions checks", () => {
 
     it("success - allows deposits from non-sanctioned senders and origins", async () => {
       const { protocol, signers } = await protocolFixture();

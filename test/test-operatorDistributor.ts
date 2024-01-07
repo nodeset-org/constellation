@@ -9,7 +9,7 @@ import { IMinipool, MockMinipool } from "../typechain-types";
 describe("Operator Distributor", function () {
 
 	// TODO: Why does this only work when the test is run on its own?
-	it.skip("Tops up the RPL stake if it is below the minimum", async function () {
+	it("Tops up the RPL stake if it is below the minimum", async function () {
 		// load fixture
 		const setupData = await loadFixture(protocolFixture);
 		const { protocol, signers, rocketPool } = setupData;
@@ -41,7 +41,7 @@ describe("Operator Distributor", function () {
 
 	});
 
-   it.skip("Rewards distribution distributes correct amounts of ETH to all NOs", async function () {
+   it("Rewards distribution distributes correct amounts of ETH to all NOs", async function () {
      // record all node balances
      // capture pending rewards
      // distribute rewards
