@@ -247,6 +247,69 @@ export async function deployRocketPool() {
                         contracts[contract].setAsDeployed(instance);
                         break;
 
+                    // Upgrade contract
+                    case 'rocketUpgradeOneDotThree':
+                        const upgrader = await contracts[contract].new(rocketStorageInstance.address);
+                        contracts[contract].setAsDeployed(upgrader);
+                        const args = [
+                            [
+                                (await contracts.rocketDAOProtocolNew.deployed()).address,
+                                (await contracts.rocketDAOProtocolProposalsNew.deployed()).address,
+                                (await contracts.rocketNetworkPricesNew.deployed()).address,
+                                (await contracts.rocketNodeDepositNew.deployed()).address,
+                                (await contracts.rocketNodeManagerNew.deployed()).address,
+                                (await contracts.rocketNodeStakingNew.deployed()).address,
+                                (await contracts.rocketClaimDAONew.deployed()).address,
+                                (await contracts.rocketDAOProtocolSettingsRewardsNew.deployed()).address,
+                                (await contracts.rocketMinipoolManagerNew.deployed()).address,
+                                (await contracts.rocketRewardsPoolNew.deployed()).address,
+                                (await contracts.rocketNetworkBalancesNew.deployed()).address,
+                                (await contracts.rocketDAOProtocolSettingsNetworkNew.deployed()).address,
+                                (await contracts.rocketDAOProtocolSettingsAuctionNew.deployed()).address,
+                                (await contracts.rocketDAOProtocolSettingsDepositNew.deployed()).address,
+                                (await contracts.rocketDAOProtocolSettingsInflationNew.deployed()).address,
+                                (await contracts.rocketDAOProtocolSettingsMinipoolNew.deployed()).address,
+                                (await contracts.rocketDAOProtocolVerifier.deployed()).address,
+                                (await contracts.rocketDAOProtocolSettingsProposals.deployed()).address,
+                                (await contracts.rocketDAOProtocolSettingsSecurity.deployed()).address,
+                                (await contracts.rocketDAOSecurity.deployed()).address,
+                                (await contracts.rocketDAOSecurityActions.deployed()).address,
+                                (await contracts.rocketDAOSecurityProposals.deployed()).address,
+                                (await contracts.rocketNetworkSnapshots.deployed()).address,
+                                (await contracts.rocketNetworkVoting.deployed()).address,
+                                (await contracts.rocketDAOProtocolProposal.deployed()).address,
+                            ],
+                            [
+                                compressABI(contracts.rocketDAOProtocolNew.abi),
+                                compressABI(contracts.rocketDAOProtocolProposalsNew.abi),
+                                compressABI(contracts.rocketNetworkPricesNew.abi),
+                                compressABI(contracts.rocketNodeDepositNew.abi),
+                                compressABI(contracts.rocketNodeManagerNew.abi),
+                                compressABI(contracts.rocketNodeStakingNew.abi),
+                                compressABI(contracts.rocketClaimDAONew.abi),
+                                compressABI(contracts.rocketDAOProtocolSettingsRewardsNew.abi),
+                                compressABI(contracts.rocketMinipoolManagerNew.abi),
+                                compressABI(contracts.rocketRewardsPoolNew.abi),
+                                compressABI(contracts.rocketNetworkBalancesNew.abi),
+                                compressABI(contracts.rocketDAOProtocolSettingsNetworkNew.abi),
+                                compressABI(contracts.rocketDAOProtocolSettingsAuctionNew.abi),
+                                compressABI(contracts.rocketDAOProtocolSettingsDepositNew.abi),
+                                compressABI(contracts.rocketDAOProtocolSettingsInflationNew.abi),
+                                compressABI(contracts.rocketDAOProtocolSettingsMinipoolNew.abi),
+                                compressABI(contracts.rocketDAOProtocolVerifier.abi),
+                                compressABI(contracts.rocketDAOProtocolSettingsProposals.abi),
+                                compressABI(contracts.rocketDAOProtocolSettingsSecurity.abi),
+                                compressABI(contracts.rocketDAOSecurity.abi),
+                                compressABI(contracts.rocketDAOSecurityActions.abi),
+                                compressABI(contracts.rocketDAOSecurityProposals.abi),
+                                compressABI(contracts.rocketNetworkSnapshots.abi),
+                                compressABI(contracts.rocketNetworkVoting.abi),
+                                compressABI(contracts.rocketDAOProtocolProposal.abi),
+                            ],
+                        ]
+                        await upgrader.set(...args)
+                        break;
+
                     // All other contracts - pass storage address
                     default:
                         if(contract === 'rocketStorage') {
@@ -282,6 +345,34 @@ export async function deployRocketPool() {
         for (let contract in contracts) {
             if(contracts.hasOwnProperty(contract)) {
                 switch (contract) {
+                    // Ignore contracts that will be upgraded later
+                    case 'rocketDAOProtocolNew':
+                    case 'rocketDAOProtocolProposalsNew':
+                    case 'rocketNetworkPricesNew':
+                    case 'rocketNodeDepositNew':
+                    case 'rocketNodeManagerNew':
+                    case 'rocketNodeStakingNew':
+                    case 'rocketClaimDAONew':
+                    case 'rocketDAOProtocolSettingsRewardsNew':
+                    case 'rocketMinipoolManagerNew':
+                    case 'rocketRewardsPoolNew':
+                    case 'rocketNetworkBalancesNew':
+                    case 'rocketDAOProtocolSettingsNetworkNew':
+                    case 'rocketDAOProtocolSettingsAuctionNew':
+                    case 'rocketDAOProtocolSettingsDepositNew':
+                    case 'rocketDAOProtocolSettingsInflationNew':
+                    case 'rocketDAOProtocolSettingsMinipoolNew':
+                    case 'rocketDAOProtocolVerifier':
+                    case 'rocketDAOProtocolSettingsProposals':
+                    case 'rocketDAOProtocolSettingsSecurity':
+                    case 'rocketDAOSecurity':
+                    case 'rocketDAOSecurityActions':
+                    case 'rocketDAOSecurityProposals':
+                    case 'rocketNetworkSnapshots':
+                    case 'rocketNetworkVoting':
+                    case 'rocketDAOProtocolProposal':
+                        break;
+                        
                     default:
                         const address = contract === 'casperDeposit' ? contracts[contract].address : (await contracts[contract].deployed()).address;
 
@@ -377,5 +468,13 @@ export async function deployRocketPool() {
 
         instance = await rocketNodeDepositLEB4.new(rocketStorageInstance.address);
         rocketNodeDepositLEB4.setAsDeployed(instance);
+    }
+
+    // Perform upgrade if we are not running in test environment
+    if (network.name !== 'hardhat') {
+        console.log('Executing upgrade to v1.3')
+        const RocketUpgradeOneDotThree = artifacts.require('RocketUpgradeOneDotThree')
+        const rocketUpgradeOneDotThree = await RocketUpgradeOneDotThree.deployed();
+        await rocketUpgradeOneDotThree.execute({ from: accounts[0] });
     }
 };
