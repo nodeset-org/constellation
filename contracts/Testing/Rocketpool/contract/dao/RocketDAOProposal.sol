@@ -5,7 +5,7 @@ pragma solidity 0.7.6;
 import "../RocketBase.sol";
 import "../../interface/dao/RocketDAOProposalInterface.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../util/SafeMath.sol";
 
 
 // A DAO proposal

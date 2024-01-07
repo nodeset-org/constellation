@@ -12,7 +12,7 @@ import "../../../interface/rewards/claims/RocketClaimTrustedNodeInterface.sol";
 import "../../../interface/util/AddressSetStorageInterface.sol";
 import "../../../interface/util/IERC20Burnable.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../../util/SafeMath.sol";
 
 
 // The Trusted Node DAO Actions
