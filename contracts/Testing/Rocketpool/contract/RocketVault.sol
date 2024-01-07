@@ -7,7 +7,7 @@ import "./util/SafeERC20.sol";
 import "../interface/RocketVaultInterface.sol";
 import "../interface/RocketVaultWithdrawerInterface.sol";
 import "../interface/util/IERC20Burnable.sol";
-import "oz-contracts-3-4-0/math/SafeMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 // ETH and rETH are stored here to prevent contract upgrades from affecting balances
 // The RocketVault contract must not be upgraded

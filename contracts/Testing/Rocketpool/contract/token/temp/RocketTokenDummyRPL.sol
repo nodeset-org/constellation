@@ -2,8 +2,8 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "oz-contracts-3-4-0/token/ERC20/ERC20.sol";
-import "oz-contracts-3-4-0/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 
 /// @title Dummy Rocket Pool Token (RPL) contract (do not deploy to mainnet)

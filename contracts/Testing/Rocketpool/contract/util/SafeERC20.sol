@@ -3,8 +3,8 @@
 pragma solidity >0.5.0 <0.9.0;
 
 import "../../interface/util/IERC20.sol";
-import "oz-contracts-3-4-0/math/SafeMath.sol";
-import "oz-contracts-3-4-0/utils/Address.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 /**
  * @title SafeERC20

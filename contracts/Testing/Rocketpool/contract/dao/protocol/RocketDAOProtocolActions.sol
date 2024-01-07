@@ -7,7 +7,7 @@ import "../../../interface/RocketVaultInterface.sol";
 import "../../../interface/dao/protocol/RocketDAOProtocolActionsInterface.sol";
 import "../../../interface/util/IERC20Burnable.sol";
 
-import "oz-contracts-3-4-0/math/SafeMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
 // The Rocket Pool Network DAO Actions - This is a placeholder for the network DAO to come

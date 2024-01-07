@@ -5,7 +5,7 @@ pragma solidity 0.7.6;
 import "../RocketBase.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
 
-import "oz-contracts-3-4-0/math/SafeMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 // Address set storage helper for RocketStorage data (contains unique items; has reverse index lookups)
 
