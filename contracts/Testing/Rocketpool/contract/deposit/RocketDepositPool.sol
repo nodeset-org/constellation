@@ -3,7 +3,7 @@ pragma solidity 0.7.6;
 
 import "../util/SafeMath.sol";
 import "oz-contracts-3-4-0/math/SignedSafeMath.sol";
-import "@openzeppelin/contracts/utils/SafeCast.sol";
+import "oz-contracts-3-4-0/utils/SafeCast.sol";
 
 import "../RocketBase.sol";
 import "../../interface/RocketVaultInterface.sol";

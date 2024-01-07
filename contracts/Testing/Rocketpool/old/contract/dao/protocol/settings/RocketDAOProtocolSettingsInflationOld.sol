@@ -6,7 +6,7 @@ import "../../../../../contract/dao/protocol/settings/RocketDAOProtocolSettings.
 import "../../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsInflationInterface.sol";
 import "../../../../../interface/token/RocketTokenRPLInterface.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "oz-contracts-3-4-0/math/SafeMath.sol";
 
 // RPL Inflation settings in RP which the DAO will have full control over
 contract RocketDAOProtocolSettingsInflationOld is RocketDAOProtocolSettings, RocketDAOProtocolSettingsInflationInterface {

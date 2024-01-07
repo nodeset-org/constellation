@@ -11,7 +11,7 @@ import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMembers
 import "../../../interface/dao/RocketDAOProposalInterface.sol";
 import "../../../interface/util/AddressSetStorageInterface.sol";
 
-import "./util/SafeMath.sol";
+import "oz-contracts-3-4-0/math/SafeMath.sol";
 
 
 // The Trusted Node DAO 

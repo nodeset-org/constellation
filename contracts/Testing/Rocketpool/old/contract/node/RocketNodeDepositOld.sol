@@ -13,7 +13,7 @@ import "../../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "oz-contracts-3-4-0/math/SafeMath.sol";
 
 /// @notice Handles node deposits and minipool creation
 contract RocketNodeDepositOld is RocketBase, RocketNodeDepositInterfaceOld {
