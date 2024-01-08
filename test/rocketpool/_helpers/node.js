@@ -8,6 +8,8 @@ import {
     RocketStorage,
     RocketDAONodeTrusted,
     RocketMinipoolFactory,
+    RocketNodeManagerNew,
+    RocketNodeStakingNew,
 } from '../_utils/artifacts';
 import { setDaoNodeTrustedBootstrapMember } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { daoNodeTrustedMemberJoin } from '../dao/scenario-dao-node-trusted';
@@ -44,7 +46,7 @@ export async function getNodeMinimumRPLStake(nodeAddress) {
 
 // Register a node
 export async function registerNode(txOptions) {
-    const rocketNodeManager = await RocketNodeManager.deployed();
+    const rocketNodeManager = await RocketNodeManagerNew.deployed();
     await rocketNodeManager.registerNode('Australia/Brisbane', txOptions);
 }
 
@@ -111,7 +113,7 @@ export async function setNodeWithdrawalAddress(nodeAddress, withdrawalAddress, t
 // Submit a node RPL stake
 export async function nodeStakeRPL(amount, txOptions) {
     const [rocketNodeStaking, rocketTokenRPL] = await Promise.all([
-        RocketNodeStaking.deployed(),
+        RocketNodeStakingNew.deployed(),
         RocketTokenRPL.deployed(),
     ]);
     await rocketTokenRPL.approve(rocketNodeStaking.address, amount, txOptions);

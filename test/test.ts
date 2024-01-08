@@ -11,6 +11,7 @@ import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketNodeManager,
 import { setDefaultParameters } from "./rocketpool/_helpers/defaults";
 import { suppressLog } from "./rocketpool/_helpers/console";
 import { deployRocketPool } from "./rocketpool/_helpers/deployment";
+import { upgradeExecuted } from "./rocketpool/_utils/upgrade";
 
 export const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
 
@@ -227,6 +228,8 @@ async function createSigners(): Promise<Signers> {
 
 export async function protocolFixture(): Promise<SetupData> {
 	await suppressLog(deployRocketPool);
+	//await upgradeExecuted();
+	//await deployRocketPool();
 	await setDefaultParameters();
 
 	const signers = await createSigners();

@@ -1,5 +1,5 @@
 import Web3 from 'web3';
-import { RocketDAOProtocol, RocketDAOProtocolSettingsRewards, RocketDAOProtocolSettingsInflation, RocketTokenRPL, RocketVault } from '../_utils/artifacts';
+import { RocketDAOProtocol, RocketDAOProtocolSettingsRewards, RocketDAOProtocolSettingsInflation, RocketTokenRPL, RocketVault, RocketDAOProtocolNew } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 
 
@@ -12,7 +12,7 @@ export async function setDAOProtocolBootstrapSetting(_settingContractInstance, _
     }
 
     // Load contracts
-    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+    const rocketDAOProtocol = await RocketDAOProtocolNew.deployed();
     const rocketDAOProtocolSettingsContract = await _settingContractInstance.deployed();
 
     // Get data about the tx
