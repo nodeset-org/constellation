@@ -11,7 +11,7 @@ import { OperatorStruct } from "../protocol-types/types";
 import { deployMockMinipool, expectNumberE18ToBeApproximately, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances } from "../utils/utils";
 
 
-describe.only("Node Operator Onboarding", function () {
+describe("Node Operator Onboarding", function () {
 
     let setupData: SetupData;
     let protocol: Protocol;
