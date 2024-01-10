@@ -168,7 +168,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         vars.totalShares = positions[receiver].shares + shares;
         vars.weightedPriceSum = vars.originalValueTimesShares + vars.newValueTimesShares;
 
-        positions[receiver].pricePaidPerShare = vars.weightedPriceSum / vars.totalShares / 1e18;
+        positions[receiver].pricePaidPerShare = vars.weightedPriceSum / (vars.totalShares == 0 ? 1 : vars.totalShares) / 1e18;
         positions[receiver].shares += shares;
 
         super._deposit(caller, receiver, assets, shares);

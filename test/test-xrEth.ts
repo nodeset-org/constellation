@@ -63,7 +63,7 @@ describe("xrETH", function () {
 
     await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmountEth });
     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, depositAmountEth);
-    await protocol.vCWETH.connect(signers.ethWhale).deposit(depositAmountEth, signers.ethWhale.address);
+    await protocol.vCWETH.connect(signers.ethWhale).deposit(depositAmountEth, signers.ethWhale.address);  
 
     const totalAssetETHAfterDeposit = await protocol.vCWETH.totalAssets();
 
