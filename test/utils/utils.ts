@@ -180,6 +180,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         await setupData.protocol.operatorDistributor.connect(setupData.signers.admin).reimburseNodeForMinipool(sig, mockMinipool.address);
         operatorData = await setupData.protocol.whitelist.getOperatorAtAddress(nodeOperator.address);
         expect(operatorData.currentValidatorCount).to.equal(lastCount + 1);
+
     }
 };
 
