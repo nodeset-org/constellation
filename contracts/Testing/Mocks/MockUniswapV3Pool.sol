@@ -3,7 +3,6 @@
 pragma solidity 0.8.17;
 
 contract MockUniswapV3Pool {
-
     uint256 public sqrtPriceX96;
 
     constructor() {

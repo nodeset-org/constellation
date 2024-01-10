@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
 
 /// @title MockERC20
 /// @dev Simple ERC20 Token example, where all tokens are pre-assigned to the creator.
@@ -11,11 +11,7 @@ contract MockERC20 is ERC20, Ownable {
     /// @param _name Token name.
     /// @param _symbol Token symbol.
     /// @param _initialSupply Initial supply of tokens in wei.
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        uint256 _initialSupply
-    ) ERC20(_name, _symbol) {
+    constructor(string memory _name, string memory _symbol, uint256 _initialSupply) ERC20(_name, _symbol) {
         _mint(msg.sender, _initialSupply);
     }
 

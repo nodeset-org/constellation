@@ -3,25 +3,28 @@
 // Adapted from OpenZeppelin `Checkpoints` contract
 pragma solidity 0.8.18;
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
+import '@openzeppelin/contracts/utils/math/Math.sol';
 
-import "../RocketBase.sol";
-import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
+import '../RocketBase.sol';
+import '../../interface/network/RocketNetworkSnapshotsInterface.sol';
 
 /// @notice Accounting for snapshotting of values based on block numbers
 contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
-
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Set contract version
         version = 1;
     }
 
-    function push(bytes32 _key, uint32 _block, uint224 _value) onlyLatestContract("rocketNetworkSnapshots", address(this)) onlyLatestNetworkContract external {
+    function push(
+        bytes32 _key,
+        uint32 _block,
+        uint224 _value
+    ) external onlyLatestContract('rocketNetworkSnapshots', address(this)) onlyLatestNetworkContract {
         _insert(_key, _block, _value);
     }
 
     function length(bytes32 _key) public view returns (uint256) {
-        return rocketStorage.getUint(keccak256(abi.encodePacked("snapshot.length", _key)));
+        return rocketStorage.getUint(keccak256(abi.encodePacked('snapshot.length', _key)));
     }
 
     function latest(bytes32 _key) external view returns (bool, uint32, uint224) {
@@ -76,7 +79,7 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
             Checkpoint224 memory last = _load(_key, pos - 1);
 
             // Checkpoint keys must be non-decreasing.
-            require (last._block <= _block, "Unordered snapshot insertion");
+            require(last._block <= _block, 'Unordered snapshot insertion');
 
             // Update or push new checkpoint
             if (last._block == _block) {
@@ -90,12 +93,7 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
         }
     }
 
-    function _binaryLookup(
-        bytes32 _key,
-        uint32 _block,
-        uint256 _low,
-        uint256 _high
-    ) private view returns (uint256) {
+    function _binaryLookup(bytes32 _key, uint32 _block, uint256 _low, uint256 _high) private view returns (uint256) {
         while (_low < _high) {
             uint256 mid = Math.average(_low, _high);
             if (_blockAt(_key, mid) > _block) {
@@ -129,7 +127,7 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
     }
 
     function _push(bytes32 _key, Checkpoint224 memory _item) private {
-        bytes32 lengthKey = keccak256(abi.encodePacked("snapshot.length", _key));
+        bytes32 lengthKey = keccak256(abi.encodePacked('snapshot.length', _key));
         uint256 snapshotLength = rocketStorage.getUint(lengthKey);
         bytes32 key = bytes32(uint256(_key) + snapshotLength);
         rocketStorage.setUint(lengthKey, snapshotLength + 1);
@@ -142,8 +140,6 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
     }
 
     function _encode(Checkpoint224 memory _item) private pure returns (bytes32) {
-        return bytes32(
-            uint256(_item._block) << 224 | uint256(_item._value)
-        );
+        return bytes32((uint256(_item._block) << 224) | uint256(_item._value));
     }
 }

@@ -2,39 +2,32 @@ pragma solidity ^0.8.0;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "../../util/SafeMath.sol";
-
+import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
+import '../../util/SafeMath.sol';
 
 /// @title Dummy Rocket Pool Token (RPL) contract (do not deploy to mainnet)
 /// @author Jake Pospischil <jake@rocketpool.net>
 
 contract RocketTokenDummyRPL is ERC20, Ownable {
-
-
     /**** Properties ***********/
 
     uint8 constant decimalPlaces = 18;
-    uint256 constant public exponent = 10**uint256(decimalPlaces);
-    uint256 constant public totalSupplyCap = 18.5 * (10**6) * exponent;    // 18 Million tokens
-
+    uint256 public constant exponent = 10 ** uint256(decimalPlaces);
+    uint256 public constant totalSupplyCap = 18.5 * (10 ** 6) * exponent; // 18 Million tokens
 
     /**** Libs *****************/
-    
-    using SafeMath for uint;
 
+    using SafeMath for uint;
 
     /*** Events ****************/
 
     event MintToken(address _minter, address _address, uint256 _value);
 
-
     /**** Methods ***********/
 
     // Construct with our token details
-    constructor(address _rocketStorageAddress) ERC20("Rocket Pool Dummy RPL", "DRPL") {}
-
+    constructor(address _rocketStorageAddress) ERC20('Rocket Pool Dummy RPL', 'DRPL') {}
 
     // @dev Mint the Rocket Pool Tokens (RPL)
     // @param _to The address that will receive the minted tokens.
@@ -53,11 +46,8 @@ contract RocketTokenDummyRPL is ERC20, Ownable {
         return true;
     }
 
-
     /// @dev Returns the amount of tokens that can still be minted
-    function getRemainingTokens() external view returns(uint256) {
+    function getRemainingTokens() external view returns (uint256) {
         return totalSupplyCap.sub(totalSupply());
     }
-
-
 }

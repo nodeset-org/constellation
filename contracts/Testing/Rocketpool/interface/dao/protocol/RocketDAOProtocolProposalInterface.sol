@@ -2,8 +2,8 @@
 pragma solidity >0.5.0 <0.9.0;
 pragma abicoder v2;
 
-import "../../../types/SettingType.sol";
-import "./RocketDAOProtocolVerifierInterface.sol";
+import '../../../types/SettingType.sol';
+import './RocketDAOProtocolVerifierInterface.sol';
 
 interface RocketDAOProtocolProposalInterface {
     // Possible states that a proposal may be in
@@ -54,8 +54,19 @@ interface RocketDAOProtocolProposalInterface {
     function getProposalBlock(uint256 _proposalID) external view returns (uint256);
     function getProposalVetoQuorum(uint256 _proposalID) external view returns (uint256);
 
-    function propose(string memory _proposalMessage, bytes memory _payload, uint32 _blockNumber, Types.Node[] calldata _treeNodes) external returns (uint256);
-    function vote(uint256 _proposalID, VoteDirection _vote, uint256 _votingPower, uint256 _nodeIndex, Types.Node[] calldata _witness) external;
+    function propose(
+        string memory _proposalMessage,
+        bytes memory _payload,
+        uint32 _blockNumber,
+        Types.Node[] calldata _treeNodes
+    ) external returns (uint256);
+    function vote(
+        uint256 _proposalID,
+        VoteDirection _vote,
+        uint256 _votingPower,
+        uint256 _nodeIndex,
+        Types.Node[] calldata _witness
+    ) external;
     function overrideVote(uint256 _proposalID, VoteDirection _voteDirection) external;
     function finalise(uint256 _proposalID) external;
     function execute(uint256 _proposalID) external;

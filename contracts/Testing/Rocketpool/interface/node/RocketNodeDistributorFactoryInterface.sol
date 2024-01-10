@@ -4,6 +4,6 @@ pragma solidity >0.5.0 <0.9.0;
 
 interface RocketNodeDistributorFactoryInterface {
     function getProxyBytecode() external pure returns (bytes memory);
-    function getProxyAddress(address _nodeAddress) external view returns(address);
+    function getProxyAddress(address _nodeAddress) external view returns (address);
     function createProxy(address _nodeAddress) external;
 }

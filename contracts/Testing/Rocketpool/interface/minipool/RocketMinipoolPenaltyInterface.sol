@@ -9,5 +9,5 @@ interface RocketMinipoolPenaltyInterface {
 
     // Penalty rate
     function setPenaltyRate(address _minipoolAddress, uint256 _rate) external;
-    function getPenaltyRate(address _minipoolAddress) external view returns(uint256);
+    function getPenaltyRate(address _minipoolAddress) external view returns (uint256);
 }

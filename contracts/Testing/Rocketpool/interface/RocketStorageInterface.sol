@@ -3,12 +3,11 @@ pragma solidity >0.5.0 <0.9.0;
 // SPDX-License-Identifier: GPL-3.0-only
 
 interface RocketStorageInterface {
-
     // Deploy status
     function getDeployedStatus() external view returns (bool);
 
     // Guardian
-    function getGuardian() external view returns(address);
+    function getGuardian() external view returns (address);
     function setGuardian(address _newAddress) external;
     function confirmGuardian() external;
 

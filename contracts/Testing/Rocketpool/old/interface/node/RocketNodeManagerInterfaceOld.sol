@@ -3,10 +3,9 @@ pragma abicoder v2;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "../../../types/NodeDetails.sol";
+import '../../../types/NodeDetails.sol';
 
 interface RocketNodeManagerInterfaceOld {
-
     // Structs
     struct TimezoneCount {
         string timezone;

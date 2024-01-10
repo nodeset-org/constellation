@@ -2,9 +2,16 @@
 pragma solidity >0.5.0 <0.9.0;
 
 interface RocketDAOProtocolSettingsRewardsInterface {
-    function setSettingRewardsClaimers(uint256 _trustedNodePercent, uint256 _protocolPercent, uint256 _nodePercent) external;
+    function setSettingRewardsClaimers(
+        uint256 _trustedNodePercent,
+        uint256 _protocolPercent,
+        uint256 _nodePercent
+    ) external;
     function getRewardsClaimerPerc(string memory _contractName) external view returns (uint256);
-    function getRewardsClaimersPerc() external view returns (uint256 _trustedNodePercent, uint256 _protocolPercent, uint256 _nodePercent);
+    function getRewardsClaimersPerc()
+        external
+        view
+        returns (uint256 _trustedNodePercent, uint256 _protocolPercent, uint256 _nodePercent);
     function getRewardsClaimersTrustedNodePerc() external view returns (uint256);
     function getRewardsClaimersProtocolPerc() external view returns (uint256);
     function getRewardsClaimersNodePerc() external view returns (uint256);

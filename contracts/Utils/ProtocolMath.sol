@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "abdk-libraries-solidity/ABDKMath64x64.sol";
+import '@openzeppelin/contracts/utils/math/Math.sol';
+import '@openzeppelin/contracts/utils/math/SafeCast.sol';
+import 'abdk-libraries-solidity/ABDKMath64x64.sol';
 
 pragma solidity ^0.8.0;
 
@@ -29,10 +29,7 @@ library ProtocolMath {
      *      Using 64x64 fixed-point arithmetic allows for precise calculations with fractional values,
      *      ensuring accuracy in financial and mathematical operations.
      */
-    function fromRatio(
-        uint256 numerator,
-        uint256 denominator
-    ) internal pure returns (int128) {
+    function fromRatio(uint256 numerator, uint256 denominator) internal pure returns (int128) {
         int128 _numerator = ABDKMath64x64.fromUInt(numerator);
         int128 _denominator = ABDKMath64x64.fromUInt(denominator);
         return ABDKMath64x64.div(_numerator, _denominator);
@@ -70,8 +67,8 @@ library ProtocolMath {
         int128 _k = fromRatio(k0, k1); // must be bin64 fixed point
         int128 _maxValue = fromRatio(maxValue0, maxValue1); // must be bin64 fixed point
 
-        require(_x <= ONE, "ProtocolMath: x must be <= ONE");
-        require(_k > 0, "ProtocolMath: k must be > 0");
+        require(_x <= ONE, 'ProtocolMath: x must be <= ONE');
+        require(_k > 0, 'ProtocolMath: k must be > 0');
 
         int128 exp_minus_k = ABDKMath64x64.exp(-_k);
         int128 exp_kx_minus_one = ABDKMath64x64.exp(_k.mul(_x.sub(ONE)));
