@@ -29,7 +29,7 @@ describe("Operator Distributor", function () {
 		console.log("passes rplContract.connec")
 		const minipools: MockMinipool[] = await getMockMinipoolsInProtocol(setupData);
 		console.log("got mock miniipools")
-		for(let i = 0; i < minipools.length; i++) {
+		for (let i = 0; i < minipools.length; i++) {
 			console.log("setting at i", i);
 			const minipool = minipools[i];
 			//await minipool.setNodeDepositBalance(ethers.utils.parseEther("1"));
@@ -47,10 +47,10 @@ describe("Operator Distributor", function () {
 
 	});
 
-   it("Rewards distribution distributes correct amounts of ETH to all NOs", async function () {
-     // record all node balances
-     // capture pending rewards
-     // distribute rewards
-     // verify rewards were distributed correctly
-   });
- });
+	it("Rewards distribution distributes correct amounts of ETH to all NOs", async function () {
+		// record all node balances
+		// capture pending rewards
+		// distribute rewards
+		// verify rewards were distributed correctly
+	});
+});
