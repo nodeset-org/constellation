@@ -3,7 +3,7 @@ import { ethers, upgrades } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber as BN } from "ethers";
-import { getMinipoolsInProtocol, getMockMinipoolsInProtocol, prepareOperatorDistributionContract, registerNewValidator, upgradePriceFetcherToMock } from "./utils/utils";
+import { getMinipoolsInProtocol, getMockMinipoolsInProtocol, prepareOperatorDistributionContract, printEventDetails, registerNewValidator, upgradePriceFetcherToMock } from "./utils/utils";
 import { IMinipool, MockMinipool } from "../typechain-types";
 
 describe("Operator Distributor", function () {
@@ -31,7 +31,8 @@ describe("Operator Distributor", function () {
 		}
 
 		const initialRplStake = await mockRocketNodeStaking.getNodeRPLStake(signers.random.address);
-		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
+		const tx = await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
+		printEventDetails(tx, operatorDistributor);
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();

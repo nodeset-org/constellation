@@ -70,7 +70,7 @@ export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: 
 
     // Stake RPL to cover minipools
     let minipoolRplStake = await getMinipoolMinimumRPLStake();
-    let rplStake =  ethers.BigNumber.from(minipoolRplStake.toString()).mul(3);
+    let rplStake = ethers.BigNumber.from(minipoolRplStake.toString()).mul(3);
     rocketPool.rplContract.connect(signers.rplWhale).transfer(signer.address, rplStake);
     await nodeStakeRPL(rplStake, { from: signer.address });
 
@@ -79,7 +79,7 @@ export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: 
         value: bondValue,
     });
 
-    await userDeposit({from: signer.address, value: bondValue});
+    await userDeposit({ from: signer.address, value: bondValue });
 
     let scrubPeriod = (60 * 60 * 24); // 24 hours
 
@@ -97,6 +97,41 @@ export async function upgradePriceFetcherToMock(signers: Signers, protocol: Prot
     const priceFetcherV2 = await ethers.getContractAt("MockPriceFetcher", protocol.priceFetcher.address);
     await priceFetcherV2.setPrice(price);
 };
+
+export async function printEventDetails(tx: ContractTransaction, contract: Contract): Promise<void> {
+    const receipt = await tx.wait();
+
+    if (receipt.events) {
+        for (let i = 0; i < receipt.events.length; i++) {
+            const event = receipt.events[i];
+            if (event.event && event.args) { // Check if event name and args are available
+                console.log(`Event Name: ${event.event}`);
+                console.log("Arguments:");
+                // Ensure event.args is defined before accessing its properties
+                if (event.args) {
+                    Object.keys(event.args)
+                        .filter(key => isNaN(parseInt(key))) // Filter out numeric keys
+                        .forEach(key => {
+                            console.log(`  ${key}: ${event.args![key]}`);
+                        });
+                }
+            } else if (event.topics && event.topics.length > 0) { // Decode the raw log
+                const eventDescription = contract.interface.getEvent(event.topics[0]);
+                console.log(`Event Name: ${eventDescription.name}`);
+                const decodedData = contract.interface.decodeEventLog(eventDescription, event.data, event.topics);
+                if (decodedData) {
+                    console.log("Arguments:");
+                    Object.keys(decodedData).forEach(key => {
+                        console.log(`  ${key}: ${decodedData[key]}`);
+                    });
+                }
+            }
+        }
+    }
+}
+
+
+
 
 export async function removeFeesOnRPLVault(setupData: SetupData) {
     await setupData.protocol.vCRPL.connect(setupData.signers.admin).setFees(0, 0);
@@ -202,9 +237,9 @@ export async function getEventNames(tx: ContractTransaction, contract: Contract)
     if (receipt.events) {
         for (let i = 0; i < receipt.events.length; i++) {
             const event = receipt.events[i];
-            if(event.event) { // Check if event name is available
+            if (event.event) { // Check if event name is available
                 emittedEvents.push(event.event);
-            } else if(event.topics && event.topics.length > 0) { // Decode the raw log
+            } else if (event.topics && event.topics.length > 0) { // Decode the raw log
                 const eventDescription = contract.interface.getEvent(event.topics[0]);
                 emittedEvents.push(eventDescription.name);
                 const decodedData = contract.interface.decodeEventLog(eventDescription, event.data, event.topics);

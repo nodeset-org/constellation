@@ -19,6 +19,7 @@ contract OperatorDistributor is UpgradeableBase {
     event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
     event MinipoolDestroyed(address indexed _minipoolAddress, address indexed _nodeAddress);
     event WarningNoMiniPoolsToHarvest();
+    event WarningMinipoolNotStaking(address indexed _minipoolAddress);
 
     uint public _queuedEth;
 
@@ -351,6 +352,7 @@ contract OperatorDistributor is UpgradeableBase {
         IMinipool minipool = IMinipool(minipoolAddresses[index]);
 
         if (minipool.getStatus() != MinipoolStatus.Staking) {
+            emit WarningMinipoolNotStaking(address(minipool));
             return;
         }
 
