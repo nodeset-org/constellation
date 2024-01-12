@@ -129,6 +129,7 @@ contract OperatorDistributor is UpgradeableBase {
         address lastAddress = minipoolAddresses[minipoolAddresses.length - 1];
         minipoolAddresses[index] = lastAddress;
         minipoolIndexMap[lastAddress] = index;
+
         // Remove the last address
         minipoolAddresses.pop();
         delete minipoolIndexMap[_address];
@@ -206,7 +207,7 @@ contract OperatorDistributor is UpgradeableBase {
      * Only the protocol or admin can call this function.
      * @param _nodeAddress The address of the node operator to be prepared for minipool creation.
      */
-    function prepareNodeForReimbursement(address _nodeAddress) external onlyProtocolOrAdmin {
+    function prepareOperatorForDeposit(address _nodeAddress) external onlyProtocolOrAdmin {
         // stakes (2.4 + 100% padding) eth worth of rpl for the node
         _validateWithdrawalAddress(_nodeAddress);
         uint256 numValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(_nodeAddress);
@@ -218,68 +219,6 @@ contract OperatorDistributor is UpgradeableBase {
      */
     function validateBondRequirements(uint256 bond) public view {
         require(bond >= lowerBondRequirement && bond <= upperBondRequirement, Constants.MINIPOOL_INVALID_BOND_ERROR);
-    }
-
-    /**
-     * @notice Reimburses a node for minipool creation, validates the minipool and handles necessary staking.
-     * @dev The function goes through multiple validation steps:
-     * 1. Checks if the node is in the whitelist.
-     * 2. Validates that the minipool's creation was signed by the admin.
-     * 3. Validates the node's withdrawal address.
-     * 4. Checks if the minipool is registered in the smoothing pool.
-     * 5. Ensures there's sufficient ETH in queue for reimbursement.
-     * After validations, it performs necessary top-ups, updates the node and minipool data, and then transfers out the ETH.
-     * @param sig Signature from the admin server confirming minipool creation.
-     * @param newMinipoolAdress Address of the newly created minipool.
-     */
-    function reimburseNodeForMinipool(
-        bytes memory sig, // sig from admin server
-        address newMinipoolAdress
-    ) public {
-        IMinipool minipool = IMinipool(newMinipoolAdress);
-        address nodeAddress = minipool.getNodeAddress();
-        Whitelist whitelist = Whitelist(getDirectory().getWhitelistAddress());
-        require(whitelist.getIsAddressInWhitelist(nodeAddress), Constants.MINIPOOL_NODE_NOT_WHITELISTED_ERROR);
-
-        uint256 bond = minipool.getNodeDepositBalance();
-
-        validateBondRequirements(bond);
-
-        // validate that the newMinipoolAdress was signed by the admin address
-        bytes32 messageHash = keccak256(abi.encode(newMinipoolAdress));
-        bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
-        address signer = ECDSA.recover(ethSignedMessageHash, sig);
-        require(_directory.hasRole(Constants.ADMIN_SERVER_ROLE, signer), Constants.BAD_ADMIN_SERVER_SIGNATURE_ERROR);
-
-        _validateWithdrawalAddress(nodeAddress);
-
-        IRocketNodeManager nodeManager = IRocketNodeManager(getDirectory().getRocketNodeManagerAddress());
-
-        require(nodeManager.getSmoothingPoolRegistrationState(nodeAddress), Constants.MINIPOOL_NOT_REGISTERED_ERROR);
-
-        require(_queuedEth >= bond, Constants.INSUFFICIENT_ETH_IN_QUEUE_ERROR);
-
-        uint256 numValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(nodeAddress);
-        performTopUp(nodeAddress, bond * numValidators);
-
-        // register minipool with node operator
-        whitelist.registerNewValidator(nodeAddress);
-
-        // new minipool owned by node operator
-        nodeOperatorOwnedMinipools[nodeAddress].push(newMinipoolAdress);
-
-        // add minipool to minipoolAddresses
-        minipoolAddresses.push(newMinipoolAdress);
-        minipoolIndexMap[newMinipoolAdress] = minipoolAddresses.length;
-
-        emit MinipoolCreated(newMinipoolAdress, nodeAddress);
-
-        // updated amount funded eth
-        minipoolAmountFundedEth[newMinipoolAdress] = bond;
-
-        // transfer out eth
-        _queuedEth -= bond;
-        payable(nodeAddress).transfer(bond);
     }
 
     /**
