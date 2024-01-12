@@ -2,10 +2,9 @@
 
 pragma solidity 0.8.17;
 
-import "../../Interfaces/ISanctions.sol";
+import '../../Interfaces/ISanctions.sol';
 
 contract MockSanctions is ISanctions {
-
     mapping(address => bool) blacklist;
 
     function isSanctioned(address addr) external view returns (bool) {

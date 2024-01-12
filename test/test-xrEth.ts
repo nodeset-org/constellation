@@ -63,7 +63,7 @@ describe("xrETH", function () {
 
     await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmountEth });
     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, depositAmountEth);
-    await protocol.vCWETH.connect(signers.ethWhale).deposit(depositAmountEth, signers.ethWhale.address);
+    await protocol.vCWETH.connect(signers.ethWhale).deposit(depositAmountEth, signers.ethWhale.address);  
 
     const totalAssetETHAfterDeposit = await protocol.vCWETH.totalAssets();
 
@@ -89,7 +89,7 @@ describe("xrETH", function () {
     });
   });
 
-  describe.only("sanctions checks", () => {
+  describe("sanctions checks", () => {
 
     it("success - allows deposits from non-sanctioned senders and origins", async () => {
       const { protocol, signers } = await protocolFixture();

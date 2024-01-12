@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
+import '@openzeppelin/contracts/utils/Strings.sol';
 
-import "./UpgradeableBase.sol";
-import "./Operator/OperatorDistributor.sol";
-import "./Operator/YieldDistributor.sol";
-import "./Interfaces/RocketPool/IRocketNodeStaking.sol";
-import "./Tokens/WETHVault.sol";
-import "./Tokens/RPLVault.sol";
+import './UpgradeableBase.sol';
+import './Operator/OperatorDistributor.sol';
+import './Operator/YieldDistributor.sol';
+import './Interfaces/RocketPool/IRocketNodeStaking.sol';
+import './Tokens/WETHVault.sol';
+import './Tokens/RPLVault.sol';
 
-import "./Interfaces/IWETH.sol";
-import "./Utils/Constants.sol";
+import './Interfaces/IWETH.sol';
+import './Utils/Constants.sol';
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
@@ -29,9 +29,7 @@ contract DepositPool is UpgradeableBase {
 
     /// @dev Initializes the DepositPool contract with the specified directory address.
     /// @param directoryAddress The address of the directory contract.
-    function initialize(
-        address directoryAddress
-    ) public virtual override initializer {
+    function initialize(address directoryAddress) public virtual override initializer {
         super.initialize(directoryAddress);
 
         splitRatioEth = 0.30e5;
@@ -47,19 +45,14 @@ contract DepositPool is UpgradeableBase {
     ///      It sums the ETH balance of this contract and the WETH balance from the WETH contract.
     /// @return The total value in ETH and WETH locked in the deposit pool.
     function getTvlEth() public view returns (uint) {
-        return
-            address(this).balance +
-            IWETH(_directory.getWETHAddress()).balanceOf(address(this));
+        return address(this).balance + IWETH(_directory.getWETHAddress()).balanceOf(address(this));
     }
 
     /// @notice Retrieves the total RPL value locked inside this deposit pool.
     /// @dev This function calculates and returns the total amount of RPL tokens held by the deposit pool.
     /// @return The total value in RPL locked in the deposit pool.
     function getTvlRpl() public view returns (uint) {
-        return
-            RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(
-                address(this)
-            );
+        return RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this));
     }
 
     ///--------
@@ -73,7 +66,7 @@ contract DepositPool is UpgradeableBase {
     /// @dev Throws an error if the new split ratio is greater than 100% (100000) to ensure it stays within a valid range.
 
     function setSplitRatioEth(uint256 newSplitRatio) external onlyAdmin {
-        require(newSplitRatio <= 1e5, "split ratio must be lte to 1e5");
+        require(newSplitRatio <= 1e5, 'split ratio must be lte to 1e5');
         emit SplitRatioEthUpdated(splitRatioEth, newSplitRatio);
         splitRatioEth = newSplitRatio;
     }
@@ -84,7 +77,7 @@ contract DepositPool is UpgradeableBase {
     /// @param newSplitRatio The new split ratio for RPL deposits, expressed as a percentage (e.g., 30000 for 30%).
     /// @dev Throws an error if the new split ratio is greater than 100% (100000) to ensure it stays within a valid range.
     function setSplitRatioRpl(uint256 newSplitRatio) external onlyAdmin {
-        require(newSplitRatio <= 1e5, "split ratio must be lte to 1e5");
+        require(newSplitRatio <= 1e5, 'split ratio must be lte to 1e5');
         emit SplitRatioRplUpdated(splitRatioRpl, newSplitRatio);
         splitRatioRpl = newSplitRatio;
     }
@@ -98,8 +91,7 @@ contract DepositPool is UpgradeableBase {
     /// @param amount The amount of RPL tokens to unstake.
     /// @dev The tokens will be withdrawn from the Rocket Node Staking contract.
     function unstakeRpl(uint256 amount) external onlyAdmin {
-        IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress())
-            .withdrawRPL(amount);
+        IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).withdrawRPL(amount);
     }
 
     /// @notice Stakes a specified amount of RPL tokens on behalf of a node operator.
@@ -108,10 +100,7 @@ contract DepositPool is UpgradeableBase {
     /// @param _nodeAddress The address of the node operator on whose behalf the RPL tokens are being staked.
     /// @param _amount The amount of RPL tokens to stake.
     /// @dev This function ensures that the specified amount of RPL tokens is approved and then staked for the given node operator.
-    function stakeRPLFor(
-        address _nodeAddress,
-        uint256 _amount
-    ) external onlyProtocolOrAdmin {
+    function stakeRPLFor(address _nodeAddress, uint256 _amount) external onlyProtocolOrAdmin {
         SafeERC20.safeApprove(
             RocketTokenRPLInterface(_directory.getRPLAddress()),
             _directory.getRocketNodeStakingAddress(),
@@ -122,8 +111,7 @@ contract DepositPool is UpgradeableBase {
             _directory.getRocketNodeStakingAddress(),
             _amount
         );
-        IRocketNodeStaking(_directory.getRocketNodeStakingAddress())
-            .stakeRPLFor(_nodeAddress, _amount);
+        IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, _amount);
     }
 
     /// @notice Sends ETH to the OperatorDistributor and WETHVault based on specified ratios.
@@ -135,8 +123,7 @@ contract DepositPool is UpgradeableBase {
         WETH.withdraw(WETH.balanceOf(address(this)));
 
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
-        address operatorDistributor = getDirectory()
-            .getOperatorDistributorAddress();
+        address operatorDistributor = getDirectory().getOperatorDistributorAddress();
         uint256 requiredCapital = vweth.getRequiredCollateral();
         uint256 totalBalance = address(this).balance;
 
@@ -153,19 +140,13 @@ contract DepositPool is UpgradeableBase {
         // Wrap ETH to WETH and send to WETHVault
         if (toWETHVault > 0) {
             WETH.deposit{value: toWETHVault}();
-            SafeERC20.safeTransfer(
-                IERC20(address(WETH)),
-                address(vweth),
-                toWETHVault
-            );
+            SafeERC20.safeTransfer(IERC20(address(WETH)), address(vweth), toWETHVault);
         }
 
         // Don't wrap ETH to WETH and send to Operator Distributor
         if (toOperatorDistributor > 0) {
-            (bool success, ) = operatorDistributor.call{
-                value: toOperatorDistributor
-            }("");
-            require(success, "Transfer failed.");
+            (bool success, ) = operatorDistributor.call{value: toOperatorDistributor}('');
+            require(success, 'Transfer failed.');
         }
     }
 
@@ -174,12 +155,9 @@ contract DepositPool is UpgradeableBase {
     ///      based on the `splitRatioRpl`. If the `requiredCapital` from RPLVault is zero, all RPL tokens are sent to the OperatorDistributor.
     function sendRplToDistributors() public {
         RPLVault vrpl = RPLVault(getDirectory().getRPLVaultAddress());
-        address operatorDistributor = getDirectory()
-            .getOperatorDistributorAddress();
+        address operatorDistributor = getDirectory().getOperatorDistributorAddress();
         uint256 requiredCapital = vrpl.getRequiredCollateral();
-        RocketTokenRPLInterface RPL = RocketTokenRPLInterface(
-            _directory.getRPLAddress()
-        ); // RPL token contract
+        RocketTokenRPLInterface RPL = RocketTokenRPLInterface(_directory.getRPLAddress()); // RPL token contract
         uint256 totalBalance = RPL.balanceOf(address(this));
 
         // Always split total balance according to the ratio
@@ -194,20 +172,12 @@ contract DepositPool is UpgradeableBase {
 
         // Wrap ETH to WETH and send to WETHVault
         if (toRplVault > 0) {
-            SafeERC20.safeTransfer(
-                IERC20(address(RPL)),
-                address(vrpl),
-                toRplVault
-            );
+            SafeERC20.safeTransfer(IERC20(address(RPL)), address(vrpl), toRplVault);
         }
 
         // Wrap ETH to WETH and send to Operator Distributor
         if (toOperatorDistributor > 0) {
-            SafeERC20.safeTransfer(
-                IERC20(address(RPL)),
-                operatorDistributor,
-                toOperatorDistributor
-            );
+            SafeERC20.safeTransfer(IERC20(address(RPL)), operatorDistributor, toOperatorDistributor);
         }
     }
 

@@ -11,11 +11,25 @@ import dotenv from "dotenv";
 import findConfig from 'find-config';
 
 const dotenvPath = findConfig('.env');
-dotenv.config({ path: dotenvPath });
 
+if (dotenvPath !== null) {
+  dotenv.config({ path: dotenvPath });
+} else {
+  // Handle the case where no .env file is found
+  console.error('No .env file found');
+}
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [
+      {
+        version: "0.8.18",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
       {
         version: "0.8.17",
         settings: {

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
+import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol';
 
-import "./RPLVault.sol";
+import './RPLVault.sol';
 
-import "../PriceFetcher.sol";
-import "../UpgradeableBase.sol";
-import "../DepositPool.sol";
-import "../Operator/YieldDistributor.sol";
-import "../Utils/Constants.sol";
+import '../PriceFetcher.sol';
+import '../UpgradeableBase.sol';
+import '../DepositPool.sol';
+import '../Operator/YieldDistributor.sol';
+import '../Utils/Constants.sol';
 
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
@@ -31,8 +31,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     using Math for uint256;
 
-    string constant NAME = "Constellation ETH";
-    string constant SYMBOL = "xrETH"; // Vaulted Constellation Wrapped ETH
+    string constant NAME = 'Constellation ETH';
+    string constant SYMBOL = 'xrETH'; // Vaulted Constellation Wrapped ETH
 
     bool public enforceRplCoverageRatio;
 
@@ -59,10 +59,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param directoryAddress Address of the directory contract to fetch system-wide configurations or addresses.
      * @param weth Address of the Wrapped Ether (WETH) token contract. WETH is used to represent ETH in ERC-20 compliant way.
      */
-    function initializeVault(
-        address directoryAddress,
-        address weth
-    ) public virtual initializer {
+    function initializeVault(address directoryAddress, address weth) public virtual initializer {
         super.initialize(directoryAddress);
         ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(weth));
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
@@ -86,9 +83,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      *      This function provides an override for the `previewDeposit` function defined in the {IERC4626} interface.
      * @param assets The initial amount of assets for which the deposit is being previewed.
      * @return The final depositable amount after deducting both maker fees.
-     */ function previewDeposit(
-        uint256 assets
-    ) public view virtual override returns (uint256) {
+     */ function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
         uint256 fee1 = _feeOnTotal(assets, makerFee1BasePoint);
         uint256 fee2 = _feeOnTotal(assets, makerFee2BasePoint);
         return super.previewDeposit(assets - fee1 - fee2);
@@ -101,14 +96,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      *      It provides an override for the `previewMint` function detailed in the {IERC4626} interface.
      * @param shares The number of shares for which the mint is being previewed.
      * @return The estimated total assets after the addition of both maker fees.
-     */ function previewMint(
-        uint256 shares
-    ) public view virtual override returns (uint256) {
+     */ function previewMint(uint256 shares) public view virtual override returns (uint256) {
         uint256 assets = super.previewMint(shares);
-        return
-            assets +
-            _feeOnRaw(assets, makerFee1BasePoint) +
-            _feeOnRaw(assets, makerFee2BasePoint);
+        return assets + _feeOnRaw(assets, makerFee1BasePoint) + _feeOnRaw(assets, makerFee2BasePoint);
     }
 
     /**
@@ -118,9 +108,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      *      It provides an override for the `previewWithdraw` function detailed in the {IERC4626} interface.
      * @param assets The initial assets amount for which the withdrawal is being previewed.
      * @return The estimated total assets after the addition of both taker fees.
-     */ function previewWithdraw(
-        uint256 assets
-    ) public view virtual override returns (uint256) {
+     */ function previewWithdraw(uint256 assets) public view virtual override returns (uint256) {
         uint256 fee1 = _feeOnRaw(assets, takerFee1BasePoint);
         uint256 fee2 = _feeOnRaw(assets, takerFee2BasePoint);
         return super.previewWithdraw(assets + fee1 + fee2);
@@ -133,14 +121,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      *      It provides an override for the `previewRedeem` function as defined in the {IERC4626} interface.
      * @param shares The number of shares for which the redemption is being previewed.
      * @return The estimated total assets after deducting both taker fees.
-     */ function previewRedeem(
-        uint256 shares
-    ) public view virtual override returns (uint256) {
+     */ function previewRedeem(uint256 shares) public view virtual override returns (uint256) {
         uint256 assets = super.previewRedeem(shares);
-        return
-            assets -
-            _feeOnTotal(assets, takerFee1BasePoint) -
-            _feeOnTotal(assets, takerFee2BasePoint);
+        return assets - _feeOnTotal(assets, takerFee1BasePoint) - _feeOnTotal(assets, takerFee2BasePoint);
     }
 
     /**
@@ -160,20 +143,12 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param receiver The address of the receiver who will receive the deposited shares.
      * @param assets The amount of assets being deposited.
      * @param shares The number of shares being deposited.
-     */ function _deposit(
-        address caller,
-        address receiver,
-        uint256 assets,
-        uint256 shares
-    ) internal virtual override {
-        if(_directory.isSanctioned(caller, receiver)) {
+     */ function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
+        if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
 
-        require(
-            enforceRplCoverageRatio && tvlRatioEthRpl() >= rplCoverageRatio,
-            "insufficient RPL coverage"
-        );
+        require(enforceRplCoverageRatio && tvlRatioEthRpl() >= rplCoverageRatio, 'insufficient RPL coverage');
 
         uint256 fee1 = _feeOnTotal(assets, makerFee1BasePoint);
         uint256 fee2 = _feeOnTotal(assets, makerFee2BasePoint);
@@ -187,21 +162,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         WeightedAverageCalculation memory vars;
         vars.totalPriceOfShares = super.convertToAssets(shares);
         vars.lastPricePaidPerShare = positions[receiver].pricePaidPerShare;
-        vars.originalValueTimesShares =
-            vars.lastPricePaidPerShare *
-            positions[receiver].shares *
-            1e18;
+        vars.originalValueTimesShares = vars.lastPricePaidPerShare * positions[receiver].shares * 1e18;
 
         vars.newValueTimesShares = vars.totalPriceOfShares * 1e18;
         vars.totalShares = positions[receiver].shares + shares;
-        vars.weightedPriceSum =
-            vars.originalValueTimesShares +
-            vars.newValueTimesShares;
+        vars.weightedPriceSum = vars.originalValueTimesShares + vars.newValueTimesShares;
 
-        positions[receiver].pricePaidPerShare =
-            vars.weightedPriceSum /
-            vars.totalShares /
-            1e18;
+        positions[receiver].pricePaidPerShare = vars.weightedPriceSum / (vars.totalShares == 0 ? 1 : vars.totalShares) / 1e18;
         positions[receiver].shares += shares;
 
         super._deposit(caller, receiver, assets, shares);
@@ -237,7 +204,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 assets,
         uint256 shares
     ) internal virtual override {
-        if(_directory.isSanctioned(caller, receiver)) {
+        if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
 
@@ -280,10 +247,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param feeBasePoint The fee rate in basis points (1 basis point = 0.01%).
      * @return The calculated fee amount.
      */
-    function _feeOnRaw(
-        uint256 assets,
-        uint256 feeBasePoint
-    ) private pure returns (uint256) {
+    function _feeOnRaw(uint256 assets, uint256 feeBasePoint) private pure returns (uint256) {
         return assets.mulDiv(feeBasePoint, 1e5, Math.Rounding.Up);
     }
 
@@ -298,12 +262,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param feeBasePoint The fee rate in basis points (1 basis point = 0.01%).
      * @return The calculated fee amount.
      */
-    function _feeOnTotal(
-        uint256 assets,
-        uint256 feeBasePoint
-    ) private pure returns (uint256) {
-        return
-            assets.mulDiv(feeBasePoint, feeBasePoint + 1e5, Math.Rounding.Up);
+    function _feeOnTotal(uint256 assets, uint256 feeBasePoint) private pure returns (uint256) {
+        return assets.mulDiv(feeBasePoint, feeBasePoint + 1e5, Math.Rounding.Up);
     }
 
     /**
@@ -345,14 +305,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function totalAssets() public view override returns (uint256) {
         DepositPool dp = DepositPool(getDirectory().getDepositPoolAddress());
-        OperatorDistributor od = OperatorDistributor(
-            getDirectory().getOperatorDistributorAddress()
-        );
-        return
-            super.totalAssets() +
-            getDistributableYield() +
-            dp.getTvlEth() +
-            od.getTvlEth();
+        OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
+        return super.totalAssets() + getDistributableYield() + dp.getTvlEth() + od.getTvlEth();
     }
 
     /**
@@ -368,14 +322,11 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @return The ratio of ETH to RPL in the vault, expressed as a fixed-point number (1e18 represents 100%).
      */ function tvlRatioEthRpl() public view returns (uint256) {
         uint256 tvlEth = totalAssets();
-        uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress())
-            .totalAssets();
+        uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress()).totalAssets();
 
         if (tvlRpl == 0) return 1e18; // if there is no RPL in the vault, return 100% (1e18)
 
-        uint256 ethPriceInRpl = PriceFetcher(
-            getDirectory().getPriceFetcherAddress()
-        ).getPrice();
+        uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
 
         return (tvlEth * ethPriceInRpl) / tvlRpl;
     }
@@ -396,11 +347,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 fullBalance = totalAssets();
 
-        uint256 requiredBalance = collateralizationRatioBasePoint.mulDiv(
-            fullBalance,
-            1e5,
-            Math.Rounding.Up
-        );
+        uint256 requiredBalance = collateralizationRatioBasePoint.mulDiv(fullBalance, 1e5, Math.Rounding.Up);
 
         return requiredBalance > currentBalance ? requiredBalance : 0;
     }
@@ -425,12 +372,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 _takerFee2BasePoint
     ) external onlyAdmin {
         require(
-            _makerFee1BasePoint +
-                _makerFee2BasePoint +
-                _takerFee1BasePoint +
-                _takerFee2BasePoint <=
-                1e5,
-            "fees must be lte 100%"
+            _makerFee1BasePoint + _makerFee2BasePoint + _takerFee1BasePoint + _takerFee2BasePoint <= 1e5,
+            'fees must be lte 100%'
         );
         makerFee1BasePoint = _makerFee1BasePoint;
         makerFee2BasePoint = _makerFee2BasePoint;
@@ -459,9 +402,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      *
      * @param _enforceRplCoverage A boolean flag indicating whether to enable or disable the enforcement of the RPL coverage ratio requirement.
      */
-    function setEnforceRplCoverageRatio(
-        bool _enforceRplCoverage
-    ) external onlyAdmin {
+    function setEnforceRplCoverageRatio(bool _enforceRplCoverage) external onlyAdmin {
         enforceRplCoverageRatio = _enforceRplCoverage;
     }
 }

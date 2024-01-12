@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.7.6;
 
-import "./RocketMinipoolStorageLayout.sol";
-import "../../interface/RocketStorageInterface.sol";
-import "../../interface/minipool/RocketMinipoolBaseInterface.sol";
+import './RocketMinipoolStorageLayout.sol';
+import '../../interface/RocketStorageInterface.sol';
+import '../../interface/minipool/RocketMinipoolBaseInterface.sol';
 
 /// @notice Contains the initialisation and delegate upgrade logic for minipools
 contract RocketMinipoolBase is RocketMinipoolBaseInterface, RocketMinipoolStorageLayout {
-
     // Events
     event EtherReceived(address indexed from, uint256 amount, uint256 time);
     event DelegateUpgraded(address oldDelegate, address newDelegate, uint256 time);
@@ -16,7 +15,7 @@ contract RocketMinipoolBase is RocketMinipoolBaseInterface, RocketMinipoolStorag
     // Store a reference to the address of RocketMinipoolBase itself to prevent direct calls to this contract
     address immutable self;
 
-    constructor () {
+    constructor() {
         self = address(this);
     }
 
@@ -30,27 +29,34 @@ contract RocketMinipoolBase is RocketMinipoolBaseInterface, RocketMinipoolStorag
     modifier onlyMinipoolOwner() {
         // Only the node operator can upgrade
         address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
-        require(msg.sender == nodeAddress || msg.sender == withdrawalAddress, "Only the node operator can access this method");
+        require(
+            msg.sender == nodeAddress || msg.sender == withdrawalAddress,
+            'Only the node operator can access this method'
+        );
         _;
     }
 
     /// @notice Sets up starting delegate contract and then delegates initialisation to it
     function initialise(address _rocketStorage, address _nodeAddress) external override notSelf {
         // Check input
-        require(_nodeAddress != address(0), "Invalid node address");
-        require(storageState == StorageState.Undefined, "Already initialised");
+        require(_nodeAddress != address(0), 'Invalid node address');
+        require(storageState == StorageState.Undefined, 'Already initialised');
         // Set storage state to uninitialised
         storageState = StorageState.Uninitialised;
         // Set rocketStorage
         rocketStorage = RocketStorageInterface(_rocketStorage);
         // Set the current delegate
-        address delegateAddress = getContractAddress("rocketMinipoolDelegate");
+        address delegateAddress = getContractAddress('rocketMinipoolDelegate');
         rocketMinipoolDelegate = delegateAddress;
         // Check for contract existence
-        require(contractExists(delegateAddress), "Delegate contract does not exist");
+        require(contractExists(delegateAddress), 'Delegate contract does not exist');
         // Call initialise on delegate
-        (bool success, bytes memory data) = delegateAddress.delegatecall(abi.encodeWithSignature('initialise(address)', _nodeAddress));
-        if (!success) { revert(getRevertMessage(data)); }
+        (bool success, bytes memory data) = delegateAddress.delegatecall(
+            abi.encodeWithSignature('initialise(address)', _nodeAddress)
+        );
+        if (!success) {
+            revert(getRevertMessage(data));
+        }
     }
 
     /// @notice Receive an ETH deposit
@@ -64,9 +70,9 @@ contract RocketMinipoolBase is RocketMinipoolBaseInterface, RocketMinipoolStorag
         // Set previous address
         rocketMinipoolDelegatePrev = rocketMinipoolDelegate;
         // Set new delegate
-        rocketMinipoolDelegate = getContractAddress("rocketMinipoolDelegate");
+        rocketMinipoolDelegate = getContractAddress('rocketMinipoolDelegate');
         // Verify
-        require(rocketMinipoolDelegate != rocketMinipoolDelegatePrev, "New delegate is the same as the existing one");
+        require(rocketMinipoolDelegate != rocketMinipoolDelegatePrev, 'New delegate is the same as the existing one');
         // Log event
         emit DelegateUpgraded(rocketMinipoolDelegatePrev, rocketMinipoolDelegate, block.timestamp);
     }
@@ -74,7 +80,7 @@ contract RocketMinipoolBase is RocketMinipoolBaseInterface, RocketMinipoolStorag
     /// @notice Rollback to previous delegate contract
     function delegateRollback() external override onlyMinipoolOwner notSelf {
         // Make sure they have upgraded before
-        require(rocketMinipoolDelegatePrev != address(0x0), "Previous delegate contract is not set");
+        require(rocketMinipoolDelegatePrev != address(0x0), 'Previous delegate contract is not set');
         // Store original
         address originalDelegate = rocketMinipoolDelegate;
         // Update delegate to previous and zero out previous
@@ -91,47 +97,55 @@ contract RocketMinipoolBase is RocketMinipoolBaseInterface, RocketMinipoolStorag
     }
 
     /// @notice Returns true if this minipool always uses the latest delegate contract
-    function getUseLatestDelegate() external override view returns (bool) {
+    function getUseLatestDelegate() external view override returns (bool) {
         return useLatestDelegate;
     }
 
     /// @notice Returns the address of the minipool's stored delegate
-    function getDelegate() external override view returns (address) {
+    function getDelegate() external view override returns (address) {
         return rocketMinipoolDelegate;
     }
 
     /// @notice Returns the address of the minipool's previous delegate (or address(0) if not set)
-    function getPreviousDelegate() external override view returns (address) {
+    function getPreviousDelegate() external view override returns (address) {
         return rocketMinipoolDelegatePrev;
     }
 
     /// @notice Returns the delegate which will be used when calling this minipool taking into account useLatestDelegate setting
-    function getEffectiveDelegate() external override view returns (address) {
-        return useLatestDelegate ? getContractAddress("rocketMinipoolDelegate") : rocketMinipoolDelegate;
+    function getEffectiveDelegate() external view override returns (address) {
+        return useLatestDelegate ? getContractAddress('rocketMinipoolDelegate') : rocketMinipoolDelegate;
     }
 
     /// @notice Delegates all calls to minipool delegate contract (or latest if flag is set)
     fallback(bytes calldata _input) external payable notSelf returns (bytes memory) {
         // If useLatestDelegate is set, use the latest delegate contract
-        address delegateContract = useLatestDelegate ? getContractAddress("rocketMinipoolDelegate") : rocketMinipoolDelegate;
+        address delegateContract = useLatestDelegate
+            ? getContractAddress('rocketMinipoolDelegate')
+            : rocketMinipoolDelegate;
         // Check for contract existence
-        require(contractExists(delegateContract), "Delegate contract does not exist");
+        require(contractExists(delegateContract), 'Delegate contract does not exist');
         // Execute delegatecall
         (bool success, bytes memory data) = delegateContract.delegatecall(_input);
-        if (!success) { revert(getRevertMessage(data)); }
+        if (!success) {
+            revert(getRevertMessage(data));
+        }
         return data;
     }
 
     /// @dev Get the address of a Rocket Pool network contract
     function getContractAddress(string memory _contractName) private view returns (address) {
-        address contractAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", _contractName)));
-        require(contractAddress != address(0x0), "Contract not found");
+        address contractAddress = rocketStorage.getAddress(
+            keccak256(abi.encodePacked('contract.address', _contractName))
+        );
+        require(contractAddress != address(0x0), 'Contract not found');
         return contractAddress;
     }
 
     /// @dev Get a revert message from delegatecall return data
     function getRevertMessage(bytes memory _returnData) private pure returns (string memory) {
-        if (_returnData.length < 68) { return "Transaction reverted silently"; }
+        if (_returnData.length < 68) {
+            return 'Transaction reverted silently';
+        }
         assembly {
             _returnData := add(_returnData, 0x04)
         }

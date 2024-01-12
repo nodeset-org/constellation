@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
-import "./OperatorDistributor.sol";
-import "../Whitelist/Whitelist.sol";
-import "../Utils/ProtocolMath.sol";
-import "../UpgradeableBase.sol";
+import './OperatorDistributor.sol';
+import '../Whitelist/Whitelist.sol';
+import '../Utils/ProtocolMath.sol';
+import '../UpgradeableBase.sol';
 
-import "../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol";
-import "../Interfaces/RocketTokenRPLInterface.sol";
-import "../Interfaces/RocketPool/IRocketNodeStaking.sol";
-import "../Interfaces/Oracles/IXRETHOracle.sol";
-import "../Interfaces/IWETH.sol";
-import "../Utils/Constants.sol";
+import '../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol';
+import '../Interfaces/RocketTokenRPLInterface.sol';
+import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
+import '../Interfaces/Oracles/IXRETHOracle.sol';
+import '../Interfaces/IWETH.sol';
+import '../Utils/Constants.sol';
 
 struct Reward {
     address recipient;
@@ -84,10 +84,7 @@ contract YieldDistributor is UpgradeableBase {
         yieldAccruedInInterval += weth;
 
         // if elapsed time since last interval is greater than maxIntervalLengthSeconds, start a new interval
-        if (
-            block.timestamp - currentIntervalGenesisTime >
-            maxIntervalLengthSeconds
-        ) {
+        if (block.timestamp - currentIntervalGenesisTime > maxIntervalLengthSeconds) {
             finalizeInterval();
         }
     }
@@ -120,28 +117,13 @@ contract YieldDistributor is UpgradeableBase {
      * @param _startInterval The interval (inclusive) from which to start distributing the rewards.
      * @param _endInterval The interval (inclusive) at which to end distributing the rewards.
      */
-    function harvest(
-        address _rewardee,
-        uint256 _startInterval,
-        uint256 _endInterval
-    ) public nonReentrant {
-        require(
-            _startInterval <= _endInterval,
-            "Start interval must be less than or equal to end interval"
-        );
-        require(
-            _endInterval < currentInterval,
-            "End interval must be less than current interval"
-        );
-        require(_rewardee != address(0), "rewardee cannot be zero address");
+    function harvest(address _rewardee, uint256 _startInterval, uint256 _endInterval) public nonReentrant {
+        require(_startInterval <= _endInterval, 'Start interval must be less than or equal to end interval');
+        require(_endInterval < currentInterval, 'End interval must be less than current interval');
+        require(_rewardee != address(0), 'rewardee cannot be zero address');
         Whitelist whitelist = getWhitelist();
-        Operator memory operator = getWhitelist().getOperatorAtAddress(
-            _rewardee
-        );
-        require(
-            operator.intervalStart <= _startInterval,
-            "Rewardee has not been an operator since _startInterval"
-        );
+        Operator memory operator = getWhitelist().getOperatorAtAddress(_rewardee);
+        require(operator.intervalStart <= _startInterval, 'Rewardee has not been an operator since _startInterval');
 
         bool isWhitelisted = whitelist.getIsAddressInWhitelist(_rewardee);
 
@@ -156,8 +138,7 @@ contract YieldDistributor is UpgradeableBase {
 
             Claim memory claim = claims[i];
 
-            uint256 fullEthReward = ((claim.amount * 1e18) /
-                claim.numOperators) / 1e18;
+            uint256 fullEthReward = ((claim.amount * 1e18) / claim.numOperators) / 1e18;
 
             uint256 operatorsPortion = ProtocolMath.exponentialFunction(
                 operator.currentValidatorCount,
@@ -176,11 +157,7 @@ contract YieldDistributor is UpgradeableBase {
         // send weth to rewardee
 
         if (isWhitelisted) {
-            SafeERC20.safeTransfer(
-                IWETH(_directory.getWETHAddress()),
-                _rewardee,
-                totalReward
-            );
+            SafeERC20.safeTransfer(IWETH(_directory.getWETHAddress()), _rewardee, totalReward);
         } else {
             dustAccrued += totalReward;
         }
@@ -200,10 +177,7 @@ contract YieldDistributor is UpgradeableBase {
         }
         Whitelist whitelist = getWhitelist();
 
-        claims[currentInterval] = Claim(
-            yieldAccruedInInterval,
-            whitelist.numOperators()
-        );
+        claims[currentInterval] = Claim(yieldAccruedInInterval, whitelist.numOperators());
 
         currentInterval++;
         currentIntervalGenesisTime = block.timestamp;
@@ -220,9 +194,7 @@ contract YieldDistributor is UpgradeableBase {
      * @notice Updates the maximum duration for each rewards interval.
      * @param _maxIntervalLengthSeconds The new maximum duration (in seconds) for each interval.
      * @dev This function allows the admin to adjust the length of time between rewards intervals. Adjustments may be necessary based on changing network conditions or governance decisions.
-     */ function setMaxIntervalTime(
-        uint256 _maxIntervalLengthSeconds
-    ) public onlyAdmin {
+     */ function setMaxIntervalTime(uint256 _maxIntervalLengthSeconds) public onlyAdmin {
         maxIntervalLengthSeconds = _maxIntervalLengthSeconds;
     }
 
@@ -234,8 +206,8 @@ contract YieldDistributor is UpgradeableBase {
     function adminSweep(address treasury) public onlyAdmin {
         uint256 amount = dustAccrued;
         dustAccrued = 0;
-        (bool success, ) = treasury.call{value: amount}("");
-        require(success, "Failed to send ETH to treasury");
+        (bool success, ) = treasury.call{value: amount}('');
+        require(success, 'Failed to send ETH to treasury');
     }
 
     /**
@@ -244,10 +216,7 @@ contract YieldDistributor is UpgradeableBase {
      * @param _maxValidators The maximum number of validators to be considered in the reward calculation.
      * @dev This function can only be called by the contract's admin. Adjusting these parameters can change the reward distribution dynamics for validators.
      */
-    function setRewardIncentiveModel(
-        uint256 _k,
-        uint256 _maxValidators
-    ) public onlyAdmin {
+    function setRewardIncentiveModel(uint256 _k, uint256 _maxValidators) public onlyAdmin {
         k = _k;
         maxValidators = _maxValidators;
     }
@@ -270,11 +239,7 @@ contract YieldDistributor is UpgradeableBase {
      * @return OperatorDistributor The current OperatorDistributor contract instance.
      * @dev This is a private helper function used internally to obtain the OperatorDistributor contract instance from the directory.
      */
-    function getOperatorDistributor()
-        private
-        view
-        returns (OperatorDistributor)
-    {
+    function getOperatorDistributor() private view returns (OperatorDistributor) {
         return OperatorDistributor(_directory.getOperatorDistributorAddress());
     }
 

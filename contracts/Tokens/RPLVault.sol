@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
+import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol';
 
-import "./WETHVault.sol";
+import './WETHVault.sol';
 
-import "../UpgradeableBase.sol";
-import "../DepositPool.sol";
-import "../Operator/OperatorDistributor.sol";
+import '../UpgradeableBase.sol';
+import '../DepositPool.sol';
+import '../Operator/OperatorDistributor.sol';
 
 /// @custom:security-contact info@nodeoperator.org
 contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
 
-    string constant NAME = "Constellation RPL";
-    string constant SYMBOL = "xRPL"; // Vaulted Constellation RPL
+    string constant NAME = 'Constellation RPL';
+    string constant SYMBOL = 'xRPL'; // Vaulted Constellation RPL
 
     bool enforceWethCoverageRatio;
 
@@ -33,10 +33,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param directoryAddress Address of the directory contract to reference other platform contracts.
      * @param rplToken Address of the RPL token contract to be used in this vault.
      */
-    function initializeVault(
-        address directoryAddress,
-        address rplToken
-    ) public virtual initializer {
+    function initializeVault(address directoryAddress, address rplToken) public virtual initializer {
         super.initialize(directoryAddress);
         ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(rplToken));
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
@@ -54,9 +51,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * It overrides the previewDeposit function in the parent contract to include the deduction of the maker fee.
      * @param assets The total assets that the user intends to deposit.
      * @return The amount that will be deposited after accounting for the maker fee.
-     */ function previewDeposit(
-        uint256 assets
-    ) public view virtual override returns (uint256) {
+     */ function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
         uint256 fee = _feeOnTotal(assets, makerFeeBasePoint);
         return super.previewDeposit(assets - fee);
     }
@@ -67,9 +62,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * It overrides the previewMint function in the parent contract to include the addition of the maker fee.
      * @param shares The number of shares for which the total assets are being determined.
      * @return The total assets corresponding to the provided shares, inclusive of the maker fee.
-     */ function previewMint(
-        uint256 shares
-    ) public view virtual override returns (uint256) {
+     */ function previewMint(uint256 shares) public view virtual override returns (uint256) {
         uint256 assets = super.previewMint(shares);
         return assets + _feeOnRaw(assets, makerFeeBasePoint);
     }
@@ -80,9 +73,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * It overrides the previewWithdraw function in the parent contract to include the consideration of the taker fee.
      * @param assets The amount of assets for which the corresponding shares are being determined.
      * @return The number of shares required to withdraw the specified amount of assets, considering the taker fee.
-     */ function previewWithdraw(
-        uint256 assets
-    ) public view virtual override returns (uint256) {
+     */ function previewWithdraw(uint256 assets) public view virtual override returns (uint256) {
         uint256 fee = _feeOnRaw(assets, takerFeeBasePoint);
         return super.previewWithdraw(assets + fee);
     }
@@ -94,9 +85,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * It overrides the previewRedeem function in the parent contract to account for the taker fee deduction.
      * @param shares The number of shares to be redeemed for assets.
      * @return The amount of assets obtainable for the specified shares after considering the taker fee deduction.
-     */ function previewRedeem(
-        uint256 shares
-    ) public view virtual override returns (uint256) {
+     */ function previewRedeem(uint256 shares) public view virtual override returns (uint256) {
         uint256 assets = super.previewRedeem(shares);
         return assets - _feeOnTotal(assets, takerFeeBasePoint);
     }
@@ -111,21 +100,15 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param receiver The address designated to receive the issued shares for the deposit.
      * @param assets The amount of assets being deposited.
      * @param shares The number of shares to be minted in exchange for the deposit.
-     */ function _deposit(
-        address caller,
-        address receiver,
-        uint256 assets,
-        uint256 shares
-    ) internal virtual override {
-        if(_directory.isSanctioned(caller, receiver)) {
+     */ function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
+        if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
 
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
         require(
-            enforceWethCoverageRatio &&
-                vweth.tvlRatioEthRpl() >= wethCoverageRatio,
-            "insufficient weth coverage ratio"
+            enforceWethCoverageRatio && vweth.tvlRatioEthRpl() >= wethCoverageRatio,
+            'insufficient weth coverage ratio'
         );
 
         uint256 fee = _feeOnTotal(assets, makerFeeBasePoint);
@@ -162,7 +145,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 assets,
         uint256 shares
     ) internal virtual override {
-        if(_directory.isSanctioned(caller, receiver)) {
+        if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
         uint256 fee = _feeOnRaw(assets, takerFeeBasePoint);
@@ -187,10 +170,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param feeBasePoint The fee rate as a base point (e.g., 0.05e5 represents a 0.05% fee rate).
      * @return The calculated fee amount to be applied on the assets.
      */
-    function _feeOnRaw(
-        uint256 assets,
-        uint256 feeBasePoint
-    ) private pure returns (uint256) {
+    function _feeOnRaw(uint256 assets, uint256 feeBasePoint) private pure returns (uint256) {
         return assets.mulDiv(feeBasePoint, 1e5, Math.Rounding.Up);
     }
 
@@ -206,12 +186,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param feeBasePoint The fee rate as a base point (e.g., 0.05e5 represents a 0.05% fee rate).
      * @return The calculated fee amount to be deducted from the total assets.
      */
-    function _feeOnTotal(
-        uint256 assets,
-        uint256 feeBasePoint
-    ) private pure returns (uint256) {
-        return
-            assets.mulDiv(feeBasePoint, feeBasePoint + 1e5, Math.Rounding.Up);
+    function _feeOnTotal(uint256 assets, uint256 feeBasePoint) private pure returns (uint256) {
+        return assets.mulDiv(feeBasePoint, feeBasePoint + 1e5, Math.Rounding.Up);
     }
 
     /**
@@ -227,8 +203,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         return
             super.totalAssets() +
             DepositPool(_directory.getDepositPoolAddress()).getTvlRpl() +
-            OperatorDistributor(_directory.getOperatorDistributorAddress())
-                .getTvlRpl();
+            OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl();
     }
 
     /**
@@ -240,14 +215,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @return The amount of asset required to maintain the desired collateralization ratio, or 0 if no additional collateral is needed.
      */ function getRequiredCollateral() public view returns (uint256) {
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
-        uint256 fullBalance = DepositPool(_directory.getDepositPoolAddress())
-            .getTvlRpl();
+        uint256 fullBalance = DepositPool(_directory.getDepositPoolAddress()).getTvlRpl();
 
-        uint256 requiredBalance = collateralizationRatioBasePoint.mulDiv(
-            fullBalance,
-            1e5,
-            Math.Rounding.Up
-        );
+        uint256 requiredBalance = collateralizationRatioBasePoint.mulDiv(fullBalance, 1e5, Math.Rounding.Up);
 
         return requiredBalance > currentBalance ? requiredBalance : 0;
     }
@@ -261,14 +231,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _makerFeeBasePoint The fee rate (expressed in base points, where 1e5 represents 100%) to be set for makers.
      * @param _takerFeeBasePoint The fee rate (expressed in base points, where 1e5 represents 100%) to be set for takers.
      */
-    function setFees(
-        uint256 _makerFeeBasePoint,
-        uint256 _takerFeeBasePoint
-    ) external onlyAdmin {
-        require(
-            _makerFeeBasePoint + _takerFeeBasePoint <= 1e5,
-            "fees must be lte 100%"
-        );
+    function setFees(uint256 _makerFeeBasePoint, uint256 _takerFeeBasePoint) external onlyAdmin {
+        require(_makerFeeBasePoint + _takerFeeBasePoint <= 1e5, 'fees must be lte 100%');
         makerFeeBasePoint = _makerFeeBasePoint;
         takerFeeBasePoint = _takerFeeBasePoint;
     }
@@ -280,9 +244,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * It's expressed in base points, where 1e5 represents 100%.
      * @param _wethCoverageRatio The new WETH coverage ratio to be set (in base points).
      */
-    function setWETHCoverageRatio(
-        uint256 _wethCoverageRatio
-    ) external onlyAdmin {
+    function setWETHCoverageRatio(uint256 _wethCoverageRatio) external onlyAdmin {
         wethCoverageRatio = _wethCoverageRatio;
     }
 
@@ -293,9 +255,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * This could be useful to ensure the contract's health and stability.
      * @param _enforceWethCoverageRatio True if the WETH coverage ratio should be enforced, otherwise false.
      */
-    function setEnforceWethCoverageRatio(
-        bool _enforceWethCoverageRatio
-    ) external onlyAdmin {
+    function setEnforceWethCoverageRatio(bool _enforceWethCoverageRatio) external onlyAdmin {
         enforceWethCoverageRatio = _enforceWethCoverageRatio;
     }
 }

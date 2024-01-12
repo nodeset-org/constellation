@@ -8,6 +8,8 @@ import {
     RocketDAOProtocolSettingsNode,
     RocketStorage,
     RocketNodeStaking,
+    RocketNodeDepositNew,
+    RocketNodeStakingNew,
 } from '../_utils/artifacts';
 import { getValidatorPubkey, getValidatorSignature, getDepositDataRoot } from '../_utils/beacon';
 import { assertBN } from './bn';
@@ -84,8 +86,8 @@ export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt =
         rocketStorage,
     ] = await Promise.all([
         RocketMinipoolFactory.deployed(),
-        RocketNodeDeposit.deployed(),
-        RocketNodeStaking.deployed(),
+        RocketNodeDepositNew.deployed(),
+        RocketNodeStakingNew.deployed(),
         RocketStorage.deployed()
     ]);
 

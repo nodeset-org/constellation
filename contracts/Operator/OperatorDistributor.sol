@@ -1,31 +1,25 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import "../UpgradeableBase.sol";
-import "../Whitelist/Whitelist.sol";
-import "../DepositPool.sol";
-import "../PriceFetcher.sol";
+import '../UpgradeableBase.sol';
+import '../Whitelist/Whitelist.sol';
+import '../DepositPool.sol';
+import '../PriceFetcher.sol';
 
-import "../Utils/Constants.sol";
+import '../Utils/Constants.sol';
 
-import "../Interfaces/RocketPool/IRocketStorage.sol";
-import "../Interfaces/RocketPool/IMinipool.sol";
-import "../Interfaces/RocketPool/IRocketNodeManager.sol";
-import "../Interfaces/RocketPool/IRocketNodeStaking.sol";
+import '../Interfaces/RocketPool/IRocketStorage.sol';
+import '../Interfaces/RocketPool/IMinipool.sol';
+import '../Interfaces/RocketPool/IRocketNodeManager.sol';
+import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 contract OperatorDistributor is UpgradeableBase {
-
-    event MinipoolCreated(
-        address indexed _minipoolAddress,
-        address indexed _nodeAddress
-    );
-    event MinipoolDestroyed(
-        address indexed _minipoolAddress,
-        address indexed _nodeAddress
-    );
+    event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
+    event MinipoolDestroyed(address indexed _minipoolAddress, address indexed _nodeAddress);
     event WarningNoMiniPoolsToHarvest();
+    event WarningMinipoolNotStaking(address indexed _minipoolAddress, MinipoolStatus indexed _status);
 
     uint public _queuedEth;
 
@@ -53,9 +47,7 @@ contract OperatorDistributor is UpgradeableBase {
      * It overrides the `initialize` function from a parent contract.
      * @param _rocketStorageAddress The address of the storage contract.
      */
-    function initialize(
-        address _rocketStorageAddress
-    ) public override initializer {
+    function initialize(address _rocketStorageAddress) public override initializer {
         super.initialize(_rocketStorageAddress);
         targetStakeRatio = 1.5e18; // 150%
         numMinipoolsProcessedPerInterval = 1;
@@ -118,10 +110,7 @@ contract OperatorDistributor is UpgradeableBase {
     /// Ensure that all sources of RPL (like the OperatorDistributor) are accurately accounted for.
     /// @return The total amount of RPL tokens locked inside the protocol.
     function getTvlRpl() public view returns (uint) {
-        return
-            RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(
-                address(this)
-            ) + getAmountFundedRpl();
+        return RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this)) + getAmountFundedRpl();
     }
 
     /**
@@ -132,11 +121,9 @@ contract OperatorDistributor is UpgradeableBase {
      * @param _address The address of the minipool to be removed.
      *
      * Emits a `MinipoolDestroyed` event upon successful removal.
-     */ function removeMinipoolAddress(
-        address _address
-    ) public onlyProtocolOrAdmin {
+     */ function removeMinipoolAddress(address _address) public onlyProtocolOrAdmin {
         uint index = minipoolIndexMap[_address] - 1;
-        require(index < minipoolAddresses.length, "Address not found.");
+        require(index < minipoolAddresses.length, 'Address not found.');
 
         // Move the last address into the spot located by index
         address lastAddress = minipoolAddresses[minipoolAddresses.length - 1];
@@ -177,23 +164,13 @@ contract OperatorDistributor is UpgradeableBase {
      * @param _nodeAddress The address of the node for which RPL should be staked.
      */
     function _stakeRPLFor(address _nodeAddress) internal {
-        IRocketNodeStaking nodeStaking = IRocketNodeStaking(
-            getDirectory().getRocketNodeStakingAddress()
-        );
-        uint256 minimumRplStake = IRocketNodeStaking(
-            getDirectory().getRocketNodeStakingAddress()
-        ).getNodeMinimumRPLStake(_nodeAddress);
+        IRocketNodeStaking nodeStaking = IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress());
+        uint256 minimumRplStake = IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress())
+            .getNodeMinimumRPLStake(_nodeAddress);
 
         // approve the node staking contract to spend the RPL
-        RocketTokenRPLInterface rpl = RocketTokenRPLInterface(
-            _directory.getRPLAddress()
-        );
-        require(
-            rpl.approve(
-                getDirectory().getRocketNodeStakingAddress(),
-                minimumRplStake
-            )
-        );
+        RocketTokenRPLInterface rpl = RocketTokenRPLInterface(_directory.getRPLAddress());
+        require(rpl.approve(getDirectory().getRocketNodeStakingAddress(), minimumRplStake));
 
         // update amount funded rpl
         minipoolAmountFundedRpl[_nodeAddress] = minimumRplStake;
@@ -209,19 +186,15 @@ contract OperatorDistributor is UpgradeableBase {
      * @param _nodeAddress The address of the node whose withdrawal address should be validated.
      */
     function _validateWithdrawalAddress(address _nodeAddress) internal view {
-        IRocketStorage rocketStorage = IRocketStorage(
-            getDirectory().getRocketStorageAddress()
-        );
+        IRocketStorage rocketStorage = IRocketStorage(getDirectory().getRocketStorageAddress());
 
-        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(
-            _nodeAddress
-        );
+        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
 
         address depositPoolAddr = getDirectory().getDepositPoolAddress();
 
         require(
             withdrawalAddress == depositPoolAddr,
-            "OperatorDistributor: minipool must delegate control to deposit pool"
+            'OperatorDistributor: minipool must delegate control to deposit pool'
         );
     }
 
@@ -233,13 +206,10 @@ contract OperatorDistributor is UpgradeableBase {
      * Only the protocol or admin can call this function.
      * @param _nodeAddress The address of the node operator to be prepared for minipool creation.
      */
-    function prepareNodeForReimbursement(
-        address _nodeAddress
-    ) external onlyProtocolOrAdmin {
+    function prepareNodeForReimbursement(address _nodeAddress) external onlyProtocolOrAdmin {
         // stakes (2.4 + 100% padding) eth worth of rpl for the node
         _validateWithdrawalAddress(_nodeAddress);
-        uint256 numValidators = Whitelist(_directory.getWhitelistAddress())
-            .getNumberOfValidators(_nodeAddress);
+        uint256 numValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(_nodeAddress);
         performTopUp(_nodeAddress, 2.4 ether * numValidators);
     }
 
@@ -247,10 +217,7 @@ contract OperatorDistributor is UpgradeableBase {
      *
      */
     function validateBondRequirements(uint256 bond) public view {
-        require(
-            bond >= lowerBondRequirement && bond <= upperBondRequirement,
-            Constants.MINIPOOL_INVALID_BOND_ERROR
-        );
+        require(bond >= lowerBondRequirement && bond <= upperBondRequirement, Constants.MINIPOOL_INVALID_BOND_ERROR);
     }
 
     /**
@@ -272,10 +239,7 @@ contract OperatorDistributor is UpgradeableBase {
         IMinipool minipool = IMinipool(newMinipoolAdress);
         address nodeAddress = minipool.getNodeAddress();
         Whitelist whitelist = Whitelist(getDirectory().getWhitelistAddress());
-        require(
-            whitelist.getIsAddressInWhitelist(nodeAddress),
-            Constants.MINIPOOL_NODE_NOT_WHITELISTED_ERROR
-        );
+        require(whitelist.getIsAddressInWhitelist(nodeAddress), Constants.MINIPOOL_NODE_NOT_WHITELISTED_ERROR);
 
         uint256 bond = minipool.getNodeDepositBalance();
 
@@ -283,31 +247,19 @@ contract OperatorDistributor is UpgradeableBase {
 
         // validate that the newMinipoolAdress was signed by the admin address
         bytes32 messageHash = keccak256(abi.encode(newMinipoolAdress));
-        bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(
-            messageHash
-        );
+        bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
         address signer = ECDSA.recover(ethSignedMessageHash, sig);
-        require(
-            _directory.hasRole(Constants.ADMIN_SERVER_ROLE, signer),
-            Constants.BAD_ADMIN_SERVER_SIGNATURE_ERROR
-        );
+        require(_directory.hasRole(Constants.ADMIN_SERVER_ROLE, signer), Constants.BAD_ADMIN_SERVER_SIGNATURE_ERROR);
 
         _validateWithdrawalAddress(nodeAddress);
 
-        IRocketNodeManager nodeManager = IRocketNodeManager(
-            getDirectory().getRocketNodeManagerAddress()
-        );
+        IRocketNodeManager nodeManager = IRocketNodeManager(getDirectory().getRocketNodeManagerAddress());
 
-        require(
-            nodeManager.getSmoothingPoolRegistrationState(nodeAddress),
-            Constants.MINIPOOL_NOT_REGISTERED_ERROR
-        );
-
+        require(nodeManager.getSmoothingPoolRegistrationState(nodeAddress), Constants.MINIPOOL_NOT_REGISTERED_ERROR);
 
         require(_queuedEth >= bond, Constants.INSUFFICIENT_ETH_IN_QUEUE_ERROR);
 
-        uint256 numValidators = Whitelist(_directory.getWhitelistAddress())
-            .getNumberOfValidators(nodeAddress);
+        uint256 numValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(nodeAddress);
         performTopUp(nodeAddress, bond * numValidators);
 
         // register minipool with node operator
@@ -339,29 +291,16 @@ contract OperatorDistributor is UpgradeableBase {
      * @param _nodeAddress The address of the node operator.
      * @param _ethStaked The amount of ETH currently staked by the node operator.
      */
-    function performTopUp(
-        address _nodeAddress,
-        uint256 _ethStaked
-    ) public onlyProtocolOrAdmin {
-        uint256 rplStaked = IRocketNodeStaking(
-            _directory.getRocketNodeStakingAddress()
-        ).getNodeRPLStake(_nodeAddress);
-        uint256 ethPriceInRpl = PriceFetcher(
-            getDirectory().getPriceFetcherAddress()
-        ).getPrice();
+    function performTopUp(address _nodeAddress, uint256 _ethStaked) public onlyProtocolOrAdmin {
+        uint256 rplStaked = IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStake(_nodeAddress);
+        uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
 
-        uint256 stakeRatio = rplStaked == 0
-            ? 1e18
-            : (_ethStaked * ethPriceInRpl * 1e18) / rplStaked;
+        uint256 stakeRatio = rplStaked == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / rplStaked;
         if (stakeRatio < targetStakeRatio) {
             uint256 minuend = ((_ethStaked * ethPriceInRpl) / targetStakeRatio);
-            uint256 requiredStakeRpl = minuend < rplStaked
-                ? 0
-                : minuend - rplStaked;
+            uint256 requiredStakeRpl = minuend < rplStaked ? 0 : minuend - rplStaked;
             // Make sure the contract has enough RPL to stake
-            uint256 currentRplBalance = RocketTokenRPLInterface(
-                _directory.getRPLAddress()
-            ).balanceOf(address(this));
+            uint256 currentRplBalance = RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this));
             if (currentRplBalance >= requiredStakeRpl) {
                 if (requiredStakeRpl == 0) {
                     return;
@@ -372,10 +311,7 @@ contract OperatorDistributor is UpgradeableBase {
                     _directory.getDepositPoolAddress(),
                     requiredStakeRpl
                 );
-                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(
-                    _nodeAddress,
-                    requiredStakeRpl
-                );
+                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_nodeAddress, requiredStakeRpl);
             } else {
                 if (currentRplBalance == 0) {
                     return;
@@ -385,10 +321,7 @@ contract OperatorDistributor is UpgradeableBase {
                     _directory.getDepositPoolAddress(),
                     currentRplBalance
                 );
-                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(
-                    _nodeAddress,
-                    currentRplBalance
-                );
+                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_nodeAddress, currentRplBalance);
             }
         }
     }
@@ -419,14 +352,15 @@ contract OperatorDistributor is UpgradeableBase {
         IMinipool minipool = IMinipool(minipoolAddresses[index]);
 
         if (minipool.getStatus() != MinipoolStatus.Staking) {
+            emit WarningMinipoolNotStaking(address(minipool), minipool.getStatus());
             return;
         }
 
         // process top up
         address nodeAddress = minipool.getNodeAddress();
 
-        uint256 numberOfValidators = Whitelist(_directory.getWhitelistAddress())
-            .getNumberOfValidators(nodeAddress);
+        uint256 numberOfValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(nodeAddress);
+
         performTopUp(nodeAddress, 8 * numberOfValidators);
 
         nextMinipoolHavestIndex = index + 1;
@@ -442,13 +376,11 @@ contract OperatorDistributor is UpgradeableBase {
      * on the network for each interval, especially in scenarios with a large number of minipools.
      * @param _numMinipoolsProcessedPerInterval The new number of minipools to process per interval.
      */
-    function setNumMinipoolsProcessedPerInterval(
-        uint256 _numMinipoolsProcessedPerInterval
-    ) external onlyAdmin {
+    function setNumMinipoolsProcessedPerInterval(uint256 _numMinipoolsProcessedPerInterval) external onlyAdmin {
         numMinipoolsProcessedPerInterval = _numMinipoolsProcessedPerInterval;
     }
 
-    function setBondRequirments(uint256 _upperBound, uint256 _lowerBound) onlyAdmin external {
+    function setBondRequirments(uint256 _upperBound, uint256 _lowerBound) external onlyAdmin {
         require(_upperBound >= _lowerBound && _lowerBound <= _upperBound, Constants.BAD_BOND_BOUNDS);
         upperBondRequirement = _upperBound;
         lowerBondRequirement = _lowerBound;

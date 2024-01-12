@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.17;
 
-import "../../Interfaces/RocketPool/IMinipool.sol";
+import '../../Interfaces/RocketPool/IMinipool.sol';
 
 contract MockMinipool is IMinipool {
     address internal _nodeAddress;
@@ -69,15 +69,13 @@ contract MockMinipool is IMinipool {
         return userDepositBalance;
     }
 
-    function distributeBalance(bool _rewardsOnly) external override {
-    }
+    function distributeBalance(bool _rewardsOnly) external override {}
 
     function userDistributeAllowed() external view override returns (bool) {
         return true;
     }
 
-    function beginUserDistribute() external override {
-    }
+    function beginUserDistribute() external override {}
 
     function setNodeDepositBalance(uint256 _newBalance) external {
         _nodeDepositBalance = _newBalance;
