@@ -51,6 +51,17 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         );
     }
 
+    function requestRplStake() external {
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).prepareOperatorForDeposit(
+            nodeOperator,
+            address(this)
+        );
+    }
+
+    function requestEthDeposit() external {
+        
+    }
+
     function createMinipool(
         uint256 _bondAmount,
         uint256 _minimumNodeFee,
