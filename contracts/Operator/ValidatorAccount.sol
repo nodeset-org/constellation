@@ -18,10 +18,14 @@ import '../Utils/Errors.sol';
 /// @custom:security-contact info@nodeset.io
 /// @notice distributes rewards in weth to node operators
 contract ValidatorAccount is UpgradeableBase, Errors {
-
     IMinipool public minipool;
     uint256 public targetBond;
     address nodeOperator;
+
+    uint256 lockUpTime;
+    uint256 lockedEth;
+    uint256 lockThreshhold;
+    uint256 lockStarted;
 
     /**
      * @notice Initializes the contract with the specified directory address and sets the initial configurations.
@@ -31,15 +35,20 @@ contract ValidatorAccount is UpgradeableBase, Errors {
     function initialize(address _directory, address _nodeOperator) public initializer {
         super.initialize(_directory);
         targetBond = 8e18; // initially set for LEB8
+        lockUpTime = 28 days;
+        lockThreshhold = 1 ether;
         nodeOperator = _nodeOperator;
     }
 
     function registerNode(string calldata _timezoneLocation) external {
-        if(nodeOperator == address(0)) {
+        if (nodeOperator == address(0)) {
             revert ZeroAddressError();
         }
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).registerNode(_timezoneLocation);
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).prepareOperatorForDeposit(nodeOperator);
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).prepareOperatorForDeposit(
+            nodeOperator,
+            address(this)
+        );
     }
 
     function createMinipool(
@@ -51,13 +60,13 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         uint256 _salt,
         address _expectedMinipoolAddress
     ) external {
-        if(targetBond != _bondAmount) {
+        if (targetBond != _bondAmount) {
             revert BadBondAmount(targetBond, _bondAmount);
         }
-        if(targetBond > address(this).balance) {
-            revert InsufficientBalance(targetBond, address(this).balance);
+        if (targetBond > address(this).balance - lockedEth) {
+            revert InsufficientBalance(targetBond, address(this).balance - lockedEth);
         }
-        
+
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: targetBond}(
             _bondAmount,
             _minimumNodeFee,
@@ -78,7 +87,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
     }
 
     function close() external {
-        if(!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
+        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
 
@@ -87,16 +96,36 @@ contract ValidatorAccount is UpgradeableBase, Errors {
 
     function deposit() external payable {
         // beg for eth
+        require(lockStarted != 0, 'ValidatorAccount: waiting for lock');
+    }
+
+    function lock() external payable {
+        require(msg.value == lockThreshhold, 'ValidatorAccount: must lock 1 ether');
+        lockStarted = block.timestamp;
+        lockedEth = msg.value;
+    }
+
+    function unlock() external {
+        require(
+            block.timestamp - lockStarted > lockUpTime,
+            'ValidatorAccount: locked eth can be redeemed after lockUpTime has eleapsed'
+        );
+        require(msg.sender == nodeOperator, 'ValidatorAccount: Only node operator can redeem lock');
+        (bool success, bytes memory data) = nodeOperator.call{value: lockThreshhold}('');
+        if (!success) {
+            revert LowLevelEthTransfer(success, data);
+        }
+        lockedEth = 0;
     }
 
     function withdraw(uint256 _amount) external {
-        if(!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
+        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
 
-        (bool success, bytes memory data) = _directory.getDepositPoolAddress().call{value: _amount}("");     
-        if(!success) {
+        (bool success, bytes memory data) = _directory.getDepositPoolAddress().call{value: _amount}('');
+        if (!success) {
             revert LowLevelEthTransfer(success, data);
-        }   
+        }
     }
 }

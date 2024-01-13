@@ -206,20 +206,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * RPL to stake based on the number of validators associated with the node, and performs a top-up.
      * It stakes an amount equivalent to `(2.4 + 100% padding) ether` worth of RPL for each validator of the node.
      * Only the protocol or admin can call this function.
-     * @param _nodeAddress The address of the node operator to be prepared for minipool creation.
+     * @param _nodeOperator The address of the node operator to be prepared for minipool creation.
+     * @param _validatorAccount The address of the validator account belonging to the Node Operator
      */
-    function prepareOperatorForDeposit(address _nodeAddress) external onlyProtocolOrAdmin {
+    function prepareOperatorForDeposit(address _nodeOperator, address _validatorAccount) external onlyProtocolOrAdmin {
         // stakes (2.4 + 100% padding) eth worth of rpl for the node
-        _validateWithdrawalAddress(_nodeAddress);
-        uint256 numValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(_nodeAddress);
-        performTopUp(_nodeAddress, 2.4 ether * numValidators);
-    }
-
-    /**
-     *
-     */
-    function validateBondRequirements(uint256 bond) public view {
-        require(bond >= lowerBondRequirement && bond <= upperBondRequirement, Constants.MINIPOOL_INVALID_BOND_ERROR);
+        _validateWithdrawalAddress(_validatorAccount);
+        uint256 numValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(_nodeOperator);
+        performTopUp(_validatorAccount, 2.4 ether * numValidators);
     }
 
     /**
@@ -228,11 +222,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * divided by RPL staked). If the ratio is below a predefined target, it calculates the necessary RPL amount to
      * bring the stake ratio back to the target. Then, the function either stakes the required RPL or stakes
      * the remaining RPL balance if it's not enough.
-     * @param _nodeAddress The address of the node operator.
+     * @param _validatorAccount The address of the node operator.
      * @param _ethStaked The amount of ETH currently staked by the node operator.
      */
-    function performTopUp(address _nodeAddress, uint256 _ethStaked) public onlyProtocolOrAdmin {
-        uint256 rplStaked = IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStake(_nodeAddress);
+    function performTopUp(address _validatorAccount, uint256 _ethStaked) public onlyProtocolOrAdmin {
+        uint256 rplStaked = IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStake(_validatorAccount);
         uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
 
         uint256 stakeRatio = rplStaked == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / rplStaked;
@@ -251,7 +245,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                     _directory.getDepositPoolAddress(),
                     requiredStakeRpl
                 );
-                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_nodeAddress, requiredStakeRpl);
+                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_validatorAccount, requiredStakeRpl);
             } else {
                 if (currentRplBalance == 0) {
                     return;
@@ -261,7 +255,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                     _directory.getDepositPoolAddress(),
                     currentRplBalance
                 );
-                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_nodeAddress, currentRplBalance);
+                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_validatorAccount, currentRplBalance);
             }
         }
     }
