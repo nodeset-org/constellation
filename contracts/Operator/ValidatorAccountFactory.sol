@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import './OperatorAccount.sol'; // Import your logic contract
+import './ValidatorAccount.sol'; // Import your logic contract
+import "../Utils/Errors.sol";
 
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import '@openzeppelin/contracts/utils/Address.sol';
 
-contract OperatorFactory is UpgradeableBase {
+contract ValidatorAccountFactory is UpgradeableBase, Errors {
     using Address for address;
 
     address public implementationAddress;
 
     event ProxyCreated(address indexed proxyAddress);
 
-    error NotAContract(address addr);
 
     /**
      * @notice Initializes the factory with the logic contract address.
@@ -28,10 +28,14 @@ contract OperatorFactory is UpgradeableBase {
      * @notice Deploys a new UUPS Proxy linked to the logic contract.
      * @return address The address of the newly deployed proxy.
      */
-    function deployNewProxy() public returns (address) {
+    function createNewValidatorAccount(address _nodeOperator) public returns (address) {
+        if(!_directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender)) {
+            revert BadRole(Constants.CORE_PROTOCOL_ROLE, msg.sender);
+        }
+
         ERC1967Proxy proxy = new ERC1967Proxy(
             implementationAddress,
-            abi.encodeWithSelector(OperatorAccount(address(0)).initialize.selector, msg.sender)
+            abi.encodeWithSelector(ValidatorAccount.initialize.selector, address(_directory), _nodeOperator)
         );
         emit ProxyCreated(address(proxy));
         return address(proxy);
@@ -42,14 +46,16 @@ contract OperatorFactory is UpgradeableBase {
      * @param proxyAddress The address of the proxy to be upgraded.
      * @param newImplementation The address of the new logic contract.
      */
-    function upgradeProxy(address proxyAddress, address newImplementation) public {
+    function upgradeValidatorAccountProxy(address proxyAddress, address newImplementation) public {
         if (!Address.isContract(proxyAddress)) {
             revert NotAContract(proxyAddress);
         }
         
         // Perform a low-level call to the 'upgradeTo' function of the ERC1967Proxy
-        (bool success, ) = proxyAddress.call(abi.encodeWithSignature('upgradeTo(address)', newImplementation));
+        (bool success, bytes memory data) = proxyAddress.call(abi.encodeWithSignature('upgradeTo(address)', newImplementation));
 
-        require(success, 'OperatorFactory: Upgrade failed');
+        if(!success) {
+            revert LowLevelCall(success, data);
+        }
     }
 }

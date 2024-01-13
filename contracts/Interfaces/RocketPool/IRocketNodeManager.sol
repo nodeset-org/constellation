@@ -12,4 +12,9 @@ interface IRocketNodeManager {
     /// @param _nodeAddress The node address to check
     /// @return isRegistered The registration state of the smoothing pool
     function getSmoothingPoolRegistrationState(address _nodeAddress) external view returns (bool);
+
+    /// @notice Register a new node with Rocket Pool
+    function registerNode(
+        string calldata _timezoneLocation
+    ) external;
 }

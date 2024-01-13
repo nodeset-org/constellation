@@ -166,6 +166,7 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 				rocketPool.rockStorageContract.address,
 				rocketPool.rocketNodeManagerContract.address,
 				rocketPool.rocketNodeStakingContract.address,
+				rocketPool.rocketNodeDepositContract.address,
 				rocketPool.rplContract.address,
 				wETH.address,
 				uniswapV3Pool.address,

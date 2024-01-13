@@ -11,6 +11,7 @@ import './Interfaces/ISanctions.sol';
 import './UpgradeableBase.sol';
 import './Utils/Constants.sol';
 
+//open question: should we be using rocket storage for getting rocket pool contracts?
 struct Protocol {
     address whitelist;
     address payable wethVault;
@@ -23,6 +24,7 @@ struct Protocol {
     address rocketStorage;
     address rocketNodeManager;
     address rocketNodeStaking;
+    address rocketNodeDeposit;
     address rplToken;
     address payable weth;
     address uniswapV3Pool;
@@ -96,6 +98,10 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     function getRocketNodeManagerAddress() public view returns (address) {
         return _protocol.rocketNodeManager;
+    }
+
+    function getRocketNodeDepositAddress() public view returns (address) {
+        return _protocol.rocketNodeDeposit;
     }
 
     function getRocketNodeStakingAddress() public view returns (address) {
