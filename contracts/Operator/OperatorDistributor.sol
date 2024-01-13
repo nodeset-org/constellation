@@ -7,6 +7,7 @@ import '../DepositPool.sol';
 import '../PriceFetcher.sol';
 
 import '../Utils/Constants.sol';
+import '../Utils/Errors.sol';
 
 import '../Interfaces/RocketPool/IRocketStorage.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
@@ -15,7 +16,7 @@ import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
-contract OperatorDistributor is UpgradeableBase {
+contract OperatorDistributor is UpgradeableBase, Errors {
     event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
     event MinipoolDestroyed(address indexed _minipoolAddress, address indexed _nodeAddress);
     event WarningNoMiniPoolsToHarvest();
@@ -281,6 +282,28 @@ contract OperatorDistributor is UpgradeableBase {
         for (uint i = 0; i < numMinipoolsProcessedPerInterval; i++) {
             _processNextMinipool();
         }
+    }
+
+    function OnMinipoolCreated(address newMinipoolAddress, address nodeAddress, uint256 bond) external {
+        if(!_directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender)) {
+            revert BadRole(Constants.CORE_PROTOCOL_ROLE, msg.sender);
+        }
+
+        // register minipool with node operator
+        Whitelist whitelist = Whitelist(getDirectory().getWhitelistAddress());
+        whitelist.registerNewValidator(nodeAddress);
+
+        // new minipool owned by node operator
+        nodeOperatorOwnedMinipools[nodeAddress].push(newMinipoolAddress);
+
+        // add minipool to minipoolAddresses
+        minipoolAddresses.push(newMinipoolAddress);
+        minipoolIndexMap[newMinipoolAddress] = minipoolAddresses.length;
+
+        emit MinipoolCreated(newMinipoolAddress, nodeAddress);
+
+        // updated amount funded eth
+        minipoolAmountFundedEth[newMinipoolAddress] = bond;
     }
 
     /**

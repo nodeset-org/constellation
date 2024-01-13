@@ -35,7 +35,11 @@ contract ValidatorAccount is UpgradeableBase, Errors {
     }
 
     function registerNode(string calldata _timezoneLocation) external {
+        if(nodeOperator == address(0)) {
+            revert ZeroAddressError();
+        }
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).registerNode(_timezoneLocation);
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).prepareOperatorForDeposit(nodeOperator);
     }
 
     function createMinipool(
@@ -62,6 +66,12 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             _depositDataRoot,
             _salt,
             _expectedMinipoolAddress
+        );
+
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).OnMinipoolCreated(
+            _expectedMinipoolAddress,
+            nodeOperator,
+            _bondAmount
         );
 
         minipool = IMinipool(_expectedMinipoolAddress);

@@ -8,4 +8,5 @@ contract Errors {
     error BadRole(bytes32 role, address user);
     error LowLevelEthTransfer(bool success, bytes data);
     error LowLevelCall(bool success, bytes data);
+    error ZeroAddressError();
 }
