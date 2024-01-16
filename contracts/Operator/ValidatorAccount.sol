@@ -59,7 +59,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
     }
 
     function requestEthDeposit() external {
-        
+
     }
 
     function createMinipool(
