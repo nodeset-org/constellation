@@ -38,6 +38,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         lockUpTime = 28 days;
         lockThreshhold = 1 ether;
         nodeOperator = _nodeOperator;
+        // todo: call registerNode
     }
 
     function registerNode(string calldata _timezoneLocation) external {
@@ -78,6 +79,8 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             revert InsufficientBalance(targetBond, address(this).balance - lockedEth);
         }
 
+        lockStarted = block.timestamp;
+
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: targetBond}(
             _bondAmount,
             _minimumNodeFee,
@@ -93,7 +96,6 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             nodeOperator,
             _bondAmount
         );
-
         minipool = IMinipool(_expectedMinipoolAddress);
     }
 
@@ -112,7 +114,6 @@ contract ValidatorAccount is UpgradeableBase, Errors {
 
     function lock() external payable {
         require(msg.value == lockThreshhold, 'ValidatorAccount: must lock 1 ether');
-        lockStarted = block.timestamp;
         lockedEth = msg.value;
     }
 

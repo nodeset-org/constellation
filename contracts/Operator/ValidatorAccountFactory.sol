@@ -29,8 +29,8 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
      * @return address The address of the newly deployed proxy.
      */
     function createNewValidatorAccount(address _nodeOperator) public returns (address) {
-        if(!_directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender)) {
-            revert BadRole(Constants.CORE_PROTOCOL_ROLE, msg.sender);
+        if(msg.sender != _nodeOperator) {
+            revert BadSender(_nodeOperator);
         }
 
         ERC1967Proxy proxy = new ERC1967Proxy(

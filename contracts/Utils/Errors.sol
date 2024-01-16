@@ -6,6 +6,7 @@ contract Errors {
     error BadBondAmount(uint256 expectedBondAmount, uint256 actualBondAmount);
     error InsufficientBalance(uint expectedBalance, uint256 actualBalance);
     error BadRole(bytes32 role, address user);
+    error BadSender(address expectedSender);
     error LowLevelEthTransfer(bool success, bytes data);
     error LowLevelCall(bool success, bytes data);
     error ZeroAddressError();
