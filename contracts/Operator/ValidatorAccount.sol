@@ -20,6 +20,7 @@ import '../Utils/Errors.sol';
 /// @custom:security-contact info@nodeset.io
 /// @notice distributes rewards in weth to node operators
 contract ValidatorAccount is UpgradeableBase, Errors {
+
     struct ValidatorConfig {
         string timezoneLocation;
         uint256 bondAmount;
@@ -56,8 +57,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
 
 
         _registerNode(_config.timezoneLocation);
-        // todo:
-        // tranfer that eth in
+
         _createMinipool(
             _config.bondAmount,
             _config.minimumNodeFee,
@@ -78,6 +78,9 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             nodeOperator,
             address(this)
         );
+
+        // todo:
+        // tranfer that eth in
     }
 
     function _createMinipool(

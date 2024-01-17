@@ -34,7 +34,7 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
     function createNewValidatorAccount(
         ValidatorAccount.ValidatorConfig calldata _config
     ) public payable returns (address) {
-        // TODO: check TVL conditions and revert on top of function stack
+        // todo: check TVL conditions and revert on top of function stack
         require(msg.value == lockThreshhold, 'ValidatorAccount: must lock 1 ether');
 
         ERC1967Proxy proxy = new ERC1967Proxy{value: 1 ether}(
