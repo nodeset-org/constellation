@@ -46,7 +46,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
      * validator settings.
      * @param _config The address of the directory contract or service that this contract will reference.
      */
-    function initialize(address _directory, address _nodeOperator, bytes calldata _config) public payable initializer {
+    function initialize(address _directory, address _nodeOperator, ValidatorConfig calldata _config) public payable initializer {
         super.initialize(_directory);
         targetBond = 8e18; // initially set for LEB8
         lockUpTime = 28 days;
@@ -54,23 +54,22 @@ contract ValidatorAccount is UpgradeableBase, Errors {
 
         lockedEth = msg.value;
 
-        ValidatorConfig memory config = abi.decode(_config, (ValidatorConfig));
 
-        _registerNode(config.timezoneLocation);
+        _registerNode(_config.timezoneLocation);
         // todo:
         // tranfer that eth in
         _createMinipool(
-            config.bondAmount,
-            config.minimumNodeFee,
-            config.validatorPubkey,
-            config.validatorSignature,
-            config.depositDataRoot,
-            config.salt,
-            config.expectedMinipoolAddress
+            _config.bondAmount,
+            _config.minimumNodeFee,
+            _config.validatorPubkey,
+            _config.validatorSignature,
+            _config.depositDataRoot,
+            _config.salt,
+            _config.expectedMinipoolAddress
         );
     }
 
-    function _registerNode(string memory _timezoneLocation) internal {
+    function _registerNode(string calldata _timezoneLocation) internal {
         if (nodeOperator == address(0)) {
             revert ZeroAddressError();
         }
@@ -84,8 +83,8 @@ contract ValidatorAccount is UpgradeableBase, Errors {
     function _createMinipool(
         uint256 _bondAmount,
         uint256 _minimumNodeFee,
-        bytes memory _validatorPubkey,
-        bytes memory _validatorSignature,
+        bytes calldata _validatorPubkey,
+        bytes calldata _validatorSignature,
         bytes32 _depositDataRoot,
         uint256 _salt,
         address _expectedMinipoolAddress

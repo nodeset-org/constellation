@@ -43,7 +43,7 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
                 ValidatorAccount.initialize.selector,
                 address(_directory),
                 msg.sender,
-                abi.encode(_config)
+                _config
             )
         );
 
