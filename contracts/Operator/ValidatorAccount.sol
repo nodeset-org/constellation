@@ -3,6 +3,8 @@ pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
+import './ValidatorAccountFactory.sol';
+
 import './OperatorDistributor.sol';
 import '../Whitelist/Whitelist.sol';
 import '../Utils/ProtocolMath.sol';
@@ -18,30 +20,57 @@ import '../Utils/Errors.sol';
 /// @custom:security-contact info@nodeset.io
 /// @notice distributes rewards in weth to node operators
 contract ValidatorAccount is UpgradeableBase, Errors {
+    struct ValidatorConfig {
+        string timezoneLocation;
+        uint256 bondAmount;
+        uint256 minimumNodeFee;
+        bytes validatorPubkey;
+        bytes validatorSignature;
+        bytes32 depositDataRoot;
+        uint256 salt;
+        address expectedMinipoolAddress;
+    }
+
+    ValidatorAccountFactory public vaf;
+
     IMinipool public minipool;
     uint256 public targetBond;
     address nodeOperator;
 
     uint256 lockUpTime;
     uint256 lockedEth;
-    uint256 lockThreshhold;
     uint256 lockStarted;
 
     /**
      * @notice Initializes the contract with the specified directory address and sets the initial configurations.
      * validator settings.
-     * @param _directory The address of the directory contract or service that this contract will reference.
+     * @param _config The address of the directory contract or service that this contract will reference.
      */
-    function initialize(address _directory, address _nodeOperator) public initializer {
+    function initialize(address _directory, address _nodeOperator, bytes calldata _config) public payable initializer {
         super.initialize(_directory);
         targetBond = 8e18; // initially set for LEB8
         lockUpTime = 28 days;
-        lockThreshhold = 1 ether;
         nodeOperator = _nodeOperator;
-        // todo: call registerNode
+
+        lockedEth = msg.value;
+
+        ValidatorConfig memory config = abi.decode(_config, (ValidatorConfig));
+
+        _registerNode(config.timezoneLocation);
+        // todo:
+        // tranfer that eth in
+        _createMinipool(
+            config.bondAmount,
+            config.minimumNodeFee,
+            config.validatorPubkey,
+            config.validatorSignature,
+            config.depositDataRoot,
+            config.salt,
+            config.expectedMinipoolAddress
+        );
     }
 
-    function registerNode(string calldata _timezoneLocation) external {
+    function _registerNode(string memory _timezoneLocation) internal {
         if (nodeOperator == address(0)) {
             revert ZeroAddressError();
         }
@@ -52,26 +81,15 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         );
     }
 
-    function requestRplStake() external {
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).prepareOperatorForDeposit(
-            nodeOperator,
-            address(this)
-        );
-    }
-
-    function requestEthDeposit() external {
-
-    }
-
-    function createMinipool(
+    function _createMinipool(
         uint256 _bondAmount,
         uint256 _minimumNodeFee,
-        bytes calldata _validatorPubkey,
-        bytes calldata _validatorSignature,
+        bytes memory _validatorPubkey,
+        bytes memory _validatorSignature,
         bytes32 _depositDataRoot,
         uint256 _salt,
         address _expectedMinipoolAddress
-    ) external {
+    ) internal {
         if (targetBond != _bondAmount) {
             revert BadBondAmount(targetBond, _bondAmount);
         }
@@ -107,35 +125,27 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         minipool.close();
     }
 
-    function deposit() external payable {
-        // beg for eth
-        require(lockStarted != 0, 'ValidatorAccount: waiting for lock');
-    }
-
-    function lock() external payable {
-        require(msg.value == lockThreshhold, 'ValidatorAccount: must lock 1 ether');
-        lockedEth = msg.value;
-    }
-
     function unlock() external {
         require(
             block.timestamp - lockStarted > lockUpTime,
             'ValidatorAccount: locked eth can be redeemed after lockUpTime has eleapsed'
         );
         require(msg.sender == nodeOperator, 'ValidatorAccount: Only node operator can redeem lock');
-        (bool success, bytes memory data) = nodeOperator.call{value: lockThreshhold}('');
+        require(lockedEth != 0, 'ValidatorAccount: funds already unlocked');
+
+        lockedEth = 0;
+        (bool success, bytes memory data) = nodeOperator.call{value: vaf.lockThreshhold()}('');
         if (!success) {
             revert LowLevelEthTransfer(success, data);
         }
-        lockedEth = 0;
     }
 
-    function withdraw(uint256 _amount) external {
+    function withdraw(uint256 _amount, address _to) external {
         if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
 
-        (bool success, bytes memory data) = _directory.getDepositPoolAddress().call{value: _amount}('');
+        (bool success, bytes memory data) = _to.call{value: _amount}('');
         if (!success) {
             revert LowLevelEthTransfer(success, data);
         }
