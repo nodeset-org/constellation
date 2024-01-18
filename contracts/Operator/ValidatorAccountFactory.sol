@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import './ValidatorAccount.sol'; // Import your logic contract
+import './ValidatorAccount.sol'; 
+import './OperatorDistributor.sol'; 
 import '../Utils/Errors.sol';
 import '../UpgradeableBase.sol';
 
@@ -27,6 +28,12 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
         lockThreshhold = 1 ether;
     }
 
+    function hasSufficentLiquidity(uint256 _bond) public view returns(bool) {
+        address payable od = _directory.getOperatorDistributorAddress();
+        uint256 rplRequried = OperatorDistributor(od).calculateRequiredRplTopUp(0, _bond);
+        return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequried && od.balance > _bond;
+    }
+
     /**
      * @notice Deploys a new UUPS Proxy linked to the logic contract.
      * @return address The address of the newly deployed proxy.
@@ -34,7 +41,7 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
     function createNewValidatorAccount(
         ValidatorAccount.ValidatorConfig calldata _config
     ) public payable returns (address) {
-        // todo: check TVL conditions and revert on top of function stack
+        require(hasSufficentLiquidity(_config.bondAmount), "ValidatorAccount: protocol must have enough rpl and eth");
         require(msg.value == lockThreshhold, 'ValidatorAccount: must lock 1 ether');
 
         ERC1967Proxy proxy = new ERC1967Proxy{value: 1 ether}(

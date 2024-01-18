@@ -208,12 +208,15 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * Only the protocol or admin can call this function.
      * @param _validatorAccount The address of the validator account belonging to the Node Operator
      */
-    function provisionLiquiditiesForMinipoolCreation(address _validatorAccount, uint256 _bond) external onlyProtocolOrAdmin {
+    function provisionLiquiditiesForMinipoolCreation(
+        address _validatorAccount,
+        uint256 _bond
+    ) external onlyProtocolOrAdmin {
         // stakes (2.4 + 100% padding) eth worth of rpl for the node
         _validateWithdrawalAddress(_validatorAccount);
         performTopUp(_validatorAccount, _bond);
-        (bool success, bytes memory data) = _validatorAccount.call{value: _bond}("");
-        if(!success) {
+        (bool success, bytes memory data) = _validatorAccount.call{value: _bond}('');
+        if (!success) {
             revert LowLevelEthTransfer(success, data);
         }
     }
@@ -228,7 +231,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @param _ethStaked The amount of ETH currently staked by the node operator.
      */
     function performTopUp(address _validatorAccount, uint256 _ethStaked) public onlyProtocolOrAdmin {
-        uint256 rplStaked = IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStake(_validatorAccount);
+        uint256 rplStaked = IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStake(
+            _validatorAccount
+        );
         uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
 
         uint256 stakeRatio = rplStaked == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / rplStaked;
@@ -263,6 +268,31 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
+     * @notice Calculates the amount of RPL needed to top up the node operator's stake to the target stake ratio.
+     * @dev This view function checks the current staking ratio of the node (calculated as ETH staked times its price in RPL
+     * divided by RPL staked). If the ratio is below a predefined target, it returns the necessary RPL amount to
+     * bring the stake ratio back to the target.
+     * @param _existingRplStake Prior crap staked
+     * @param _ethStaked The amount of ETH currently staked by the node operator.
+     * @return requiredStakeRpl The amount of RPL required to top up to the target stake ratio.
+     */
+    function calculateRequiredRplTopUp(
+        uint256 _existingRplStake,
+        uint256 _ethStaked
+    ) public view returns (uint256 requiredStakeRpl) {
+        uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+
+        uint256 stakeRatio = _existingRplStake == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / _existingRplStake;
+        if (stakeRatio < targetStakeRatio) {
+            uint256 minuend = ((_ethStaked * ethPriceInRpl) / targetStakeRatio);
+            requiredStakeRpl = minuend < _existingRplStake ? 0 : minuend - _existingRplStake;
+        } else {
+            requiredStakeRpl = 0;
+        }
+        return requiredStakeRpl;
+    }
+
+    /**
      * @notice Processes rewards for a predefined number of minipools. This function is meant to be called during
      * the creation of new intervals. It serves to withdraw rewards from minipools and to top up the RPL stake.
      * @dev The function first checks if there are any minipools to process. If there aren't, it emits a warning event
@@ -281,7 +311,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     function OnMinipoolCreated(address newMinipoolAddress, address nodeAddress, uint256 bond) external {
-        if(!_directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender)) {
+        if (!_directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender)) {
             revert BadRole(Constants.CORE_PROTOCOL_ROLE, msg.sender);
         }
 
