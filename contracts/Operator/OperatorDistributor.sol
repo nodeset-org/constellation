@@ -209,11 +209,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @param _nodeOperator The address of the node operator to be prepared for minipool creation.
      * @param _validatorAccount The address of the validator account belonging to the Node Operator
      */
-    function prepareOperatorForDeposit(address _nodeOperator, address _validatorAccount) external onlyProtocolOrAdmin {
+    function prepareOperatorForDeposit(address _nodeOperator, address _validatorAccount, uint256 _bond) external onlyProtocolOrAdmin {
         // stakes (2.4 + 100% padding) eth worth of rpl for the node
         _validateWithdrawalAddress(_validatorAccount);
-        uint256 numValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(_nodeOperator);
-        performTopUp(_validatorAccount, 2.4 ether * numValidators);
+        performTopUp(_validatorAccount, _bond);
     }
 
     /**

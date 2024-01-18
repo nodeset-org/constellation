@@ -56,7 +56,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         lockedEth = msg.value;
 
 
-        _registerNode(_config.timezoneLocation);
+        _registerNode(_config.timezoneLocation, _config.bondAmount);
 
         _createMinipool(
             _config.bondAmount,
@@ -69,14 +69,15 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         );
     }
 
-    function _registerNode(string calldata _timezoneLocation) internal {
+    function _registerNode(string calldata _timezoneLocation, uint256 _bond) internal {
         if (nodeOperator == address(0)) {
             revert ZeroAddressError();
         }
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).registerNode(_timezoneLocation);
         OperatorDistributor(_directory.getOperatorDistributorAddress()).prepareOperatorForDeposit(
             nodeOperator,
-            address(this)
+            address(this),
+            _bond
         );
 
         // todo:
