@@ -206,13 +206,16 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * RPL to stake based on the number of validators associated with the node, and performs a top-up.
      * It stakes an amount equivalent to `(2.4 + 100% padding) ether` worth of RPL for each validator of the node.
      * Only the protocol or admin can call this function.
-     * @param _nodeOperator The address of the node operator to be prepared for minipool creation.
      * @param _validatorAccount The address of the validator account belonging to the Node Operator
      */
-    function prepareOperatorForDeposit(address _nodeOperator, address _validatorAccount, uint256 _bond) external onlyProtocolOrAdmin {
+    function provisionLiquiditiesForMinipoolCreation(address _validatorAccount, uint256 _bond) external onlyProtocolOrAdmin {
         // stakes (2.4 + 100% padding) eth worth of rpl for the node
         _validateWithdrawalAddress(_validatorAccount);
         performTopUp(_validatorAccount, _bond);
+        (bool success, bytes memory data) = _validatorAccount.call{value: _bond}("");
+        if(!success) {
+            revert LowLevelEthTransfer(success, data);
+        }
     }
 
     /**

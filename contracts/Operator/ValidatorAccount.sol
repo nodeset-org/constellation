@@ -74,14 +74,10 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             revert ZeroAddressError();
         }
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).registerNode(_timezoneLocation);
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).prepareOperatorForDeposit(
-            nodeOperator,
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(
             address(this),
             _bond
         );
-
-        // todo:
-        // tranfer that eth in
     }
 
     function _createMinipool(
