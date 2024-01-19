@@ -11,6 +11,6 @@ describe("Validator Account Factory", function () {
         const { protocol, signers } = await protocolFixture();
 
 
-        
+
     });
 });

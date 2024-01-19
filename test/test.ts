@@ -116,7 +116,7 @@ export async function getRocketPool(): Promise<RocketPool> {
 }
 
 async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise<Protocol> {
-	const predictedNonce = 10;
+	const predictedNonce = 12;
 	try {
 		upgrades.silenceWarnings();
 		// deploy weth
@@ -152,7 +152,10 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 		const oracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
 		const priceFetcher = await upgrades.deployProxy(await ethers.getContractFactory("PriceFetcher"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 		const adminTreasury = await upgrades.deployProxy(await ethers.getContractFactory("AdminTreasury"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-		const validatorAccountFactory = await upgrades.deployProxy(await ethers.getContractFactory("ValidatorAccountProxy"), { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+		const ValidatorAccountLogic = await ethers.getContractFactory("ValidatorAccount");
+		const validatorAccountLogic = await ValidatorAccountLogic.deploy();
+		await validatorAccountLogic.deployed();
+		const validatorAccountFactory = await upgrades.deployProxy(await ethers.getContractFactory("ValidatorAccountFactory"), [validatorAccountLogic.address], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 		
 		const directoryProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("Directory"),
 		[
@@ -208,8 +211,11 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 		return returnData;
 	} catch(e: any) {
 		const message = e.toString();
+		console.log(message)
 		if(message.includes(`to equal ${predictedNonce}`)) {
 			// always fails the first try due to lower level library limitations
+			const nonce = await ethers.provider.getTransactionCount(signers.admin.address);
+			console.log("nonce", nonce, "predicted", predictedNonce)
 			return await deployProtocol(rocketPool, signers);
 		} else {
 			throw e;
