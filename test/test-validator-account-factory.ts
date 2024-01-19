@@ -7,10 +7,7 @@ import { protocolFixture } from "./test";
 import { BigNumber } from "ethers";
 
 describe("Validator Account Factory", function () {
-    it("Can create new Validator Account", async function () {
+    it("Run the MOAT (Mother Of all Atomic Transactions)", async function () {
         const { protocol, signers } = await protocolFixture();
-
-
-
     });
 });
