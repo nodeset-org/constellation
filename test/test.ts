@@ -152,6 +152,8 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 		const oracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
 		const priceFetcher = await upgrades.deployProxy(await ethers.getContractFactory("PriceFetcher"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 		const adminTreasury = await upgrades.deployProxy(await ethers.getContractFactory("AdminTreasury"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+		const validatorAccountFactory = await upgrades.deployProxy(await ethers.getContractFactory("ValidatorAccountProxy"), { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+		
 		const directoryProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("Directory"),
 		[
 			[
@@ -160,6 +162,7 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 				vCRPL.address,
 				depositPool.address,
 				operatorDistributor.address,
+				validatorAccountFactory.address,
 				yieldDistributor.address,
 				oracle.address,
 				priceFetcher.address,

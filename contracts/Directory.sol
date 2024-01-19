@@ -18,6 +18,7 @@ struct Protocol {
     address payable rplVault;
     address payable depositPool;
     address payable operatorDistributor;
+    address validatorAccountFactory;
     address payable yieldDistributor;
     address oracle;
     address priceFetcher;
@@ -90,6 +91,10 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     function getOperatorDistributorAddress() public view returns (address payable) {
         return _protocol.operatorDistributor;
+    }
+
+    function getValidatorAccountFactoryAddress() public view returns (address) {
+        return _protocol.validatorAccountFactory;
     }
 
     function getYieldDistributorAddress() public view returns (address payable) {

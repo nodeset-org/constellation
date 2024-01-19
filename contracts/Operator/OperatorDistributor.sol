@@ -209,12 +209,17 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @param _validatorAccount The address of the validator account belonging to the Node Operator
      */
     function provisionLiquiditiesForMinipoolCreation(
+        address _nodeOperator,
         address _validatorAccount,
         uint256 _bond
     ) external onlyProtocolOrAdmin {
         // stakes (2.4 + 100% padding) eth worth of rpl for the node
         _validateWithdrawalAddress(_validatorAccount);
-        performTopUp(_validatorAccount, _bond);
+        require(_bond == 8 ether, "OperatorDistributor: Bad _bond amount, should be 8");
+
+        uint256 numValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(_nodeOperator);
+
+        performTopUp(_validatorAccount, 24 ether * (numValidators + 1));
         (bool success, bytes memory data) = _validatorAccount.call{value: _bond}('');
         if (!success) {
             revert LowLevelEthTransfer(success, data);
