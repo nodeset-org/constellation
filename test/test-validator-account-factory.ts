@@ -20,7 +20,6 @@ describe("Validator Account Factory", function () {
         await prepareOperatorDistributionContract(setupData, 1);
         expect( await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(true);
 
-
         await protocol.whitelist.connect(signers.admin).addOperator(signers.hyperdriver.address);
 
         const depositData = await generateDepositData(protocol.validatorAccountFactory.address, salt);

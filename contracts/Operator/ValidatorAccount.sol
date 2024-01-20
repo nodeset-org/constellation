@@ -68,13 +68,17 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             _config.bondAmount
         );
 
+        console.log('AA');
+
         IRocketStorage(Directory(_directory).getRocketStorageAddress()).setWithdrawalAddress(
             address(this),
             Directory(_directory).getDepositPoolAddress(),
             true
         );
+        console.log('BB');
 
         _registerNode(_config.timezoneLocation, _config.bondAmount, _nodeOperator);
+        console.log('CC');
 
         _createMinipool(
             _config.bondAmount,
@@ -85,6 +89,8 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             _config.salt,
             _config.expectedMinipoolAddress
         );
+
+        console.log('DD');
     }
 
     function _registerNode(string calldata _timezoneLocation, uint256 _bond, address _nodeOperator) internal {
