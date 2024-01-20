@@ -31,7 +31,7 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
     function hasSufficentLiquidity(uint256 _bond) public view returns(bool) {
         address payable od = _directory.getOperatorDistributorAddress();
         uint256 rplRequried = OperatorDistributor(od).calculateRequiredRplTopUp(0, _bond);
-        return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequried && od.balance > _bond;
+        return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequried && od.balance >= _bond;
     }
 
     /**

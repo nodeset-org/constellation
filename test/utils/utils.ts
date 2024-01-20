@@ -191,6 +191,10 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
         to: setupData.protocol.operatorDistributor.address,
         value: requiredEth
     });
+
+    const rplRequried = await setupData.protocol.operatorDistributor.calculateRequiredRplTopUp(0, requiredEth);
+    await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequried);
+
 }
 
 export async function getMinipoolsInProtocol(setupData: SetupData): Promise<IMinipool[]> {

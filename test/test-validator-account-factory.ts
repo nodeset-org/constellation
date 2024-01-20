@@ -23,7 +23,6 @@ describe("Validator Account Factory", function () {
 
         const depositData = await generateDepositData(protocol.validatorAccountFactory.address, salt);
 
-
         await protocol.validatorAccountFactory.createNewValidatorAccount({
             timezoneLocation: 'Australia/Brisbane',
             bondAmount: bond,
