@@ -16,14 +16,16 @@ describe("Validator Account Factory", function () {
         const bond = ethers.utils.parseEther("8");
         const salt = 3;
 
-        const sufficentLiquidity = await protocol.validatorAccountFactory.hasSufficentLiquidity(bond);
-        expect(sufficentLiquidity).equals(false);
-
+        expect( await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(false);
         await prepareOperatorDistributionContract(setupData, 1);
+        expect( await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(true);
+
+
+        await protocol.whitelist.connect(signers.admin).addOperator(signers.hyperdriver.address);
 
         const depositData = await generateDepositData(protocol.validatorAccountFactory.address, salt);
 
-        await protocol.validatorAccountFactory.createNewValidatorAccount({
+        await protocol.validatorAccountFactory.connect(signers.hyperdriver).createNewValidatorAccount({
             timezoneLocation: 'Australia/Brisbane',
             bondAmount: bond,
             minimumNodeFee: 0,
@@ -32,6 +34,8 @@ describe("Validator Account Factory", function () {
             depositDataRoot: depositData.depositDataRoot,
             salt: salt,
             expectedMinipoolAddress: depositData.minipoolAddress
+        }, 0, {
+            value: ethers.utils.parseEther("1")
         })
     });
 });

@@ -17,10 +17,11 @@ import '../Interfaces/IWETH.sol';
 import '../Utils/Constants.sol';
 import '../Utils/Errors.sol';
 
+import 'hardhat/console.sol';
+
 /// @custom:security-contact info@nodeset.io
 /// @notice distributes rewards in weth to node operators
 contract ValidatorAccount is UpgradeableBase, Errors {
-
     struct ValidatorConfig {
         string timezoneLocation;
         uint256 bondAmount;
@@ -47,7 +48,11 @@ contract ValidatorAccount is UpgradeableBase, Errors {
      * validator settings.
      * @param _config The address of the directory contract or service that this contract will reference.
      */
-    function initialize(address _directory, address _nodeOperator, ValidatorConfig calldata _config) public payable initializer {
+    function initialize(
+        address _directory,
+        address _nodeOperator,
+        ValidatorConfig calldata _config
+    ) public payable initializer {
         super.initialize(_directory);
         targetBond = 8e18; // initially set for LEB8
         lockUpTime = 28 days;
@@ -55,6 +60,19 @@ contract ValidatorAccount is UpgradeableBase, Errors {
 
         lockedEth = msg.value;
 
+        console.log('inside init');
+
+        OperatorDistributor(Directory(_directory).getOperatorDistributorAddress()).OnMinipoolCreated(
+            _config.expectedMinipoolAddress,
+            nodeOperator,
+            _config.bondAmount
+        );
+
+        IRocketStorage(Directory(_directory).getRocketStorageAddress()).setWithdrawalAddress(
+            address(this),
+            Directory(_directory).getDepositPoolAddress(),
+            true
+        );
 
         _registerNode(_config.timezoneLocation, _config.bondAmount, _nodeOperator);
 
@@ -107,12 +125,6 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             _depositDataRoot,
             _salt,
             _expectedMinipoolAddress
-        );
-
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).OnMinipoolCreated(
-            _expectedMinipoolAddress,
-            nodeOperator,
-            _bondAmount
         );
         minipool = IMinipool(_expectedMinipoolAddress);
     }

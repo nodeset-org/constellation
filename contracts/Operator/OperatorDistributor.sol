@@ -219,7 +219,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         uint256 numValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(_nodeOperator);
 
-        performTopUp(_validatorAccount, 24 ether * (numValidators + 1));
+        performTopUp(_validatorAccount, 24 ether * numValidators);
         (bool success, bytes memory data) = _validatorAccount.call{value: _bond}('');
         if (!success) {
             revert LowLevelEthTransfer(success, data);

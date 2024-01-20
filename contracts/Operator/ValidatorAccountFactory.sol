@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import './ValidatorAccount.sol'; 
-import './OperatorDistributor.sol'; 
+import './ValidatorAccount.sol';
+import './OperatorDistributor.sol';
 import '../Utils/Errors.sol';
 import '../UpgradeableBase.sol';
 
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import '@openzeppelin/contracts/utils/Address.sol';
+
+import "hardhat/console.sol";
 
 contract ValidatorAccountFactory is UpgradeableBase, Errors {
     using Address for address;
@@ -28,34 +30,55 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
         lockThreshhold = 1 ether;
     }
 
-    function hasSufficentLiquidity(uint256 _bond) public view returns(bool) {
+    function hasSufficentLiquidity(uint256 _bond) public view returns (bool) {
         address payable od = _directory.getOperatorDistributorAddress();
         uint256 rplRequried = OperatorDistributor(od).calculateRequiredRplTopUp(0, _bond);
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequried && od.balance >= _bond;
     }
 
-    /**
-     * @notice Deploys a new UUPS Proxy linked to the logic contract.
-     * @return address The address of the newly deployed proxy.
-     */
+    function getDeterministicProxyAddress(
+        bytes32 salt,
+        bytes memory initCode,
+        address deployer
+    ) public pure returns (address) {
+        bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), deployer, salt, keccak256(initCode)));
+        return address(uint160(uint256(hash)));
+    }
+
     function createNewValidatorAccount(
-        ValidatorAccount.ValidatorConfig calldata _config
+        ValidatorAccount.ValidatorConfig calldata _config,
+        uint256 salt
     ) public payable returns (address) {
-        require(hasSufficentLiquidity(_config.bondAmount), "ValidatorAccount: protocol must have enough rpl and eth");
+        require(hasSufficentLiquidity(_config.bondAmount), 'ValidatorAccount: protocol must have enough rpl and eth');
         require(msg.value == lockThreshhold, 'ValidatorAccount: must lock 1 ether');
 
-        ERC1967Proxy proxy = new ERC1967Proxy{value: 1 ether}(
-            implementationAddress,
-            abi.encodeWithSelector(
-                ValidatorAccount.initialize.selector,
-                address(_directory),
-                msg.sender,
-                _config
+        console.log("A");
+
+        bytes memory initCode = abi.encodePacked(
+            type(ERC1967Proxy).creationCode,
+            abi.encode(
+                implementationAddress,
+                abi.encodeWithSelector(ValidatorAccount.initialize.selector, address(_directory), msg.sender, _config)
             )
         );
 
-        emit ProxyCreated(address(proxy));
-        return address(proxy);
+        address predictedAddress = getDeterministicProxyAddress(bytes32(salt), initCode, address(this));
+
+        // Grant role to the predicted address
+        Directory(_directory).grantRole(Constants.CORE_PROTOCOL_ROLE, predictedAddress);
+
+        // Deploy the proxy contract using create2
+        address proxy = address(
+            new ERC1967Proxy{salt: bytes32(salt)}(
+                implementationAddress,
+                abi.encodeWithSelector(ValidatorAccount.initialize.selector, address(_directory), msg.sender, _config)
+            )
+        );
+
+        require(proxy == predictedAddress, 'Deployed address does not match predicted address');
+
+        emit ProxyCreated(proxy);
+        return proxy;
     }
 
     /**
