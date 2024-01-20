@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface } from "../typechain-types";
+import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, ValidatorAccountFactory } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
 import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketNodeDeposit, RocketNodeManager, RocketNodeManagerNew, RocketNodeStaking, RocketNodeStakingNew, RocketStorage, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
@@ -28,6 +28,7 @@ export type Protocol = {
 	vCRPL: RPLVault,
 	depositPool: DepositPool,
 	operatorDistributor: OperatorDistributor,
+	validatorAccountFactory: ValidatorAccountFactory,
 	yieldDistributor: YieldDistributor,
 	oracle: IXRETHOracle,
 	priceFetcher: Contract,
@@ -155,7 +156,7 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 		const ValidatorAccountLogic = await ethers.getContractFactory("ValidatorAccount");
 		const validatorAccountLogic = await ValidatorAccountLogic.deploy();
 		await validatorAccountLogic.deployed();
-		const validatorAccountFactory = await upgrades.deployProxy(await ethers.getContractFactory("ValidatorAccountFactory"), [validatorAccountLogic.address], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+		const validatorAccountFactory = await upgrades.deployProxy(await ethers.getContractFactory("ValidatorAccountFactory"), [directoryAddress, validatorAccountLogic.address], { 'initializer': 'initializeWithImplementation', 'kind': 'uups', 'unsafeAllow': ['constructor'] }) as ValidatorAccountFactory;
 		
 		const directoryProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("Directory"),
 		[
@@ -202,7 +203,7 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 		expect(await directory.getTreasuryAddress()).to.equal(adminTreasury.address);
 		await directory.connect(signers.admin).setTreasury(deployer.address);
 
-		const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
+		const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, validatorAccountFactory, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
 
 		// send all rpl from admin to rplWhale
 		const rplWhaleBalance = await rocketPool.rplContract.balanceOf(signers.deployer.address);

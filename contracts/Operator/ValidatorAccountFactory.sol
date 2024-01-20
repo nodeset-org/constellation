@@ -22,8 +22,8 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
      * @notice Initializes the factory with the logic contract address.
      * @param _implementation The address of the logic contract (OperatorAccount).
      */
-    function initialize(address _implementation) public override initializer {
-        super.initialize(_implementation);
+    function initializeWithImplementation(address _directory, address _implementation) public initializer {
+        super.initialize(_directory);
         implementationAddress = _implementation;
         lockThreshhold = 1 ether;
     }

@@ -77,6 +77,34 @@ export async function createMinipool(txOptions, salt = null) {
     return createMinipoolWithBondAmount(txOptions.value, txOptions, salt);
 }
 
+// Function to generate deposit data for creating a minipool
+export async function generateDepositData() {
+    // Example values for deposit data - adjust these based on your specific requirements
+    const pubkey = getValidatorPubkey(); // Public key of the validator
+    const amount = BigInt(32000000000); // Deposit amount in Gwei (32 ETH)
+    const signature = getValidatorSignature(); // Signature for the deposit
+
+    // Generate withdrawal credentials - this should be generated based on your requirements
+    // Here, we use a placeholder logic. Adjust it as per your actual use case.
+    let withdrawalCredentials = '0x' + '000000000000000000000000' + pubkey.substring(2, 42);
+
+    // Construct the deposit data
+    const depositData = {
+        pubkey: pubkey,
+        withdrawalCredentials: Buffer.from(withdrawalCredentials, 'hex'),
+        amount: amount,
+        signature: signature
+    };
+
+    // Calculate the deposit data root - this might involve hashing the deposit data
+    // depending on your implementation specifics.
+    let depositDataRoot = getDepositDataRoot(depositData);
+
+    // Return the deposit data and its root
+    return { depositData, depositDataRoot };
+}
+
+
 export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt = null) {
     // Load contracts
     const [
