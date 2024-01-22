@@ -299,8 +299,6 @@ contract RocketNodeDepositOld is RocketBase, RocketNodeDepositInterfaceOld {
         // Create minipool
         RocketMinipoolInterface minipool = rocketMinipoolManager.createMinipool(msg.sender, _salt);
 
-        console.log("rp actual minipool address");
-        console.logAddress(address(minipool));
         // Ensure minipool address matches expected
         require(address(minipool) == _expectedMinipoolAddress, 'Unexpected minipool address');
         // Return
