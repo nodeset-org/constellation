@@ -36,6 +36,15 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequried && od.balance >= _bond;
     }
 
+    function predictNextDeploymentAddress(uint256 nonce) public view returns (address) {
+        // The address is determined by the keccak256 hash of the RLP-encoded concatenation of the creating contract's address and its nonce
+        // The resulting hash is then used to determine the address
+        return
+            address(
+                uint160(uint256(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), address(this), nonce))) >> 96)
+            );
+    }
+
     function createNewValidatorAccount(
         ValidatorAccount.ValidatorConfig calldata _config,
         address _predictedAddress
@@ -48,7 +57,13 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
         // Deploy the proxy contract using create
         ERC1967Proxy proxy = new ERC1967Proxy(
             implementationAddress,
-            abi.encodeWithSelector(ValidatorAccount.initialize.selector, address(_directory), msg.sender, _predictedAddress, _config)
+            abi.encodeWithSelector(
+                ValidatorAccount.initialize.selector,
+                address(_directory),
+                msg.sender,
+                _predictedAddress,
+                _config
+            )
         );
 
         emit ProxyCreated(address(proxy));
