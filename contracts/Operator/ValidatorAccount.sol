@@ -51,8 +51,16 @@ contract ValidatorAccount is UpgradeableBase, Errors {
     function initialize(
         address _directory,
         address _nodeOperator,
+        address _predictedAddress,
         ValidatorConfig calldata _config
     ) public payable initializer {
+        if(_predictedAddress != address(this)) {
+            revert BadPredictedCreation(
+                _predictedAddress,
+                address(this)
+            );
+        }
+
         super.initialize(_directory);
         targetBond = 8e18; // initially set for LEB8
         lockUpTime = 28 days;
@@ -168,4 +176,6 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             revert LowLevelEthTransfer(success, data);
         }
     }
+
+    function _authorizeUpgrade(address) internal override onlyProtocol {}
 }

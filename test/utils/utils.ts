@@ -233,6 +233,20 @@ export async function getNextContractAddress(signer: SignerWithAddress, offset =
     return contractAddress;
 }
 
+export async function getNextFactoryContractAddress(factoryAddress: string, factoryNonce: number) {
+    // RLP encode the factory address and nonce
+    const rlpEncoded = ethers.utils.solidityPack(['address', 'uint256'], [factoryAddress, factoryNonce]);
+
+    // Calculate the hash
+    const contractAddressHash = ethers.utils.keccak256(rlpEncoded);
+
+    // The last 20 bytes of this hash are the address
+    const contractAddress = '0x' + contractAddressHash.slice(-40);
+
+    return contractAddress;
+}
+
+
 export async function getEventNames(tx: ContractTransaction, contract: Contract): Promise<string[]> {
     let emittedEvents: string[] = [];
     let emittedArgs: any[] = [];

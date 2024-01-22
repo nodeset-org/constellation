@@ -36,7 +36,10 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequried && od.balance >= _bond;
     }
 
-
+    function getDeterministicProxyAddress(bytes32 salt, bytes memory initCode) public view returns (address) {
+        bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(initCode)));
+        return address(uint160(uint256(hash)));
+    }
 
     function getInitCode(ValidatorAccount.ValidatorConfig calldata _config) public view returns (bytes memory) {
         return
@@ -55,28 +58,21 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
     }
 
     function createNewValidatorAccount(
-        ValidatorAccount.ValidatorConfig calldata _config
+        ValidatorAccount.ValidatorConfig calldata _config,
+        address _predictedAddress
     ) public payable returns (address) {
         require(hasSufficentLiquidity(_config.bondAmount), 'ValidatorAccount: protocol must have enough rpl and eth');
         require(msg.value == lockThreshhold, 'ValidatorAccount: must lock 1 ether');
 
         console.log('A');
 
+        Directory(_directory).grantRole(Constants.CORE_PROTOCOL_ROLE, _predictedAddress);
+
         // Deploy the proxy contract using create
-        ERC1967Proxy proxy = new ERC1967Proxy(implementationAddress, '');
-
-        // Grant role to the new address
-        Directory(_directory).grantRole(Constants.CORE_PROTOCOL_ROLE, address(proxy));
-
-        // Perform initialization through a low-level call
-        (bool success, bytes memory data) = address(proxy).call(
-            abi.encodeWithSelector(ValidatorAccount.initialize.selector, address(_directory), msg.sender, _config)
+        ERC1967Proxy proxy = new ERC1967Proxy(
+            implementationAddress,
+            abi.encodeWithSelector(ValidatorAccount.initialize.selector, address(_directory), msg.sender, _predictedAddress, _config)
         );
-
-        // Ensure the initialization was successful
-        if (!success) {
-            revert LowLevelCall(success, data);
-        }
 
         emit ProxyCreated(address(proxy));
         return address(proxy);

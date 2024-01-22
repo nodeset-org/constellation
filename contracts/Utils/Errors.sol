@@ -10,4 +10,5 @@ contract Errors {
     error LowLevelEthTransfer(bool success, bytes data);
     error LowLevelCall(bool success, bytes data);
     error ZeroAddressError();
+    error BadPredictedCreation(address expected, address actual);
 }
