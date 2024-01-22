@@ -24,7 +24,7 @@ describe("Validator Account Factory", function () {
 
         const depositData = await generateDepositData(protocol.validatorAccountFactory.address, salt);
 
-        await protocol.validatorAccountFactory.connect(signers.hyperdriver).createNewValidatorAccount({
+        const config = {
             timezoneLocation: 'Australia/Brisbane',
             bondAmount: bond,
             minimumNodeFee: 0,
@@ -33,7 +33,9 @@ describe("Validator Account Factory", function () {
             depositDataRoot: depositData.depositDataRoot,
             salt: salt,
             expectedMinipoolAddress: depositData.minipoolAddress
-        }, 0, {
+        }
+
+        await protocol.validatorAccountFactory.connect(signers.hyperdriver).createNewValidatorAccount(config, 0, {
             value: ethers.utils.parseEther("1")
         })
     });

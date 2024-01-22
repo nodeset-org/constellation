@@ -38,11 +38,20 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
 
     function getDeterministicProxyAddress(
         bytes32 salt,
-        bytes memory initCode,
-        address deployer
-    ) public pure returns (address) {
-        bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), deployer, salt, keccak256(initCode)));
+        bytes memory initCode
+    ) public view returns (address) {
+        bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(initCode)));
         return address(uint160(uint256(hash)));
+    }
+
+    function getInitCode(ValidatorAccount.ValidatorConfig calldata _config) public view returns(bytes memory) {
+        return abi.encodePacked(
+            type(ERC1967Proxy).creationCode,
+            abi.encode(
+                implementationAddress,
+                abi.encodeWithSelector(ValidatorAccount.initialize.selector, address(_directory), msg.sender, _config)
+            )
+        );
     }
 
     function createNewValidatorAccount(
@@ -54,15 +63,9 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
 
         console.log("A");
 
-        bytes memory initCode = abi.encodePacked(
-            type(ERC1967Proxy).creationCode,
-            abi.encode(
-                implementationAddress,
-                abi.encodeWithSelector(ValidatorAccount.initialize.selector, address(_directory), msg.sender, _config)
-            )
-        );
+        bytes memory initCode = getInitCode(_config);
 
-        address predictedAddress = getDeterministicProxyAddress(bytes32(salt), initCode, address(this));
+        address predictedAddress = getDeterministicProxyAddress(bytes32(salt), initCode);
 
         // Grant role to the predicted address
         Directory(_directory).grantRole(Constants.CORE_PROTOCOL_ROLE, predictedAddress);
