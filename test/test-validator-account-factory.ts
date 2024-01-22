@@ -7,6 +7,7 @@ import { protocolFixture } from "./test";
 import { BigNumber } from "ethers";
 import { prepareOperatorDistributionContract } from "./utils/utils";
 import { generateDepositData } from "./rocketpool/_helpers/minipool";
+import { RocketMinipoolFactory } from "./rocketpool/_utils/artifacts";
 
 describe("Validator Account Factory", function () {
     it("Run the MOAT (Mother Of all Atomic Transactions)", async function () {
@@ -32,8 +33,19 @@ describe("Validator Account Factory", function () {
             validatorSignature: depositData.depositData.signature,
             depositDataRoot: depositData.depositDataRoot,
             salt: salt,
-            expectedMinipoolAddress: depositData.minipoolAddress
+            expectedMinipoolAddress: "0xc86f125988438c35b58532322748b12c47e9e9ea"
         }
+
+        const initCode = await protocol.validatorAccountFactory.getInitCode(config);
+        const nextValidatorAccountAddress = await protocol.validatorAccountFactory.getDeterministicProxyAddress(
+            ethers.utils.hexZeroPad(ethers.utils.hexValue(salt), 32),
+            initCode
+        )
+
+        const rocketMinipoolFactory = await RocketMinipoolFactory.deployed();
+        let minipoolAddress = (await rocketMinipoolFactory.getExpectedAddress(nextValidatorAccountAddress, salt)).substr(2);
+
+        //config.expectedMinipoolAddress = minipoolAddress;
 
         await protocol.validatorAccountFactory.connect(signers.hyperdriver).createNewValidatorAccount(config, 0, {
             value: ethers.utils.parseEther("1")
