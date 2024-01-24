@@ -3,11 +3,11 @@ import { getRocketPool, protocolFixture, protocolParams } from "../test/test";
 import { setDefaultParameters } from "../test/rocketpool/_helpers/defaults";
 import { deployRocketPool } from "../test/rocketpool/_helpers/deployment";
 import { getNextContractAddress } from "../test/utils/utils";
-import { IXRETHOracle } from "../typechain-types";
+import { IXRETHOracle, ValidatorAccountFactory } from "../typechain-types";
 import { expect } from "chai";
 
 async function main() {
-    const predictedNonce = 9;
+    const predictedNonce = 12;
     const [deployer] = await ethers.getSigners();
 
     // Function to generate bytes32 representation for contract identifiers
@@ -24,6 +24,7 @@ async function main() {
         rocketDAOProtocolSettingsNetwork: 'rocketDAOProtocolSettingsNetwork',
         rocketStorage: 'rocketStorage',
         rocketNodeStaking: 'rocketNodeStaking',
+        rocketNodeDeposit: 'rocketNodeDeposit'
     };
 
     const rpAddresses: { [key: string]: string } = {};
@@ -57,6 +58,7 @@ async function main() {
     const rockStorageContract = await ethers.getContractAt("RocketStorage", rpAddresses['rocketStorage']);
     const rocketNodeManagerContract = await ethers.getContractAt("RocketNodeManagerInterface", rpAddresses['rocketNodeManager']);
     const rocketNodeStakingContract = await ethers.getContractAt("RocketNodeStaking", rpAddresses['rocketNodeStaking']);
+    const rocketNodeDepositContract = await ethers.getContractAt("RocketNodeDeposit", rpAddresses['rocketNodeDeposit']);
 
     console.log("rocketpool contracts of interest")
     console.log("rplContract", rplContract.address)
@@ -150,6 +152,18 @@ async function main() {
     // wait for priceFetcher deploy to be mined
     await priceFetcher.deployTransaction.wait();
 
+    // deploy mock sanctions
+    const Sanctions = await ethers.getContractFactory("MockSanctions");
+    const sanctions = await Sanctions.deploy();
+    await sanctions.deployed();
+    console.log("sanctions address", sanctions.address);
+
+    const ValidatorAccountLogic = await ethers.getContractFactory("ValidatorAccount");
+    const validatorAccountLogic = await ValidatorAccountLogic.deploy();
+    await validatorAccountLogic.deployed();
+    const validatorAccountFactory = await upgrades.deployProxy(await ethers.getContractFactory("ValidatorAccountFactory"), [directoryAddress, validatorAccountLogic.address], { 'initializer': 'initializeWithImplementation', 'kind': 'uups', 'unsafeAllow': ['constructor'] }) as ValidatorAccountFactory;
+    console.log("validator factory address", validatorAccountFactory.address);
+
     const directoryProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("Directory"),
         [
             [
@@ -159,14 +173,18 @@ async function main() {
                 depositPool.address,
                 operatorDistributor.address,
                 yieldDistributor.address,
+                validatorAccountFactory.address,
                 oracle.address,
                 priceFetcher.address,
                 rockStorageContract.address,
                 rocketNodeManagerContract.address,
                 rocketNodeStakingContract.address,
+                rocketNodeDepositContract.address,
                 rplContract.address,
                 wETH.address,
-                uniswapV3Pool.address
+                uniswapV3Pool.address,
+                sanctions.address,
+
             ]
         ], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 
