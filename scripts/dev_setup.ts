@@ -6,6 +6,20 @@ import { getNextContractAddress } from "../test/utils/utils";
 import { IXRETHOracle, ValidatorAccountFactory } from "../typechain-types";
 import { expect } from "chai";
 
+// Retry operation function
+async function retryOperation(operation: () => Promise<any>, retries: number = 3) {
+    try {
+        return await operation();
+    } catch (error) {
+        if (retries > 0) {
+            console.log(`Retrying operation, attempts remaining: ${retries}...`);
+            return await retryOperation(operation, retries - 1);
+        } else {
+            throw error;
+        }
+    }
+}
+
 async function main() {
     const predictedNonce = 12;
     const [deployer] = await ethers.getSigners();
@@ -68,20 +82,26 @@ async function main() {
 
     upgrades.silenceWarnings();
     // deploy weth
-    const WETH = await ethers.getContractFactory("WETH");
-    const wETH = await WETH.deploy();
-    await wETH.deployed();
+    const wETH = await retryOperation(async () => {
+        const WETH = await ethers.getContractFactory("WETH");
+        const contract = await WETH.deploy();
+        await contract.deployed();
+        await wETH.deployTransaction.wait();
+        return contract;
+    });
 
     // wait for weth deploy to be mined
-    await wETH.deployTransaction.wait();
 
     // deploy mock uniswap v3 pool
-    const UniswapV3Pool = await ethers.getContractFactory("MockUniswapV3Pool");
-    const uniswapV3Pool = await UniswapV3Pool.deploy();
-    await uniswapV3Pool.deployed();
+    const uniswapV3Pool = await retryOperation(async () => {
+        const UniswapV3Pool = await ethers.getContractFactory("MockUniswapV3Pool");
+        const contract = await UniswapV3Pool.deploy();
+        await contract.deployed();
+        await uniswapV3Pool.deployTransaction.wait();
+        return contract;
+    });
 
     // wait for uniswap v3 pool deploy to be mined
-    await uniswapV3Pool.deployTransaction.wait();
 
     const directoryAddress = await getNextContractAddress(deployer, predictedNonce - 1)
     console.log("predicted directory address", directoryAddress)
@@ -89,41 +109,50 @@ async function main() {
     const initNonce = await deployer.getTransactionCount();
     console.log("init nonce", initNonce)
 
-    const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directoryAddress], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-    console.log("whitelist address", whitelist.address)
+    const whitelist = await retryOperation(async () => {
+        const deployedProxy = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directoryAddress], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+        await deployedProxy.deployTransaction.wait();
+        return deployedProxy;
+    });
+    console.log("whitelist address", whitelist.address);
 
-    // wait for whitelist deploy to be mined
-    await whitelist.deployTransaction.wait();
-
-    const vCWETHProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("WETHVault"), [directoryAddress, wETH.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-    console.log("vCWETHProxyAbi address", vCWETHProxyAbi.address)
-
-    // wait for vCWETH deploy to be mined
-    await vCWETHProxyAbi.deployTransaction.wait();
+    const vCWETHProxyAbi = await retryOperation(async () => {
+        const deployedProxy = await upgrades.deployProxy(await ethers.getContractFactory("WETHVault"), [directoryAddress, wETH.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        await deployedProxy.deployTransaction.wait();
+        return deployedProxy;
+    });
+    console.log("vCWETHProxyAbi address", vCWETHProxyAbi.address);
 
     const vCWETH = await ethers.getContractAt("WETHVault", vCWETHProxyAbi.address);
     console.log("vCWETH address", vCWETH.address)
 
-    const vCRPLProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("RPLVault"), [directoryAddress, rplContract.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-    console.log("vCRPLProxyAbi address", vCRPLProxyAbi.address)
-
-    // wait for vCRPL deploy to be mined
-    await vCRPLProxyAbi.deployTransaction.wait();
+    const vCRPLProxyAbi = await retryOperation(async () => {
+        const deployedProxy = await upgrades.deployProxy(await ethers.getContractFactory("RPLVault"), [directoryAddress, rplContract.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        await deployedProxy.deployTransaction.wait();
+        return deployedProxy;
+    });
+    console.log("vCRPLProxyAbi address", vCRPLProxyAbi.address);
 
     const vCRPL = await ethers.getContractAt("RPLVault", vCRPLProxyAbi.address);
     console.log("vCRPL address", vCRPL.address)
 
-    const depositPoolProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("DepositPool"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-    console.log("depositPoolProxyAbi address", depositPoolProxyAbi.address)
+    const depositPoolProxyAbi = await retryOperation(async () => {
+        const deployedProxy = await upgrades.deployProxy(await ethers.getContractFactory("DepositPool"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        await deployedProxy.deployTransaction.wait();
+        return deployedProxy;
+    });
+    console.log("depositPoolProxyAbi address", depositPoolProxyAbi.address);
 
-    // wait for depositPool deploy to be mined
-    await depositPoolProxyAbi.deployTransaction.wait();
 
     const depositPool = await ethers.getContractAt("DepositPool", depositPoolProxyAbi.address);
     console.log("depositPool address", depositPool.address)
 
-    const operatorDistributorProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("OperatorDistributor"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-    console.log("operatorDistributorProxyAbi address", operatorDistributorProxyAbi.address)
+    const operatorDistributorProxyAbi = await retryOperation(async () => {
+        const deployedProxy = await upgrades.deployProxy(await ethers.getContractFactory("OperatorDistributor"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        await deployedProxy.deployTransaction.wait();
+        return deployedProxy;
+    });
+    console.log("operatorDistributorProxyAbi address", operatorDistributorProxyAbi.address);
 
     // wait for operatorDistributor deploy to be mined
     await operatorDistributorProxyAbi.deployTransaction.wait();
@@ -131,11 +160,12 @@ async function main() {
     const operatorDistributor = await ethers.getContractAt("OperatorDistributor", operatorDistributorProxyAbi.address);
     console.log("operatorDistributor address", operatorDistributor.address)
 
-    const yieldDistributorProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("YieldDistributor"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-    console.log("yieldDistributorProxyAbi address", yieldDistributorProxyAbi.address)
-
-    // wait for yieldDistributor deploy to be mined
-    await yieldDistributorProxyAbi.deployTransaction.wait();
+    const yieldDistributorProxyAbi = await retryOperation(async () => {
+        const deployedProxy = await upgrades.deployProxy(await ethers.getContractFactory("YieldDistributor"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        await deployedProxy.deployTransaction.wait();
+        return deployedProxy;
+    });
+    console.log("yieldDistributorProxyAbi address", yieldDistributorProxyAbi.address);
 
     const yieldDistributor = await ethers.getContractAt("YieldDistributor", yieldDistributorProxyAbi.address);
     console.log("yieldDistributor address", yieldDistributor.address)
@@ -146,52 +176,62 @@ async function main() {
     // wait for oracle deploy to be mined
     await oracle.deployTransaction.wait();
 
-    const priceFetcher = await upgrades.deployProxy(await ethers.getContractFactory("PriceFetcher"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-    console.log("priceFetcher address", priceFetcher.address)
+    const priceFetcher = await retryOperation(async () => {
+        const deployedProxy = await upgrades.deployProxy(await ethers.getContractFactory("PriceFetcher"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+        await deployedProxy.deployTransaction.wait();
+        return deployedProxy;
+    });
+    console.log("priceFetcher address", priceFetcher.address);
 
     // wait for priceFetcher deploy to be mined
     await priceFetcher.deployTransaction.wait();
 
-    // deploy mock sanctions
-    const Sanctions = await ethers.getContractFactory("MockSanctions");
-    const sanctions = await Sanctions.deploy();
-    await sanctions.deployed();
+    const sanctions = await retryOperation(async () => {
+        const Sanctions = await ethers.getContractFactory("MockSanctions");
+        const contract = await Sanctions.deploy();
+        await contract.deployed();
+        return contract;
+    });
     console.log("sanctions address", sanctions.address);
 
-    const ValidatorAccountLogic = await ethers.getContractFactory("ValidatorAccount");
-    const validatorAccountLogic = await ValidatorAccountLogic.deploy();
-    await validatorAccountLogic.deployed();
-    const validatorAccountFactory = await upgrades.deployProxy(await ethers.getContractFactory("ValidatorAccountFactory"), [directoryAddress, validatorAccountLogic.address], { 'initializer': 'initializeWithImplementation', 'kind': 'uups', 'unsafeAllow': ['constructor'] }) as ValidatorAccountFactory;
+    const validatorAccountFactory = await retryOperation(async () => {
+        const ValidatorAccountLogic = await ethers.getContractFactory("ValidatorAccount");
+        const validatorAccountLogic = await ValidatorAccountLogic.deploy();
+        await validatorAccountLogic.deployed();
+        const factory = await upgrades.deployProxy(await ethers.getContractFactory("ValidatorAccountFactory"), [directoryAddress, validatorAccountLogic.address], { 'initializer': 'initializeWithImplementation', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+        await factory.deployTransaction.wait();
+        return factory;
+    }) as ValidatorAccountFactory;
     console.log("validator factory address", validatorAccountFactory.address);
 
-    const directoryProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("Directory"),
-        [
+    const directoryProxyAbi = await retryOperation(async () => {
+        const deployedProxy = await upgrades.deployProxy(await ethers.getContractFactory("Directory"),
             [
-                whitelist.address,
-                vCWETH.address,
-                vCRPL.address,
-                depositPool.address,
-                operatorDistributor.address,
-                yieldDistributor.address,
-                validatorAccountFactory.address,
-                oracle.address,
-                priceFetcher.address,
-                rockStorageContract.address,
-                rocketNodeManagerContract.address,
-                rocketNodeStakingContract.address,
-                rocketNodeDepositContract.address,
-                rplContract.address,
-                wETH.address,
-                uniswapV3Pool.address,
-                sanctions.address,
+                [
+                    whitelist.address,
+                    vCWETH.address,
+                    vCRPL.address,
+                    depositPool.address,
+                    operatorDistributor.address,
+                    yieldDistributor.address,
+                    validatorAccountFactory.address,
+                    oracle.address,
+                    priceFetcher.address,
+                    rockStorageContract.address,
+                    rocketNodeManagerContract.address,
+                    rocketNodeStakingContract.address,
+                    rocketNodeDepositContract.address,
+                    rplContract.address,
+                    wETH.address,
+                    uniswapV3Pool.address,
+                    sanctions.address,
+                ]
+            ], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+        await deployedProxy.deployTransaction.wait();
+        return deployedProxy;
+    });
+    console.log("directoryProxyAbi address", directoryProxyAbi.address);
 
-            ]
-        ], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-
-    console.log("directoryProxyAbi address", directoryProxyAbi.address)
-
-    // wait for directory deploy to be mined
-    await directoryProxyAbi.deployTransaction.wait();
 
     const finalNonce = await deployer.getTransactionCount();
     console.log("final nonce", finalNonce)
@@ -208,18 +248,23 @@ async function main() {
 
     // set adminServer to be ADMIN_SERVER_ROLE
     const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
-    await directory.grantRole(ethers.utils.arrayify(adminRole), deployer.address);
-    console.log("admin role set")
+    await retryOperation(async () => {
+        await directory.grantRole(ethers.utils.arrayify(adminRole), deployer.address);
+    });
 
     // set timelock to be TIMELOCK_ROLE
     const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_24_HOUR"));
-    await directory.grantRole(ethers.utils.arrayify(timelockRole), deployer.address);
-    console.log("timelock role set")
+    await retryOperation(async () => {
+        await directory.grantRole(ethers.utils.arrayify(timelockRole), deployer.address);
+    });
+    console.log("timelock role set");
 
     // set protocolSigner to be PROTOCOL_ROLE
     const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
-    await directory.grantRole(ethers.utils.arrayify(protocolRole), deployer.address);
-    console.log("protocol role set")
+    await retryOperation(async () => {
+        await directory.grantRole(ethers.utils.arrayify(protocolRole), deployer.address);
+    });
+    console.log("protocol role set");
 }
 
 main()
