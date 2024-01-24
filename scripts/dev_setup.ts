@@ -5,15 +5,39 @@ import { deployRocketPool } from "../test/rocketpool/_helpers/deployment";
 import { getNextContractAddress } from "../test/utils/utils";
 import { IXRETHOracle, ValidatorAccountFactory } from "../typechain-types";
 import { expect } from "chai";
+import readline from 'readline';
 
-// Retry operation function
-async function retryOperation(operation: () => Promise<any>, retries: number = 3) {
+// Function to prompt user for input
+function askQuestion(query: string): Promise<string> {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
+
+    return new Promise<string>(resolve => rl.question(query, ans => {
+        rl.close();
+        resolve(ans);
+    }));
+}
+
+// Updated retry operation function
+async function retryOperation(operation: () => Promise<any>, retries: number = 3, extendedRetries: number = 3) {
     try {
         return await operation();
     } catch (error) {
+        console.log(error);
+
         if (retries > 0) {
             console.log(`Retrying operation, attempts remaining: ${retries}...`);
-            return await retryOperation(operation, retries - 1);
+            return await retryOperation(operation, retries - 1, extendedRetries);
+        } else if (extendedRetries > 0) {
+            const answer = await askQuestion('Operation failed. Do you want to retry? (y/n): ');
+            if (answer.toLowerCase() === 'y') {
+                console.log(`Extended retry, attempts remaining: ${extendedRetries}...`);
+                return await retryOperation(operation, 0, extendedRetries - 1);
+            } else {
+                throw new Error('Operation aborted by the user.');
+            }
         } else {
             throw error;
         }
@@ -86,7 +110,6 @@ async function main() {
         const WETH = await ethers.getContractFactory("WETH");
         const contract = await WETH.deploy();
         await contract.deployed();
-        await wETH.deployTransaction.wait();
         return contract;
     });
 
@@ -97,7 +120,6 @@ async function main() {
         const UniswapV3Pool = await ethers.getContractFactory("MockUniswapV3Pool");
         const contract = await UniswapV3Pool.deploy();
         await contract.deployed();
-        await uniswapV3Pool.deployTransaction.wait();
         return contract;
     });
 
@@ -178,13 +200,10 @@ async function main() {
 
     const priceFetcher = await retryOperation(async () => {
         const deployedProxy = await upgrades.deployProxy(await ethers.getContractFactory("PriceFetcher"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-        await deployedProxy.deployTransaction.wait();
+        await deployedProxy.deployed();
         return deployedProxy;
     });
     console.log("priceFetcher address", priceFetcher.address);
-
-    // wait for priceFetcher deploy to be mined
-    await priceFetcher.deployTransaction.wait();
 
     const sanctions = await retryOperation(async () => {
         const Sanctions = await ethers.getContractFactory("MockSanctions");
@@ -225,7 +244,9 @@ async function main() {
                     wETH.address,
                     uniswapV3Pool.address,
                     sanctions.address,
-                ]
+                ],
+                deployer.address,
+                deployer.address,
             ], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
         await deployedProxy.deployTransaction.wait();
         return deployedProxy;
