@@ -72,6 +72,11 @@ const config: HardhatUserConfig = {
       url: process.env.GOERLI_URL as string,
       accounts: [process.env.DEPLOYER_PRIVATE_KEY as string],
     },
+
+    holesky: {
+      url: process.env.HOLESKY_RPC as string,
+      accounts: [process.env.HOLESKY_DEPLOYER as string],
+    }
   },
   mocha: {
     timeout: 0,

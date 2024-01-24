@@ -9,18 +9,54 @@ import { expect } from "chai";
 async function main() {
     const predictedNonce = 9;
     const [deployer] = await ethers.getSigners();
+
+    // Function to generate bytes32 representation for contract identifiers
+    const generateBytes32Identifier = (identifier: string) => {
+        // Correctly concatenate 'contract.address' with the identifier before hashing
+        return ethers.utils.solidityKeccak256(["string"], [`contract.address${identifier}`]);
+    };
+
+
+    // Contract identifiers
+    const contractIdentifiers = {
+        rocketNodeManager: 'rocketNodeManager',
+        rocketTokenRPL: 'rocketTokenRPL',
+        rocketDAOProtocolSettingsNetwork: 'rocketDAOProtocolSettingsNetwork',
+        rocketStorage: 'rocketStorage',
+        rocketNodeStaking: 'rocketNodeStaking',
+    };
+
+    const rpAddresses: { [key: string]: string } = {};
+
+    // Generate the bytes32 hashes for each identifier
+    for (const [name, identifier] of Object.entries(contractIdentifiers)) {
+        const bytes32Identifier = generateBytes32Identifier(identifier);
+        console.log(`${name}: ${bytes32Identifier}`);
+        rpAddresses[name] = bytes32Identifier;
+    }
+
+    const rocketStorage = await ethers.getContractAt('RocketStorage', '0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1'); // holesky addr
+
+    // Resolve contract addresses
+    for (const identifier of Object.values(contractIdentifiers)) {
+        const bytes32Identifier = generateBytes32Identifier(identifier);
+        const address = await rocketStorage.getAddress(bytes32Identifier);
+
+        if (address === ethers.constants.AddressZero) {
+            throw new Error(`Address not found for identifier ${identifier}`);
+        }
+
+        rpAddresses[identifier] = address;
+    }
+
     console.log("Deploying contracts with the account:", deployer.address);
     console.log("Account balance:", (await deployer.getBalance()).toString());
 
-
-    // load required rocket pool contracts
-    const { rplContract, networkFeesContract, rockStorageContract, rocketNodeManagerContract, rocketNodeStakingContract } = {
-        rplContract: await ethers.getContractAt("contracts/Interfaces/RocketTokenRPLInterface.sol:RocketTokenRPLInterface", "0x012222D4F3AE9E665761b26B67CA87B74c21E552"),
-        networkFeesContract: await ethers.getContractAt("contracts/Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol:RocketDAOProtocolSettingsNetworkInterface", "0x04c1dc9b7469466c271Ec61052e777cCbe85567a"),
-        rockStorageContract: await ethers.getContractAt("RocketStorage", "0x5467C31426F096e18e174C91dEA078bdc2e0aabD"),
-        rocketNodeManagerContract: await ethers.getContractAt("RocketNodeManagerInterface", "0x4263d1Eb9bBa3335057E8093346091d92fa20C19"),
-        rocketNodeStakingContract: await ethers.getContractAt("RocketNodeStaking", "0xc8b48F10b5656AD586924BC695c0ABD05dE5Aa44")
-    }
+    const rplContract = await ethers.getContractAt("contracts/Interfaces/RocketTokenRPLInterface.sol:RocketTokenRPLInterface", rpAddresses['rocketTokenRPL']);
+    const networkFeesContract = await ethers.getContractAt("contracts/Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol:RocketDAOProtocolSettingsNetworkInterface", rpAddresses['rocketDAOProtocolSettingsNetwork']);
+    const rockStorageContract = await ethers.getContractAt("RocketStorage", rpAddresses['rocketStorage']);
+    const rocketNodeManagerContract = await ethers.getContractAt("RocketNodeManagerInterface", rpAddresses['rocketNodeManager']);
+    const rocketNodeStakingContract = await ethers.getContractAt("RocketNodeStaking", rpAddresses['rocketNodeStaking']);
 
     console.log("rocketpool contracts of interest")
     console.log("rplContract", rplContract.address)
