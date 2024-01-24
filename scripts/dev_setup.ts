@@ -246,7 +246,7 @@ async function main() {
                     sanctions.address,
                 ],
                 deployer.address,
-                deployer.address,
+                "0x241E263b40c7Bf458b6b28D86338cf26f7Cc5a57",
             ], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
         await deployedProxy.deployTransaction.wait();
         return deployedProxy;
