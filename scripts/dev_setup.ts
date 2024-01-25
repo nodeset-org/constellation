@@ -45,8 +45,8 @@ async function retryOperation(operation: () => Promise<any>, retries: number = 3
 }
 
 async function main() {
-    const predictedNonce = 12;
-    const [deployer] = await ethers.getSigners();
+    const predictedNonce = 18;
+    const [deployer, admin] = await ethers.getSigners();
 
     // Function to generate bytes32 representation for contract identifiers
     const generateBytes32Identifier = (identifier: string) => {
@@ -270,20 +270,20 @@ async function main() {
     // set adminServer to be ADMIN_SERVER_ROLE
     const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
     await retryOperation(async () => {
-        await directory.grantRole(ethers.utils.arrayify(adminRole), deployer.address);
+        await directory.connect(admin).grantRole(ethers.utils.arrayify(adminRole), deployer.address);
     });
 
     // set timelock to be TIMELOCK_ROLE
     const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_24_HOUR"));
     await retryOperation(async () => {
-        await directory.grantRole(ethers.utils.arrayify(timelockRole), deployer.address);
+        await directory.connect(admin).grantRole(ethers.utils.arrayify(timelockRole), deployer.address);
     });
     console.log("timelock role set");
 
     // set protocolSigner to be PROTOCOL_ROLE
     const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
     await retryOperation(async () => {
-        await directory.grantRole(ethers.utils.arrayify(protocolRole), deployer.address);
+        await directory.connect(admin).grantRole(ethers.utils.arrayify(protocolRole), deployer.address);
     });
     console.log("protocol role set");
 }
