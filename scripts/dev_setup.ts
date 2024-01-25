@@ -45,7 +45,7 @@ async function retryOperation(operation: () => Promise<any>, retries: number = 3
 }
 
 async function main() {
-    const predictedNonce = 18;
+    const predictedNonce = 12;
     const [deployer, admin] = await ethers.getSigners();
 
     // Function to generate bytes32 representation for contract identifiers
