@@ -187,8 +187,8 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
         AccessControlUpgradeable.__AccessControl_init();
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
-        _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.FACTORY_ROLE);
         _setRoleAdmin(Constants.TIMELOCK_24_HOUR, Constants.ADMIN_ROLE);
+        _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.FACTORY_ROLE);
 
         _grantRole(Constants.ADMIN_ROLE, admin);
         _grantRole(Constants.FACTORY_ROLE, admin);

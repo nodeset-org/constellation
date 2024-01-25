@@ -39,5 +39,9 @@ describe("Validator Account Factory", function () {
         await protocol.validatorAccountFactory.connect(signers.hyperdriver).createNewValidatorAccount(config, nextAddress, {
             value: ethers.utils.parseEther("1")
         })
+
+        expect(await protocol.directory.hasRole(ethers.utils.id("FACTORY_ROLE"), protocol.validatorAccountFactory.address)).equals(true)
+        expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), protocol.validatorAccountFactory.address)).equals(true)
+        expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), nextAddress)).equals(true)
     });
 });
