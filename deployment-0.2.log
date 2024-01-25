@@ -290,3 +290,37 @@ rplContract 0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0
 networkFeesContract 0x05330300f829AD3fC8f33838BC88CFC4093baD53
 rockStorageContract 0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1
 rocketNodeManagerContract 0x1D174Fb276eD27451097B5A31D3Dc1f316491c0B
+predicted directory address 0x8206f15e7842dc43bfa9c4cf2c7da82571a1cf45
+init nonce 113
+whitelist address 0x7F2152341768b2c4F47C9DBA556130Fa46e9B5Be
+vCWETHProxyAbi address 0xF9a442FdA87c87273b4676bA0DDEf1a2Cf20F9f3
+vCWETH address 0xF9a442FdA87c87273b4676bA0DDEf1a2Cf20F9f3
+HeadersTimeoutError: Headers Timeout Error
+Retrying operation, attempts remaining: 3...
+ProviderError: No response or no available upstream for eth_getTransactionCount
+Retrying operation, attempts remaining: 2...
+ProviderError: No response or no available upstream for eth_blockNumber
+Retrying operation, attempts remaining: 1...
+vCRPLProxyAbi address 0x1c10Dda340917A18AC2ED8D3296e0BF8205F4FA3
+vCRPL address 0x1c10Dda340917A18AC2ED8D3296e0BF8205F4FA3
+depositPoolProxyAbi address 0xdeFD1eCceC757Ec205509d72C50946699e4d1Bec
+depositPool address 0xdeFD1eCceC757Ec205509d72C50946699e4d1Bec
+operatorDistributorProxyAbi address 0x024D5A8BC81b5dBD8C437BD42432b37A08459BA2
+operatorDistributor address 0x024D5A8BC81b5dBD8C437BD42432b37A08459BA2
+yieldDistributorProxyAbi address 0xD01627Ab1bd2b6FaA74ABc7DD5075853BBe87464
+yieldDistributor address 0xD01627Ab1bd2b6FaA74ABc7DD5075853BBe87464
+oracle address 0xF855147Badd33Bf34C0600064d75044608A8E64A
+priceFetcher address 0x2e3B2883C246e8962462E8424d27554f2cb24b4B
+sanctions address 0x35DAB7231aadFb7704a44F9105040af1fed8549A
+validator factory address 0x50ea5ba8241a3357275a7b0b61735d1b46F4499F
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+directoryProxyAbi address 0x8206f15E7842dC43BfA9C4Cf2C7dA82571A1cf45
+final nonce 125
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+directory address 0x8206f15E7842dC43BfA9C4Cf2C7dA82571A1cf45
+waiting 30 seconds for everything to deploy
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+timelock role set
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+protocol role set
