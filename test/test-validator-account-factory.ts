@@ -40,6 +40,21 @@ describe("Validator Account Factory", function () {
             value: ethers.utils.parseEther("1")
         })
 
+        const badConfig = {
+            timezoneLocation: 'Australia/Sydney',
+            bondAmount: 0,
+            minimumNodeFee: 0,
+            validatorPubkey: "0x00",
+            validatorSignature:  "0x00",
+            depositDataRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
+            salt: 0,
+            expectedMinipoolAddress: "0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97"
+        }
+
+        await expect(protocol.validatorAccountFactory.connect(signers.hyperdriver).createNewValidatorAccount(badConfig, nextAddress, {
+            value: ethers.utils.parseEther("1")
+        })).to.be.revertedWith("BadPredictedCreation");
+
         expect(await protocol.directory.hasRole(ethers.utils.id("FACTORY_ROLE"), protocol.validatorAccountFactory.address)).equals(true)
         expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), protocol.validatorAccountFactory.address)).equals(true)
         expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), nextAddress)).equals(true)
