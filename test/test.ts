@@ -245,9 +245,7 @@ async function createSigners(): Promise<Signers> {
 }
 
 export async function protocolFixture(): Promise<SetupData> {
-	//await suppressLog(deployRocketPool);
-	//await upgradeExecuted();
-	await deployRocketPool();
+	await suppressLog(deployRocketPool);
 	await setDefaultParameters();
 
 	const signers = await createSigners();

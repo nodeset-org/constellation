@@ -40,8 +40,6 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
         ValidatorAccount.ValidatorConfig calldata _config,
         address _predictedAddress
     ) public payable returns (address) {
-        console.logBytes4(ValidatorAccount.initialize.selector);
-        console.logBytes4(this.createNewValidatorAccount.selector);
         require(hasSufficentLiquidity(_config.bondAmount), 'ValidatorAccount: protocol must have enough rpl and eth');
         require(msg.value == lockThreshhold, 'ValidatorAccount: must lock 1 ether');
 
