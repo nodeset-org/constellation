@@ -1951,4 +1951,603 @@ Error: cannot estimate gas; transaction may fail or may require manual gas limit
     accessList: null
   }
 }
+>  let oracle = await ethers.getContractAt("MockPriceFetcher", "0xF855147Badd33Bf34C0600064d75044608A8E64A");
+undefined
+> await oracle.functions.getPrice();
+Uncaught:
+Error: missing revert data in call exception; Transaction reverted without a reason string [ See: https://links.ethers.org/v5-errors-CALL_EXCEPTION ] (data="0x", transaction={"from":"0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374","to":"0xF855147Badd33Bf34C0600064d75044608A8E64A","data":"0x98d5fdca","accessList":null}, error={"name":"ProviderError","_stack":"ProviderError: execution reverted\n    at HttpProvider.request (/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async EthersProviderWrapper.send (/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":-32000,"_isProviderError":true}, code=CALL_EXCEPTION, version=providers/5.7.2)
+    at step (/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
+    at EthersProviderWrapper.<anonymous> (/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
+    at checkError (/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:66:16)
+    at Logger.throwError (/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at Logger.makeError (/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:269:28) {
+  reason: 'missing revert data in call exception; Transaction reverted without a reason string',
+  code: 'CALL_EXCEPTION',
+  data: '0x',
+  transaction: {
+    from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+    to: '0xF855147Badd33Bf34C0600064d75044608A8E64A',
+    data: '0x98d5fdca',
+    accessList: null
+  },
+  error: ProviderError: execution reverted
+      at HttpProvider.request (/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
+      at processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async EthersProviderWrapper.send (/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)
+}
+> let oracle = await ethers.getContractAt("MockPriceFetcher", "0x2e3B2883C246e8962462E8424d27554f2cb24b4B");
+Uncaught SyntaxError: Identifier 'oracle' has already been declared
+> oracle = await ethers.getContractAt("MockPriceFetcher", "0x2e3B2883C246e8962462E8424d27554f2cb24b4B");
+Contract {
+  interface: Interface {
+    fragments: [
+      [EventFragment],
+      [EventFragment],
+      [EventFragment],
+      [EventFragment],
+      [FunctionFragment],
+      [FunctionFragment],
+      [FunctionFragment],
+      [FunctionFragment],
+      [FunctionFragment],
+      [FunctionFragment],
+      [FunctionFragment],
+      [FunctionFragment],
+      [FunctionFragment]
+    ],
+    _abiCoder: AbiCoder { coerceFunc: null },
+    functions: {
+      'getDirectory()': [FunctionFragment],
+      'getImplementation()': [FunctionFragment],
+      'getPrice()': [FunctionFragment],
+      'initialize(address)': [FunctionFragment],
+      'price()': [FunctionFragment],
+      'proxiableUUID()': [FunctionFragment],
+      'setPrice(uint256)': [FunctionFragment],
+      'upgradeTo(address)': [FunctionFragment],
+      'upgradeToAndCall(address,bytes)': [FunctionFragment]
+    },
+    errors: {},
+    events: {
+      'AdminChanged(address,address)': [EventFragment],
+      'BeaconUpgraded(address)': [EventFragment],
+      'Initialized(uint8)': [EventFragment],
+      'Upgraded(address)': [EventFragment]
+    },
+    structs: {},
+    deploy: ConstructorFragment {
+      name: null,
+      type: 'constructor',
+      inputs: [],
+      payable: false,
+      stateMutability: 'nonpayable',
+      gas: null,
+      _isFragment: true
+    },
+    _isInterface: true
+  },
+  provider: EthersProviderWrapper {
+    _isProvider: true,
+    _events: [],
+    _emitted: { block: -2 },
+    disableCcipRead: false,
+    formatter: Formatter { formats: [Object] },
+    anyNetwork: false,
+    _networkPromise: Promise {
+      [Object],
+      [Symbol(async_id_symbol)]: 222,
+      [Symbol(trigger_async_id_symbol)]: 42
+    },
+    _maxInternalBlockNumber: 818778,
+    _lastBlockNumber: -2,
+    _maxFilterBlockRange: 10,
+    _pollingInterval: 4000,
+    _fastQueryDate: 1706324587480,
+    connection: { url: 'http://localhost:8545' },
+    _nextId: 42,
+    _hardhatProvider: LazyInitializationProviderAdapter {
+      _providerFactory: [AsyncFunction (anonymous)],
+      _emitter: [EventEmitter],
+      _initializingPromise: [Promise],
+      provider: [BackwardsCompatibilityProviderAdapter]
+    },
+    _eventLoopCache: { detectNetwork: null },
+    _network: { chainId: 17000, name: 'unknown' },
+    _internalBlockNumber: Promise {
+      [Object],
+      [Symbol(async_id_symbol)]: 21512,
+      [Symbol(trigger_async_id_symbol)]: 21505
+    },
+    _fastBlockNumber: 818778,
+    _fastBlockNumberPromise: Promise {
+      818778,
+      [Symbol(async_id_symbol)]: 21634,
+      [Symbol(trigger_async_id_symbol)]: 21512
+    }
+  },
+  signer: SignerWithAddress {
+    _isSigner: true,
+    address: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+    _signer: JsonRpcSigner {
+      _isSigner: true,
+      provider: [EthersProviderWrapper],
+      _address: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+      _index: null
+    },
+    provider: EthersProviderWrapper {
+      _isProvider: true,
+      _events: [],
+      _emitted: [Object],
+      disableCcipRead: false,
+      formatter: [Formatter],
+      anyNetwork: false,
+      _networkPromise: [Promise],
+      _maxInternalBlockNumber: 818778,
+      _lastBlockNumber: -2,
+      _maxFilterBlockRange: 10,
+      _pollingInterval: 4000,
+      _fastQueryDate: 1706324587480,
+      connection: [Object],
+      _nextId: 42,
+      _hardhatProvider: [LazyInitializationProviderAdapter],
+      _eventLoopCache: [Object],
+      _network: [Object],
+      _internalBlockNumber: [Promise],
+      _fastBlockNumber: 818778,
+      _fastBlockNumberPromise: [Promise]
+    }
+  },
+  callStatic: {
+    'getDirectory()': [Function (anonymous)],
+    'getImplementation()': [Function (anonymous)],
+    'getPrice()': [Function (anonymous)],
+    'initialize(address)': [Function (anonymous)],
+    'price()': [Function (anonymous)],
+    'proxiableUUID()': [Function (anonymous)],
+    'setPrice(uint256)': [Function (anonymous)],
+    'upgradeTo(address)': [Function (anonymous)],
+    'upgradeToAndCall(address,bytes)': [Function (anonymous)],
+    getDirectory: [Function (anonymous)],
+    getImplementation: [Function (anonymous)],
+    getPrice: [Function (anonymous)],
+    initialize: [Function (anonymous)],
+    price: [Function (anonymous)],
+    proxiableUUID: [Function (anonymous)],
+    setPrice: [Function (anonymous)],
+    upgradeTo: [Function (anonymous)],
+    upgradeToAndCall: [Function (anonymous)]
+  },
+  estimateGas: {
+    'getDirectory()': [Function (anonymous)],
+    'getImplementation()': [Function (anonymous)],
+    'getPrice()': [Function (anonymous)],
+    'initialize(address)': [Function (anonymous)],
+    'price()': [Function (anonymous)],
+    'proxiableUUID()': [Function (anonymous)],
+    'setPrice(uint256)': [Function (anonymous)],
+    'upgradeTo(address)': [Function (anonymous)],
+    'upgradeToAndCall(address,bytes)': [Function (anonymous)],
+    getDirectory: [Function (anonymous)],
+    getImplementation: [Function (anonymous)],
+    getPrice: [Function (anonymous)],
+    initialize: [Function (anonymous)],
+    price: [Function (anonymous)],
+    proxiableUUID: [Function (anonymous)],
+    setPrice: [Function (anonymous)],
+    upgradeTo: [Function (anonymous)],
+    upgradeToAndCall: [Function (anonymous)]
+  },
+  functions: {
+    'getDirectory()': [Function (anonymous)],
+    'getImplementation()': [Function (anonymous)],
+    'getPrice()': [Function (anonymous)],
+    'initialize(address)': [Function (anonymous)],
+    'price()': [Function (anonymous)],
+    'proxiableUUID()': [Function (anonymous)],
+    'setPrice(uint256)': [Function (anonymous)],
+    'upgradeTo(address)': [Function (anonymous)],
+    'upgradeToAndCall(address,bytes)': [Function (anonymous)],
+    getDirectory: [Function (anonymous)],
+    getImplementation: [Function (anonymous)],
+    getPrice: [Function (anonymous)],
+    initialize: [Function (anonymous)],
+    price: [Function (anonymous)],
+    proxiableUUID: [Function (anonymous)],
+    setPrice: [Function (anonymous)],
+    upgradeTo: [Function (anonymous)],
+    upgradeToAndCall: [Function (anonymous)]
+  },
+  populateTransaction: {
+    'getDirectory()': [Function (anonymous)],
+    'getImplementation()': [Function (anonymous)],
+    'getPrice()': [Function (anonymous)],
+    'initialize(address)': [Function (anonymous)],
+    'price()': [Function (anonymous)],
+    'proxiableUUID()': [Function (anonymous)],
+    'setPrice(uint256)': [Function (anonymous)],
+    'upgradeTo(address)': [Function (anonymous)],
+    'upgradeToAndCall(address,bytes)': [Function (anonymous)],
+    getDirectory: [Function (anonymous)],
+    getImplementation: [Function (anonymous)],
+    getPrice: [Function (anonymous)],
+    initialize: [Function (anonymous)],
+    price: [Function (anonymous)],
+    proxiableUUID: [Function (anonymous)],
+    setPrice: [Function (anonymous)],
+    upgradeTo: [Function (anonymous)],
+    upgradeToAndCall: [Function (anonymous)]
+  },
+  filters: {
+    'AdminChanged(address,address)': [Function (anonymous)],
+    'BeaconUpgraded(address)': [Function (anonymous)],
+    'Initialized(uint8)': [Function (anonymous)],
+    'Upgraded(address)': [Function (anonymous)],
+    AdminChanged: [Function (anonymous)],
+    BeaconUpgraded: [Function (anonymous)],
+    Initialized: [Function (anonymous)],
+    Upgraded: [Function (anonymous)]
+  },
+  _runningEvents: {},
+  _wrappedEmits: {},
+  address: '0x2e3B2883C246e8962462E8424d27554f2cb24b4B',
+  resolvedAddress: Promise {
+    '0x2e3B2883C246e8962462E8424d27554f2cb24b4B',
+    [Symbol(async_id_symbol)]: 22799,
+    [Symbol(trigger_async_id_symbol)]: 22766
+  },
+  'getDirectory()': [Function (anonymous)],
+  'getImplementation()': [Function (anonymous)],
+  'getPrice()': [Function (anonymous)],
+  'initialize(address)': [Function (anonymous)],
+  'price()': [Function (anonymous)],
+  'proxiableUUID()': [Function (anonymous)],
+  'setPrice(uint256)': [Function (anonymous)],
+  'upgradeTo(address)': [Function (anonymous)],
+  'upgradeToAndCall(address,bytes)': [Function (anonymous)],
+  getDirectory: [Function (anonymous)],
+  getImplementation: [Function (anonymous)],
+  getPrice: [Function (anonymous)],
+  initialize: [Function (anonymous)],
+  price: [Function (anonymous)],
+  proxiableUUID: [Function (anonymous)],
+  setPrice: [Function (anonymous)],
+  upgradeTo: [Function (anonymous)],
+  upgradeToAndCall: [Function (anonymous)]
+}
+> await oracle.functions.getPrice();
+[ BigNumber { value: "51127333500000000000" } ]
+> await wethVault.tvlRatioEthRpl()
+BigNumber { value: "0" }
+> await 
+> await wethVault.connect(admin).setEnforceRplCoverageRatio(false)
+{
+  hash: '0xb5f46ac4e7f067096745a05c2f11fccbd5349cfdfa21a65943d97d50e2351f51',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x241E263b40c7Bf458b6b28D86338cf26f7Cc5a57',
+  gasPrice: BigNumber { value: "1374105599" },
+  maxPriorityFeePerGas: BigNumber { value: "1000000" },
+  maxFeePerGas: BigNumber { value: "1374105599" },
+  gasLimit: BigNumber { value: "44853" },
+  to: '0xF9a442FdA87c87273b4676bA0DDEf1a2Cf20F9f3',
+  value: BigNumber { value: "0" },
+  nonce: 37,
+  data: '0xf7398a4c0000000000000000000000000000000000000000000000000000000000000000',
+  r: '0x0b534052c7f24be046929ca6e50cd4ecc960b2080927c57256fe691c8eaa0702',
+  s: '0x4056e6eaacf81a06cc67b67bba6e28e44962e64e84b4ed3452e1e8bdd518d727',
+  v: 1,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
+> await rplVault.connect(admin).setEnforceWethCoverageRatio(false)
+{
+  hash: '0x1c3a0dc0f19803cf7dc18a59d47ff14e64cb8da3cc6ae9935f82ceb8b5a35fbd',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x241E263b40c7Bf458b6b28D86338cf26f7Cc5a57',
+  gasPrice: BigNumber { value: "1110964478" },
+  maxPriorityFeePerGas: BigNumber { value: "0" },
+  maxFeePerGas: BigNumber { value: "1110964478" },
+  gasLimit: BigNumber { value: "44898" },
+  to: '0x1c10Dda340917A18AC2ED8D3296e0BF8205F4FA3',
+  value: BigNumber { value: "0" },
+  nonce: 38,
+  data: '0x671b09c40000000000000000000000000000000000000000000000000000000000000000',
+  r: '0xbf13b9153bb43a0ded60f90db043ed6f3dd14fe35802b71e5c367f8123c0c543',
+  s: '0x28d94627b8aa9e67023c5a25e7cf30cd5c503082ef82d4d1148cc16a85275d34',
+  v: 1,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
+> await wethVault.deposit(ethers.utils.parseUnits("1"), deployer.address)
+Uncaught:
+Error: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (error={"name":"ProviderError","_stack":"ProviderError: Reverted 0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000019696e73756666696369656e742052504c20636f76657261676500000000000000\n    at HttpProvider.request (/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async EthersProviderWrapper.send (/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":-32015,"_isProviderError":true}, method="estimateGas", transaction={"from":"0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374","to":"0xF9a442FdA87c87273b4676bA0DDEf1a2Cf20F9f3","data":"0x6e553f650000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000007621940f6068c024fb3a3eee2810d5ad76cea374","accessList":null}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.7.2)
+    at step (/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
+    at EthersProviderWrapper.<anonymous> (/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
+    at checkError (/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:125:16)
+    at Logger.throwError (/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at Logger.makeError (/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:269:28) {
+  reason: 'cannot estimate gas; transaction may fail or may require manual gas limit',
+  code: 'UNPREDICTABLE_GAS_LIMIT',
+  error: ProviderError: Reverted 0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000019696e73756666696369656e742052504c20636f76657261676500000000000000
+      at HttpProvider.request (/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
+      at processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async EthersProviderWrapper.send (/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20),
+  method: 'estimateGas',
+  transaction: {
+    from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+    to: '0xF9a442FdA87c87273b4676bA0DDEf1a2Cf20F9f3',
+    data: '0x6e553f650000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000007621940f6068c024fb3a3eee2810d5ad76cea374',
+    accessList: null
+  }
+}
+> 
+> await wethVault.deposit(ethers.utils.parseUnits(".1"), deployer.address)
+Uncaught:
+Error: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (reason="execution reverted: insufficient RPL coverage", method="estimateGas", transaction={"from":"0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374","to":"0xF9a442FdA87c87273b4676bA0DDEf1a2Cf20F9f3","data":"0x6e553f65000000000000000000000000000000000000000000000000016345785d8a00000000000000000000000000007621940f6068c024fb3a3eee2810d5ad76cea374","accessList":null}, error={"name":"ProviderError","_stack":"ProviderError: execution reverted: insufficient RPL coverage\n    at HttpProvider.request (/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async EthersProviderWrapper.send (/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":3,"_isProviderError":true,"data":"0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000019696e73756666696369656e742052504c20636f76657261676500000000000000"}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.7.2)
+    at step (/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
+    at EthersProviderWrapper.<anonymous> (/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
+    at checkError (/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:78:20)
+    at Logger.throwError (/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at Logger.makeError (/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:269:28) {
+  reason: 'execution reverted: insufficient RPL coverage',
+  code: 'UNPREDICTABLE_GAS_LIMIT',
+  method: 'estimateGas',
+  transaction: {
+    from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+    to: '0xF9a442FdA87c87273b4676bA0DDEf1a2Cf20F9f3',
+    data: '0x6e553f65000000000000000000000000000000000000000000000000016345785d8a00000000000000000000000000007621940f6068c024fb3a3eee2810d5ad76cea374',
+    accessList: null
+  },
+  error: ProviderError: execution reverted: insufficient RPL coverage
+      at HttpProvider.request (/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
+      at processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async EthersProviderWrapper.send (/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)
+}
+> await wethVault.connect(admin).setEnforceRplCoverageRatio(false)
+{
+  hash: '0x269789c6b68e06b182ad37105604f233887912419c9a36ea241c220e75963879',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x241E263b40c7Bf458b6b28D86338cf26f7Cc5a57',
+  gasPrice: BigNumber { value: "1445420010" },
+  maxPriorityFeePerGas: BigNumber { value: "1000000" },
+  maxFeePerGas: BigNumber { value: "1445420010" },
+  gasLimit: BigNumber { value: "43896" },
+  to: '0xF9a442FdA87c87273b4676bA0DDEf1a2Cf20F9f3',
+  value: BigNumber { value: "0" },
+  nonce: 39,
+  data: '0xf7398a4c0000000000000000000000000000000000000000000000000000000000000000',
+  r: '0x9d344bb55c022b95529902abe791c94051b083aa0c3cc529efee8e4b8e03ab05',
+  s: '0x0ddf5c29c15c8c09f2e8c51164fff36b951416bad5477fb5aadb27dc1a64b5d8',
+  v: 1,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
+> await wethVault.deposit(ethers.utils.parseUnits(".1"), deployer.address)
+Uncaught:
+Error: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (error={"name":"ProviderError","_stack":"ProviderError: Reverted 0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000019696e73756666696369656e742052504c20636f76657261676500000000000000\n    at HttpProvider.request (/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async EthersProviderWrapper.send (/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":-32015,"_isProviderError":true}, method="estimateGas", transaction={"from":"0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374","to":"0xF9a442FdA87c87273b4676bA0DDEf1a2Cf20F9f3","data":"0x6e553f65000000000000000000000000000000000000000000000000016345785d8a00000000000000000000000000007621940f6068c024fb3a3eee2810d5ad76cea374","accessList":null}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.7.2)
+    at step (/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
+    at EthersProviderWrapper.<anonymous> (/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
+    at checkError (/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:125:16)
+    at Logger.throwError (/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at Logger.makeError (/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:269:28) {
+  reason: 'cannot estimate gas; transaction may fail or may require manual gas limit',
+  code: 'UNPREDICTABLE_GAS_LIMIT',
+  error: ProviderError: Reverted 0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000019696e73756666696369656e742052504c20636f76657261676500000000000000
+      at HttpProvider.request (/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
+      at processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async EthersProviderWrapper.send (/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20),
+  method: 'estimateGas',
+  transaction: {
+    from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+    to: '0xF9a442FdA87c87273b4676bA0DDEf1a2Cf20F9f3',
+    data: '0x6e553f65000000000000000000000000000000000000000000000000016345785d8a00000000000000000000000000007621940f6068c024fb3a3eee2810d5ad76cea374',
+    accessList: null
+  }
+}
+> > await weth.connect(deployer).approve(wethVault.address, ethers.constants.MaxUint256)
+{
+  hash: '0x86a10e03522924f219fb14b6330e86433be00f2dddb11da79f5f04037f26d5b6',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+  gasPrice: BigNumber { value: "1235310158" },
+  maxPriorityFeePerGas: BigNumber { value: "265332" },
+  maxFeePerGas: BigNumber { value: "1235310158" },
+  gasLimit: BigNumber { value: "26673" },
+  to: '0x2C2C6b6d31909270205640d19d5fc20daA0f8c57',
+  value: BigNumber { value: "0" },
+  nonce: 129,
+  data: '0x095ea7b3000000000000000000000000f9a442fda87c87273b4676ba0ddef1a2cf20f9f3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+  r: '0xd2fed3293b156e7afc063563f60bedfe3efe8e5eac8c56b35f94717917583c2a',
+  s: '0x78e26e1f5b42b1a557ffb88edc991fbc0b79ec2bc06e3b03ac6039339ec0b298',
+  v: 0,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
+> await wethVault.deposit(ethers.utils.parseUnits(".1"), deployer.address)
+Uncaught:
+Error: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (reason="execution reverted: insufficient RPL coverage", method="estimateGas", transaction={"from":"0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374","to":"0xF9a442FdA87c87273b4676bA0DDEf1a2Cf20F9f3","data":"0x6e553f65000000000000000000000000000000000000000000000000016345785d8a00000000000000000000000000007621940f6068c024fb3a3eee2810d5ad76cea374","accessList":null}, error={"name":"ProviderError","_stack":"ProviderError: execution reverted: insufficient RPL coverage\n    at HttpProvider.request (//GitHub/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async EthersProviderWrapper.send (//GitHub/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":3,"_isProviderError":true,"data":"0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000019696e73756666696369656e742052504c20636f76657261676500000000000000"}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.7.2)
+    at step (//GitHub/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
+    at EthersProviderWrapper.<anonymous> (//GitHub/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
+    at checkError (//GitHub/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:78:20)
+    at Logger.throwError (//GitHub/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at Logger.makeError (//GitHub/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:269:28) {
+  reason: 'execution reverted: insufficient RPL coverage',
+  code: 'UNPREDICTABLE_GAS_LIMIT',
+  method: 'estimateGas',
+  transaction: {
+    from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+    to: '0xF9a442FdA87c87273b4676bA0DDEf1a2Cf20F9f3',
+    data: '0x6e553f65000000000000000000000000000000000000000000000000016345785d8a00000000000000000000000000007621940f6068c024fb3a3eee2810d5ad76cea374',
+    accessList: null
+  },
+  error: ProviderError: execution reverted: insufficient RPL coverage
+      at HttpProvider.request (//GitHub/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
+      at processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async EthersProviderWrapper.send (//GitHub/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)
+}
+> await wethVault.enforceRplCoverageRatio()
+false
+> await wethVault.connect(admin).setEnforceRplCoverageRatio(true)
+{
+  hash: '0xaccd8017567f2e50fbd67fc279ac85b1a68505c4cb6307e31ce97b09643db80a',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x241E263b40c7Bf458b6b28D86338cf26f7Cc5a57',
+  gasPrice: BigNumber { value: "1405834831" },
+  maxPriorityFeePerGas: BigNumber { value: "9102012" },
+  maxFeePerGas: BigNumber { value: "1405834831" },
+  gasLimit: BigNumber { value: "61897" },
+  to: '0xF9a442FdA87c87273b4676bA0DDEf1a2Cf20F9f3',
+  value: BigNumber { value: "0" },
+  nonce: 40,
+  data: '0xf7398a4c0000000000000000000000000000000000000000000000000000000000000001',
+  r: '0x9e758a6ef7513af51adcf7baa39eabccc137fe31d7a50a8633ab4f92bfebd680',
+  s: '0x529d1f475b9397b88080e572424834a84c06516d923ce45745fd5222a01a1411',
+  v: 0,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
+> await rplVault.connect(admin).setEnforceWethCoverageRatio(true)
+{
+  hash: '0x0a219ce1e77bbe7d08867ebf3768a3d535b41c7ff9e39a3a9bfce7990f3ece65',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x241E263b40c7Bf458b6b28D86338cf26f7Cc5a57',
+  gasPrice: BigNumber { value: "1420731525" },
+  maxPriorityFeePerGas: BigNumber { value: "1000000" },
+  maxFeePerGas: BigNumber { value: "1420731525" },
+  gasLimit: BigNumber { value: "61943" },
+  to: '0x1c10Dda340917A18AC2ED8D3296e0BF8205F4FA3',
+  value: BigNumber { value: "0" },
+  nonce: 41,
+  data: '0x671b09c40000000000000000000000000000000000000000000000000000000000000001',
+  r: '0xd7a73440a9a633bdf67ede951cffb8625a577a460addb1337394f08071699419',
+  s: '0x1028a3a5297b3209bb13f310339459ea54fba09fb2fe9e03783c28413ea9f189',
+  v: 0,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
+> > await rplVault.connect(admin).rplCoverageRatio()
+Uncaught TypeError: rplVault.connect(...).rplCoverageRatio is not a function
+    at REPL563:1:63
+> await rplVault.connect(admin).wethCoverageRatio()
+BigNumber { value: "175000" }
+> await rplVault.connect(admin).setWETHCoverageRatio(0)
+{
+  hash: '0xeb7d7961c3b118ad3cb6bc0d0932fbdb77129ac0b0536c80feddf78b378d0e44',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x241E263b40c7Bf458b6b28D86338cf26f7Cc5a57',
+  gasPrice: BigNumber { value: "1187350947" },
+  maxPriorityFeePerGas: BigNumber { value: "265332" },
+  maxFeePerGas: BigNumber { value: "1187350947" },
+  gasLimit: BigNumber { value: "44460" },
+  to: '0x1c10Dda340917A18AC2ED8D3296e0BF8205F4FA3',
+  value: BigNumber { value: "0" },
+  nonce: 42,
+  data: '0x2f47adf00000000000000000000000000000000000000000000000000000000000000000',
+  r: '0x550fbd93c91f8df3cf907b5abca5ce63ca066eb9dacf3cfe5902dc007dd3ef2e',
+  s: '0x2eea4befaaba963dd7e1a75612a522678bbb2f622d3c37907b33dcd7c7302a92',
+  v: 1,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
+> await wethVault.connect(admin).rplCoverageRatio()
+BigNumber { value: "150000000000000000" }
+> await wethVault.connect(admin).setRplCoverageRatio(0)
+{
+  hash: '0xbf874375ea2ec90bd9e8b68269f34631fbdcd8868f53812681045948a4420ed2',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x241E263b40c7Bf458b6b28D86338cf26f7Cc5a57',
+  gasPrice: BigNumber { value: "1337012152" },
+  maxPriorityFeePerGas: BigNumber { value: "60933815" },
+  maxFeePerGas: BigNumber { value: "1337012152" },
+  gasLimit: BigNumber { value: "44776" },
+  to: '0xF9a442FdA87c87273b4676bA0DDEf1a2Cf20F9f3',
+  value: BigNumber { value: "0" },
+  nonce: 43,
+  data: '0x456dc30c0000000000000000000000000000000000000000000000000000000000000000',
+  r: '0x88d2a97870f31ad2e34f9b55fe4a790c9c7d6624f521370a93a9aa7ed5e5beef',
+  s: '0x51d8d4ba653b4f686c890d692ebde0dae57f486a6a54bf4a38b5be9d9fd5423d',
+  v: 0,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
+> await rplVault.connect(admin).wethCoverageRatio()
+BigNumber { value: "0" }
+> await wethVault.connect(admin).rplCoverageRatio()
+BigNumber { value: "150000000000000000" }
+> await wethVault.connect(admin).rplCoverageRatio()
+BigNumber { value: "150000000000000000" }
+> await wethVault.connect(admin).rplCoverageRatio()
+BigNumber { value: "0" }
+> > await wethVault.deposit(ethers.utils.parseUnits(".1"), deployer.address)
+{
+  hash: '0x1b9ecc668e40b2a3baad78516b27fc576e040a7438e2a23ddc2603ed595df8ce',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+  gasPrice: BigNumber { value: "1389040552" },
+  maxPriorityFeePerGas: BigNumber { value: "1000000" },
+  maxFeePerGas: BigNumber { value: "1389040552" },
+  gasLimit: BigNumber { value: "489664" },
+  to: '0xF9a442FdA87c87273b4676bA0DDEf1a2Cf20F9f3',
+  value: BigNumber { value: "0" },
+  nonce: 130,
+  data: '0x6e553f65000000000000000000000000000000000000000000000000016345785d8a00000000000000000000000000007621940f6068c024fb3a3eee2810d5ad76cea374',
+  r: '0xc162284f52582b4119eff4071f8b45bbb1f2800dd28573e943e3e8923b54943f',
+  s: '0x1ef7e2a677463d861b130f3263c92f7413b5905034ef35310577ae79ce19fed3',
+  v: 0,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
 > 
