@@ -45,6 +45,40 @@ describe("Validator Account Factory", function () {
         expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), nextAddress)).equals(true)
     });
 
+    it("fails - not whitelisted", async function () {
+        const setupData = await protocolFixture();
+        const { protocol, signers } = setupData;
+
+        const bond = ethers.utils.parseEther("8");
+        const salt = 3;
+
+        expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(false);
+        await prepareOperatorDistributionContract(setupData, 1);
+        expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(true);
+
+        const nextAddress = "0x75c902863A9531385FB9F7dBb4b8C929eF8850c8";
+        const depositData = await generateDepositData(nextAddress, salt);
+
+        const config = {
+            timezoneLocation: 'Australia/Brisbane',
+            bondAmount: bond,
+            minimumNodeFee: 0,
+            validatorPubkey: depositData.depositData.pubkey,
+            validatorSignature: depositData.depositData.signature,
+            depositDataRoot: depositData.depositDataRoot,
+            salt: salt,
+            expectedMinipoolAddress: depositData.minipoolAddress
+        }
+
+        await protocol.validatorAccountFactory.connect(signers.hyperdriver).createNewValidatorAccount(config, nextAddress, {
+            value: ethers.utils.parseEther("1")
+        })
+
+        expect(await protocol.directory.hasRole(ethers.utils.id("FACTORY_ROLE"), protocol.validatorAccountFactory.address)).equals(true)
+        expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), protocol.validatorAccountFactory.address)).equals(true)
+        expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), nextAddress)).equals(true)
+    });
+
     it("fails - bad predicted address", async () => {
         const setupData = await protocolFixture();
         const { protocol, signers } = setupData;

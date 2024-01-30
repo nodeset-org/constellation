@@ -2812,3 +2812,115 @@ Error: cannot estimate gas; transaction may fail or may require manual gas limit
   wait: [Function (anonymous)]
 }
 > 
+> await vaf.hasSufficentLiquidity(ethers.utils.parseEther("8"))
+true
+> whitelist
+Uncaught ReferenceError: whitelist is not defined
+> let whitelist = await ethers.getContractAt("Whitelist", "0x7F2152341768b2c4F47C9DBA556130Fa46e9B5Be")
+undefined
+> await whitelist.connect(admin).addOperator("0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97")
+Uncaught:
+Error: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (reason="execution reverted: Can only be called by 24 hour timelock!", method="estimateGas", transaction={"from":"0x241E263b40c7Bf458b6b28D86338cf26f7Cc5a57","to":"0x7F2152341768b2c4F47C9DBA556130Fa46e9B5Be","data":"0x9870d7fe0000000000000000000000004838b106fce9647bdf1e7877bf73ce8b0bad5f97","accessList":null}, error={"name":"ProviderError","_stack":"ProviderError: execution reverted: Can only be called by 24 hour timelock!\n    at HttpProvider.request (/Users/teddy2/Documents/GitHub/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async EthersProviderWrapper.send (/Users/teddy2/Documents/GitHub/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":3,"_isProviderError":true,"data":"0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002743616e206f6e6c792062652063616c6c656420627920323420686f75722074696d656c6f636b2100000000000000000000000000000000000000000000000000"}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.7.2)
+    at step (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
+    at EthersProviderWrapper.<anonymous> (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
+    at checkError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:78:20)
+    at Logger.throwError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at Logger.makeError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:269:28) {
+  reason: 'execution reverted: Can only be called by 24 hour timelock!',
+  code: 'UNPREDICTABLE_GAS_LIMIT',
+  method: 'estimateGas',
+  transaction: {
+    from: '0x241E263b40c7Bf458b6b28D86338cf26f7Cc5a57',
+    to: '0x7F2152341768b2c4F47C9DBA556130Fa46e9B5Be',
+    data: '0x9870d7fe0000000000000000000000004838b106fce9647bdf1e7877bf73ce8b0bad5f97',
+    accessList: null
+  },
+  error: ProviderError: execution reverted: Can only be called by 24 hour timelock!
+      at HttpProvider.request (/Users/teddy2/Documents/GitHub/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
+      at processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async EthersProviderWrapper.send (/Users/teddy2/Documents/GitHub/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)
+}
+> await whitelist.connect(deployer).addOperator("0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97")
+{
+  hash: '0xd0f3f26f2cd8e761cc028019dfd74dab52179c501e9dda5a8da0648a8e9ac1d3',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+  gasPrice: BigNumber { value: "1364000301" },
+  maxPriorityFeePerGas: BigNumber { value: "1000000" },
+  maxFeePerGas: BigNumber { value: "1364000301" },
+  gasLimit: BigNumber { value: "326603" },
+  to: '0x7F2152341768b2c4F47C9DBA556130Fa46e9B5Be',
+  value: BigNumber { value: "0" },
+  nonce: 135,
+  data: '0x9870d7fe0000000000000000000000004838b106fce9647bdf1e7877bf73ce8b0bad5f97',
+  r: '0x8b2f121fe4cf5b1a924903d530e11d7301dd08c97ed33d3863d7ccccaa83d311',
+  s: '0x4a90f3141abdb8e38b501becbbeda13978e807f315d1184aa63733f1ec95d4fc',
+  v: 0,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
+> await whitelist.connect(deployer).addOperator("0x12F24E8bC874B4471f0501127abb1Ea0d9F68ac1")
+{
+  hash: '0xe73f6e60a223e960f66a46de9d2b11ef6e214b9c6930adce3904eaa9918dbf52',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+  gasPrice: BigNumber { value: "1392339166" },
+  maxPriorityFeePerGas: BigNumber { value: "1000000" },
+  maxFeePerGas: BigNumber { value: "1392339166" },
+  gasLimit: BigNumber { value: "207914" },
+  to: '0x7F2152341768b2c4F47C9DBA556130Fa46e9B5Be',
+  value: BigNumber { value: "0" },
+  nonce: 136,
+  data: '0x9870d7fe00000000000000000000000012f24e8bc874b4471f0501127abb1ea0d9f68ac1',
+  r: '0x71e50439b184b0c76a8b706c1ce7b60f04a88e660222528af9a871c9d0ccb183',
+  s: '0x1030629aa68102b63f876b74a58f500dddb7d4420a57fb9e31c57fc942568dd8',
+  v: 1,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
+> > vaf.address
+'0x50ea5ba8241a3357275a7b0b61735d1b46F4499F'
+> whitelist.address
+'0x7F2152341768b2c4F47C9DBA556130Fa46e9B5Be'
+> await whitelist.getIsAddressInWhitelist("0x12F24E8bC874B4471f0501127abb1Ea0d9F68ac1")
+true
+> await whitelist.getIsAddressInWhitelist("0xe0Dec58Db9C72bF9305efe93856EA70E0ABd91E4")
+false
+> await whitelist.addOperator("0xe0Dec58Db9C72bF9305efe93856EA70E0ABd91E4")
+{
+  hash: '0x8282c56185a19433bad91d5dbafc46ef4410217aca2256c9ec49f31692604c83',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+  gasPrice: BigNumber { value: "1366146329" },
+  maxPriorityFeePerGas: BigNumber { value: "40474006" },
+  maxFeePerGas: BigNumber { value: "1366146329" },
+  gasLimit: BigNumber { value: "210707" },
+  to: '0x7F2152341768b2c4F47C9DBA556130Fa46e9B5Be',
+  value: BigNumber { value: "0" },
+  nonce: 137,
+  data: '0x9870d7fe000000000000000000000000e0dec58db9c72bf9305efe93856ea70e0abd91e4',
+  r: '0x12a6bb9c80dfcb48a7794454a1737a1ad292322fdb493907452cdc1bc10d7dea',
+  s: '0x069bd4751bb9cd5705d93e49f031ba12d458aa1092e0c049d44f7e80c6c7bacd',
+  v: 1,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
+> 
