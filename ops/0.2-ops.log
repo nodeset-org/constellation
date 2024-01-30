@@ -2550,4 +2550,212 @@ BigNumber { value: "0" }
   chainId: 17000,
   wait: [Function (anonymous)]
 }
+> > await ethers.provider.getBalance(deployer.address)
+BigNumber { value: "1000900275677400770750" }
+> await weth.deposit({value: ethers.utils.parseEther("8")})
+{
+  hash: '0x2b837ce979ae367a3d99b3c0fcad73662c00700bf361dd71f2329cc7165d0f28',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+  gasPrice: BigNumber { value: "1311843343" },
+  maxPriorityFeePerGas: BigNumber { value: "1000000" },
+  maxFeePerGas: BigNumber { value: "1311843343" },
+  gasLimit: BigNumber { value: "33326" },
+  to: '0x2C2C6b6d31909270205640d19d5fc20daA0f8c57',
+  value: BigNumber { value: "8000000000000000000" },
+  nonce: 131,
+  data: '0xd0e30db0',
+  r: '0x8cef922b74f896af6db67abd464a2a6476de41ac75471d0309c6876b1146be80',
+  s: '0x073f4d2773440d7806e7ecc65ad37bcb7820e17f0060fd332c88283942de0535',
+  v: 0,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
+> await wethVault.deposit(ethers.utils.parseUnits("8"), deployer.address)
+{
+  hash: '0x1d76a31d59d00a675245cf82837205ad2f213ae9ed7e19dbe237e6a9550041b2',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+  gasPrice: BigNumber { value: "1338382079" },
+  maxPriorityFeePerGas: BigNumber { value: "1000000" },
+  maxFeePerGas: BigNumber { value: "1338382079" },
+  gasLimit: BigNumber { value: "404920" },
+  to: '0xF9a442FdA87c87273b4676bA0DDEf1a2Cf20F9f3',
+  value: BigNumber { value: "0" },
+  nonce: 132,
+  data: '0x6e553f650000000000000000000000000000000000000000000000006f05b59d3b2000000000000000000000000000007621940f6068c024fb3a3eee2810d5ad76cea374',
+  r: '0x064683c73fc8a2c78a674d730752b2981ff253a8cefe7366402727ff68b97205',
+  s: '0x51c77bd54632bdb8231ae16b7699dc172307a803f7079eb752336d87860b9983',
+  v: 1,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
+> await vaf.hasSufficentLiquidity(ethers.utils.parseEth("8"))
+Uncaught TypeError: ethers.utils.parseEth is not a function
+    at REPL751:1:78
+> await vaf.hasSufficentLiquidity(ethers.utils.parseEther("8"))
+false
+> let depositPool = await ethers.getContractAt("DepositPool", "0xdeFD1eCceC757Ec205509d72C50946699e4d1Bec")
+undefined
+> await depositPool.connect(admin).sendRplToDistributors()
+{
+  hash: '0x501624d76a9bd511a18777a579ee6f2fb97b6066cb01b79895ac34ada5278665',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x241E263b40c7Bf458b6b28D86338cf26f7Cc5a57',
+  gasPrice: BigNumber { value: "2628695708" },
+  maxPriorityFeePerGas: BigNumber { value: "1500000000" },
+  maxFeePerGas: BigNumber { value: "2628695708" },
+  gasLimit: BigNumber { value: "133058" },
+  to: '0xdeFD1eCceC757Ec205509d72C50946699e4d1Bec',
+  value: BigNumber { value: "0" },
+  nonce: 44,
+  data: '0x5ca2a916',
+  r: '0x04f917ae4c005b98c295cace701cb56b694b28794b06fcaf426e277b5c999d25',
+  s: '0x4502b0033885a74281030db74d8e726e94fdfa0c4b053446e8e4e2ae65dcb311',
+  v: 1,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
+> await depositPool.connect(admin).sendEthToDistributors()
+{
+  hash: '0x6a2a8c8ad6b85e5edd576048acd70166401e4420631dcc1bc69df72ba0cd42a6',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x241E263b40c7Bf458b6b28D86338cf26f7Cc5a57',
+  gasPrice: BigNumber { value: "1280385407" },
+  maxPriorityFeePerGas: BigNumber { value: "1000000" },
+  maxFeePerGas: BigNumber { value: "1280385407" },
+  gasLimit: BigNumber { value: "151620" },
+  to: '0xdeFD1eCceC757Ec205509d72C50946699e4d1Bec',
+  value: BigNumber { value: "0" },
+  nonce: 45,
+  data: '0x89ac921e',
+  r: '0x79e6fd88753ae15a3d05ff81dba9b6a98dd6f16ac697e331fd0a6ddc01433cd9',
+  s: '0x15384c840795793cb447922d9bd5e809fe6f6434fcc7f41380adeb371aee2128',
+  v: 0,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
+> > let operatorDistributor = await ethers.getContractAt("OperatorDistributor", "0x024D5A8BC81b5dBD8C437BD42432b37A08459BA2")
+undefined
+> await rpl.balanceOf(operatorDistributor.address)
+BigNumber { value: "28571428571428571428" }
+> await rpl.balanceOf(depositPool.address)
+BigNumber { value: "0" }
+> await ethers.provider.getBalance(operatorDistributor.address)
+BigNumber { value: "2358293535235876527" }
+> await ethers.provider.getBalance(depositPool.address)
+BigNumber { value: "0" }
+> > let operatorDistributor = await ethers.getContractAt("OperatorDistributor", "0x024D5A8BC81b5dBD8C437BD42432b37A08459BA2")
+undefined
+> await rpl.balanceOf(operatorDistributor.address)
+BigNumber { value: "28571428571428571428" }
+> await rpl.balanceOf(depositPool.address)
+BigNumber { value: "0" }
+> await ethers.provider.getBalance(operatorDistributor.address)
+BigNumber { value: "2358293535235876527" }
+> await ethers.provider.getBalance(depositPool.address)
+BigNumber { value: "0" }
+> await ethers.provider.getBalance(rplVault.address)
+BigNumber { value: "0" }
+> await ethers.provider.getBalance(weth.address)
+BigNumber { value: "6641706464764123473" }
+> await operatorDistributor.calculateRequiredRplTopUp(0, 8)
+BigNumber { value: "272" }
+> await deployer.sendTransaction({to: ethers.utils.parseEther("6")});
+Uncaught:
+Error: invalid ENS name (argument="name", value={"type":"BigNumber","hex":"0x53444835ec580000"}, code=INVALID_ARGUMENT, version=providers/5.7.2)
+    at step (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/lib/base-provider.js:48:23)
+    at EthersProviderWrapper.<anonymous> (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/src.ts/base-provider.ts:2022:20)
+    at Logger.throwArgumentError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:285:21)
+    at Logger.throwError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at Logger.makeError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:269:28) {
+  reason: 'invalid ENS name',
+  code: 'INVALID_ARGUMENT',
+  argument: 'name',
+  value: BigNumber { value: "6000000000000000000" }
+}
+> await deployer.sendTransaction({to: operatorDistributor.address, value: ethers.utils.parseEther("6")});
+{
+  hash: '0xb0f3d8ab9ead91a0b7d0267cf614b704aa68b1d17dac357f05b5cdc31ca0ad5e',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+  gasPrice: BigNumber { value: "1193286243" },
+  maxPriorityFeePerGas: BigNumber { value: "265332" },
+  maxFeePerGas: BigNumber { value: "1193286243" },
+  gasLimit: BigNumber { value: "31408" },
+  to: '0x024D5A8BC81b5dBD8C437BD42432b37A08459BA2',
+  value: BigNumber { value: "6000000000000000000" },
+  nonce: 133,
+  data: '0x',
+  r: '0x57e6bcf8382248108c7317909d921629ed3a58957839cf5e58d07c82ed62d62e',
+  s: '0x780a124b75d284639b3c99f4dd7400b4431461ae9b01a84a34ffc2b5b8600e12',
+  v: 1,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
+> > await ethers.provider.getBalance(operatorDistributor.address)
+BigNumber { value: "8358293535235876527" }
+> await vaf.hasSufficentLiquidity(ethers.utils.parseEther("8"))
+false
+> await operatorDistributor.calculateRequiredRplTopUp(0, ethers.utils.parseEther("8"))
+BigNumber { value: "272679112000000000000" }
+> await rpl.balanceOf(operatorDistributor.address)
+BigNumber { value: "28571428571428571428" }
+> await rpl.balanceOf(rplVault.address)
+BigNumber { value: "66666666666666666667" }
+> await rpl.transfer(operatorDistributor.address, ethers.utils.parseUnits("274"))
+{
+  hash: '0x13b6fc10adaf2e53e88fa5d2c125a989202757d794d5d93e380cfc17d8387848',
+  type: 2,
+  accessList: [],
+  blockHash: null,
+  blockNumber: null,
+  transactionIndex: null,
+  confirmations: 0,
+  from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+  gasPrice: BigNumber { value: "1231699499" },
+  maxPriorityFeePerGas: BigNumber { value: "265332" },
+  maxFeePerGas: BigNumber { value: "1231699499" },
+  gasLimit: BigNumber { value: "34875" },
+  to: '0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0',
+  value: BigNumber { value: "0" },
+  nonce: 134,
+  data: '0xa9059cbb000000000000000000000000024d5a8bc81b5dbd8c437bd42432b37a08459ba200000000000000000000000000000000000000000000000eda838c4929080000',
+  r: '0x8a82ae76dbb8d315f91a82b75bb9ac5a5b7aa8ba96ee08cdd423cf4b7fc10627',
+  s: '0x212b75c192d65dd90ac82ace29ff4a619ec78104664edc85d0346dde87b5f1da',
+  v: 0,
+  creates: null,
+  chainId: 17000,
+  wait: [Function (anonymous)]
+}
 > 
