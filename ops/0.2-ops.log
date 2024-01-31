@@ -2820,12 +2820,12 @@ Uncaught ReferenceError: whitelist is not defined
 undefined
 > await whitelist.connect(admin).addOperator("0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97")
 Uncaught:
-Error: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (reason="execution reverted: Can only be called by 24 hour timelock!", method="estimateGas", transaction={"from":"0x241E263b40c7Bf458b6b28D86338cf26f7Cc5a57","to":"0x7F2152341768b2c4F47C9DBA556130Fa46e9B5Be","data":"0x9870d7fe0000000000000000000000004838b106fce9647bdf1e7877bf73ce8b0bad5f97","accessList":null}, error={"name":"ProviderError","_stack":"ProviderError: execution reverted: Can only be called by 24 hour timelock!\n    at HttpProvider.request (/Users/teddy2/Documents/GitHub/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async EthersProviderWrapper.send (/Users/teddy2/Documents/GitHub/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":3,"_isProviderError":true,"data":"0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002743616e206f6e6c792062652063616c6c656420627920323420686f75722074696d656c6f636b2100000000000000000000000000000000000000000000000000"}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.7.2)
-    at step (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
-    at EthersProviderWrapper.<anonymous> (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
-    at checkError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:78:20)
-    at Logger.throwError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
-    at Logger.makeError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:269:28) {
+Error: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (reason="execution reverted: Can only be called by 24 hour timelock!", method="estimateGas", transaction={"from":"0x241E263b40c7Bf458b6b28D86338cf26f7Cc5a57","to":"0x7F2152341768b2c4F47C9DBA556130Fa46e9B5Be","data":"0x9870d7fe0000000000000000000000004838b106fce9647bdf1e7877bf73ce8b0bad5f97","accessList":null}, error={"name":"ProviderError","_stack":"ProviderError: execution reverted: Can only be called by 24 hour timelock!\n    at HttpProvider.request (/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async EthersProviderWrapper.send (/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":3,"_isProviderError":true,"data":"0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002743616e206f6e6c792062652063616c6c656420627920323420686f75722074696d656c6f636b2100000000000000000000000000000000000000000000000000"}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.7.2)
+    at step (/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
+    at EthersProviderWrapper.<anonymous> (/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
+    at checkError (/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:78:20)
+    at Logger.throwError (/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at Logger.makeError (/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:269:28) {
   reason: 'execution reverted: Can only be called by 24 hour timelock!',
   code: 'UNPREDICTABLE_GAS_LIMIT',
   method: 'estimateGas',
@@ -2836,9 +2836,9 @@ Error: cannot estimate gas; transaction may fail or may require manual gas limit
     accessList: null
   },
   error: ProviderError: execution reverted: Can only be called by 24 hour timelock!
-      at HttpProvider.request (/Users/teddy2/Documents/GitHub/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
+      at HttpProvider.request (/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
       at processTicksAndRejections (node:internal/process/task_queues:95:5)
-      at async EthersProviderWrapper.send (/Users/teddy2/Documents/GitHub/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)
+      at async EthersProviderWrapper.send (/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)
 }
 > await whitelist.connect(deployer).addOperator("0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97")
 {
