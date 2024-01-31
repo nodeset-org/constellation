@@ -15,6 +15,7 @@ import "../Interfaces/RocketPool/IRocketStorage.sol";
 import 'hardhat/console.sol';
 
 contract Bootstrapper {
+    
     Whitelist public whitelistImplementation;
     ERC1967Proxy public whitelistProxy;
 
