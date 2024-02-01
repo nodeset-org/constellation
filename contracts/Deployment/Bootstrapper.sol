@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import '@openzeppelin/contracts/utils/Address.sol';
+import '@openzeppelin/contracts/utils/Create2.sol';
 
 import '../Whitelist/Whitelist.sol';
 import '../Utils/Errors.sol';
@@ -61,6 +62,16 @@ contract Bootstrapper {
         return keccak256(abi.encode(string.concat('contract.address', contractName)));
     }
 
+    function deployWithProxyCreate2(
+        bytes memory implementationBytecode,
+        bytes memory proxyBytecode,
+        bytes32 salt
+    ) internal returns (address) {
+        address implementation = Create2.deploy(0, salt, implementationBytecode);
+        address proxy = Create2.deploy(0, keccak256(abi.encodePacked(salt, implementation)), proxyBytecode);
+        return proxy;
+    }
+
     constructor(
         address _rocketStorage,
         address _weth,
@@ -70,7 +81,10 @@ contract Bootstrapper {
         address _admin
     ) {
         IRocketStorage rocketStorage = IRocketStorage(_rocketStorage);
-        address predictedDirectory = address(2);
+        
+        bytes32 salt = keccak256('i like salty fries');
+        bytes memory directoryBytecode = type(Directory).creationCode;
+        address predictedDirectory = Create2.computeAddress(salt, keccak256(directoryBytecode), address(this));
 
         whitelistProxy = new ERC1967Proxy(
             address(whitelistImplementation = new Whitelist()),
@@ -142,10 +156,13 @@ contract Bootstrapper {
             sanctions: _sanctions
         });
 
-        directoryProxy = new ERC1967Proxy(
-            address(directoryImplementation = new Directory()),
-            abi.encodeWithSelector(Directory.initialize.selector, protocol, adminTreasuryProxy, _admin)
-        );
+
+        bytes memory directoryProxyBytecode = type(ERC1967Proxy).creationCode;
+        address directoryProxyAddress = deployWithProxyCreate2(directoryBytecode, directoryProxyBytecode, salt);
+        directoryProxy = ERC1967Proxy(payable(directoryProxyAddress));
+
+        Directory directory = Directory(directoryProxyAddress);
+        directory.initialize(protocol, address(adminTreasuryProxy), _admin);
 
         console.log('predicted directory');
         console.logAddress(predictedDirectory);
