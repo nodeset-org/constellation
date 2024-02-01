@@ -71,6 +71,7 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       gasPrice: 25000000000, // This is in wei (25 gwei)
+      allowUnlimitedContractSize: true,
     },
 
     goerli: {
