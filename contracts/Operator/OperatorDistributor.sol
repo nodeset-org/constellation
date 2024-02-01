@@ -46,10 +46,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @notice Initializes the contract with the provided storage address.
      * @dev This function should only be called once, during contract creation or proxy initialization.
      * It overrides the `initialize` function from a parent contract.
-     * @param _rocketStorageAddress The address of the storage contract.
+     * @param _directoryAddress The address of the storage contract.
      */
-    function initialize(address _rocketStorageAddress) public override initializer {
-        super.initialize(_rocketStorageAddress);
+    function initialize(address _directoryAddress) public override initializer {
+        super.initialize(_directoryAddress);
         targetStakeRatio = 1.5e18; // 150%
         numMinipoolsProcessedPerInterval = 1;
 
