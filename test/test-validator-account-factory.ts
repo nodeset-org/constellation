@@ -23,6 +23,9 @@ describe("Validator Account Factory", function () {
         await protocol.whitelist.connect(signers.admin).addOperator(signers.hyperdriver.address);
 
         const nextAddress = "0xD9bf496401781cc411AE0F465Fe073872A50D639";
+        const expected = getNextContractAddress(signers.hyperdriver, protocol.validatorAccountFactory.address)
+        expect(nextAddress).equals(expected);
+
         const depositData = await generateDepositData(nextAddress, salt);
 
         const config = {

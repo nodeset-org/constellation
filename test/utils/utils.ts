@@ -217,12 +217,12 @@ export async function getMockMinipoolsInProtocol(setupData: SetupData): Promise<
     return minipools;
 }
 
-export async function getNextContractAddress(signer: SignerWithAddress, offset = 0) {
+export async function getNextContractAddress(signer: SignerWithAddress, caller: string = signer.address, offset = 0) {
     // Get current nonce of the signer
     const nonce = (await signer.getTransactionCount()) + offset;
 
     // Prepare the RLP encoded structure of the to-be-deployed contract
-    const rlpEncoded = require('rlp').encode([signer.address, nonce]);
+    const rlpEncoded = require('rlp').encode([caller, nonce]);
 
     // Calculate the hash
     const contractAddressHash = ethers.utils.keccak256(rlpEncoded);
