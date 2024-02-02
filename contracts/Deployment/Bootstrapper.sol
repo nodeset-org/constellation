@@ -87,8 +87,7 @@ contract Bootstrapper1 {
             abi.encodeWithSelector(OperatorDistributor.initialize.selector, _predictedAddress)
         );
 
-        (bootstrapper2 = new Bootstrapper2()).step2(
-            this,
+        bootstrapper2.step2(
             _rocketStorage,
             _weth,
             _xrethOracle,
@@ -114,7 +113,6 @@ contract Bootstrapper2 {
     Bootstrapper1 public bootstrapper1;
 
     function step2(
-        Bootstrapper1 _bootstrapper1,
         address _rocketStorage,
         address _weth,
         address _xrethOracle,
@@ -123,8 +121,7 @@ contract Bootstrapper2 {
         address _admin,
         address _predictedAddress
     ) external {
-        bootstrapper1 = _bootstrapper1;
-        
+
         yieldDistributorProxy = new ERC1967Proxy(
             address(yieldDistributorImplementation = new YieldDistributor()),
             abi.encodeWithSelector(YieldDistributor.initialize.selector, _predictedAddress)
@@ -140,8 +137,7 @@ contract Bootstrapper2 {
             abi.encodeWithSelector(AdminTreasury.initialize.selector, _predictedAddress)
         );
 
-        (bootstrapper3 = new Bootstrapper3()).step3(
-            this,
+        bootstrapper3.step3(
             _rocketStorage,
             _weth,
             _xrethOracle,
@@ -162,8 +158,9 @@ contract Bootstrapper3 {
     Directory public directoryImplementation;
     ERC1967Proxy public directoryProxy;
 
+    Bootstrapper2 public bootstrapper2;
+
     function step3(
-        Bootstrapper2 bootstrapper2,
         address _rocketStorage,
         address _weth,
         address _xrethOracle,
