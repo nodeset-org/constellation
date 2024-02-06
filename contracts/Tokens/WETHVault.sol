@@ -148,7 +148,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             return;
         }
 
-        require(enforceRplCoverageRatio && tvlRatioEthRpl() >= rplCoverageRatio, 'insufficient RPL coverage');
+        require(enforceRplCoverageRatio || tvlRatioEthRpl() >= rplCoverageRatio, 'insufficient RPL coverage');
 
         uint256 fee1 = _feeOnTotal(assets, makerFee1BasePoint);
         uint256 fee2 = _feeOnTotal(assets, makerFee2BasePoint);
@@ -308,6 +308,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         return super.totalAssets() + getDistributableYield() + dp.getTvlEth() + od.getTvlEth();
     }
+
+    // minipoolTVL = sum(minipool pool bonds) - (sum(minipool penalty counts) * 1.6 eth * penalty rate)
+
 
     /**
      * @notice Get the ratio of ETH to RPL in the vault.
