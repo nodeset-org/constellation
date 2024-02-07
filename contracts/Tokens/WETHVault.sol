@@ -13,6 +13,7 @@ import '../Utils/Constants.sol';
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     event NewCapitalGain(uint256 amount, address indexed winner);
+    event AdminFeeClaimed(uint256 amount);
 
     struct Position {
         uint256 shares;
@@ -37,6 +38,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public collateralizationRatioBasePoint;
     uint256 public rplCoverageRatio;
     uint256 public totalYieldDistributed;
+    uint256 public adminFeeBasePoint; // Admin fee in basis points
+
+    uint256 public principal; // Total principal amount (sum of all deposits)
+    uint256 public lastIncomeClaimed; // Tracks the amount of income already claimed by the admin
 
     mapping(address => Position) public positions;
 
@@ -49,6 +54,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         collateralizationRatioBasePoint = 0.02e5;
         rplCoverageRatio = 0.15e18;
+        adminFeeBasePoint = 0.01e5;
 
         enforceRplCoverageRatio = true;
     }
@@ -88,8 +94,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         vars.totalShares = positions[receiver].shares + shares;
         vars.weightedPriceSum = vars.originalValueTimesShares + vars.newValueTimesShares;
 
-        positions[receiver].pricePaidPerShare = vars.weightedPriceSum / (vars.totalShares == 0 ? 1 : vars.totalShares) / 1e18;
+        positions[receiver].pricePaidPerShare =
+            vars.weightedPriceSum /
+            (vars.totalShares == 0 ? 1 : vars.totalShares) /
+            1e18;
         positions[receiver].shares += shares;
+
+        principal += assets;
 
         super._deposit(caller, receiver, assets, shares);
 
@@ -120,6 +131,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         if (positions[owner].shares == 0) {
             positions[owner].pricePaidPerShare = 0;
         }
+
+        principal -= assets;
 
         super._withdraw(caller, receiver, owner, assets, shares);
     }
@@ -168,4 +181,23 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function setEnforceRplCoverageRatio(bool _enforceRplCoverage) external onlyAdmin {
         enforceRplCoverageRatio = _enforceRplCoverage;
     }
+
+    function setAdminFee(uint256 _adminFeeBasePoint) external onlyAdmin {
+        require(_adminFeeBasePoint <= 1e5, 'Fee too high');
+        adminFeeBasePoint = _adminFeeBasePoint;
+    }
+
+function claimAdminFee() external onlyAdmin {
+    uint256 currentIncome = totalAssets() - principal;
+    uint256 unclaimedIncome = currentIncome - lastIncomeClaimed;
+    uint256 feeAmount = unclaimedIncome.mulDiv(adminFeeBasePoint, 1e5, Math.Rounding.Up);
+
+    // Update lastIncomeClaimed to reflect the new total income claimed
+    lastIncomeClaimed += unclaimedIncome;
+
+    // Transfer the fee to the admin
+    SafeERC20.safeTransfer(IERC20(asset()), _directory.getTreasuryAddress(), feeAmount);
+
+    emit AdminFeeClaimed(feeAmount);
+}
 }
