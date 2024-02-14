@@ -2,6 +2,8 @@
 pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol';
+import '@openzeppelin/contracts/utils/math/Math.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 import './WETHVault.sol';
 
@@ -12,14 +14,18 @@ import '../Operator/OperatorDistributor.sol';
 /// @custom:security-contact info@nodeoperator.org
 contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
+    event AdminFeeClaimed(uint256 amount);
 
     string constant NAME = 'Constellation RPL';
     string constant SYMBOL = 'xRPL'; // Vaulted Constellation RPL
 
     bool enforceWethCoverageRatio;
 
-    uint256 public makerFeeBasePoint; // admin maker fee
-    uint256 public takerFeeBasePoint; // admin taker fee
+    address public admin;
+    uint256 public adminFeeBasisPoint;
+
+    uint256 public principal; // Total principal amount (sum of all deposits)
+    uint256 public lastIncomeClaimed; // Tracks the amount of income already claimed by the admin
 
     uint256 public collateralizationRatioBasePoint; // collateralization ratio
 
@@ -38,56 +44,25 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(rplToken));
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
-        makerFeeBasePoint = 0.05e5;
-        takerFeeBasePoint = 0.05e5;
         collateralizationRatioBasePoint = 0.02e5;
         wethCoverageRatio = 1.75e5;
         enforceWethCoverageRatio = true;
     }
 
-    /**
-     * @notice Calculates the amount that will be deposited after accounting for the maker fee.
-     * @dev This function subtracts the maker fee from the total assets to provide an accurate preview of the deposit amount.
-     * It overrides the previewDeposit function in the parent contract to include the deduction of the maker fee.
-     * @param assets The total assets that the user intends to deposit.
-     * @return The amount that will be deposited after accounting for the maker fee.
-     */ function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
-        uint256 fee = _feeOnTotal(assets, makerFeeBasePoint);
-        return super.previewDeposit(assets - fee);
+    function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
+        return super.previewDeposit(assets);
     }
 
-    /**
-     * @notice Calculates the total assets associated with a specified number of shares, inclusive of the maker fee.
-     * @dev This function first determines the raw assets for the given shares from the parent contract and then adds the maker fee.
-     * It overrides the previewMint function in the parent contract to include the addition of the maker fee.
-     * @param shares The number of shares for which the total assets are being determined.
-     * @return The total assets corresponding to the provided shares, inclusive of the maker fee.
-     */ function previewMint(uint256 shares) public view virtual override returns (uint256) {
-        uint256 assets = super.previewMint(shares);
-        return assets + _feeOnRaw(assets, makerFeeBasePoint);
+    function previewMint(uint256 shares) public view virtual override returns (uint256) {
+        return super.previewMint(shares);
     }
 
-    /**
-     * @notice Calculates the number of shares required to withdraw a specified amount of assets, taking into account the taker fee.
-     * @dev This function first adjusts the assets by adding the taker fee and then determines the corresponding shares using the parent contract's function.
-     * It overrides the previewWithdraw function in the parent contract to include the consideration of the taker fee.
-     * @param assets The amount of assets for which the corresponding shares are being determined.
-     * @return The number of shares required to withdraw the specified amount of assets, considering the taker fee.
-     */ function previewWithdraw(uint256 assets) public view virtual override returns (uint256) {
-        uint256 fee = _feeOnRaw(assets, takerFeeBasePoint);
-        return super.previewWithdraw(assets + fee);
+    function previewWithdraw(uint256 assets) public view virtual override returns (uint256) {
+        return super.previewWithdraw(assets);
     }
 
-    /**
-     * @notice Calculates the amount of assets obtainable for a specified number of shares upon redemption, after deducting the taker fee.
-     * @dev This function first calculates the assets corresponding to the given shares using the parent contract's function.
-     * It then adjusts the resulting assets by deducting the taker fee.
-     * It overrides the previewRedeem function in the parent contract to account for the taker fee deduction.
-     * @param shares The number of shares to be redeemed for assets.
-     * @return The amount of assets obtainable for the specified shares after considering the taker fee deduction.
-     */ function previewRedeem(uint256 shares) public view virtual override returns (uint256) {
-        uint256 assets = super.previewRedeem(shares);
-        return assets - _feeOnTotal(assets, takerFeeBasePoint);
+    function previewRedeem(uint256 shares) public view virtual override returns (uint256) {
+        return super.previewRedeem(shares);
     }
 
     /**
@@ -107,24 +82,20 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
         require(
-            enforceWethCoverageRatio && vweth.tvlRatioEthRpl() >= wethCoverageRatio,
+            enforceWethCoverageRatio || vweth.tvlRatioEthRpl() >= wethCoverageRatio,
             'insufficient weth coverage ratio'
         );
 
-        uint256 fee = _feeOnTotal(assets, makerFeeBasePoint);
-
         address recipient1 = _directory.getTreasuryAddress();
+        principal += assets;
 
         address payable pool = _directory.getDepositPoolAddress();
         DepositPool(pool).sendRplToDistributors();
 
         super._deposit(caller, receiver, assets, shares);
 
-        if (fee > 0 && recipient1 != address(this)) {
-            SafeERC20.safeTransfer(IERC20(asset()), recipient1, fee);
-        }
         // transfer the rest of the deposit to the pool for utilization
-        SafeERC20.safeTransfer(IERC20(asset()), pool, assets - fee);
+        SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
     }
 
     /**
@@ -148,16 +119,12 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
-        uint256 fee = _feeOnRaw(assets, takerFeeBasePoint);
         address recipient1 = _directory.getTreasuryAddress();
 
         DepositPool(_directory.getDepositPoolAddress()).sendRplToDistributors();
+        principal -= assets;
 
         super._withdraw(caller, receiver, owner, assets, shares);
-
-        if (fee > 0 && recipient1 != address(this)) {
-            SafeERC20.safeTransfer(IERC20(asset()), recipient1, fee);
-        }
     }
 
     /**
@@ -224,17 +191,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**ADMIN FUNCTIONS */
 
-    /**
-     * @notice Sets the fee rates for both makers and takers.
-     * @dev This function allows the admin to adjust the fee rates for both makers and takers.
-     * The sum of both fee rates must not exceed 100%.
-     * @param _makerFeeBasePoint The fee rate (expressed in base points, where 1e5 represents 100%) to be set for makers.
-     * @param _takerFeeBasePoint The fee rate (expressed in base points, where 1e5 represents 100%) to be set for takers.
-     */
-    function setFees(uint256 _makerFeeBasePoint, uint256 _takerFeeBasePoint) external onlyAdmin {
-        require(_makerFeeBasePoint + _takerFeeBasePoint <= 1e5, 'fees must be lte 100%');
-        makerFeeBasePoint = _makerFeeBasePoint;
-        takerFeeBasePoint = _takerFeeBasePoint;
+    function setAdminFee(uint256 _adminFeeBasePoint) external onlyAdmin {
+        require(_adminFeeBasePoint <= 1e5, 'Fee too high');
+        adminFeeBasisPoint = _adminFeeBasePoint;
     }
 
     /**
@@ -257,5 +216,19 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function setEnforceWethCoverageRatio(bool _enforceWethCoverageRatio) external onlyAdmin {
         enforceWethCoverageRatio = _enforceWethCoverageRatio;
+    }
+
+    function claimAdminFee() external onlyAdmin {
+        uint256 currentIncome = totalAssets() - principal;
+        uint256 unclaimedIncome = currentIncome - lastIncomeClaimed;
+        uint256 feeAmount = unclaimedIncome.mulDiv(adminFeeBasisPoint, 1e5, Math.Rounding.Up);
+
+        // Update lastIncomeClaimed to reflect the new total income claimed
+        lastIncomeClaimed += unclaimedIncome;
+
+        // Transfer the fee to the admin
+        SafeERC20.safeTransfer(IERC20(asset()), _directory.getTreasuryAddress(), feeAmount);
+
+        emit AdminFeeClaimed(feeAmount);
     }
 }

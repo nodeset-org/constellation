@@ -17,4 +17,9 @@ contract PriceFetcher is UpgradeableBase {
         uint256 price = ((uint256(sqrtPriceX96) ** 2) * 1e7) / (2 ** 192);
         return price * 1e11;
     }
+
+    // TODO: Use this function
+    function getPriceFromODAO() public view returns (uint256) {
+        return _directory.getRocketNetworkPrices().getRPLPrice();
+    }
 }

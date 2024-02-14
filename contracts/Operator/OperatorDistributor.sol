@@ -359,7 +359,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         nextMinipoolHavestIndex = index + 1;
 
         uint256 balance = minipool.getNodeDepositBalance();
-        minipool.distributeBalance(balance > 8 ether);
+        minipool.distributeBalance(balance >= 8 ether);
     }
 
     /**
