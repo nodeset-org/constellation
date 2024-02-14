@@ -53,6 +53,8 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             );
         }
 
+        vaf = ValidatorAccountFactory(msg.sender);
+
         super.initialize(_directory);
         nodeOperator = _nodeOperator;
 
