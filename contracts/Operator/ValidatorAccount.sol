@@ -154,6 +154,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
+        require(minipool.getStatus() == MinipoolStatus.Dissolved, "minipool must be dissolved");
 
         (bool success, bytes memory data) = _directory.getDepositPoolAddress().call{value: _amount}('');
         if (!success) {
