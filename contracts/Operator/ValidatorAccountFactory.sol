@@ -12,13 +12,16 @@ import '@openzeppelin/contracts/utils/Address.sol';
 import 'hardhat/console.sol';
 
 contract ValidatorAccountFactory is UpgradeableBase, Errors {
+    
+    event ProxyCreated(address indexed proxyAddress);
+
     using Address for address;
 
     address public implementationAddress;
 
-    event ProxyCreated(address indexed proxyAddress);
-
     uint256 public lockThreshhold;
+    uint256 public targetBond;
+    uint256 public lockUpTime;
 
     /**
      * @notice Initializes the factory with the logic contract address.
@@ -28,6 +31,8 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
         super.initialize(_directory);
         implementationAddress = _implementation;
         lockThreshhold = 1 ether;
+        lockUpTime = 28 days;
+        targetBond = 8e18; // initially set for LEB8
     }
 
     function hasSufficentLiquidity(uint256 _bond) public view returns (bool) {
@@ -79,5 +84,41 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
         if (!success) {
             revert LowLevelCall(success, data);
         }
+    }
+
+    /**
+     * @notice Sets a new lock threshold.
+     * @dev Only callable by the contract owner or authorized admin.
+     * @param _newLockThreshold The new lock threshold value in wei.
+     */
+    function setLockThreshold(uint256 _newLockThreshold) external {
+        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
+            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
+        }
+        lockThreshhold = _newLockThreshold;
+    }
+
+    /**
+     * @notice Sets a new target bond.
+     * @dev Only callable by the contract owner or authorized admin.
+     * @param _newTargetBond The new target bond value in wei.
+     */
+    function setTargetBond(uint256 _newTargetBond) external {
+        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
+            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
+        }
+        targetBond = _newTargetBond;
+    }
+
+    /**
+     * @notice Sets a new lock-up time.
+     * @dev Only callable by the contract owner or authorized admin.
+     * @param _newLockUpTime The new lock-up time in seconds.
+     */
+    function setLockUpTime(uint256 _newLockUpTime) external {
+        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
+            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
+        }
+        lockUpTime = _newLockUpTime;
     }
 }

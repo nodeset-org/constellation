@@ -17,11 +17,10 @@ import '../Interfaces/IWETH.sol';
 import '../Utils/Constants.sol';
 import '../Utils/Errors.sol';
 
-import 'hardhat/console.sol';
-
 /// @custom:security-contact info@nodeset.io
 /// @notice distributes rewards in weth to node operators
 contract ValidatorAccount is UpgradeableBase, Errors {
+
     struct ValidatorConfig {
         string timezoneLocation;
         uint256 bondAmount;
@@ -36,18 +35,11 @@ contract ValidatorAccount is UpgradeableBase, Errors {
     ValidatorAccountFactory public vaf;
 
     IMinipool public minipool;
-    uint256 public targetBond;
-    address nodeOperator;
+    address public nodeOperator;
 
-    uint256 lockUpTime;
-    uint256 lockedEth;
-    uint256 lockStarted;
+    uint256 public lockStarted;
+    uint256 public lockedEth;
 
-    /**
-     * @notice Initializes the contract with the specified directory address and sets the initial configurations.
-     * validator settings.
-     * @param _config The address of the directory contract or service that this contract will reference.
-     */
     function initialize(
         address _directory,
         address _nodeOperator,
@@ -62,8 +54,6 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         }
 
         super.initialize(_directory);
-        targetBond = 8e18; // initially set for LEB8
-        lockUpTime = 28 days;
         nodeOperator = _nodeOperator;
 
         lockedEth = msg.value;
@@ -115,6 +105,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         uint256 _salt,
         address _expectedMinipoolAddress
     ) internal {
+        uint256 targetBond = vaf.targetBond();
         if (targetBond != _bondAmount) {
             revert BadBondAmount(targetBond, _bondAmount);
         }
@@ -146,8 +137,8 @@ contract ValidatorAccount is UpgradeableBase, Errors {
 
     function unlock() external {
         require(
-            block.timestamp - lockStarted > lockUpTime,
-            'ValidatorAccount: locked eth can be redeemed after lockUpTime has eleapsed'
+            block.timestamp - lockStarted > vaf.lockUpTime() || minipool.getStatus() == MinipoolStatus.Staking,
+            'ValidatorAccount: locked eth can be redeemed after lockUpTime has elapsed or minipool is staking'
         );
         require(msg.sender == nodeOperator, 'ValidatorAccount: Only node operator can redeem lock');
         require(lockedEth != 0, 'ValidatorAccount: funds already unlocked');
