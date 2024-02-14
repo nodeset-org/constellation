@@ -15,6 +15,8 @@ import '../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeIn
 
 import 'oz-contracts-3-4-0/math/SafeMath.sol';
 
+import "hardhat/console.sol";
+
 /// @notice Handles node deposits and minipool creation
 contract RocketNodeDepositOld is RocketBase, RocketNodeDepositInterfaceOld {
     // Libs
@@ -296,6 +298,7 @@ contract RocketNodeDepositOld is RocketBase, RocketNodeDepositInterfaceOld {
         );
         // Create minipool
         RocketMinipoolInterface minipool = rocketMinipoolManager.createMinipool(msg.sender, _salt);
+
         // Ensure minipool address matches expected
         require(address(minipool) == _expectedMinipoolAddress, 'Unexpected minipool address');
         // Return

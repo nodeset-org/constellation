@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 library Constants {
     // ROLES
     bytes32 internal constant ADMIN_ROLE = keccak256('ADMIN_ROLE');
+    bytes32 internal constant FACTORY_ROLE = keccak256('FACTORY_ROLE');
     bytes32 internal constant ADMIN_SERVER_ROLE = keccak256('ADMIN_SERVER_ROLE');
     bytes32 internal constant CORE_PROTOCOL_ROLE = keccak256('CORE_PROTOCOL_ROLE');
     bytes32 internal constant TIMELOCK_24_HOUR = keccak256('TIMELOCK_24_HOUR');

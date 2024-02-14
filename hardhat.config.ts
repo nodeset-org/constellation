@@ -59,6 +59,11 @@ const config: HardhatUserConfig = {
   //  }
   //},
 
+  gasReporter: {
+    enabled: process.env.REPORT_GAS === 'true', // 
+    outputFile: 'gas-report.txt', 
+  },
+
   docgen: {
     exclude: ["Testing", "Interfaces"],
   },
@@ -72,6 +77,11 @@ const config: HardhatUserConfig = {
       url: process.env.GOERLI_URL as string,
       accounts: [process.env.DEPLOYER_PRIVATE_KEY as string],
     },
+
+    holesky: {
+      url: process.env.HOLESKY_RPC as string,
+      accounts: [process.env.HOLESKY_DEPLOYER as string, process.env.HOLEKSY_ADMIN as string],
+    }
   },
   mocha: {
     timeout: 0,

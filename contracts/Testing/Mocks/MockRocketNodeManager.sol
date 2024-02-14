@@ -21,4 +21,10 @@ contract MockRocketNodeManager is IRocketNodeManager {
     function mockSetNodeOperatorToMinipool(address _nodeOperator, address _minipool) public {
         nodeOperatorsToMinipools[_nodeOperator] = _minipool;
     }
+
+    function registerNode(
+        string calldata _timezoneLocation
+    ) external {
+        
+    } 
 }

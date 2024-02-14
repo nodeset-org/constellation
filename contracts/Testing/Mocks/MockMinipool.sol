@@ -80,4 +80,64 @@ contract MockMinipool is IMinipool {
     function setNodeDepositBalance(uint256 _newBalance) external {
         _nodeDepositBalance = _newBalance;
     }
+
+    function version() external view override returns (uint8) {}
+
+    function getFinalised() external view override returns (bool) {}
+
+    function getStatusBlock() external view override returns (uint256) {}
+
+    function getStatusTime() external view override returns (uint256) {}
+
+    function getScrubVoted(address _member) external view override returns (bool) {}
+
+    function getNodeFee() external view override returns (uint256) {}
+
+    function getNodeRefundBalance() external view override returns (uint256) {}
+
+    function getNodeDepositAssigned() external view override returns (bool) {}
+
+    function getNodeTopUpValue() external view override returns (uint256) {}
+
+    function getVacant() external view override returns (bool) {}
+
+    function getPreMigrationBalance() external view override returns (uint256) {}
+
+    function getUserDistributed() external view override returns (bool) {}
+
+    function getUserDepositAssigned() external view override returns (bool) {}
+
+    function getUserDepositAssignedTime() external view override returns (uint256) {}
+
+    function getTotalScrubVotes() external view override returns (uint256) {}
+
+    function calculateNodeShare(uint256 _balance) external view override returns (uint256) {}
+
+    function calculateUserShare(uint256 _balance) external view override returns (uint256) {}
+
+    function userDeposit() external payable override {}
+
+    function refund() external override {}
+
+    function slash() external override {}
+
+    function finalise() external override {}
+
+    function canStake() external view override returns (bool) {}
+
+    function canPromote() external view override returns (bool) {}
+
+    function stake(bytes calldata _validatorSignature, bytes32 _depositDataRoot) external override {}
+
+    function prepareVacancy(uint256 _bondAmount, uint256 _currentBalance) external override {}
+
+    function promote() external override {}
+
+    function dissolve() external override {}
+
+    function close() external override {}
+
+    function voteScrub() external override {}
+
+    function reduceBondAmount() external override {}
 }

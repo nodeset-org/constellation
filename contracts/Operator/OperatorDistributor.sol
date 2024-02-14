@@ -7,6 +7,7 @@ import '../DepositPool.sol';
 import '../PriceFetcher.sol';
 
 import '../Utils/Constants.sol';
+import '../Utils/Errors.sol';
 
 import '../Interfaces/RocketPool/IRocketStorage.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
@@ -15,7 +16,7 @@ import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
-contract OperatorDistributor is UpgradeableBase {
+contract OperatorDistributor is UpgradeableBase, Errors {
     event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
     event MinipoolDestroyed(address indexed _minipoolAddress, address indexed _nodeAddress);
     event WarningNoMiniPoolsToHarvest();
@@ -129,6 +130,7 @@ contract OperatorDistributor is UpgradeableBase {
         address lastAddress = minipoolAddresses[minipoolAddresses.length - 1];
         minipoolAddresses[index] = lastAddress;
         minipoolIndexMap[lastAddress] = index;
+
         // Remove the last address
         minipoolAddresses.pop();
         delete minipoolIndexMap[_address];
@@ -204,82 +206,24 @@ contract OperatorDistributor is UpgradeableBase {
      * RPL to stake based on the number of validators associated with the node, and performs a top-up.
      * It stakes an amount equivalent to `(2.4 + 100% padding) ether` worth of RPL for each validator of the node.
      * Only the protocol or admin can call this function.
-     * @param _nodeAddress The address of the node operator to be prepared for minipool creation.
+     * @param _validatorAccount The address of the validator account belonging to the Node Operator
      */
-    function prepareNodeForReimbursement(address _nodeAddress) external onlyProtocolOrAdmin {
+    function provisionLiquiditiesForMinipoolCreation(
+        address _nodeOperator,
+        address _validatorAccount,
+        uint256 _bond
+    ) external onlyProtocolOrAdmin {
         // stakes (2.4 + 100% padding) eth worth of rpl for the node
-        _validateWithdrawalAddress(_nodeAddress);
-        uint256 numValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(_nodeAddress);
-        performTopUp(_nodeAddress, 2.4 ether * numValidators);
-    }
+        _validateWithdrawalAddress(_validatorAccount);
+        require(_bond == 8 ether, "OperatorDistributor: Bad _bond amount, should be 8");
 
-    /**
-     *
-     */
-    function validateBondRequirements(uint256 bond) public view {
-        require(bond >= lowerBondRequirement && bond <= upperBondRequirement, Constants.MINIPOOL_INVALID_BOND_ERROR);
-    }
+        uint256 numValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(_nodeOperator);
 
-    /**
-     * @notice Reimburses a node for minipool creation, validates the minipool and handles necessary staking.
-     * @dev The function goes through multiple validation steps:
-     * 1. Checks if the node is in the whitelist.
-     * 2. Validates that the minipool's creation was signed by the admin.
-     * 3. Validates the node's withdrawal address.
-     * 4. Checks if the minipool is registered in the smoothing pool.
-     * 5. Ensures there's sufficient ETH in queue for reimbursement.
-     * After validations, it performs necessary top-ups, updates the node and minipool data, and then transfers out the ETH.
-     * @param sig Signature from the admin server confirming minipool creation.
-     * @param newMinipoolAdress Address of the newly created minipool.
-     */
-    function reimburseNodeForMinipool(
-        bytes memory sig, // sig from admin server
-        address newMinipoolAdress
-    ) public {
-        IMinipool minipool = IMinipool(newMinipoolAdress);
-        address nodeAddress = minipool.getNodeAddress();
-        Whitelist whitelist = Whitelist(getDirectory().getWhitelistAddress());
-        require(whitelist.getIsAddressInWhitelist(nodeAddress), Constants.MINIPOOL_NODE_NOT_WHITELISTED_ERROR);
-
-        uint256 bond = minipool.getNodeDepositBalance();
-
-        validateBondRequirements(bond);
-
-        // validate that the newMinipoolAdress was signed by the admin address
-        bytes32 messageHash = keccak256(abi.encode(newMinipoolAdress));
-        bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
-        address signer = ECDSA.recover(ethSignedMessageHash, sig);
-        require(_directory.hasRole(Constants.ADMIN_SERVER_ROLE, signer), Constants.BAD_ADMIN_SERVER_SIGNATURE_ERROR);
-
-        _validateWithdrawalAddress(nodeAddress);
-
-        IRocketNodeManager nodeManager = IRocketNodeManager(getDirectory().getRocketNodeManagerAddress());
-
-        require(nodeManager.getSmoothingPoolRegistrationState(nodeAddress), Constants.MINIPOOL_NOT_REGISTERED_ERROR);
-
-        require(_queuedEth >= bond, Constants.INSUFFICIENT_ETH_IN_QUEUE_ERROR);
-
-        uint256 numValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(nodeAddress);
-        performTopUp(nodeAddress, bond * numValidators);
-
-        // register minipool with node operator
-        whitelist.registerNewValidator(nodeAddress);
-
-        // new minipool owned by node operator
-        nodeOperatorOwnedMinipools[nodeAddress].push(newMinipoolAdress);
-
-        // add minipool to minipoolAddresses
-        minipoolAddresses.push(newMinipoolAdress);
-        minipoolIndexMap[newMinipoolAdress] = minipoolAddresses.length;
-
-        emit MinipoolCreated(newMinipoolAdress, nodeAddress);
-
-        // updated amount funded eth
-        minipoolAmountFundedEth[newMinipoolAdress] = bond;
-
-        // transfer out eth
-        _queuedEth -= bond;
-        payable(nodeAddress).transfer(bond);
+        performTopUp(_validatorAccount, 24 ether * numValidators);
+        (bool success, bytes memory data) = _validatorAccount.call{value: _bond}('');
+        if (!success) {
+            revert LowLevelEthTransfer(success, data);
+        }
     }
 
     /**
@@ -288,11 +232,13 @@ contract OperatorDistributor is UpgradeableBase {
      * divided by RPL staked). If the ratio is below a predefined target, it calculates the necessary RPL amount to
      * bring the stake ratio back to the target. Then, the function either stakes the required RPL or stakes
      * the remaining RPL balance if it's not enough.
-     * @param _nodeAddress The address of the node operator.
+     * @param _validatorAccount The address of the node operator.
      * @param _ethStaked The amount of ETH currently staked by the node operator.
      */
-    function performTopUp(address _nodeAddress, uint256 _ethStaked) public onlyProtocolOrAdmin {
-        uint256 rplStaked = IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStake(_nodeAddress);
+    function performTopUp(address _validatorAccount, uint256 _ethStaked) public onlyProtocolOrAdmin {
+        uint256 rplStaked = IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStake(
+            _validatorAccount
+        );
         uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
 
         uint256 stakeRatio = rplStaked == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / rplStaked;
@@ -311,7 +257,7 @@ contract OperatorDistributor is UpgradeableBase {
                     _directory.getDepositPoolAddress(),
                     requiredStakeRpl
                 );
-                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_nodeAddress, requiredStakeRpl);
+                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_validatorAccount, requiredStakeRpl);
             } else {
                 if (currentRplBalance == 0) {
                     return;
@@ -321,9 +267,34 @@ contract OperatorDistributor is UpgradeableBase {
                     _directory.getDepositPoolAddress(),
                     currentRplBalance
                 );
-                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_nodeAddress, currentRplBalance);
+                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_validatorAccount, currentRplBalance);
             }
         }
+    }
+
+    /**
+     * @notice Calculates the amount of RPL needed to top up the node operator's stake to the target stake ratio.
+     * @dev This view function checks the current staking ratio of the node (calculated as ETH staked times its price in RPL
+     * divided by RPL staked). If the ratio is below a predefined target, it returns the necessary RPL amount to
+     * bring the stake ratio back to the target.
+     * @param _existingRplStake Prior crap staked
+     * @param _ethStaked The amount of ETH currently staked by the node operator.
+     * @return requiredStakeRpl The amount of RPL required to top up to the target stake ratio.
+     */
+    function calculateRequiredRplTopUp(
+        uint256 _existingRplStake,
+        uint256 _ethStaked
+    ) public view returns (uint256 requiredStakeRpl) {
+        uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+
+        uint256 stakeRatio = _existingRplStake == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / _existingRplStake;
+        if (stakeRatio < targetStakeRatio) {
+            uint256 minuend = ((_ethStaked * ethPriceInRpl) / targetStakeRatio);
+            requiredStakeRpl = minuend < _existingRplStake ? 0 : minuend - _existingRplStake;
+        } else {
+            requiredStakeRpl = 0;
+        }
+        return requiredStakeRpl;
     }
 
     /**
@@ -342,6 +313,28 @@ contract OperatorDistributor is UpgradeableBase {
         for (uint i = 0; i < numMinipoolsProcessedPerInterval; i++) {
             _processNextMinipool();
         }
+    }
+
+    function OnMinipoolCreated(address newMinipoolAddress, address nodeAddress, uint256 bond) external {
+        if (!_directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender)) {
+            revert BadRole(Constants.CORE_PROTOCOL_ROLE, msg.sender);
+        }
+
+        // register minipool with node operator
+        Whitelist whitelist = Whitelist(getDirectory().getWhitelistAddress());
+        whitelist.registerNewValidator(nodeAddress);
+
+        // new minipool owned by node operator
+        nodeOperatorOwnedMinipools[nodeAddress].push(newMinipoolAddress);
+
+        // add minipool to minipoolAddresses
+        minipoolAddresses.push(newMinipoolAddress);
+        minipoolIndexMap[newMinipoolAddress] = minipoolAddresses.length;
+
+        emit MinipoolCreated(newMinipoolAddress, nodeAddress);
+
+        // updated amount funded eth
+        minipoolAmountFundedEth[newMinipoolAddress] = bond;
     }
 
     /**

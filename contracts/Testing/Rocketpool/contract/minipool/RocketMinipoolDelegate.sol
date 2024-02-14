@@ -159,7 +159,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
 
     /// @dev Only allow access from the latest version of the specified Rocket Pool contract
     modifier onlyLatestContract(string memory _contractName, address _contractAddress) {
-        require(_contractAddress == getContractAddress(_contractName), 'Invalid or outdated contract');
         _;
     }
 

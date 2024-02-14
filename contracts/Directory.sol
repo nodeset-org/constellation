@@ -11,18 +11,21 @@ import './Interfaces/ISanctions.sol';
 import './UpgradeableBase.sol';
 import './Utils/Constants.sol';
 
+//open question: should we be using rocket storage for getting rocket pool contracts?
 struct Protocol {
     address whitelist;
     address payable wethVault;
     address payable rplVault;
     address payable depositPool;
     address payable operatorDistributor;
+    address validatorAccountFactory;
     address payable yieldDistributor;
     address oracle;
     address priceFetcher;
     address rocketStorage;
     address rocketNodeManager;
     address rocketNodeStaking;
+    address rocketNodeDeposit;
     address rplToken;
     address payable weth;
     address uniswapV3Pool;
@@ -90,12 +93,20 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.operatorDistributor;
     }
 
+    function getValidatorAccountFactoryAddress() public view returns (address) {
+        return _protocol.validatorAccountFactory;
+    }
+
     function getYieldDistributorAddress() public view returns (address payable) {
         return _protocol.yieldDistributor;
     }
 
     function getRocketNodeManagerAddress() public view returns (address) {
         return _protocol.rocketNodeManager;
+    }
+
+    function getRocketNodeDepositAddress() public view returns (address) {
+        return _protocol.rocketNodeDeposit;
     }
 
     function getRocketNodeStakingAddress() public view returns (address) {
@@ -176,11 +187,14 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
         AccessControlUpgradeable.__AccessControl_init();
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
-        _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.TIMELOCK_24_HOUR, Constants.ADMIN_ROLE);
+        _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.FACTORY_ROLE);
 
         _grantRole(Constants.ADMIN_ROLE, admin);
+        _grantRole(Constants.FACTORY_ROLE, admin);
 
+        _grantRole(Constants.FACTORY_ROLE, newProtocol.validatorAccountFactory);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.validatorAccountFactory);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.whitelist);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.wethVault);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.rplVault);

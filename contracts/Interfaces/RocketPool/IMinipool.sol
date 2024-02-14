@@ -11,29 +11,50 @@ enum MinipoolStatus {
 }
 
 interface IMinipool {
-    function getNodeAddress() external view returns (address);
-
+    function version() external view returns (uint8);
+    function initialise(address _nodeAddress) external;
     function getStatus() external view returns (MinipoolStatus);
-
-    function getPreLaunchValue() external view returns (uint256);
-
+    function getFinalised() external view returns (bool);
+    function getStatusBlock() external view returns (uint256);
+    function getStatusTime() external view returns (uint256);
+    function getScrubVoted(address _member) external view returns (bool);
+    function getNodeAddress() external view returns (address);
+    function getNodeFee() external view returns (uint256);
     function getNodeDepositBalance() external view returns (uint256);
-
+    function getNodeRefundBalance() external view returns (uint256);
+    function getNodeDepositAssigned() external view returns (bool);
+    function getPreLaunchValue() external view returns (uint256);
+    function getNodeTopUpValue() external view returns (uint256);
+    function getVacant() external view returns (bool);
+    function getPreMigrationBalance() external view returns (uint256);
+    function getUserDistributed() external view returns (bool);
     function getUserDepositBalance() external view returns (uint256);
-
-    /// @notice Distributes the contract's balance.
-    ///         If balance is greater or equal to 8 ETH, the NO can call to distribute capital and finalise the minipool.
-    ///         If balance is greater or equal to 8 ETH, users who have called `beginUserDistribute` and waited the required
-    ///         amount of time can call to distribute capital.
-    ///         If balance is lower than 8 ETH, can be called by anyone and is considered a partial withdrawal and funds are
-    ///         split as rewards.
-    /// @param _rewardsOnly If set to true, will revert if balance is not being treated as rewards
+    function getUserDepositAssigned() external view returns (bool);
+    function getUserDepositAssignedTime() external view returns (uint256);
+    function getTotalScrubVotes() external view returns (uint256);
+    function calculateNodeShare(uint256 _balance) external view returns (uint256);
+    function calculateUserShare(uint256 _balance) external view returns (uint256);
+    function preDeposit(
+        uint256 _bondingValue,
+        bytes calldata _validatorPubkey,
+        bytes calldata _validatorSignature,
+        bytes32 _depositDataRoot
+    ) external payable;
+    function deposit() external payable;
+    function userDeposit() external payable;
     function distributeBalance(bool _rewardsOnly) external;
-
-    /// @notice Returns true if enough time has passed for a user to distribute
-    function userDistributeAllowed() external view returns (bool);
-
-    /// @notice Allows a user (other than the owner of this minipool) to signal they want to call distribute.
-    ///         After waiting the required period, anyone may then call `distributeBalance()`.
     function beginUserDistribute() external;
+    function userDistributeAllowed() external view returns (bool);
+    function refund() external;
+    function slash() external;
+    function finalise() external;
+    function canStake() external view returns (bool);
+    function canPromote() external view returns (bool);
+    function stake(bytes calldata _validatorSignature, bytes32 _depositDataRoot) external;
+    function prepareVacancy(uint256 _bondAmount, uint256 _currentBalance) external;
+    function promote() external;
+    function dissolve() external;
+    function close() external;
+    function voteScrub() external;
+    function reduceBondAmount() external;
 }

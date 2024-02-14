@@ -16,11 +16,11 @@ import { assertBN } from './bn';
 
 // Possible states that a proposal may be in
 export const minipoolStates = {
-    Initialised     : 0,
-    Prelaunch       : 1,
-    Staking         : 2,
-    Withdrawable    : 3,
-    Dissolved       : 4
+    Initialised: 0,
+    Prelaunch: 1,
+    Staking: 2,
+    Withdrawable: 3,
+    Dissolved: 4
 };
 
 // Get the number of minipools a node has
@@ -32,9 +32,9 @@ export async function getNodeMinipoolCount(nodeAddress) {
 
 // Get the number of minipools a node has in Staking status
 export async function getNodeStakingMinipoolCount(nodeAddress) {
-  const rocketMinipoolManager = await RocketMinipoolManager.deployed();
-  let count = await rocketMinipoolManager.getNodeStakingMinipoolCount.call(nodeAddress);
-  return count;
+    const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+    let count = await rocketMinipoolManager.getNodeStakingMinipoolCount.call(nodeAddress);
+    return count;
 }
 
 // Get the number of minipools a node has in that are active
@@ -77,6 +77,30 @@ export async function createMinipool(txOptions, salt = null) {
     return createMinipoolWithBondAmount(txOptions.value, txOptions, salt);
 }
 
+// Function to generate deposit data for creating a minipool
+export async function generateDepositData(sender, salt) {
+    const rocketMinipoolFactory = await RocketMinipoolFactory.deployed();
+
+    let minipoolAddress = (await rocketMinipoolFactory.getExpectedAddress(sender, salt)).substr(2);
+    let withdrawalCredentials = '0x010000000000000000000000' + minipoolAddress;
+
+    // Get validator deposit data
+    let depositData = {
+        pubkey: getValidatorPubkey(),
+        withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
+        amount: BigInt(1000000000), // gwei
+        signature: getValidatorSignature(),
+    };
+
+    // Calculate the deposit data root - this might involve hashing the deposit data
+    // depending on your implementation specifics.
+    let depositDataRoot = getDepositDataRoot(depositData);
+
+    // Return the deposit data and its root
+    return { depositData, depositDataRoot, minipoolAddress };
+}
+
+
 export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt = null) {
     // Load contracts
     const [
@@ -94,7 +118,7 @@ export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt =
     // Get minipool contract bytecode
     let contractBytecode;
 
-    if (salt === null){
+    if (salt === null) {
         salt = minipoolSalt++;
     }
 
@@ -145,11 +169,11 @@ export async function createVacantMinipool(bondAmount, txOptions, salt = null, c
         RocketStorage.deployed()
     ]);
 
-    if (salt === null){
+    if (salt === null) {
         salt = minipoolSalt++;
     }
 
-    if (pubkey === null){
+    if (pubkey === null) {
         pubkey = getValidatorPubkey();
     }
 
