@@ -150,12 +150,12 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         }
     }
 
-    function withdraw(uint256 _amount, address _to) external {
+    function withdraw(uint256 _amount) external {
         if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
 
-        (bool success, bytes memory data) = _to.call{value: _amount}('');
+        (bool success, bytes memory data) = _directory.getDepositPoolAddress().call{value: _amount}('');
         if (!success) {
             revert LowLevelEthTransfer(success, data);
         }
