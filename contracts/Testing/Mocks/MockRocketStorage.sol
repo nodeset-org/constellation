@@ -17,4 +17,6 @@ contract MockRocketStorage is IRocketStorage {
     function getNodeWithdrawalAddress(address _nodeAddress) public view override returns (address) {
         return withdrawalAddresses[_nodeAddress];
     }
+
+    function getAddress(bytes32 _key) external view override returns (address) {}
 }

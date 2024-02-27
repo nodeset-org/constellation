@@ -73,16 +73,13 @@ describe("Node Operator Onboarding", function () {
         await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
         await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
 
-        const fee1 = ethers.utils.formatUnits(await protocol.vCWETH.makerFee1BasePoint(), 3);
-        const fee2 = ethers.utils.formatUnits(await protocol.vCWETH.makerFee2BasePoint(), 3);
-        const expectedAmountInDP =  ethers.utils.parseEther(`${100 - parseInt(fee1) - parseInt(fee2)}`);
+        const expectedAmountInDP =  ethers.utils.parseEther("100");
         const actualAmountInDP = await weth.balanceOf(protocol.depositPool.address);
         expectNumberE18ToBeApproximately(actualAmountInDP, expectedAmountInDP, 0.005);
 
         await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
         await protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("100"), signers.rplWhale.address);
-        const rplAdminFee = parseInt(ethers.utils.formatUnits(await protocol.vCRPL.makerFeeBasePoint(), 3));
-        const expectedRplInDP = ethers.utils.parseEther(`${100 - rplAdminFee}`);
+        const expectedRplInDP = ethers.utils.parseEther("100");
         const actualRplInDP = await rpl.balanceOf(protocol.depositPool.address);
         expectNumberE18ToBeApproximately(actualRplInDP, expectedRplInDP, 0.005);
     });
@@ -95,11 +92,11 @@ describe("Node Operator Onboarding", function () {
         if(events) {
             for(let i = 0; i < events.length; i++) {
                 if(events[i].event?.includes("Capital")) {
-                    expectNumberE18ToBeApproximately(events[i].args?.amount, ethers.utils.parseEther(".82"), 0.01);
+                    expectNumberE18ToBeApproximately(events[i].args?.amount, ethers.utils.parseEther(".8"), 0.01);
                 }
             }
         }
-        expectNumberE18ToBeApproximately(await protocol.vCWETH.totalYieldDistributed(), ethers.utils.parseEther(".82"), 0.01);
+        expectNumberE18ToBeApproximately(await protocol.vCWETH.totalYieldDistributed(), ethers.utils.parseEther(".8"), 0.01);
     });
 
     it("node operator gets reimbursement", async function () {
