@@ -31,10 +31,11 @@ contract MockRocketNodeStaking is IRocketNodeStaking {
         rplStaked = _rplStaked;
     }
 
-    function withdrawRPL(uint256 _amount) external override {
+    function withdrawRPL(address _nodeAddress, uint256 _amount) external override {
         // Transfer RPL from this contract to msg.sender
         RocketTokenRPLInterface rplToken = RocketTokenRPLInterface(0xD33526068D116cE69F19A9ee46F0bd304F21A51f);
         rplStaked -= _amount;
-        rplToken.transfer(msg.sender, _amount);
+        rplToken.transfer(_nodeAddress, _amount);
+
     }
 }

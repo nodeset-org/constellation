@@ -9,11 +9,17 @@ import '../UpgradeableBase.sol';
 import '../DepositPool.sol';
 import '../Operator/YieldDistributor.sol';
 import '../Utils/Constants.sol';
+import '../Interfaces/RocketPool/IMinipool.sol';
+
+import 'hardhat/console.sol';
 
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     event NewCapitalGain(uint256 amount, address indexed winner);
+    event NewCapitalLoss(uint256 amount, address indexed loser);
+
     event AdminFeeClaimed(uint256 amount);
+    event NodeOperatorFeeClaimed(uint256 amount);
 
     struct Position {
         uint256 shares;
@@ -39,10 +45,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public rplCoverageRatio;
     uint256 public totalYieldDistributed;
     uint256 public adminFeeBasePoint; // Admin fee in basis points
+    uint256 public nodeOperatorFeeBasePoint;
 
     uint256 public principal; // Total principal amount (sum of all deposits)
-    uint256 public lastIncomeClaimed; // Tracks the amount of income already claimed by the admin
+    uint256 public lastAdminIncomeClaimed; // Tracks the amount of income already claimed by the admin
+    uint256 public lastNodeOperatorIncomeClaimed; // Tracks the amount of income already claimed by the Node Operator
     uint256 public ethPerSlashReward; // Tracks how much a user gets for reporting a slasher
+
     uint256 public totalCounts;
     uint256 public totalPenaltyBond;
     uint256 public penaltyBondCount;
@@ -61,26 +70,11 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         collateralizationRatioBasePoint = 0.02e5;
         rplCoverageRatio = 0.15e18;
         adminFeeBasePoint = 0.01e5;
+        nodeOperatorFeeBasePoint = 0.01e5;
 
         ethPerSlashReward = 0.001 ether;
 
         enforceRplCoverageRatio = true;
-    }
-
-    function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
-        return super.previewDeposit(assets);
-    }
-
-    function previewMint(uint256 shares) public view virtual override returns (uint256) {
-        return super.previewMint(shares);
-    }
-
-    function previewWithdraw(uint256 assets) public view virtual override returns (uint256) {
-        return super.previewWithdraw(assets);
-    }
-
-    function previewRedeem(uint256 shares) public view virtual override returns (uint256) {
-        return super.previewRedeem(shares);
     }
 
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
@@ -89,12 +83,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         }
 
         require(enforceRplCoverageRatio || tvlRatioEthRpl() >= rplCoverageRatio, 'insufficient RPL coverage');
+        super._deposit(caller, receiver, assets, shares);
 
         address payable pool = _directory.getDepositPoolAddress();
         DepositPool(pool).sendEthToDistributors();
 
         WeightedAverageCalculation memory vars;
-        vars.totalPriceOfShares = super.convertToAssets(shares);
+        vars.totalPriceOfShares = assets;
         vars.lastPricePaidPerShare = positions[receiver].pricePaidPerShare;
         vars.originalValueTimesShares = vars.lastPricePaidPerShare * positions[receiver].shares * 1e18;
 
@@ -109,8 +104,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         positions[receiver].shares += shares;
 
         principal += assets;
-
-        super._deposit(caller, receiver, assets, shares);
 
         // transfer the deposit to the pool for utilization
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
@@ -129,20 +122,28 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         DepositPool(_directory.getDepositPoolAddress()).sendEthToDistributors();
 
-        uint256 currentPriceOfShares = super.convertToAssets(shares);
+        uint256 adminPortion = assets.mulDiv(adminFeeBasePoint, 1e5, Math.Rounding.Up);
+        uint256 nodeOperatorPortion = assets.mulDiv(nodeOperatorFeeBasePoint, 1e5, Math.Rounding.Up);
+
+        uint256 currentPriceOfShares = assets - adminPortion - nodeOperatorPortion;
         uint256 lastPriceOfShares = positions[owner].pricePaidPerShare * shares;
-        uint256 capitalGain = currentPriceOfShares - lastPriceOfShares;
-        totalYieldDistributed += capitalGain;
-        emit NewCapitalGain(capitalGain, receiver);
+
+        if (currentPriceOfShares > lastPriceOfShares) {
+            uint256 capitalGain = currentPriceOfShares - lastPriceOfShares;
+            totalYieldDistributed += capitalGain;
+            emit NewCapitalGain(capitalGain, receiver);
+        } else {
+            emit NewCapitalLoss(lastPriceOfShares - currentPriceOfShares, receiver);
+        }
 
         positions[owner].shares -= shares;
         if (positions[owner].shares == 0) {
             positions[owner].pricePaidPerShare = 0;
         }
 
-        principal -= assets;
+        principal -= currentPriceOfShares;
 
-        super._withdraw(caller, receiver, owner, assets, shares);
+        super._withdraw(caller, receiver, owner, currentPriceOfShares, shares);
     }
 
     function getDistributableYield() public view returns (uint256) {
@@ -171,6 +172,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         return (tvlEth * ethPriceInRpl) / tvlRpl;
     }
 
+    function _decimalsOffset() internal view override returns (uint8) {
+        return 18;
+    }
+
     function getRequiredCollateral() public view returns (uint256) {
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 fullBalance = totalAssets();
@@ -195,18 +200,40 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         adminFeeBasePoint = _adminFeeBasePoint;
     }
 
+    function setNodeOperatorFee(uint256 _nodeOperatorFeeBasePoint) external onlyAdmin {
+        require(_nodeOperatorFeeBasePoint <= 1e5, 'Fee too high');
+        nodeOperatorFeeBasePoint = _nodeOperatorFeeBasePoint;
+    }
+
     function claimAdminFee() external onlyAdmin {
         uint256 currentIncome = totalAssets() - principal;
-        uint256 unclaimedIncome = currentIncome - lastIncomeClaimed;
-        uint256 feeAmount = unclaimedIncome.mulDiv(adminFeeBasePoint, 1e5, Math.Rounding.Up);
+        uint256 unclaimedAdminIncome = currentIncome - lastAdminIncomeClaimed;
+        uint256 feeAmount = unclaimedAdminIncome.mulDiv(adminFeeBasePoint, 1e5, Math.Rounding.Up);
 
-        // Update lastIncomeClaimed to reflect the new total income claimed
-        lastIncomeClaimed += unclaimedIncome;
+        // Update lastAdminIncomeClaimed to reflect the new total income claimed
+        lastAdminIncomeClaimed += unclaimedAdminIncome;
 
         // Transfer the fee to the admin
         SafeERC20.safeTransfer(IERC20(asset()), _directory.getTreasuryAddress(), feeAmount);
 
         emit AdminFeeClaimed(feeAmount);
+    }
+
+    function claimNodeOperatorFee() external onlyProtocol {
+        uint256 currentIncome = totalAssets() - principal;
+        uint256 unclaimedNodeOperatorIncome = currentIncome - lastNodeOperatorIncomeClaimed;
+        uint256 feeAmount = unclaimedNodeOperatorIncome.mulDiv(adminFeeBasePoint, 1e5, Math.Rounding.Up);
+
+        console.log(currentIncome);
+        console.log(feeAmount);
+
+        // Update lastNodeOperatorIncomeClaimed to reflect the new total income claimed
+        lastNodeOperatorIncomeClaimed += unclaimedNodeOperatorIncome;
+
+        // Transfer the fee to the NodeOperator
+        SafeERC20.safeTransfer(IERC20(asset()), _directory.getYieldDistributorAddress(), feeAmount);
+
+        emit NodeOperatorFeeClaimed(feeAmount);
     }
 
     function updateSlashingAmounts(address[] memory badMinipools) external {
@@ -225,7 +252,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         }
     }
 
-    function averagePenaltyBond() public view returns(uint256) {
+    function averagePenaltyBond() public view returns (uint256) {
         return totalPenaltyBond / penaltyBondCount;
     }
 

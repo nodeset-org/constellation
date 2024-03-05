@@ -115,7 +115,7 @@ contract Whitelist is UpgradeableBase {
         distributor.finalizeInterval(); // operator controller will be entitled to rewards in the next interval
 
         uint256 nextInterval = distributor.currentInterval();
-        Operator memory operator = Operator(block.timestamp, 0, nextInterval, a);
+        Operator memory operator = Operator(block.timestamp, 0, nextInterval - 1, a);
 
         nodeMap[a] = operator;
         nodeIndexMap[numOperators] = a;

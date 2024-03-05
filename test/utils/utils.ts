@@ -5,7 +5,7 @@ import { Protocol, SetupData, Signers } from "../test";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { RocketPool } from "../test";
 import { IMinipool, MockMinipool } from "../../typechain-types";
-import { createMinipool, getMinipoolMinimumRPLStake } from "../rocketpool/_helpers/minipool";
+import { createMinipool, generateDepositData, getMinipoolMinimumRPLStake } from "../rocketpool/_helpers/minipool";
 import { nodeStakeRPL, registerNode } from "../rocketpool/_helpers/node";
 import { mintRPL } from "../rocketpool/_helpers/tokens";
 import { userDeposit } from "../rocketpool/_helpers/deposit";
@@ -65,7 +65,36 @@ export const evaluateModel = (x: number, k: number, m: number) => {
     return (m * (Math.exp(k * (x - 1)) - Math.exp(-k))) / (1 - Math.exp(-k));
 };
 
-export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: RocketPool, signers: Signers, bondValue: BigNumber) {
+export async function deployValidatorAccount(signer: SignerWithAddress, protocol: Protocol, signers: Signers, bondValue: BigNumber) {
+    const salt = 3;
+
+    const nextAddress = "0xD9bf496401781cc411AE0F465Fe073872A50D639";
+    const depositData = await generateDepositData(nextAddress, salt);
+
+    const config = {
+        timezoneLocation: 'Australia/Brisbane',
+        bondAmount: bondValue,
+        minimumNodeFee: 0,
+        validatorPubkey: depositData.depositData.pubkey,
+        validatorSignature: depositData.depositData.signature,
+        depositDataRoot: depositData.depositDataRoot,
+        salt: salt,
+        expectedMinipoolAddress: depositData.minipoolAddress
+    }
+
+    const proxyVAAddr = await protocol.validatorAccountFactory.connect(signers.hyperdriver).callStatic.createNewValidatorAccount(config, nextAddress, {
+        value: ethers.utils.parseEther("1")
+    })
+
+    await protocol.validatorAccountFactory.connect(signers.hyperdriver).createNewValidatorAccount(config, nextAddress, {
+        value: ethers.utils.parseEther("1")
+    })
+
+    return proxyVAAddr;
+}
+
+
+export async function deployRPMinipool(signer: SignerWithAddress, rocketPool: RocketPool, signers: Signers, bondValue: BigNumber) {
     await registerNode({ from: signer.address });
 
     // Stake RPL to cover minipools
@@ -156,7 +185,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
     for (let i = 0; i < nodeOperators.length; i++) {
         const nodeOperator = nodeOperators[i];
 
-        const mockMinipool = await deployMockMinipool(nodeOperator, rocketPool, setupData.signers, bondValue);
+        const mockMinipool = await deployRPMinipool(nodeOperator, rocketPool, setupData.signers, bondValue);
 
         await rocketPool.rockStorageContract.connect(nodeOperator).setWithdrawalAddress(nodeOperator.address, setupData.protocol.depositPool.address, true);
 

@@ -50,7 +50,7 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
 
         Directory(_directory).grantRole(Constants.CORE_PROTOCOL_ROLE, _predictedAddress);
 
-        // Deploy the proxy contract using create
+        // Deploy the proxy contract using create op
         ERC1967Proxy proxy = new ERC1967Proxy(
             implementationAddress,
             abi.encodeWithSelector(

@@ -88,10 +88,10 @@ contract DepositPool is UpgradeableBase {
 
     /// @notice Unstakes a specified amount of RPL tokens.
     /// @dev This function allows an administrator to unstake a specified amount of RPL tokens from the Rocket Node Staking contract.
-    /// @param amount The amount of RPL tokens to unstake.
+    /// @param _excessRpl The amount of RPL tokens to unstake.
     /// @dev The tokens will be withdrawn from the Rocket Node Staking contract.
-    function unstakeRpl(uint256 amount) external onlyAdmin {
-        IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).withdrawRPL(amount);
+    function unstakeRpl(address _nodeAddresss, uint256 _excessRpl) external onlyAdmin {
+        IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).withdrawRPL(_nodeAddresss, _excessRpl);
     }
 
     /// @notice Stakes a specified amount of RPL tokens on behalf of a node operator.

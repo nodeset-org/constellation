@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+
 import '../UpgradeableBase.sol';
 import '../Whitelist/Whitelist.sol';
 import '../DepositPool.sol';
 import '../PriceFetcher.sol';
+import "../Tokens/WETHVault.sol";
 
 import '../Utils/Constants.sol';
 import '../Utils/Errors.sol';
@@ -14,7 +17,6 @@ import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/RocketPool/IRocketNodeManager.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 
-import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 contract OperatorDistributor is UpgradeableBase, Errors {
     event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
@@ -215,7 +217,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     ) external onlyProtocolOrAdmin {
         // stakes (2.4 + 100% padding) eth worth of rpl for the node
         _validateWithdrawalAddress(_validatorAccount);
-        require(_bond == 8 ether, "OperatorDistributor: Bad _bond amount, should be 8");
+        require(_bond == 8 ether, 'OperatorDistributor: Bad _bond amount, should be 8');
 
         uint256 numValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(_nodeOperator);
 
@@ -272,6 +274,27 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         }
     }
 
+    function performTopDown(address _nodeAddress, uint256 _ethStaked) public onlyProtocolOrAdmin {
+        uint256 rplStaked = IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStake(_nodeAddress);
+        uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+
+        uint256 stakeRatio = rplStaked == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / rplStaked;
+        if (stakeRatio > targetStakeRatio) {
+            uint256 maxRplStake = (_ethStaked * ethPriceInRpl) / targetStakeRatio;
+            uint256 excessRpl = rplStaked > maxRplStake ? rplStaked - maxRplStake : 0;
+
+            if (excessRpl > 0) {
+                // Assuming the mechanism to reduce the RPL stake is available
+                // For example, a function in DepositPool contract to reduce RPL stake
+                // Note: This function needs to be implemented in the DepositPool contract
+                DepositPool(_directory.getDepositPoolAddress()).unstakeRpl(_nodeAddress, excessRpl);
+
+                // Update the amount of RPL funded by the node
+                minipoolAmountFundedRpl[_nodeAddress] -= excessRpl;
+            }
+        }
+    }
+
     /**
      * @notice Calculates the amount of RPL needed to top up the node operator's stake to the target stake ratio.
      * @dev This view function checks the current staking ratio of the node (calculated as ETH staked times its price in RPL
@@ -295,6 +318,31 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             requiredStakeRpl = 0;
         }
         return requiredStakeRpl;
+    }
+
+    /**
+     * @notice Calculates the amount of RPL that can be withdrawn from the node operator's stake without falling below the target stake ratio.
+     * @dev This view function checks the current staking ratio of the node (calculated as ETH staked times its price in RPL
+     * divided by RPL staked). If the ratio is above a predefined target, it returns the maximum RPL amount that can be withdrawn
+     * while still maintaining at least the target stake ratio.
+     * @param _existingRplStake The amount of RPL currently staked by the node operator.
+     * @param _ethStaked The amount of ETH currently staked by the node operator.
+     * @return withdrawableStakeRpl The maximum amount of RPL that can be withdrawn while maintaining the target stake ratio.
+     */
+    function calculateRequiredRplTopDown(
+        uint256 _existingRplStake,
+        uint256 _ethStaked
+    ) public view returns (uint256 withdrawableStakeRpl) {
+        uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+
+        uint256 stakeRatio = _existingRplStake == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / _existingRplStake;
+        if (stakeRatio > targetStakeRatio) {
+            uint256 maxRplStake = (_ethStaked * ethPriceInRpl) / targetStakeRatio;
+            withdrawableStakeRpl = _existingRplStake > maxRplStake ? _existingRplStake - maxRplStake : 0;
+        } else {
+            withdrawableStakeRpl = 0;
+        }
+        return withdrawableStakeRpl;
     }
 
     /**
@@ -354,7 +402,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         uint256 numberOfValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(nodeAddress);
 
+        // todo: get eth staked in different mannor DO NOT HARD CODE
         performTopUp(nodeAddress, 8 * numberOfValidators);
+        performTopDown(nodeAddress, 8 * numberOfValidators);
 
         nextMinipoolHavestIndex = index + 1;
 
