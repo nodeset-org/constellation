@@ -123,19 +123,21 @@ describe("Node Operator Onboarding", function () {
 
         console.log("AA")
 
-        const currentInterval = (await protocol.yieldDistributor.currentInterval()).sub(1);
         console.log("BB")
-
+        
         await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
-
+        
+        const currentInterval = (await protocol.yieldDistributor.currentInterval()).sub(1);
+        
         console.log(await protocol.yieldDistributor.getClaims())
 
-        const tx = await protocol.yieldDistributor.connect(signers.random).harvest(signers.hyperdriver.address, currentInterval, currentInterval);
+        const tx = await protocol.yieldDistributor.connect(signers.random).harvest(signers.hyperdriver.address, 0, currentInterval);
         const receipt = await tx.wait();
         const { events } = receipt;
         if (events) {
             for (let i = 0; i < events.length; i++) {
                 if (events[i].event?.includes("RewardDistributed")) {
+                    console.log("RewardDistributed")
                     console.log(events[i].args)
                 }
             }

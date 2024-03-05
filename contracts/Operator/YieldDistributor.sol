@@ -149,8 +149,9 @@ contract YieldDistributor is UpgradeableBase {
 
             uint256 fullEthReward = ((claim.amount * 1e18) / claim.numOperators) / 1e18;
 
-            console.log("full reward");
+            console.log("full reward", i);
             console.log(fullEthReward);
+            console.log(claim.amount);
 
             uint256 operatorsPortion = ProtocolMath.exponentialFunction(
                 operator.currentValidatorCount,

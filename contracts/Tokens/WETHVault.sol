@@ -230,8 +230,11 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         // Update lastNodeOperatorIncomeClaimed to reflect the new total income claimed
         lastNodeOperatorIncomeClaimed += unclaimedNodeOperatorIncome;
 
+        YieldDistributor yd = YieldDistributor(_directory.getYieldDistributorAddress());
+
         // Transfer the fee to the NodeOperator
-        SafeERC20.safeTransfer(IERC20(asset()), _directory.getYieldDistributorAddress(), feeAmount);
+        SafeERC20.safeTransfer(IERC20(asset()), address(yd), feeAmount);
+        yd.wethReceived(feeAmount);
 
         emit NodeOperatorFeeClaimed(feeAmount);
     }
