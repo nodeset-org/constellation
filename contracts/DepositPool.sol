@@ -170,12 +170,12 @@ contract DepositPool is UpgradeableBase {
             toRplVault = 0;
         }
 
-        // Wrap ETH to WETH and send to WETHVault
+        // Transfer RPL to vault
         if (toRplVault > 0) {
             SafeERC20.safeTransfer(IERC20(address(RPL)), address(vrpl), toRplVault);
         }
 
-        // Wrap ETH to WETH and send to Operator Distributor
+        // Send RPL to Operator Distributor
         if (toOperatorDistributor > 0) {
             SafeERC20.safeTransfer(IERC20(address(RPL)), operatorDistributor, toOperatorDistributor);
         }

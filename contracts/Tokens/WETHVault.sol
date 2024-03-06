@@ -86,7 +86,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         super._deposit(caller, receiver, assets, shares);
 
         address payable pool = _directory.getDepositPoolAddress();
-        DepositPool(pool).sendEthToDistributors();
 
         WeightedAverageCalculation memory vars;
         vars.totalPriceOfShares = assets;
@@ -105,8 +104,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         principal += assets;
 
+        _claimAdminFee();
+        _claimNodeOperatorFee();
+
         // transfer the deposit to the pool for utilization
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
+
+        DepositPool(pool).sendEthToDistributors();
     }
 
     function _withdraw(
@@ -120,20 +124,14 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             return;
         }
 
-        DepositPool(_directory.getDepositPoolAddress()).sendEthToDistributors();
-
-        uint256 adminPortion = assets.mulDiv(adminFeeBasePoint, 1e5, Math.Rounding.Up);
-        uint256 nodeOperatorPortion = assets.mulDiv(nodeOperatorFeeBasePoint, 1e5, Math.Rounding.Up);
-
-        uint256 currentPriceOfShares = assets - adminPortion - nodeOperatorPortion;
         uint256 lastPriceOfShares = positions[owner].pricePaidPerShare * shares;
 
-        if (currentPriceOfShares > lastPriceOfShares) {
-            uint256 capitalGain = currentPriceOfShares - lastPriceOfShares;
+        if (assets > lastPriceOfShares) {
+            uint256 capitalGain = assets - lastPriceOfShares;
             totalYieldDistributed += capitalGain;
             emit NewCapitalGain(capitalGain, receiver);
         } else {
-            emit NewCapitalLoss(lastPriceOfShares - currentPriceOfShares, receiver);
+            emit NewCapitalLoss(lastPriceOfShares - assets, receiver);
         }
 
         positions[owner].shares -= shares;
@@ -141,9 +139,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             positions[owner].pricePaidPerShare = 0;
         }
 
-        principal -= currentPriceOfShares;
+        _claimAdminFee();
+        _claimNodeOperatorFee();
 
-        super._withdraw(caller, receiver, owner, currentPriceOfShares, shares);
+        principal -= assets;
+
+        super._withdraw(caller, receiver, owner, assets, shares);
+        DepositPool(_directory.getDepositPoolAddress()).sendEthToDistributors();
     }
 
     function getDistributableYield() public view returns (uint256) {
@@ -155,10 +157,34 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         return IXRETHOracle(getDirectory().getRETHOracleAddress());
     }
 
+    function currentIncomeFromRewards() public view returns (uint256) {
+        unchecked {
+            DepositPool dp = DepositPool(getDirectory().getDepositPoolAddress());
+            OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
+            uint256 tvl = super.totalAssets() + getDistributableYield() + dp.getTvlEth() + od.getTvlEth();
+
+            if (tvl < principal) {
+                return 0;
+            }
+            //uint256 currentAdminIncome = (tvl - principal).mulDiv(adminFeeBasisPoint, 1e5);
+            return tvl - principal;
+        }
+    }
+
+    function currentAdminIncomeFromRewards() public view returns (uint256) {
+        return currentIncomeFromRewards().mulDiv(adminFeeBasePoint, 1e5);
+    }
+
+    function currentNodeOperatorIncomeFromRewards() public view returns (uint256) {
+        return currentIncomeFromRewards().mulDiv(nodeOperatorFeeBasePoint, 1e5);
+    }
+
     function totalAssets() public view override returns (uint256) {
         DepositPool dp = DepositPool(getDirectory().getDepositPoolAddress());
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
-        return super.totalAssets() + getDistributableYield() + dp.getTvlEth() + od.getTvlEth();
+        return
+            (super.totalAssets() + getDistributableYield() + dp.getTvlEth() + od.getTvlEth()) -
+            (currentAdminIncomeFromRewards() + currentNodeOperatorIncomeFromRewards());
     }
 
     function tvlRatioEthRpl() public view returns (uint256) {
@@ -172,7 +198,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         return (tvlEth * ethPriceInRpl) / tvlRpl;
     }
 
-    function _decimalsOffset() internal view override returns (uint8) {
+    function _decimalsOffset() internal pure override returns (uint8) {
         return 18;
     }
 
@@ -205,36 +231,39 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         nodeOperatorFeeBasePoint = _nodeOperatorFeeBasePoint;
     }
 
-    function claimAdminFee() external onlyAdmin {
-        uint256 currentIncome = totalAssets() - principal;
-        uint256 unclaimedAdminIncome = currentIncome - lastAdminIncomeClaimed;
-        uint256 feeAmount = unclaimedAdminIncome.mulDiv(adminFeeBasePoint, 1e5, Math.Rounding.Up);
+    /// Claims entire admin fee
+    function claimAdminFee() public onlyAdmin {
+        _claimAdminFee();
+    }
 
-        // Update lastAdminIncomeClaimed to reflect the new total income claimed
-        lastAdminIncomeClaimed += unclaimedAdminIncome;
-
-        // Transfer the fee to the admin
+    function _claimAdminFee() internal {
+        uint256 currentAdminIncome = currentAdminIncomeFromRewards();
+        uint256 feeAmount = currentAdminIncome - lastAdminIncomeClaimed;
         SafeERC20.safeTransfer(IERC20(asset()), _directory.getTreasuryAddress(), feeAmount);
+
+        // Update lastIncomeClaimed to reflect the new total income claimed
+        lastAdminIncomeClaimed = currentAdminIncomeFromRewards();
 
         emit AdminFeeClaimed(feeAmount);
     }
 
     function claimNodeOperatorFee() external onlyProtocol {
-        uint256 currentIncome = totalAssets() - principal;
-        uint256 unclaimedNodeOperatorIncome = currentIncome - lastNodeOperatorIncomeClaimed;
-        uint256 feeAmount = unclaimedNodeOperatorIncome.mulDiv(adminFeeBasePoint, 1e5, Math.Rounding.Up);
+        _claimNodeOperatorFee();
+    }
 
-        console.log(currentIncome);
-        console.log(feeAmount);
+    function _claimNodeOperatorFee() internal {
+        uint256 currentIncome = currentNodeOperatorIncomeFromRewards();
+        uint256 feeAmount = currentIncome - lastNodeOperatorIncomeClaimed;
 
         // Update lastNodeOperatorIncomeClaimed to reflect the new total income claimed
-        lastNodeOperatorIncomeClaimed += unclaimedNodeOperatorIncome;
 
         YieldDistributor yd = YieldDistributor(_directory.getYieldDistributorAddress());
 
         // Transfer the fee to the NodeOperator
         SafeERC20.safeTransfer(IERC20(asset()), address(yd), feeAmount);
         yd.wethReceived(feeAmount);
+
+        lastNodeOperatorIncomeClaimed = currentNodeOperatorIncomeFromRewards();
 
         emit NodeOperatorFeeClaimed(feeAmount);
     }

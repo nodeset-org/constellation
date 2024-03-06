@@ -11,6 +11,8 @@ import '../UpgradeableBase.sol';
 import '../DepositPool.sol';
 import '../Operator/OperatorDistributor.sol';
 
+import 'hardhat/console.sol';
+
 /// @custom:security-contact info@nodeoperator.org
 contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
@@ -47,22 +49,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         collateralizationRatioBasePoint = 0.02e5;
         wethCoverageRatio = 1.75e5;
         enforceWethCoverageRatio = true;
-    }
-
-    function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
-        return super.previewDeposit(assets);
-    }
-
-    function previewMint(uint256 shares) public view virtual override returns (uint256) {
-        return super.previewMint(shares);
-    }
-
-    function previewWithdraw(uint256 assets) public view virtual override returns (uint256) {
-        return super.previewWithdraw(assets);
-    }
-
-    function previewRedeem(uint256 shares) public view virtual override returns (uint256) {
-        return super.previewRedeem(shares);
+        adminFeeBasisPoint = 0.01e5;
     }
 
     /**
@@ -86,16 +73,17 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
             'insufficient weth coverage ratio'
         );
 
-        address recipient1 = _directory.getTreasuryAddress();
         principal += assets;
 
         address payable pool = _directory.getDepositPoolAddress();
-        DepositPool(pool).sendRplToDistributors();
-
+        console.log("A");
+        _claimAdminFee();
+        console.log("B");
         super._deposit(caller, receiver, assets, shares);
-
-        // transfer the rest of the deposit to the pool for utilization
+        console.log("C");
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
+        console.log("D");
+        DepositPool(pool).sendRplToDistributors();
     }
 
     /**
@@ -119,42 +107,32 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
-        address recipient1 = _directory.getTreasuryAddress();
 
-        DepositPool(_directory.getDepositPoolAddress()).sendRplToDistributors();
+        _claimAdminFee();
+
+        // required violation of CHECKS/EFFECTS/INTERACTIONS
         principal -= assets;
 
         super._withdraw(caller, receiver, owner, assets, shares);
+        DepositPool(_directory.getDepositPoolAddress()).sendRplToDistributors();
     }
 
-    /**
-     * @notice Computes the fee to be applied on a given asset amount.
-     * @dev This function uses the provided fee base point to determine the fee applicable on
-     * the raw assets. It multiplies the asset amount with the fee base point and divides by 1e5
-     * (to represent percentages up to two decimal places) to get the fee value. Rounding is done
-     * upwards for accuracy.
-     * @param assets The raw amount of assets for which the fee needs to be calculated.
-     * @param feeBasePoint The fee rate as a base point (e.g., 0.05e5 represents a 0.05% fee rate).
-     * @return The calculated fee amount to be applied on the assets.
-     */
-    function _feeOnRaw(uint256 assets, uint256 feeBasePoint) private pure returns (uint256) {
-        return assets.mulDiv(feeBasePoint, 1e5, Math.Rounding.Up);
+    function currentIncomeFromRewards() public view returns (uint256) {
+        unchecked {
+            uint256 tvl = super.totalAssets() +
+                DepositPool(_directory.getDepositPoolAddress()).getTvlRpl() +
+                OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl();
+
+            if (tvl < principal) {
+                return 0;
+            }
+            //uint256 currentAdminIncome = (tvl - principal).mulDiv(adminFeeBasisPoint, 1e5);
+            return tvl - principal;
+        }
     }
 
-    /**
-     * @notice Computes the fee to be deducted from the total asset amount.
-     * @dev This function uses the provided fee base point to determine the fee applicable on
-     * the total assets. The calculation method used here is different from _feeOnRaw. This
-     * method is applied when the total assets include the fee itself. The fee is derived by
-     * multiplying the asset amount with the fee base point and dividing it by the sum of the
-     * fee base point and 1e5 (to represent percentages up to two decimal places). Rounding
-     * is done upwards for accuracy.
-     * @param assets The total amount of assets (inclusive of fee) for which the fee needs to be calculated.
-     * @param feeBasePoint The fee rate as a base point (e.g., 0.05e5 represents a 0.05% fee rate).
-     * @return The calculated fee amount to be deducted from the total assets.
-     */
-    function _feeOnTotal(uint256 assets, uint256 feeBasePoint) private pure returns (uint256) {
-        return assets.mulDiv(feeBasePoint, feeBasePoint + 1e5, Math.Rounding.Up);
+    function currentAdminIncomeFromRewards() public view returns (uint256) {
+        return currentIncomeFromRewards().mulDiv(adminFeeBasisPoint, 1e5);
     }
 
     /**
@@ -163,14 +141,14 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * 1. Assets directly held in this vault.
      * 2. Assets held in the associated DepositPool.
      * 3. Assets held in the associated OperatorDistributor.
-     * The sum of these gives the overall total assets managed by the vault.
+     * The sum of these gives the overall total assets managed by the vault - admin owed rewards.
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
         return
-            super.totalAssets() +
-            DepositPool(_directory.getDepositPoolAddress()).getTvlRpl() +
-            OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl();
+            (super.totalAssets() +
+                DepositPool(_directory.getDepositPoolAddress()).getTvlRpl() +
+                OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl()) - currentAdminIncomeFromRewards();
     }
 
     /**
@@ -180,9 +158,10 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * the amount of collateral needed to achieve the desired ratio. Otherwise, it returns 0, indicating no additional collateral
      * is needed. The desired collateralization ratio is defined by `collateralizationRatioBasePoint`.
      * @return The amount of asset required to maintain the desired collateralization ratio, or 0 if no additional collateral is needed.
-     */ function getRequiredCollateral() public view returns (uint256) {
+     */
+    function getRequiredCollateral() public view returns (uint256) {
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
-        uint256 fullBalance = DepositPool(_directory.getDepositPoolAddress()).getTvlRpl();
+        uint256 fullBalance = totalAssets();
 
         uint256 requiredBalance = collateralizationRatioBasePoint.mulDiv(fullBalance, 1e5, Math.Rounding.Up);
 
@@ -218,17 +197,20 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         enforceWethCoverageRatio = _enforceWethCoverageRatio;
     }
 
-    function claimAdminFee() external onlyAdmin {
-        uint256 currentIncome = totalAssets() - principal;
-        uint256 unclaimedIncome = currentIncome - lastIncomeClaimed;
-        uint256 feeAmount = unclaimedIncome.mulDiv(adminFeeBasisPoint, 1e5, Math.Rounding.Up);
+    function _claimAdminFee() internal {
+        uint256 currentAdminIncome = currentAdminIncomeFromRewards();
+        uint256 feeAmount = currentAdminIncome - lastIncomeClaimed;
 
-        // Update lastIncomeClaimed to reflect the new total income claimed
-        lastIncomeClaimed += unclaimedIncome;
-
-        // Transfer the fee to the admin
         SafeERC20.safeTransfer(IERC20(asset()), _directory.getTreasuryAddress(), feeAmount);
 
+        // Update lastIncomeClaimed to reflect the new total income claimed
+        lastIncomeClaimed = currentAdminIncomeFromRewards();
+
         emit AdminFeeClaimed(feeAmount);
+    }
+
+    /// Claims entire admin fee
+    function claimAdminFee() public onlyAdmin {
+        _claimAdminFee();
     }
 }

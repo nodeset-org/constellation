@@ -65,6 +65,96 @@ export const evaluateModel = (x: number, k: number, m: number) => {
     return (m * (Math.exp(k * (x - 1)) - Math.exp(-k))) / (1 - Math.exp(-k));
 };
 
+export const assertMultipleTransfers = async (
+    tx: ContractTransaction,
+    expectedTransfers: Array<{ from: string, to: string, value: BigNumber }>
+  ) => {
+    // Wait for the transaction to be mined
+    const receipt = await tx.wait();
+  
+    // Ensure events are defined or default to an empty array
+    const events = receipt.events ?? [];
+  
+    // Filter for all Transfer events
+    const transferEvents = events.filter(event => event.event === "Transfer");
+
+    // Check if there's at least one Transfer event
+    expect(transferEvents, "No Transfer events found").to.be.an('array').that.is.not.empty;
+
+    // Iterate over expected transfers and match them with actual transfers
+    let foundTransfers = [];
+    for (const expectedTransfer of expectedTransfers) {
+        const match = transferEvents.find(event => {
+            const { from, to, value } = event.args as any;
+            return from === expectedTransfer.from && to === expectedTransfer.to && value.eq(expectedTransfer.value);
+        });
+
+        if (match) {
+            foundTransfers.push(match);
+        }
+    }
+
+    // If the number of found transfers does not match the expected number, print details of all transfers
+    if (foundTransfers.length !== expectedTransfers.length) {
+        console.log("Not all expected Transfers were matched. Actual Transfer events:");
+        console.table(transferEvents.map(event => ({
+            from: event.args!.from,
+            to: event.args!.to,
+            value: event.args!.value.toString()
+        })));
+        expect.fail("Not all expected Transfers did not match");
+    }
+};
+
+
+export const assertSingleTransferExists = async (
+    tx: ContractTransaction,
+    expectedFrom: string,
+    expectedTo: string,
+    expectedValue: BigNumber
+  ) => {
+    // Wait for the transaction to be mined
+    const receipt = await tx.wait();
+  
+    // Ensure events are defined or default to an empty array
+    const events = receipt.events ?? [];
+  
+    // Filter for all Transfer events
+    const transferEvents = events.filter(event => event.event === "Transfer");
+
+    // Check if there's at least one Transfer event
+    expect(transferEvents, "No Transfer events found").to.be.an('array').that.is.not.empty;
+
+    // Track if the expected Transfer event is found
+    let isExpectedTransferFound = false;
+
+    // Store details of all transfers for pretty printing if needed
+    const allTransfers = [];
+
+    for (const transferEvent of transferEvents) {
+      const { from, to, value } = transferEvent.args as any;
+      allTransfers.push({ from, to, value: value.toString() });
+
+      // Check if this event matches the expected values
+      if (from === expectedFrom && to === expectedTo && value.toString() === expectedValue.toString()) {
+        if (isExpectedTransferFound) {
+          // Found more than one matching Transfer event, which is not expected
+          expect.fail("Multiple Transfer events match the expected values");
+        }
+        isExpectedTransferFound = true;
+      }
+    }
+
+    // If expected Transfer event is not found, pretty print all transfers
+    if (!isExpectedTransferFound) {
+        console.log("No Transfer event matched the expected values. All Transfer events:");
+        console.table(allTransfers);
+        expect.fail("Expected Transfer event not found");
+    }
+};
+
+
+
 export async function deployValidatorAccount(signer: SignerWithAddress, protocol: Protocol, signers: Signers, bondValue: BigNumber) {
     const salt = 3;
 

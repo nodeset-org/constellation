@@ -31,7 +31,7 @@ abstract contract UpgradeableBase is UUPSUpgradeable, ReentrancyGuard {
         require(
             _directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender) ||
                 _directory.hasRole(Constants.ADMIN_ROLE, msg.sender),
-            'Can only be called by Whitelist or Admin!'
+            'Can only be called by Protocol or Admin!'
         );
         _;
     }
