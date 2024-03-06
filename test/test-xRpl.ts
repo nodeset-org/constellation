@@ -8,7 +8,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 describe("xRPL", function () {
 
   it("success - test initial values", async () => {
-    const setupData = await protocolFixture();
+    const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
     const name = await protocol.vCRPL.name()
@@ -22,7 +22,39 @@ describe("xRPL", function () {
 
   })
 
-  it("fail - tries to deposit as 'bad actor' involved in AML", async () => {
+  it("fail - tries to deposit as 'bad actor' involved in AML or other flavors of bad", async () => {
+    const setupData = await loadFixture(protocolFixture);
+    const { protocol, signers, rocketPool } = setupData;
+
+    await protocol.sanctions.addBlacklist(signers.random.address);
+    await protocol.directory.connect(signers.admin).enableSanctions();
+    expect(await protocol.sanctions.isSanctioned(signers.random.address)).equals(true);
+
+    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, ethers.utils.parseEther("100"));
+    await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address);
+
+    await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
+    await expect(protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("100"), signers.random.address)).to.be.revertedWith("");
     
+    const expectedRplInDP = ethers.utils.parseEther("0");
+    const actualRplInDP = await rocketPool.rplContract.balanceOf(protocol.depositPool.address);
+    expect(expectedRplInDP).equals(actualRplInDP)
+
+  })
+
+  it("success - tries to deposit as 'good actor' not involved in AML or bad activities", async () => {
+    const setupData = await loadFixture(protocolFixture);
+    const { protocol, signers, rocketPool } = setupData;
+
+    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, ethers.utils.parseEther("100"));
+    await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address);
+
+    await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
+    await protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("100"), signers.random.address);
+    
+    const expectedRplInDP = ethers.utils.parseEther("100");
+    const actualRplInDP = await rocketPool.rplContract.balanceOf(protocol.depositPool.address);
+    expect(expectedRplInDP).equals(actualRplInDP)
+
   })
 });
