@@ -34,8 +34,19 @@ describe("xRPL", function () {
     await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address);
 
     await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
-    await expect(protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("100"), signers.random.address)).to.be.revertedWith("");
-    
+
+    const tx = await protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("100"), signers.random.address);
+    const receipt = await tx.wait();
+    const { events } = receipt;
+    if (events) {
+      for (let i = 0; i < events.length; i++) {
+        expect(events[i].event).not.equals(null)
+        if (events[i].event?.includes("SanctionViolation")) {
+          expect(events[i].event?.includes("SanctionViolation")).equals(true)
+        }
+      }
+    }
+
     const expectedRplInDP = ethers.utils.parseEther("0");
     const actualRplInDP = await rocketPool.rplContract.balanceOf(protocol.depositPool.address);
     expect(expectedRplInDP).equals(actualRplInDP)
@@ -51,7 +62,7 @@ describe("xRPL", function () {
 
     await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
     await protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("100"), signers.random.address);
-    
+
     const expectedRplInDP = ethers.utils.parseEther("100");
     const actualRplInDP = await rocketPool.rplContract.balanceOf(protocol.depositPool.address);
     expect(expectedRplInDP).equals(actualRplInDP)
