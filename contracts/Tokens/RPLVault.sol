@@ -19,7 +19,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     string constant NAME = 'Constellation RPL';
     string constant SYMBOL = 'xRPL'; // Vaulted Constellation RPL
 
-    bool enforceWethCoverageRatio;
+    bool public enforceWethCoverageRatio;
 
     address public admin;
     uint256 public adminFeeBasisPoint;
