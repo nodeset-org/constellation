@@ -77,6 +77,9 @@ describe("xRPL", function () {
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, ethers.utils.parseEther("1000000"));
     await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address);
 
+    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random2.address, ethers.utils.parseEther("100"));
+    await protocol.whitelist.connect(signers.admin).addOperator(signers.random2.address);
+    
     await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("1000000"));
     await protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("1000000"), signers.random.address);
 
@@ -87,14 +90,14 @@ describe("xRPL", function () {
     console.log("currentIncome", await protocol.vCRPL.currentIncomeFromRewards());
     console.log("currentAdminIncome", await protocol.vCRPL.currentAdminIncomeFromRewards());
 
-    await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
+    await rocketPool.rplContract.connect(signers.random2).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
     console.log(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address));
-    await protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("100"), signers.random.address);
+    await protocol.vCRPL.connect(signers.random2).deposit(ethers.utils.parseEther("100"), signers.random2.address);
 
-    const tx = await protocol.vCRPL.connect(signers.random).redeem(ethers.utils.parseEther("100"), signers.random.address, signers.random.address);
+    const tx = await protocol.vCRPL.connect(signers.random2).redeem(ethers.utils.parseEther("100"), signers.random2.address, signers.random2.address);
     await assertMultipleTransfers(tx, [
       {
-        from: protocol.vCRPL.address, to: signers.random.address, value: ethers.utils.parseEther("100")
+        from: protocol.vCRPL.address, to: signers.random2.address, value: ethers.utils.parseEther("100")
       },
     ])
   })
@@ -161,6 +164,5 @@ describe("xRPL", function () {
       await protocol.directory.getTreasuryAddress(),
       ethers.utils.parseEther("0")
     )
-
   })
 });

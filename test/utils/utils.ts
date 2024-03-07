@@ -249,18 +249,6 @@ export async function printEventDetails(tx: ContractTransaction, contract: Contr
     }
 }
 
-
-
-
-export async function removeFeesOnRPLVault(setupData: SetupData) {
-    await setupData.protocol.vCRPL.connect(setupData.signers.admin).setFees(0, 0);
-}
-
-export async function removeFeesOnBothVaults(setupData: SetupData) {
-    await setupData.protocol.vCRPL.connect(setupData.signers.admin).setFees(0, 0);
-    await setupData.protocol.vCWETH.connect(setupData.signers.admin).setFees(0, 0, 0, 0);
-}
-
 export const registerNewValidator = async (setupData: SetupData, nodeOperators: SignerWithAddress[]) => {
 
     // one currently needs 8 eth in the operatorDistribution contract to register a validator for each node operator

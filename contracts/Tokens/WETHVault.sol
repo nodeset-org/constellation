@@ -104,13 +104,22 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         principal += assets;
 
-        _claimAdminFee();
-        _claimNodeOperatorFee();
+        uint256 fee1 = _claimAdminFee();
+        uint256 fee2 = _claimNodeOperatorFee();
 
-        // transfer the deposit to the pool for utilization
-        SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
+        console.log("sc vault A");
+        console.log(fee1);
+        console.log(fee2);
+        console.log(assets);
 
         DepositPool(pool).sendEthToDistributors();
+        console.log(IERC20(asset()).balanceOf(address(this)));
+        SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
+
+        // TODO: 1) ensure both fee1 and fee2 are the same
+        // TODO: 2) Pull funds from OperatorDistributor
+
+        console.log("sc vault B");
     }
 
     function _withdraw(
@@ -236,7 +245,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         _claimAdminFee();
     }
 
-    function _claimAdminFee() internal {
+    function _claimAdminFee() internal returns(uint256) {
         uint256 currentAdminIncome = currentAdminIncomeFromRewards();
         uint256 feeAmount = currentAdminIncome - lastAdminIncomeClaimed;
         SafeERC20.safeTransfer(IERC20(asset()), _directory.getTreasuryAddress(), feeAmount);
@@ -245,13 +254,14 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         lastAdminIncomeClaimed = currentAdminIncomeFromRewards();
 
         emit AdminFeeClaimed(feeAmount);
+        return feeAmount;
     }
 
     function claimNodeOperatorFee() external onlyProtocol {
         _claimNodeOperatorFee();
     }
 
-    function _claimNodeOperatorFee() internal {
+    function _claimNodeOperatorFee() internal returns (uint256) {
         uint256 currentIncome = currentNodeOperatorIncomeFromRewards();
         uint256 feeAmount = currentIncome - lastNodeOperatorIncomeClaimed;
 
@@ -266,6 +276,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         lastNodeOperatorIncomeClaimed = currentNodeOperatorIncomeFromRewards();
 
         emit NodeOperatorFeeClaimed(feeAmount);
+        return feeAmount;
     }
 
     function updateSlashingAmounts(address[] memory badMinipools) external {

@@ -62,19 +62,18 @@ describe("Node Operator Onboarding", function () {
 
     it("eth whale supplies Nodeset deposit pool with eth and rpl", async function () {
 
-        console.log("eth vault shares before deposit");
-        console.log(await protocol.vCWETH.balanceOf(signers.ethWhale.address));
-        console.log(await protocol.vCWETH.previewDeposit(ethers.utils.parseEther("100")));
-
-        // eth gets shares of xrETH
+        console.log("A")
+        // ethWhale gets shares of xrETH
         await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
+        console.log("A.1")
         await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
+        console.log("A.2")
         await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
-
+        console.log("B")
         const expectedAmountInDP = ethers.utils.parseEther("100");
         const actualAmountInDP = await weth.balanceOf(protocol.depositPool.address);
         expectNumberE18ToBeApproximately(actualAmountInDP, expectedAmountInDP, 0.005);
-
+        console.log("C")
         await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
         await protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("100"), signers.rplWhale.address);
         const expectedRplInDP = ethers.utils.parseEther("100");

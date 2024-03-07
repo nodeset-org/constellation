@@ -76,13 +76,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         principal += assets;
 
         address payable pool = _directory.getDepositPoolAddress();
-        console.log("A");
         _claimAdminFee();
-        console.log("B");
         super._deposit(caller, receiver, assets, shares);
-        console.log("C");
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
-        console.log("D");
         DepositPool(pool).sendRplToDistributors();
     }
 
