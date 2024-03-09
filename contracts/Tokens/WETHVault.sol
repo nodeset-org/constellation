@@ -151,6 +151,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         console.log(assets);
         console.log(shares);
 
+        // for teddy to work on later
+        // why tf is 1 share worth 11 eth????
+        // todo patch bug
+
         super._withdraw(caller, receiver, owner, assets, shares);
     }
 
