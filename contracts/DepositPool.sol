@@ -17,8 +17,8 @@ import './Utils/Constants.sol';
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
 /// ETH + RPL intakes from token mints and validator yields and sends to respective ERC4246 vaults.
 contract DepositPool is UpgradeableBase {
-    uint256 public splitRatioEth; // sends 30% to operator distributor and 70% to eth vault
-    uint256 public splitRatioRpl; // sends 30% to operator distributor and 70% to rpl vault
+    uint256 public splitRatioEth; // sends 70% to operator distributor and 70% to eth vault
+    uint256 public splitRatioRpl; // sends 70% to operator distributor and 70% to rpl vault
 
     /// @notice Emitted whenever this contract sends or receives ETH outside of the protocol.
     event TotalValueUpdated(uint oldValue, uint newValue);
@@ -32,8 +32,8 @@ contract DepositPool is UpgradeableBase {
     function initialize(address directoryAddress) public virtual override initializer {
         super.initialize(directoryAddress);
 
-        splitRatioEth = 0.30e5;
-        splitRatioRpl = 0.30e5;
+        splitRatioEth = 0.70e5;
+        splitRatioRpl = 0.70e5;
     }
 
     ///--------

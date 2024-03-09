@@ -104,22 +104,15 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         principal += assets;
 
-        uint256 fee1 = _claimAdminFee();
-        uint256 fee2 = _claimNodeOperatorFee();
-
-        console.log("sc vault A");
-        console.log(fee1);
-        console.log(fee2);
-        console.log(assets);
-
         DepositPool(pool).sendEthToDistributors();
-        console.log(IERC20(asset()).balanceOf(address(this)));
+
+        _claimFees();
+
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
 
-        // TODO: 1) ensure both fee1 and fee2 are the same
         // TODO: 2) Pull funds from OperatorDistributor
 
-        console.log("sc vault B");
+        console.log('sc vault B');
     }
 
     function _withdraw(
@@ -148,13 +141,17 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             positions[owner].pricePaidPerShare = 0;
         }
 
-        _claimAdminFee();
-        _claimNodeOperatorFee();
+        DepositPool(_directory.getDepositPoolAddress()).sendEthToDistributors();
+
+        _claimFees();
 
         principal -= assets;
 
+        console.log("post claim fees");
+        console.log(assets);
+        console.log(shares);
+
         super._withdraw(caller, receiver, owner, assets, shares);
-        DepositPool(_directory.getDepositPoolAddress()).sendEthToDistributors();
     }
 
     function getDistributableYield() public view returns (uint256) {
@@ -180,20 +177,15 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         }
     }
 
-    function currentAdminIncomeFromRewards() public view returns (uint256) {
-        return currentIncomeFromRewards().mulDiv(adminFeeBasePoint, 1e5);
-    }
-
-    function currentNodeOperatorIncomeFromRewards() public view returns (uint256) {
-        return currentIncomeFromRewards().mulDiv(nodeOperatorFeeBasePoint, 1e5);
-    }
-
     function totalAssets() public view override returns (uint256) {
         DepositPool dp = DepositPool(getDirectory().getDepositPoolAddress());
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
+        uint256 currentIncome = currentIncomeFromRewards();
+        uint256 currentAdminIncome = currentIncome.mulDiv(adminFeeBasePoint, 1e5);
+        uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFeeBasePoint, 1e5);
         return
             (super.totalAssets() + getDistributableYield() + dp.getTvlEth() + od.getTvlEth()) -
-            (currentAdminIncomeFromRewards() + currentNodeOperatorIncomeFromRewards());
+            (currentAdminIncome + currentNodeOperatorIncome);
     }
 
     function tvlRatioEthRpl() public view returns (uint256) {
@@ -240,43 +232,49 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         nodeOperatorFeeBasePoint = _nodeOperatorFeeBasePoint;
     }
 
-    /// Claims entire admin fee
-    function claimAdminFee() public onlyAdmin {
-        _claimAdminFee();
+    function claimFees() external onlyProtocolOrAdmin {
+        _claimFees();
     }
 
-    function _claimAdminFee() internal returns(uint256) {
-        uint256 currentAdminIncome = currentAdminIncomeFromRewards();
-        uint256 feeAmount = currentAdminIncome - lastAdminIncomeClaimed;
-        SafeERC20.safeTransfer(IERC20(asset()), _directory.getTreasuryAddress(), feeAmount);
+    function _claimFees() internal {
+        uint256 currentIncome = currentIncomeFromRewards();
+        uint256 currentAdminIncome = currentIncome.mulDiv(adminFeeBasePoint, 1e5);
+        uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFeeBasePoint, 1e5);
 
-        // Update lastIncomeClaimed to reflect the new total income claimed
-        lastAdminIncomeClaimed = currentAdminIncomeFromRewards();
-
-        emit AdminFeeClaimed(feeAmount);
-        return feeAmount;
-    }
-
-    function claimNodeOperatorFee() external onlyProtocol {
-        _claimNodeOperatorFee();
-    }
-
-    function _claimNodeOperatorFee() internal returns (uint256) {
-        uint256 currentIncome = currentNodeOperatorIncomeFromRewards();
-        uint256 feeAmount = currentIncome - lastNodeOperatorIncomeClaimed;
-
-        // Update lastNodeOperatorIncomeClaimed to reflect the new total income claimed
+        uint256 feeAmountNodeOperator = currentNodeOperatorIncome - lastNodeOperatorIncomeClaimed;
+        uint256 feeAmountAdmin = currentAdminIncome - lastAdminIncomeClaimed;
 
         YieldDistributor yd = YieldDistributor(_directory.getYieldDistributorAddress());
 
-        // Transfer the fee to the NodeOperator
-        SafeERC20.safeTransfer(IERC20(asset()), address(yd), feeAmount);
-        yd.wethReceived(feeAmount);
+        // Transfer the fee to the NodeOperator and admin treasury
+        yd.wethReceived(feeAmountNodeOperator);
 
-        lastNodeOperatorIncomeClaimed = currentNodeOperatorIncomeFromRewards();
+        console.log("no fee", feeAmountNodeOperator);
+        console.log("no fee", feeAmountAdmin);
+        _doFeeTransferOut(address(yd), feeAmountNodeOperator);
+        console.log("transfered to nodep po");
+        _doFeeTransferOut( _directory.getTreasuryAddress(), feeAmountAdmin);
+        console.log("Claimed admin and node operator fee");
 
-        emit NodeOperatorFeeClaimed(feeAmount);
-        return feeAmount;
+        lastNodeOperatorIncomeClaimed = currentIncomeFromRewards().mulDiv(adminFeeBasePoint, 1e5);
+        lastAdminIncomeClaimed = currentIncomeFromRewards().mulDiv(nodeOperatorFeeBasePoint, 1e5);
+
+        emit NodeOperatorFeeClaimed(feeAmountNodeOperator);
+        emit AdminFeeClaimed(feeAmountAdmin);
+    }
+
+    function _doFeeTransferOut(address _to, uint256 _amount) internal {
+        IERC20 asset = IERC20(asset());
+        uint256 balance = asset.balanceOf(address(this));
+        uint256 shortfall = _amount > balance ? _amount - balance : 0;
+        if(shortfall > 0) {
+            SafeERC20.safeTransfer(asset, _to, balance);
+            OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+            od.transferWEthToVault(shortfall);
+            SafeERC20.safeTransfer(asset, _to, shortfall);
+        } else {
+            SafeERC20.safeTransfer(asset, _to, _amount);
+        }
     }
 
     function updateSlashingAmounts(address[] memory badMinipools) external {

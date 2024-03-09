@@ -47,7 +47,6 @@ describe("Node Operator Onboarding", function () {
     });
 
     it("node operator creates minipool via creating validator account", async function () {
-
         expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bondValue)).equals(false);
         await prepareOperatorDistributionContract(setupData, 1);
         expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bondValue)).equals(true);
@@ -62,22 +61,17 @@ describe("Node Operator Onboarding", function () {
 
     it("eth whale supplies Nodeset deposit pool with eth and rpl", async function () {
 
-        console.log("A")
         // ethWhale gets shares of xrETH
         await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
-        console.log("A.1")
         await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
-        console.log("A.2")
         await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
-        console.log("B")
         const expectedAmountInDP = ethers.utils.parseEther("100");
         const actualAmountInDP = await weth.balanceOf(protocol.depositPool.address);
         expectNumberE18ToBeApproximately(actualAmountInDP, expectedAmountInDP, 0.005);
-        console.log("C")
         await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
         await protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("100"), signers.rplWhale.address);
         const expectedRplInDP = ethers.utils.parseEther("100");
-        const actualRplInDP = await rpl.balanceOf(protocol.depositPool.address);
+        const actualRplInDP = await protocol.vCRPL.totalAssets();
         expectNumberE18ToBeApproximately(actualRplInDP, expectedRplInDP, 0.005);
     });
 
@@ -87,6 +81,8 @@ describe("Node Operator Onboarding", function () {
         console.log(await protocol.vCWETH.maxRedeem(signers.ethWhale.address));
         console.log(await protocol.vCWETH.totalAssets())
         console.log(await protocol.vCWETH.balanceOf(signers.ethWhale.address));
+        console.log(await protocol.wETH.balanceOf(protocol.vCWETH.address));
+        console.log(await ethers.provider.getBalance(protocol.vCWETH.address));
 
         const tx = await protocol.vCWETH.connect(signers.ethWhale).redeem(ethers.utils.parseUnits("1", 18), signers.ethWhale.address, signers.ethWhale.address);
         const receipt = await tx.wait();

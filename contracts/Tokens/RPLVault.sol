@@ -144,7 +144,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         return
             (super.totalAssets() +
                 DepositPool(_directory.getDepositPoolAddress()).getTvlRpl() +
-                OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl()) - currentAdminIncomeFromRewards();
+                OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl()) -
+            currentAdminIncomeFromRewards();
     }
 
     /**
@@ -197,12 +198,27 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 currentAdminIncome = currentAdminIncomeFromRewards();
         uint256 feeAmount = currentAdminIncome - lastIncomeClaimed;
 
-        SafeERC20.safeTransfer(IERC20(asset()), _directory.getTreasuryAddress(), feeAmount);
+        _doFeeTransferOut(_directory.getTreasuryAddress(), feeAmount);
 
         // Update lastIncomeClaimed to reflect the new total income claimed
         lastIncomeClaimed = currentAdminIncomeFromRewards();
 
         emit AdminFeeClaimed(feeAmount);
+    }
+
+    function _doFeeTransferOut(address _to, uint256 _amount) internal {
+        IERC20 asset = IERC20(asset());
+        uint256 balance = asset.balanceOf(address(this));
+        uint256 shortfall = _amount > balance ? _amount - balance : 0;
+        if (shortfall > 0) {
+            SafeERC20.safeTransfer(asset, _to, balance);
+            OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+            od.transferRplToVault(shortfall);
+            console.log("transfering out rpl to vault");
+            SafeERC20.safeTransfer(asset, _to, shortfall);
+        } else {
+            SafeERC20.safeTransfer(asset, _to, _amount);
+        }
     }
 
     /// Claims entire admin fee

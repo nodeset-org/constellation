@@ -7,16 +7,16 @@ import '../UpgradeableBase.sol';
 import '../Whitelist/Whitelist.sol';
 import '../DepositPool.sol';
 import '../PriceFetcher.sol';
-import "../Tokens/WETHVault.sol";
+import '../Tokens/WETHVault.sol';
 
 import '../Utils/Constants.sol';
 import '../Utils/Errors.sol';
 
+import '../Interfaces/IWETH.sol';
 import '../Interfaces/RocketPool/IRocketStorage.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/RocketPool/IRocketNodeManager.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
-
 
 contract OperatorDistributor is UpgradeableBase, Errors {
     event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
@@ -24,7 +24,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     event WarningNoMiniPoolsToHarvest();
     event WarningMinipoolNotStaking(address indexed _minipoolAddress, MinipoolStatus indexed _status);
 
-    uint public _queuedEth;
+    uint256 public fundedEth;
+    uint256 public fundedRpl;
 
     address[] public minipoolAddresses;
 
@@ -63,38 +64,20 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /**
      * @notice Receives incoming Ether and adds it to the queued balance.
      * @dev This is the fallback function that is called when Ether is sent directly to the contract.
-     * Ensure that any mechanisms consuming `_queuedEth` are secure.
      */
     receive() external payable {
-        _queuedEth += msg.value;
-    }
+        address payable dp = _directory.getDepositPoolAddress();
+        console.log("fallback od initial");
+        console.log(address(this).balance);
 
-    /**
-     * @notice Returns the total amount of Ether funded across all minipools.
-     * @dev Iterates over all minipool addresses and sums up the funded Ether from each minipool.
-     * Make sure to be cautious with this function as it could be expensive in gas if the `minipoolAddresses` array becomes large.
-     * @return amountFunded The total amount of Ether funded in all minipools.
-     */
-    function getAmountFundedEth() public view returns (uint256) {
-        uint256 amountFunded;
-        for (uint i = 0; i < minipoolAddresses.length; i++) {
-            amountFunded += minipoolAmountFundedEth[minipoolAddresses[i]];
+        if(msg.sender != dp) {
+            (bool success,) = dp.call{value: msg.value}("");
+            require(success, "low level call failed in od");
+            DepositPool(dp).sendEthToDistributors();
         }
-        return amountFunded;
-    }
 
-    /**
-     * @notice Returns the total amount of RPL tokens funded across all minipools.
-     * @dev Iterates over all minipool addresses and sums up the funded RPL tokens from each minipool.
-     * Be cautious using this function as it could become gas-expensive if the `minipoolAddresses` array grows significantly.
-     * @return amountFunded The total amount of RPL tokens funded in all minipools.
-     */
-    function getAmountFundedRpl() public view returns (uint256) {
-        uint256 amountFunded;
-        for (uint i = 0; i < minipoolAddresses.length; i++) {
-            amountFunded += minipoolAmountFundedRpl[minipoolAddresses[i]];
-        }
-        return amountFunded;
+        console.log("fallback od final");
+        console.log(address(this).balance);
     }
 
     /// @notice Gets the total ETH value locked inside the protocol, including inside of validators, the OperatorDistributor,
@@ -103,7 +86,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /// Ensure that all sources of ETH (like the OperatorDistributor) are properly accounted for in the calculation.
     /// @return The total amount of Ether locked inside the protocol.
     function getTvlEth() public view returns (uint) {
-        return address(this).balance + getAmountFundedEth();
+        return address(this).balance + fundedEth;
     }
 
     /// @notice Gets the total RPL value locked inside the protocol, including inside of validators, the OperatorDistributor,
@@ -113,7 +96,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /// Ensure that all sources of RPL (like the OperatorDistributor) are accurately accounted for.
     /// @return The total amount of RPL tokens locked inside the protocol.
     function getTvlRpl() public view returns (uint) {
-        return RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this)) + getAmountFundedRpl();
+        return RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this)) + fundedRpl;
     }
 
     /**
@@ -172,6 +155,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 minimumRplStake = IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress())
             .getNodeMinimumRPLStake(_nodeAddress);
 
+        fundedRpl += minimumRplStake;
+
         // approve the node staking contract to spend the RPL
         RocketTokenRPLInterface rpl = RocketTokenRPLInterface(_directory.getRPLAddress());
         require(rpl.approve(getDirectory().getRocketNodeStakingAddress(), minimumRplStake));
@@ -222,6 +207,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 numValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(_nodeOperator);
 
         performTopUp(_validatorAccount, 24 ether * numValidators);
+        fundedEth += _bond;
         (bool success, bytes memory data) = _validatorAccount.call{value: _bond}('');
         if (!success) {
             revert LowLevelEthTransfer(success, data);
@@ -284,9 +270,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             uint256 excessRpl = rplStaked > maxRplStake ? rplStaked - maxRplStake : 0;
 
             if (excessRpl > 0) {
-                // Assuming the mechanism to reduce the RPL stake is available
-                // For example, a function in DepositPool contract to reduce RPL stake
-                // Note: This function needs to be implemented in the DepositPool contract
+                fundedRpl -= excessRpl;
                 DepositPool(_directory.getDepositPoolAddress()).unstakeRpl(_nodeAddress, excessRpl);
 
                 // Update the amount of RPL funded by the node
@@ -429,6 +413,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         lowerBondRequirement = _lowerBound;
     }
 
+    function onNodeOperatorDissolved(uint256 _bond) external onlyProtocol {
+        fundedEth -= _bond;
+    }
+
     /**
      * @notice Retrieves the list of minipool addresses managed by the contract.
      * @dev This function provides a way to fetch all the current minipool addresses in memory.
@@ -438,5 +426,19 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      */
     function getMinipoolAddresses() external view returns (address[] memory) {
         return minipoolAddresses;
+    }
+
+    function transferWEthToVault(uint256 _amount) external {
+        address vault = _directory.getWETHVaultAddress();
+        require(msg.sender == vault, 'caller must be vault');
+        address weth = _directory.getWETHAddress();
+        IWETH(weth).deposit{value: _amount}();
+        SafeERC20.safeTransfer(IERC20(weth), vault, _amount);
+    }
+
+    function transferRplToVault(uint256 _amount) external {
+        address vault = _directory.getRPLVaultAddress();
+        require(msg.sender == vault, 'caller must be vault');
+        SafeERC20.safeTransfer(IERC20(IERC4626Upgradeable(vault).asset()), vault, _amount);
     }
 }

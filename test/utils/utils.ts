@@ -292,8 +292,11 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
 };
 
 export async function prepareOperatorDistributionContract(setupData: SetupData, numOperators: Number) {
-    // sends 8 * numOperators eth to operatorDistribution contract
-    const requiredEth = ethers.utils.parseEther("8").mul(BigNumber.from(numOperators));
+    const dp = setupData.protocol.depositPool;
+    const splitEth = await dp.splitRatioEth();
+    console.log("provisioning factory", splitEth);
+    // sends 8 * numOperators eth to operatorDistribution contract * fee split due to fallback usage
+    const requiredEth = (ethers.utils.parseUnits("1", 5).add(ethers.utils.parseEther("8")).mul(BigNumber.from(numOperators)).mul(ethers.utils.parseUnits("1", 5))).div(splitEth);
     await setupData.signers.admin.sendTransaction({
         to: setupData.protocol.operatorDistributor.address,
         value: requiredEth

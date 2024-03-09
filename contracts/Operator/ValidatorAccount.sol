@@ -40,6 +40,8 @@ contract ValidatorAccount is UpgradeableBase, Errors {
     uint256 public lockStarted;
     uint256 public lockedEth;
 
+    uint256 public bond;
+
     function initialize(
         address _directory,
         address _nodeOperator,
@@ -59,6 +61,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         nodeOperator = _nodeOperator;
 
         lockedEth = msg.value;
+        bond = _config.bondAmount;
 
         OperatorDistributor(Directory(_directory).getOperatorDistributorAddress()).OnMinipoolCreated(
             _config.expectedMinipoolAddress,
@@ -133,6 +136,8 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
+
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeOperatorDissolved(bond);
 
         minipool.close();
     }
