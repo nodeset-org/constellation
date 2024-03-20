@@ -57,7 +57,7 @@ describe("Whitelist", function () {
         const operator = [
             timestamp,
             0,
-            1,
+            0,
         ];
 
         await expect(protocol.whitelist.connect(signers.admin).addOperator(signers.random.address))

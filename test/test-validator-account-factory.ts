@@ -10,7 +10,7 @@ import { generateDepositData } from "./rocketpool/_helpers/minipool";
 
 describe("Validator Account Factory", function () {
     it("Run the MOAT (Mother Of all Atomic Transactions)", async function () {
-        const setupData = await protocolFixture();
+        const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;
 
         const bond = ethers.utils.parseEther("8");
@@ -46,7 +46,7 @@ describe("Validator Account Factory", function () {
     });
 
     it("fails - not whitelisted", async function () {
-        const setupData = await protocolFixture();
+        const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;
 
         const bond = ethers.utils.parseEther("8");
@@ -56,7 +56,7 @@ describe("Validator Account Factory", function () {
         await prepareOperatorDistributionContract(setupData, 1);
         expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(true);
 
-        const nextAddress = "0x75c902863A9531385FB9F7dBb4b8C929eF8850c8";
+        const nextAddress = "0xD9bf496401781cc411AE0F465Fe073872A50D639";
         const depositData = await generateDepositData(nextAddress, salt);
 
         const config = {
@@ -76,7 +76,7 @@ describe("Validator Account Factory", function () {
     });
 
     it("fails - bad predicted address", async () => {
-        const setupData = await protocolFixture();
+        const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;
 
         const nextBadAddress = "0x5559244bedaB6b84b00B0bb9ebac8CAc37D806f1";
@@ -98,7 +98,7 @@ describe("Validator Account Factory", function () {
     })
 
     it("fails - forget to lock 1 eth", async () => {
-        const setupData = await protocolFixture();
+        const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;
 
         const nextBadAddress = "0x5559244bedaB6b84b00B0bb9ebac8CAc37D806f1";
@@ -120,7 +120,7 @@ describe("Validator Account Factory", function () {
     });
 
     it("fails - no liquidity for given bond", async () => {
-        const setupData = await protocolFixture();
+        const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;
 
         const nextBadAddress = "0x5559244bedaB6b84b00B0bb9ebac8CAc37D806f1";
