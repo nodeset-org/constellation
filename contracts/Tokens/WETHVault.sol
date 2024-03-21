@@ -251,14 +251,14 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         YieldDistributor yd = YieldDistributor(_directory.getYieldDistributorAddress());
 
         // Transfer the fee to the NodeOperator and admin treasury
-        yd.wethReceived(feeAmountNodeOperator);
 
         console.log("no fee", feeAmountNodeOperator);
         console.log("no fee", feeAmountAdmin);
-        _doFeeTransferOut(address(yd), feeAmountNodeOperator);
+        yd.wethReceived(_doFeeTransferOut(address(yd), feeAmountNodeOperator));
         console.log("transfered to nodep po");
         _doFeeTransferOut( _directory.getTreasuryAddress(), feeAmountAdmin);
         console.log("Claimed admin and node operator fee");
+
 
         lastNodeOperatorIncomeClaimed = currentIncomeFromRewards().mulDiv(adminFeeBasePoint, 1e5);
         lastAdminIncomeClaimed = currentIncomeFromRewards().mulDiv(nodeOperatorFeeBasePoint, 1e5);
@@ -267,17 +267,19 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         emit AdminFeeClaimed(feeAmountAdmin);
     }
 
-    function _doFeeTransferOut(address _to, uint256 _amount) internal {
+    function _doFeeTransferOut(address _to, uint256 _amount) internal returns(uint256) {
         IERC20 asset = IERC20(asset());
         uint256 balance = asset.balanceOf(address(this));
         uint256 shortfall = _amount > balance ? _amount - balance : 0;
         if(shortfall > 0) {
             SafeERC20.safeTransfer(asset, _to, balance);
             OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-            od.transferWEthToVault(shortfall);
-            SafeERC20.safeTransfer(asset, _to, shortfall);
+            uint256 transferedIn = od.transferWEthToVault(shortfall);
+            SafeERC20.safeTransfer(asset, _to, transferedIn);
+            return transferedIn + balance;
         } else {
             SafeERC20.safeTransfer(asset, _to, _amount);
+            return _amount;
         }
     }
 

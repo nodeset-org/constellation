@@ -67,17 +67,28 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      */
     receive() external payable {
         address payable dp = _directory.getDepositPoolAddress();
-        console.log("fallback od initial");
+        console.log('fallback od initial');
         console.log(address(this).balance);
 
-        if(msg.sender != dp) {
-            (bool success,) = dp.call{value: msg.value}("");
-            require(success, "low level call failed in od");
+        if (msg.sender != dp) {
+            (bool success, ) = dp.call{value: msg.value}('');
+            require(success, 'low level call failed in od');
             DepositPool(dp).sendEthToDistributors();
         }
 
-        console.log("fallback od final");
+        console.log('fallback od final');
         console.log(address(this).balance);
+    }
+
+    function _rebalanceLiquidity() internal nonReentrant {
+        address payable dp = _directory.getDepositPoolAddress();
+        (bool success, ) = dp.call{value: address(this).balance}('');
+        require(success, 'low level call failed in od');
+        DepositPool(dp).sendEthToDistributors();
+
+        IERC20 rpl = IERC20(_directory.getRPLAddress());
+        SafeERC20.safeTransfer(rpl, dp, rpl.balanceOf(address(this)));
+        DepositPool(dp).sendRplToDistributors();
     }
 
     /// @notice Gets the total ETH value locked inside the protocol, including inside of validators, the OperatorDistributor,
@@ -200,6 +211,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         address _validatorAccount,
         uint256 _bond
     ) external onlyProtocolOrAdmin {
+        _rebalanceLiquidity();
+
         // stakes (2.4 + 100% padding) eth worth of rpl for the node
         _validateWithdrawalAddress(_validatorAccount);
         require(_bond == 8 ether, 'OperatorDistributor: Bad _bond amount, should be 8');
@@ -428,17 +441,34 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         return minipoolAddresses;
     }
 
-    function transferWEthToVault(uint256 _amount) external {
+    function transferWEthToVault(uint256 _amount) external returns (uint256) {
         address vault = _directory.getWETHVaultAddress();
         require(msg.sender == vault, 'caller must be vault');
         address weth = _directory.getWETHAddress();
-        IWETH(weth).deposit{value: _amount}();
-        SafeERC20.safeTransfer(IERC20(weth), vault, _amount);
+
+        // Check if there's enough WETH in the contract
+        uint256 wethBalance = IWETH(weth).balanceOf(address(this));
+        if (wethBalance >= _amount) {
+            IWETH(weth).deposit{value: _amount}();
+            SafeERC20.safeTransfer(IERC20(weth), vault, _amount);
+            return _amount;
+        } else {
+            return 0;
+        }
     }
 
-    function transferRplToVault(uint256 _amount) external {
+    function transferRplToVault(uint256 _amount) external returns (uint256) {
         address vault = _directory.getRPLVaultAddress();
         require(msg.sender == vault, 'caller must be vault');
-        SafeERC20.safeTransfer(IERC20(IERC4626Upgradeable(vault).asset()), vault, _amount);
+
+        // Check if there's enough RPL in the contract
+        address rpl = IERC4626Upgradeable(vault).asset();
+        uint256 rplBalance = IERC20(rpl).balanceOf(address(this));
+        if (rplBalance >= _amount) {
+            SafeERC20.safeTransfer(IERC20(rpl), vault, _amount);
+            return _amount;
+        } else {
+            return 0;
+        }
     }
 }

@@ -213,9 +213,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         if (shortfall > 0) {
             SafeERC20.safeTransfer(asset, _to, balance);
             OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-            od.transferRplToVault(shortfall);
+            uint256 transferedIn = od.transferRplToVault(shortfall);
             console.log("transfering out rpl to vault");
-            SafeERC20.safeTransfer(asset, _to, shortfall);
+            SafeERC20.safeTransfer(asset, _to, transferedIn);
         } else {
             SafeERC20.safeTransfer(asset, _to, _amount);
         }
