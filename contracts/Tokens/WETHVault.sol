@@ -110,9 +110,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
 
-        // TODO: 2) Pull funds from OperatorDistributor
-
-        console.log('sc vault B');
     }
 
     function _withdraw(
@@ -146,14 +143,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         _claimFees();
 
         principal -= assets;
-
-        console.log("post claim fees");
-        console.log(assets);
-        console.log(shares);
-
-        // for teddy to work on later
-        // why tf is 1 share worth 11 eth????
-        // todo patch bug
 
         super._withdraw(caller, receiver, owner, assets, shares);
     }

@@ -137,7 +137,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
 
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeOperatorDissolved(bond);
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeOperatorDissolved(nodeOperator, bond);
 
         minipool.close();
     }

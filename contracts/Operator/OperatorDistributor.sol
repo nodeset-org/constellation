@@ -24,6 +24,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     event WarningNoMiniPoolsToHarvest();
     event WarningMinipoolNotStaking(address indexed _minipoolAddress, MinipoolStatus indexed _status);
 
+    using Math for uint256;
+
     uint256 public fundedEth;
     uint256 public fundedRpl;
 
@@ -34,14 +36,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     uint256 public numMinipoolsProcessedPerInterval;
 
-    uint256 public upperBondRequirement;
-    uint256 public lowerBondRequirement;
+    uint256 public requiredLEBStaked;
 
     mapping(address => uint256) public minipoolIndexMap;
     mapping(address => uint256) public minipoolAmountFundedEth;
     mapping(address => uint256) public minipoolAmountFundedRpl;
 
     mapping(address => address[]) nodeOperatorOwnedMinipools;
+    mapping(address => uint256) nodeOperatorEthStaked;
 
     constructor() initializer {}
 
@@ -49,16 +51,15 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @notice Initializes the contract with the provided storage address.
      * @dev This function should only be called once, during contract creation or proxy initialization.
      * It overrides the `initialize` function from a parent contract.
-     * @param _rocketStorageAddress The address of the storage contract.
+     * @param _directory The address of the storage contract.
      */
-    function initialize(address _rocketStorageAddress) public override initializer {
-        super.initialize(_rocketStorageAddress);
+    function initialize(address _directory) public override initializer {
+        super.initialize(_directory);
         targetStakeRatio = 1.5e18; // 150%
         numMinipoolsProcessedPerInterval = 1;
 
         // defaulting these to 8eth to only allow LEB8 minipools
-        upperBondRequirement = 8 ether;
-        lowerBondRequirement = 8 ether;
+        requiredLEBStaked = 8 ether;
     }
 
     /**
@@ -178,31 +179,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         nodeStaking.stakeRPLFor(_nodeAddress, minimumRplStake);
     }
 
-    /**
-     * @notice Validates that the withdrawal address for a node is set to the Deposit Pool address.
-     * @dev This function fetches the node's withdrawal address from RocketStorage and checks if
-     * it matches the Deposit Pool address. Throws an error if they don't match.
-     * It is a security check to ensure minipools delegate control to the Deposit Pool.
-     * @param _nodeAddress The address of the node whose withdrawal address should be validated.
-     */
-    function _validateWithdrawalAddress(address _nodeAddress) internal view {
-        IRocketStorage rocketStorage = IRocketStorage(getDirectory().getRocketStorageAddress());
-
-        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
-
-        address depositPoolAddr = getDirectory().getDepositPoolAddress();
-
-        require(
-            withdrawalAddress == depositPoolAddr,
-            'OperatorDistributor: minipool must delegate control to deposit pool'
-        );
-    }
 
     /**
      * @notice Prepares a node for minipool creation by setting up necessary staking and validations.
      * @dev This function first validates the node's withdrawal address, then calculates the required amount of
      * RPL to stake based on the number of validators associated with the node, and performs a top-up.
-     * It stakes an amount equivalent to `(2.4 + 100% padding) ether` worth of RPL for each validator of the node.
      * Only the protocol or admin can call this function.
      * @param _validatorAccount The address of the validator account belonging to the Node Operator
      */
@@ -212,15 +193,12 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 _bond
     ) external onlyProtocolOrAdmin {
         _rebalanceLiquidity();
-
-        // stakes (2.4 + 100% padding) eth worth of rpl for the node
-        _validateWithdrawalAddress(_validatorAccount);
-        require(_bond == 8 ether, 'OperatorDistributor: Bad _bond amount, should be 8');
-
-        uint256 numValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(_nodeOperator);
-
-        performTopUp(_validatorAccount, 24 ether * numValidators);
+        require(_bond == requiredLEBStaked, 'OperatorDistributor: Bad _bond amount, should be `requiredLEBStaked`');
         fundedEth += _bond;
+        nodeOperatorEthStaked[_nodeOperator] += _bond;
+
+        // by default this bonds 150% of stake according to max stake defined here: https://docs.rocketpool.net/guides/node/create-validator#staking-rpl
+        performTopUp(_validatorAccount, nodeOperatorEthStaked[_nodeOperator]);
         (bool success, bytes memory data) = _validatorAccount.call{value: _bond}('');
         if (!success) {
             revert LowLevelEthTransfer(success, data);
@@ -397,11 +375,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         // process top up
         address nodeAddress = minipool.getNodeAddress();
 
-        uint256 numberOfValidators = Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(nodeAddress);
+        uint256 ethStaked = nodeOperatorEthStaked[nodeAddress];
 
-        // todo: get eth staked in different mannor DO NOT HARD CODE
-        performTopUp(nodeAddress, 8 * numberOfValidators);
-        performTopDown(nodeAddress, 8 * numberOfValidators);
+        performTopUp(nodeAddress, ethStaked);
+        performTopDown(nodeAddress, ethStaked);
 
         nextMinipoolHavestIndex = index + 1;
 
@@ -420,14 +397,13 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         numMinipoolsProcessedPerInterval = _numMinipoolsProcessedPerInterval;
     }
 
-    function setBondRequirments(uint256 _upperBound, uint256 _lowerBound) external onlyAdmin {
-        require(_upperBound >= _lowerBound && _lowerBound <= _upperBound, Constants.BAD_BOND_BOUNDS);
-        upperBondRequirement = _upperBound;
-        lowerBondRequirement = _lowerBound;
+    function setBondRequirments(uint256 _requiredLEBStaked) external onlyAdmin {
+        requiredLEBStaked = _requiredLEBStaked;
     }
 
-    function onNodeOperatorDissolved(uint256 _bond) external onlyProtocol {
+    function onNodeOperatorDissolved(address _nodeOperator, uint256 _bond) external onlyProtocol {
         fundedEth -= _bond;
+        nodeOperatorEthStaked[_nodeOperator] -= _bond;
     }
 
     /**

@@ -9,17 +9,37 @@ import './UpgradeableBase.sol';
 import './Utils/Constants.sol';
 
 contract PriceFetcher is UpgradeableBase {
+
+    bool public usingFallback;
+
+    function initialize(address _directory) public override initializer {
+        super.initialize(_directory);
+
+        usingFallback = false;
+    }
+
     /// @notice Returns the average price of ETH denominated in RPL with 18 decimals from 45 to 60 minutes ago
     /// @return The price of ETH denominated in RPL with 18 decimals
-    function getPrice() public view returns (uint256) {
+    function getPriceFromUniswap() public view returns (uint256) {
         IUniswapV3Pool pool = IUniswapV3Pool(_directory.getUniswapV3PoolAddress());
         (uint160 sqrtPriceX96, , , , , , ) = pool.slot0();
         uint256 price = ((uint256(sqrtPriceX96) ** 2) * 1e7) / (2 ** 192);
         return price * 1e11;
     }
 
-    // TODO: Use this function
     function getPriceFromODAO() public view returns (uint256) {
         return _directory.getRocketNetworkPrices().getRPLPrice();
+    }
+
+    function getPrice() public view returns (uint256) {
+        return usingFallback ? getPriceFromUniswap() : getPriceFromODAO();
+    }
+
+    function useFallback() public onlyAdmin {
+        usingFallback = true;
+    }
+
+    function disableFallback() public onlyAdmin {
+        usingFallback = false;
     }
 }
