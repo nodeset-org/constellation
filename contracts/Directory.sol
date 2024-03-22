@@ -15,6 +15,8 @@ import './UpgradeableBase.sol';
 import './Utils/RocketPoolEncoder.sol';
 import './Utils/Constants.sol';
 
+import "hardhat/console.sol";
+
 //open question: should we be using rocket storage for getting rocket pool contracts?
 struct Protocol {
     address whitelist;
@@ -233,9 +235,15 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
             RocketpoolEncoder.generateBytes32Identifier("rocketNetworkPenalties")
         );
 
+        console.log("directory value rocket network penality");
+        console.logAddress(_integrations.rocketNetworkPenalties);
+
         _integrations.rocketNetworkPrices = IRocketStorage(newProtocol.rocketStorage).getAddress(
             RocketpoolEncoder.generateBytes32Identifier("rocketNetworkPrices")
         );
+
+        console.log("directory value rocket network price");
+        console.logAddress(_integrations.rocketNetworkPrices);
 
         _enabledSanctions = true;
     }

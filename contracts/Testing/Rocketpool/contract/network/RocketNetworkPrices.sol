@@ -7,6 +7,8 @@ import '../../interface/network/RocketNetworkPricesInterface.sol';
 import '../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol';
 import '../../interface/network/RocketNetworkSnapshotsInterface.sol';
 
+import "hardhat/console.sol";
+
 /// @notice Oracle contract for network token price data
 contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     // Constants
@@ -41,6 +43,8 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(
             getContractAddress('rocketNetworkSnapshots')
         );
+        console.log("Is rocketSnapshots null?");
+        console.logAddress(address(rocketNetworkSnapshots));
         uint256 price = uint256(rocketNetworkSnapshots.latestValue(priceKey));
         if (price == 0) {
             price = getUint(priceKey);

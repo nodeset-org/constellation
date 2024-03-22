@@ -283,8 +283,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 _existingRplStake,
         uint256 _ethStaked
     ) public view returns (uint256 requiredStakeRpl) {
+        console.log("before calling getPriceFetcherAddress");
+        console.logAddress(getDirectory().getPriceFetcherAddress());
+        console.log("B");
         uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
-
+        console.log("price", ethPriceInRpl);
         uint256 stakeRatio = _existingRplStake == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / _existingRplStake;
         if (stakeRatio < targetStakeRatio) {
             uint256 minuend = ((_ethStaked * ethPriceInRpl) / targetStakeRatio);

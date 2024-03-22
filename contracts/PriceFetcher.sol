@@ -8,6 +8,8 @@ import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 import './UpgradeableBase.sol';
 import './Utils/Constants.sol';
 
+import "hardhat/console.sol";
+
 contract PriceFetcher is UpgradeableBase {
 
     bool public usingFallback;
@@ -28,6 +30,8 @@ contract PriceFetcher is UpgradeableBase {
     }
 
     function getPriceFromODAO() public view returns (uint256) {
+        console.log("getPriceFromODAO");
+        console.logAddress(address(_directory.getRocketNetworkPrices()));
         return _directory.getRocketNetworkPrices().getRPLPrice();
     }
 

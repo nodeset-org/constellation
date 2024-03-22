@@ -48,8 +48,10 @@ describe("Node Operator Onboarding", function () {
 
     it("node operator creates minipool via creating validator account", async function () {
         expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bondValue)).equals(false);
+
         await prepareOperatorDistributionContract(setupData, 1);
         expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bondValue)).equals(true);
+
 
         const validatorAccount = await deployValidatorAccount(signers.hyperdriver, protocol, signers, bondValue);
 
