@@ -36,6 +36,7 @@ contract MockRocketNodeStaking is IRocketNodeStaking {
         RocketTokenRPLInterface rplToken = RocketTokenRPLInterface(0xD33526068D116cE69F19A9ee46F0bd304F21A51f);
         rplStaked -= _amount;
         rplToken.transfer(_nodeAddress, _amount);
-
     }
+
+    function setStakeRPLForAllowed(address _nodeAddress, address _caller, bool _allowed) external override {}
 }

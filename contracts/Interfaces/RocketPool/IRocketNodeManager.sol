@@ -17,4 +17,10 @@ interface IRocketNodeManager {
     function registerNode(
         string calldata _timezoneLocation
     ) external;
+
+    function setRPLWithdrawalAddress(
+        address _nodeAddress,
+        address _newRPLWithdrawalAddress,
+        bool _confirm
+    ) external;
 }

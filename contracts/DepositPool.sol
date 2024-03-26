@@ -17,8 +17,8 @@ import './Utils/Constants.sol';
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
 /// ETH + RPL intakes from token mints and validator yields and sends to respective ERC4246 vaults.
 contract DepositPool is UpgradeableBase {
-    uint256 public splitRatioEth; // sends 70% to operator distributor and 70% to eth vault
-    uint256 public splitRatioRpl; // sends 70% to operator distributor and 70% to rpl vault
+    uint256 public splitRatioEth; // sends 70% to operator distributor and 30% to eth vault
+    uint256 public splitRatioRpl; // sends 70% to operator distributor and 30% to rpl vault
 
     /// @notice Emitted whenever this contract sends or receives ETH outside of the protocol.
     event TotalValueUpdated(uint oldValue, uint newValue);
@@ -129,7 +129,11 @@ contract DepositPool is UpgradeableBase {
 
         // Always split total balance according to the ratio
         uint256 toOperatorDistributor = (totalBalance * splitRatioEth) / 1e5;
+        console.log("total balance in deposit pool sendEthToDistirub");
+        console.log(totalBalance);
+        console.log(toOperatorDistributor);
         uint256 toWETHVault = totalBalance - toOperatorDistributor;
+        console.log(toWETHVault);
 
         // When required capital is zero, send everything to OperatorDistributor
         if (requiredCapital == 0) {
@@ -140,7 +144,10 @@ contract DepositPool is UpgradeableBase {
         // Wrap ETH to WETH and send to WETHVault
         if (toWETHVault > 0) {
             WETH.deposit{value: toWETHVault}();
-            SafeERC20.safeTransfer(IERC20(address(WETH)), address(vweth), toWETHVault);
+            console.log("SENDING TO WETHVAULT...");
+            console.log(address(WETH));
+            console.log(vweth.asset());
+            SafeERC20.safeTransfer(WETH, address(vweth), toWETHVault);
         }
 
         // Don't wrap ETH to WETH and send to Operator Distributor

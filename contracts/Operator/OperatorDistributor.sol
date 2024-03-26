@@ -42,8 +42,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     mapping(address => uint256) public minipoolAmountFundedEth;
     mapping(address => uint256) public minipoolAmountFundedRpl;
 
-    mapping(address => address[]) nodeOperatorOwnedMinipools;
-    mapping(address => uint256) nodeOperatorEthStaked;
+    mapping(address => address[]) public nodeOperatorOwnedMinipools;
+    mapping(address => uint256) public nodeOperatorEthStaked;
 
     constructor() initializer {}
 
@@ -198,7 +198,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         nodeOperatorEthStaked[_nodeOperator] += _bond;
 
         // by default this bonds 150% of stake according to max stake defined here: https://docs.rocketpool.net/guides/node/create-validator#staking-rpl
-        performTopUp(_validatorAccount, nodeOperatorEthStaked[_nodeOperator]);
+        // performTopUp(_validatorAccount, nodeOperatorEthStaked[_nodeOperator]);
         (bool success, bytes memory data) = _validatorAccount.call{value: _bond}('');
         if (!success) {
             revert LowLevelEthTransfer(success, data);
@@ -211,7 +211,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * divided by RPL staked). If the ratio is below a predefined target, it calculates the necessary RPL amount to
      * bring the stake ratio back to the target. Then, the function either stakes the required RPL or stakes
      * the remaining RPL balance if it's not enough.
-     * @param _validatorAccount The address of the node operator.
+     * @param _validatorAccount The address of the node.
      * @param _ethStaked The amount of ETH currently staked by the node operator.
      */
     function performTopUp(address _validatorAccount, uint256 _ethStaked) public onlyProtocolOrAdmin {

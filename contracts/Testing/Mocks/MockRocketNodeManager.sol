@@ -22,9 +22,11 @@ contract MockRocketNodeManager is IRocketNodeManager {
         nodeOperatorsToMinipools[_nodeOperator] = _minipool;
     }
 
-    function registerNode(
-        string calldata _timezoneLocation
-    ) external {
-        
-    } 
+    function registerNode(string calldata _timezoneLocation) external {}
+
+    function setRPLWithdrawalAddress(
+        address _nodeAddress,
+        address _newRPLWithdrawalAddress,
+        bool _confirm
+    ) external override {}
 }

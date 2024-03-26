@@ -5,10 +5,11 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { OperatorStruct } from "../typechain-types/contracts/Whitelist/Whitelist";
 import { protocolFixture } from "./test";
 import { BigNumber } from "ethers";
-import { getNextContractAddress, getNextFactoryContractAddress, prepareOperatorDistributionContract } from "./utils/utils";
+import { countProxyCreatedEvents, getNextContractAddress, getNextFactoryContractAddress, predictDeploymentAddress, prepareOperatorDistributionContract } from "./utils/utils";
 import { generateDepositData } from "./rocketpool/_helpers/minipool";
 
 describe("Validator Account Factory", function () {
+
     it("Run the MOAT (Mother Of all Atomic Transactions)", async function () {
         const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;
@@ -21,8 +22,9 @@ describe("Validator Account Factory", function () {
         expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(true);
 
         await protocol.whitelist.connect(signers.admin).addOperator(signers.hyperdriver.address);
-
-        const nextAddress = "0xD9bf496401781cc411AE0F465Fe073872A50D639";
+        
+        const deploymentCount = await countProxyCreatedEvents(setupData);
+        const nextAddress = await predictDeploymentAddress(protocol.validatorAccountFactory.address, deploymentCount + 1)
         const depositData = await generateDepositData(nextAddress, salt);
 
         const config = {
@@ -56,7 +58,8 @@ describe("Validator Account Factory", function () {
         await prepareOperatorDistributionContract(setupData, 1);
         expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(true);
 
-        const nextAddress = "0xD9bf496401781cc411AE0F465Fe073872A50D639";
+        const deploymentCount = await countProxyCreatedEvents(setupData);
+        const nextAddress = await predictDeploymentAddress(protocol.validatorAccountFactory.address, deploymentCount + 1)
         const depositData = await generateDepositData(nextAddress, salt);
 
         const config = {

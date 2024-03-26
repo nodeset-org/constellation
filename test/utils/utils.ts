@@ -68,13 +68,13 @@ export const evaluateModel = (x: number, k: number, m: number) => {
 export const assertMultipleTransfers = async (
     tx: ContractTransaction,
     expectedTransfers: Array<{ from: string, to: string, value: BigNumber }>
-  ) => {
+) => {
     // Wait for the transaction to be mined
     const receipt = await tx.wait();
-  
+
     // Ensure events are defined or default to an empty array
     const events = receipt.events ?? [];
-  
+
     // Filter for all Transfer events
     const transferEvents = events.filter(event => event.event === "Transfer");
 
@@ -112,13 +112,13 @@ export const assertSingleTransferExists = async (
     expectedFrom: string,
     expectedTo: string,
     expectedValue: BigNumber
-  ) => {
+) => {
     // Wait for the transaction to be mined
     const receipt = await tx.wait();
-  
+
     // Ensure events are defined or default to an empty array
     const events = receipt.events ?? [];
-  
+
     // Filter for all Transfer events
     const transferEvents = events.filter(event => event.event === "Transfer");
 
@@ -132,17 +132,17 @@ export const assertSingleTransferExists = async (
     const allTransfers = [];
 
     for (const transferEvent of transferEvents) {
-      const { from, to, value } = transferEvent.args as any;
-      allTransfers.push({ from, to, value: value.toString() });
+        const { from, to, value } = transferEvent.args as any;
+        allTransfers.push({ from, to, value: value.toString() });
 
-      // Check if this event matches the expected values
-      if (from === expectedFrom && to === expectedTo && value.toString() === expectedValue.toString()) {
-        if (isExpectedTransferFound) {
-          // Found more than one matching Transfer event, which is not expected
-          expect.fail("Multiple Transfer events match the expected values");
+        // Check if this event matches the expected values
+        if (from === expectedFrom && to === expectedTo && value.toString() === expectedValue.toString()) {
+            if (isExpectedTransferFound) {
+                // Found more than one matching Transfer event, which is not expected
+                expect.fail("Multiple Transfer events match the expected values");
+            }
+            isExpectedTransferFound = true;
         }
-        isExpectedTransferFound = true;
-      }
     }
 
     // If expected Transfer event is not found, pretty print all transfers
@@ -247,6 +247,19 @@ export async function printEventDetails(tx: ContractTransaction, contract: Contr
             }
         }
     }
+}
+/**
+* Counts the `ProxyCreated` events emitted by the ValidatorAccountFactory contract.
+* @param provider The Ethereum provider.
+* @returns The number of `ProxyCreated` events.
+*/
+export async function countProxyCreatedEvents(setupData: SetupData): Promise<number> {
+    const events = await setupData.protocol.validatorAccountFactory.queryFilter(setupData.protocol.validatorAccountFactory.filters.ProxyCreated());
+    return events.length;
+}
+
+export async function predictDeploymentAddress(address: string, factoryNonceOffset: number): Promise<string> {
+    return ethers.utils.getContractAddress({ from: address, nonce: factoryNonceOffset });
 }
 
 export const registerNewValidator = async (setupData: SetupData, nodeOperators: SignerWithAddress[]) => {
