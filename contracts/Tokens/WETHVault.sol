@@ -215,11 +215,15 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         return (tvlEth * ethPriceInRpl) / tvlRpl;
     }
 
-    function getRequiredCollateral() public view returns (uint256) {
+    function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns(uint256) {
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
-        uint256 fullBalance = totalAssets();
+        uint256 fullBalance = totalAssets() + deposit;
         uint256 requiredBalance = collateralizationRatioBasePoint.mulDiv(fullBalance, 1e5, Math.Rounding.Up);
         return requiredBalance > currentBalance ? requiredBalance : 0;
+    }
+
+    function getRequiredCollateral() public view returns (uint256) {
+        return getRequiredCollateralAfterDeposit(0);
     }
 
     // Enhances precision in share quantities during the minting process.
