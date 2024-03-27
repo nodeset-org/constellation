@@ -305,11 +305,12 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
 };
 
 export async function prepareOperatorDistributionContract(setupData: SetupData, numOperators: Number) {
-    const dp = setupData.protocol.depositPool;
-    const splitEth = await dp.splitRatioEth();
-    console.log("provisioning factory", splitEth);
+    const vweth = setupData.protocol.vCWETH;
+    const depositAmount = ethers.utils.parseEther("8").mul(BigNumber.from(numOperators));
+    const vaultMinimum = await vweth.getRequiredCollateralAfterDeposit(depositAmount);
     // sends 8 * numOperators eth to operatorDistribution contract * fee split due to fallback usage
-    const requiredEth = (ethers.utils.parseUnits("1", 5).add(ethers.utils.parseEther("8")).mul(BigNumber.from(numOperators)).mul(ethers.utils.parseUnits("1", 5))).div(splitEth);
+    console.log("REQUIRE COLLAT", vaultMinimum)
+    const requiredEth = vaultMinimum.add(await vweth.getRequiredCollateral());
     await setupData.signers.admin.sendTransaction({
         to: setupData.protocol.operatorDistributor.address,
         value: requiredEth

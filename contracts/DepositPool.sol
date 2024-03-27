@@ -17,7 +17,6 @@ import './Utils/Constants.sol';
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
 /// ETH + RPL intakes from token mints and validator yields and sends to respective ERC4246 vaults.
 contract DepositPool is UpgradeableBase {
-
     constructor() initializer {}
 
     /// @dev Initializes the DepositPool contract with the specified directory address.
@@ -78,54 +77,83 @@ contract DepositPool is UpgradeableBase {
     }
 
     function sendEthToDistributors() public {
+        console.log('sendEthToDistributors.A');
         // Convert entire WETH balance of this contract to ETH
         IWETH WETH = IWETH(_directory.getWETHAddress());
         uint256 wethBalance = WETH.balanceOf(address(this));
         WETH.withdraw(wethBalance);
+        console.log('sendEthToDistributors.B');
 
         // Initialize the vault and operator distributor addresses
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
         address payable operatorDistributor = payable(getDirectory().getOperatorDistributorAddress());
+        console.log('sendEthToDistributors.C');
 
         // Calculate required capital and total balance
         uint256 requiredCapital = vweth.getRequiredCollateral();
         uint256 ethBalance = address(this).balance;
+        console.log('sendEthToDistributors.D');
 
         if (ethBalance >= requiredCapital) {
+            console.log('sendEthToDistributors.E');
+
             // Send required capital in WETH to vault and surplus ETH to operator distributor
-            SafeERC20.safeTransfer(IERC20(address(WETH)), address(vweth), requiredCapital);
+            WETH.deposit{value: requiredCapital}();
+            console.log('sendEthToDistributors.E1');
+
+            SafeERC20.safeTransfer(WETH, address(vweth), requiredCapital);
+            console.log('sendEthToDistributors.E2');
+
             uint256 surplus = ethBalance - requiredCapital;
-            operatorDistributor.transfer(surplus);
+            console.log('sendEthToDistributors.E3');
+
+            (bool success, ) = operatorDistributor.call{value: surplus}('');
+            require(success, 'Transfer failed.');
+            console.log('sendEthToDistributors.F');
         } else {
+            console.log('sendEthToDistributors.G');
+
             // If not enough ETH balance, convert the shortfall in WETH back to ETH and send it
             uint256 shortfall = requiredCapital - ethBalance;
             WETH.deposit{value: shortfall}();
             SafeERC20.safeTransfer(IERC20(address(WETH)), address(vweth), requiredCapital);
+            console.log('sendEthToDistributors.H');
         }
+        console.log('sendEthToDistributors.I');
     }
 
     function sendRplToDistributors() public {
+        console.log('sendRplToDistributors.A');
+
         // Initialize the RPLVault and the Operator Distributor addresses
         RPLVault vrpl = RPLVault(getDirectory().getRPLVaultAddress());
         address operatorDistributor = getDirectory().getOperatorDistributorAddress();
         RocketTokenRPLInterface RPL = RocketTokenRPLInterface(_directory.getRPLAddress());
+        console.log('sendRplToDistributors.B');
 
         // Fetch the required capital in RPL and the total RPL balance of the contract
         uint256 requiredCapital = vrpl.getRequiredCollateral();
         uint256 totalBalance = RPL.balanceOf(address(this));
+        console.log('sendRplToDistributors.C');
 
         // Determine the amount to send to the RPLVault
         uint256 toRplVault = (totalBalance >= requiredCapital) ? requiredCapital : totalBalance;
+        console.log('sendRplToDistributors.D');
 
         // Transfer RPL to the RPLVault
         if (toRplVault > 0) {
+            console.log('sendRplToDistributors.E');
+
             SafeERC20.safeTransfer(IERC20(address(RPL)), address(vrpl), toRplVault);
         }
 
         // Transfer any surplus RPL to the Operator Distributor
         if (totalBalance > toRplVault) {
+            console.log('sendRplToDistributors.F');
+
             SafeERC20.safeTransfer(IERC20(address(RPL)), operatorDistributor, totalBalance - toRplVault);
         }
+        console.log('sendRplToDistributors.G');
     }
 
     /// @notice Receive hook for ETH deposits.
