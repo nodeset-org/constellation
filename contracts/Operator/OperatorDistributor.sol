@@ -26,7 +26,12 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     using Math for uint256;
 
+    // The total amount of Ether (ETH) funded or allocated by the contract.
+    // This variable keeps track of the ETH resources managed within this contract,
     uint256 public fundedEth;
+
+    // The total amount of Rocket Pool tokens (RPL) funded or allocated by the contract.
+    // This field is used to track the RPL token balance managed by the contract,
     uint256 public fundedRpl;
 
     address[] public minipoolAddresses;
@@ -179,7 +184,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         nodeStaking.stakeRPLFor(_nodeAddress, minimumRplStake);
     }
 
-
     /**
      * @notice Prepares a node for minipool creation by setting up necessary staking and validations.
      * @dev This function first validates the node's withdrawal address, then calculates the required amount of
@@ -283,11 +287,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 _existingRplStake,
         uint256 _ethStaked
     ) public view returns (uint256 requiredStakeRpl) {
-        console.log("before calling getPriceFetcherAddress");
+        console.log('before calling getPriceFetcherAddress');
         console.logAddress(getDirectory().getPriceFetcherAddress());
-        console.log("B");
+        console.log('B');
         uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
-        console.log("price", ethPriceInRpl);
+        console.log('price', ethPriceInRpl);
         uint256 stakeRatio = _existingRplStake == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / _existingRplStake;
         if (stakeRatio < targetStakeRatio) {
             uint256 minuend = ((_ethStaked * ethPriceInRpl) / targetStakeRatio);
