@@ -196,6 +196,14 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             (currentAdminIncome + currentNodeOperatorIncome);
     }
 
+    /**
+     * @notice Calculates the Total Value Locked (TVL) ratio between ETH and RPL within the contract.
+     * @dev This function computes the ratio of the total value locked in ETH to the total value locked in RPL.
+     * It first retrieves the TVLs in ETH and RPL, then calculates the price of ETH in RPL units using a PriceFetcher.
+     * The ratio is given by (TVL in ETH * ETH price in RPL) / TVL in RPL. If TVL in RPL is 0, it returns a predefined
+     * ratio of 1e18 to handle division by zero errors.
+     * @return uint256 The ratio of TVL in ETH to TVL in RPL, scaled by 1e18.
+     */
     function tvlRatioEthRpl() public view returns (uint256) {
         uint256 tvlEth = totalAssets();
         uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress()).totalAssets();
