@@ -224,6 +224,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         return requiredBalance > currentBalance ? requiredBalance : 0;
     }
 
+    // Enhances precision in share quantities during the minting process.
     function _decimalsOffset() internal pure override returns (uint8) {
         return 18;
     }
