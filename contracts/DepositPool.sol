@@ -17,13 +17,8 @@ import './Utils/Constants.sol';
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
 /// ETH + RPL intakes from token mints and validator yields and sends to respective ERC4246 vaults.
 contract DepositPool is UpgradeableBase {
-    uint256 public splitRatioEth; // sends 70% to operator distributor and 30% to eth vault
-    uint256 public splitRatioRpl; // sends 70% to operator distributor and 30% to rpl vault
-
     /// @notice Emitted whenever this contract sends or receives ETH outside of the protocol.
     event TotalValueUpdated(uint oldValue, uint newValue);
-    event SplitRatioEthUpdated(uint oldValue, uint newValue);
-    event SplitRatioRplUpdated(uint oldValue, uint newValue);
 
     constructor() initializer {}
 
@@ -31,9 +26,6 @@ contract DepositPool is UpgradeableBase {
     /// @param directoryAddress The address of the directory contract.
     function initialize(address directoryAddress) public virtual override initializer {
         super.initialize(directoryAddress);
-
-        splitRatioEth = 0.70e5;
-        splitRatioRpl = 0.70e5;
     }
 
     ///--------
@@ -53,33 +45,6 @@ contract DepositPool is UpgradeableBase {
     /// @return The total value in RPL locked in the deposit pool.
     function getTvlRpl() public view returns (uint) {
         return RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this));
-    }
-
-    ///--------
-    /// SETTERS
-    ///--------
-
-    /// @notice Sets the split ratio for ETH deposits.
-    /// @dev This function allows an administrator to update the split ratio for ETH deposits in the deposit pool.
-    ///      The split ratio determines how ETH deposits are distributed between the OperatorDistributor and the WETHVault.
-    /// @param newSplitRatio The new split ratio for ETH deposits, expressed as a percentage (e.g., 30000 for 30%).
-    /// @dev Throws an error if the new split ratio is greater than 100% (100000) to ensure it stays within a valid range.
-
-    function setSplitRatioEth(uint256 newSplitRatio) external onlyAdmin {
-        require(newSplitRatio <= 1e5, 'split ratio must be lte to 1e5');
-        emit SplitRatioEthUpdated(splitRatioEth, newSplitRatio);
-        splitRatioEth = newSplitRatio;
-    }
-
-    /// @notice Sets the split ratio for RPL deposits.
-    /// @dev This function allows an administrator to update the split ratio for RPL deposits in the deposit pool.
-    ///      The split ratio determines how RPL deposits are distributed between the OperatorDistributor and the RPLVault.
-    /// @param newSplitRatio The new split ratio for RPL deposits, expressed as a percentage (e.g., 30000 for 30%).
-    /// @dev Throws an error if the new split ratio is greater than 100% (100000) to ensure it stays within a valid range.
-    function setSplitRatioRpl(uint256 newSplitRatio) external onlyAdmin {
-        require(newSplitRatio <= 1e5, 'split ratio must be lte to 1e5');
-        emit SplitRatioRplUpdated(splitRatioRpl, newSplitRatio);
-        splitRatioRpl = newSplitRatio;
     }
 
     ///--------
@@ -114,77 +79,54 @@ contract DepositPool is UpgradeableBase {
         IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, _amount);
     }
 
-    /// @notice Sends ETH to the OperatorDistributor and WETHVault based on specified ratios.
-    /// @dev This function splits the total ETH balance of the contract into WETH tokens and distributes them between the WETHVault and OperatorDistributor
-    ///      based on the `splitRatioEth`. If the `requiredCapital` from WETHVault is zero, all the ETH balance is sent to the OperatorDistributor.
     function sendEthToDistributors() public {
-        // convert entire weth balance of this contract to eth
-        IWETH WETH = IWETH(_directory.getWETHAddress()); // WETH token contract
-        WETH.withdraw(WETH.balanceOf(address(this)));
+        // Convert entire WETH balance of this contract to ETH
+        IWETH WETH = IWETH(_directory.getWETHAddress());
+        uint256 wethBalance = WETH.balanceOf(address(this));
+        WETH.withdraw(wethBalance);
 
+        // Initialize the vault and operator distributor addresses
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
-        address operatorDistributor = getDirectory().getOperatorDistributorAddress();
+        address payable operatorDistributor = payable(getDirectory().getOperatorDistributorAddress());
+
+        // Calculate required capital and total balance
         uint256 requiredCapital = vweth.getRequiredCollateral();
-        uint256 totalBalance = address(this).balance;
+        uint256 ethBalance = address(this).balance;
 
-        // Always split total balance according to the ratio
-        uint256 toOperatorDistributor = (totalBalance * splitRatioEth) / 1e5;
-        console.log("total balance in deposit pool sendEthToDistirub");
-        console.log(totalBalance);
-        console.log(toOperatorDistributor);
-        uint256 toWETHVault = totalBalance - toOperatorDistributor;
-        console.log(toWETHVault);
-
-        // When required capital is zero, send everything to OperatorDistributor
-        if (requiredCapital == 0) {
-            toOperatorDistributor = totalBalance;
-            toWETHVault = 0;
-        }
-
-        // Wrap ETH to WETH and send to WETHVault
-        if (toWETHVault > 0) {
-            WETH.deposit{value: toWETHVault}();
-            console.log("SENDING TO WETHVAULT...");
-            console.log(address(WETH));
-            console.log(vweth.asset());
-            SafeERC20.safeTransfer(WETH, address(vweth), toWETHVault);
-        }
-
-        // Don't wrap ETH to WETH and send to Operator Distributor
-        if (toOperatorDistributor > 0) {
-            (bool success, ) = operatorDistributor.call{value: toOperatorDistributor}('');
-            require(success, 'Transfer failed.');
+        if (ethBalance >= requiredCapital) {
+            // Send required capital in WETH to vault and surplus ETH to operator distributor
+            SafeERC20.safeTransfer(IERC20(address(WETH)), address(vweth), requiredCapital);
+            uint256 surplus = ethBalance - requiredCapital;
+            operatorDistributor.transfer(surplus);
+        } else {
+            // If not enough ETH balance, convert the shortfall in WETH back to ETH and send it
+            uint256 shortfall = requiredCapital - ethBalance;
+            WETH.deposit{value: shortfall}();
+            SafeERC20.safeTransfer(IERC20(address(WETH)), address(vweth), requiredCapital);
         }
     }
 
-    /// @notice Sends RPL tokens to the OperatorDistributor and RPLVault based on specified ratios.
-    /// @dev This function distributes RPL tokens held by the contract between the RPLVault and OperatorDistributor
-    ///      based on the `splitRatioRpl`. If the `requiredCapital` from RPLVault is zero, all RPL tokens are sent to the OperatorDistributor.
     function sendRplToDistributors() public {
+        // Initialize the RPLVault and the Operator Distributor addresses
         RPLVault vrpl = RPLVault(getDirectory().getRPLVaultAddress());
         address operatorDistributor = getDirectory().getOperatorDistributorAddress();
+        RocketTokenRPLInterface RPL = RocketTokenRPLInterface(_directory.getRPLAddress());
+
+        // Fetch the required capital in RPL and the total RPL balance of the contract
         uint256 requiredCapital = vrpl.getRequiredCollateral();
-        RocketTokenRPLInterface RPL = RocketTokenRPLInterface(_directory.getRPLAddress()); // RPL token contract
         uint256 totalBalance = RPL.balanceOf(address(this));
 
-        // Always split total balance according to the ratio
-        uint256 toOperatorDistributor = (totalBalance * splitRatioRpl) / 1e5;
-        uint256 toRplVault = totalBalance - toOperatorDistributor;
+        // Determine the amount to send to the RPLVault
+        uint256 toRplVault = (totalBalance >= requiredCapital) ? requiredCapital : totalBalance;
 
-        // When required capital is zero, send everything to OperatorDistributor
-        if (requiredCapital == 0) {
-            toOperatorDistributor = totalBalance;
-            toRplVault = 0;
-        }
-
-        // Transfer RPL to vault
+        // Transfer RPL to the RPLVault
         if (toRplVault > 0) {
             SafeERC20.safeTransfer(IERC20(address(RPL)), address(vrpl), toRplVault);
         }
 
-        // Send RPL to Operator Distributor
-        if (toOperatorDistributor > 0) {
-            SafeERC20.safeTransfer(IERC20(address(RPL)), operatorDistributor, toOperatorDistributor);
+        // Transfer any surplus RPL to the Operator Distributor
+        if (totalBalance > toRplVault) {
+            SafeERC20.safeTransfer(IERC20(address(RPL)), operatorDistributor, totalBalance - toRplVault);
         }
     }
 
