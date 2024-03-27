@@ -93,6 +93,8 @@ contract DepositPool is UpgradeableBase {
         uint256 requiredCapital = vweth.getRequiredCollateral();
         uint256 ethBalance = address(this).balance;
         console.log('sendEthToDistributors.D');
+        console.log(requiredCapital);
+        console.log(ethBalance);
 
         if (ethBalance >= requiredCapital) {
             console.log('sendEthToDistributors.E');

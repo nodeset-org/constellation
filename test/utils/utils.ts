@@ -308,9 +308,15 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
     const vweth = setupData.protocol.vCWETH;
     const depositAmount = ethers.utils.parseEther("8").mul(BigNumber.from(numOperators));
     const vaultMinimum = await vweth.getRequiredCollateralAfterDeposit(depositAmount);
+
+    // await setupData.protocol.wETH.connect(setupData.signers.ethWhale).deposit({ value: vaultMinimum });
+    // await setupData.protocol.wETH.connect(setupData.signers.ethWhale).approve(setupData.protocol.vCWETH.address, vaultMinimum);
+    // await setupData.protocol.vCWETH.connect(setupData.signers.ethWhale).deposit(vaultMinimum, setupData.signers.ethWhale.address);
+
     // sends 8 * numOperators eth to operatorDistribution contract * fee split due to fallback usage
     console.log("REQUIRE COLLAT", vaultMinimum)
-    const requiredEth = vaultMinimum.add(await vweth.getRequiredCollateral());
+    const requiredEth = depositAmount.add(vaultMinimum).mul(ethers.utils.parseUnits("1.1", 5)).div(ethers.utils.parseUnits("1", 5));
+    console.log("REQUIRE+ETH", requiredEth);
     await setupData.signers.admin.sendTransaction({
         to: setupData.protocol.operatorDistributor.address,
         value: requiredEth
