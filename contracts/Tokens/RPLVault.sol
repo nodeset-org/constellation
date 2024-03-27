@@ -122,7 +122,6 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
             if (tvl < principal) {
                 return 0;
             }
-            //uint256 currentAdminIncome = (tvl - principal).mulDiv(adminFeeBasisPoint, 1e5);
             return tvl - principal;
         }
     }
@@ -194,6 +193,14 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         enforceWethCoverageRatio = _enforceWethCoverageRatio;
     }
 
+    /**
+     * @dev Internal function to claim the admin fees.
+     * This function calculates the current admin income from rewards, determines the fee amount based on the income
+     * that hasn't been claimed yet, and transfers this fee out to the treasury. It then updates the `lastIncomeClaimed`
+     * to the latest claimed amount. It is used within deposit and withdrawal operations to periodically claim the admin fee.
+     *
+     * Emits an `AdminFeeClaimed` event with the amount of the fee claimed.
+     */
     function _claimAdminFee() internal {
         uint256 currentAdminIncome = currentAdminIncomeFromRewards();
         uint256 feeAmount = currentAdminIncome - lastIncomeClaimed;
