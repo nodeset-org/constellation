@@ -17,8 +17,6 @@ import './Utils/Constants.sol';
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
 /// ETH + RPL intakes from token mints and validator yields and sends to respective ERC4246 vaults.
 contract DepositPool is UpgradeableBase {
-    /// @notice Emitted whenever this contract sends or receives ETH outside of the protocol.
-    event TotalValueUpdated(uint oldValue, uint newValue);
 
     constructor() initializer {}
 
