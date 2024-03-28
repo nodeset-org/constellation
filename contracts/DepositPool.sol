@@ -118,7 +118,7 @@ contract DepositPool is UpgradeableBase {
             // If not enough ETH balance, convert the shortfall in WETH back to ETH and send it
             uint256 shortfall = requiredCapital - ethBalance;
             WETH.deposit{value: shortfall}();
-            SafeERC20.safeTransfer(IERC20(address(WETH)), address(vweth), requiredCapital);
+            SafeERC20.safeTransfer(IERC20(address(WETH)), address(vweth), shortfall);
             console.log('sendEthToDistributors.H');
         }
         console.log('sendEthToDistributors.I');

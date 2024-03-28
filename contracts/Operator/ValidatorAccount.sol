@@ -86,8 +86,6 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             _config.salt,
             _config.expectedMinipoolAddress
         );
-
-        // IRocketNodeStaking(directory.getRocketNodeStakingAddress()).setStakeRPLForAllowed(address(this), dp, true);
     }
 
     function _registerNode(string calldata _timezoneLocation, uint256 _bond, address _nodeOperator) internal {
