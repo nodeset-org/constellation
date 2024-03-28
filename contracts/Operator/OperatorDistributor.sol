@@ -205,6 +205,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         // performTopUp(_validatorAccount, nodeOperatorEthStaked[_nodeOperator]);
         (bool success, bytes memory data) = _validatorAccount.call{value: _bond}('');
         if (!success) {
+            console.log("LowLevelEthTransfer 1");
+            console.log("balance eth", address(this).balance);
+            console.log(_bond);
             revert LowLevelEthTransfer(success, data);
         }
     }

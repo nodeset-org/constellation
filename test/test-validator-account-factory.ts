@@ -18,7 +18,7 @@ describe("Validator Account Factory", function () {
         const salt = 3;
 
         expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(false);
-        await prepareOperatorDistributionContract(setupData, 1);
+        await prepareOperatorDistributionContract(setupData, 2);
         expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(true);
 
         await protocol.whitelist.connect(signers.admin).addOperator(signers.hyperdriver.address);

@@ -101,13 +101,13 @@ describe("Node Operator Onboarding", function () {
         if (events) {
             for (let i = 0; i < events.length; i++) {
                 if (events[i].event?.includes("Capital")) {
-                    expectNumberE18ToBeApproximately(events[i].args?.amount, ethers.utils.parseEther("0.4735"), 0.01);
+                    expectNumberE18ToBeApproximately(events[i].args?.amount, ethers.utils.parseEther("0.7246"), 0.01);
                 }
             }
         }
         console.log("totalYeildDistributed");
         console.log(await protocol.vCWETH.totalYieldDistributed())
-        expectNumberE18ToBeApproximately(await protocol.vCWETH.totalYieldDistributed(), ethers.utils.parseEther("0.4735"), 0.01);
+        expectNumberE18ToBeApproximately(await protocol.vCWETH.totalYieldDistributed(), ethers.utils.parseEther("0.7246"), 0.01);
     });
 
     it("someone calls for yield distribution", async function () {

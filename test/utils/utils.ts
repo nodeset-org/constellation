@@ -304,6 +304,8 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
     }
 };
 
+// TODO: Make sure the minimums are actaully met. 
+// WARNING: This function does not work as exepcted
 export async function prepareOperatorDistributionContract(setupData: SetupData, numOperators: Number) {
     const vweth = setupData.protocol.vCWETH;
     const depositAmount = ethers.utils.parseEther("8").mul(BigNumber.from(numOperators));

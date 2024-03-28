@@ -68,11 +68,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
 
         OperatorDistributor od = OperatorDistributor(directory.getOperatorDistributorAddress());
 
-        od.OnMinipoolCreated(
-            _config.expectedMinipoolAddress,
-            nodeOperator,
-            _config.bondAmount
-        );
+        od.OnMinipoolCreated(_config.expectedMinipoolAddress, nodeOperator, _config.bondAmount);
 
         _registerNode(_config.timezoneLocation, _config.bondAmount, _nodeOperator);
 
@@ -80,7 +76,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         IRocketNodeManager(directory.getRocketNodeManagerAddress()).setRPLWithdrawalAddress(address(this), dp, true);
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), dp, true);
         od.performTopUp(address(this), od.nodeOperatorEthStaked(_nodeOperator));
-        
+
         _createMinipool(
             _config.bondAmount,
             _config.minimumNodeFee,
@@ -91,8 +87,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             _config.expectedMinipoolAddress
         );
 
-       // IRocketNodeStaking(directory.getRocketNodeStakingAddress()).setStakeRPLForAllowed(address(this), dp, true);
-
+        // IRocketNodeStaking(directory.getRocketNodeStakingAddress()).setStakeRPLForAllowed(address(this), dp, true);
     }
 
     function _registerNode(string calldata _timezoneLocation, uint256 _bond, address _nodeOperator) internal {
@@ -156,6 +151,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         lockedEth = 0;
         (bool success, bytes memory data) = nodeOperator.call{value: vaf.lockThreshhold()}('');
         if (!success) {
+            console.log('LowLevelEthTransfer 2');
             revert LowLevelEthTransfer(success, data);
         }
     }
@@ -168,6 +164,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
 
         (bool success, bytes memory data) = _directory.getDepositPoolAddress().call{value: _amount}('');
         if (!success) {
+            console.log('LowLevelEthTransfer 3');
             revert LowLevelEthTransfer(success, data);
         }
     }
