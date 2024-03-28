@@ -209,6 +209,8 @@ async function deployProtocol(rocketPool: RocketPool, signers: Signers): Promise
 		const rplWhaleBalance = await rocketPool.rplContract.balanceOf(signers.deployer.address);
 		await rocketPool.rplContract.transfer(signers.rplWhale.address, rplWhaleBalance);
 
+		await priceFetcher.connect(signers.admin).useFallback();
+
 		return returnData;
 	} catch(e: any) {
 		const message = e.toString();

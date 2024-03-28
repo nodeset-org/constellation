@@ -18,5 +18,11 @@ interface IRocketNodeStaking {
     /// @param _nodeAddress The address of the node operator to query
     function getNodeRPLStake(address _nodeAddress) external view returns (uint256);
 
-    function withdrawRPL(uint256 _amount) external;
+    function withdrawRPL(address _nodeAddress, uint256 _amount) external;
+
+    function setStakeRPLForAllowed(
+        address _nodeAddress,
+        address _caller,
+        bool _allowed
+    ) external;
 }

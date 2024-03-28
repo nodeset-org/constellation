@@ -5,7 +5,7 @@ import { Protocol, SetupData, Signers } from "../test";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { RocketPool } from "../test";
 import { IMinipool, MockMinipool } from "../../typechain-types";
-import { createMinipool, getMinipoolMinimumRPLStake } from "../rocketpool/_helpers/minipool";
+import { createMinipool, generateDepositData, getMinipoolMinimumRPLStake } from "../rocketpool/_helpers/minipool";
 import { nodeStakeRPL, registerNode } from "../rocketpool/_helpers/node";
 import { mintRPL } from "../rocketpool/_helpers/tokens";
 import { userDeposit } from "../rocketpool/_helpers/deposit";
@@ -65,7 +65,126 @@ export const evaluateModel = (x: number, k: number, m: number) => {
     return (m * (Math.exp(k * (x - 1)) - Math.exp(-k))) / (1 - Math.exp(-k));
 };
 
-export async function deployMockMinipool(signer: SignerWithAddress, rocketPool: RocketPool, signers: Signers, bondValue: BigNumber) {
+export const assertMultipleTransfers = async (
+    tx: ContractTransaction,
+    expectedTransfers: Array<{ from: string, to: string, value: BigNumber }>
+) => {
+    // Wait for the transaction to be mined
+    const receipt = await tx.wait();
+
+    // Ensure events are defined or default to an empty array
+    const events = receipt.events ?? [];
+
+    // Filter for all Transfer events
+    const transferEvents = events.filter(event => event.event === "Transfer");
+
+    // Check if there's at least one Transfer event
+    expect(transferEvents, "No Transfer events found").to.be.an('array').that.is.not.empty;
+
+    // Iterate over expected transfers and match them with actual transfers
+    let foundTransfers = [];
+    for (const expectedTransfer of expectedTransfers) {
+        const match = transferEvents.find(event => {
+            const { from, to, value } = event.args as any;
+            return from === expectedTransfer.from && to === expectedTransfer.to && value.eq(expectedTransfer.value);
+        });
+
+        if (match) {
+            foundTransfers.push(match);
+        }
+    }
+
+    // If the number of found transfers does not match the expected number, print details of all transfers
+    if (foundTransfers.length !== expectedTransfers.length) {
+        console.log("Not all expected Transfers were matched. Actual Transfer events:");
+        console.table(transferEvents.map(event => ({
+            from: event.args!.from,
+            to: event.args!.to,
+            value: event.args!.value.toString()
+        })));
+        expect.fail("Not all expected Transfers did not match");
+    }
+};
+
+
+export const assertSingleTransferExists = async (
+    tx: ContractTransaction,
+    expectedFrom: string,
+    expectedTo: string,
+    expectedValue: BigNumber
+) => {
+    // Wait for the transaction to be mined
+    const receipt = await tx.wait();
+
+    // Ensure events are defined or default to an empty array
+    const events = receipt.events ?? [];
+
+    // Filter for all Transfer events
+    const transferEvents = events.filter(event => event.event === "Transfer");
+
+    // Check if there's at least one Transfer event
+    expect(transferEvents, "No Transfer events found").to.be.an('array').that.is.not.empty;
+
+    // Track if the expected Transfer event is found
+    let isExpectedTransferFound = false;
+
+    // Store details of all transfers for pretty printing if needed
+    const allTransfers = [];
+
+    for (const transferEvent of transferEvents) {
+        const { from, to, value } = transferEvent.args as any;
+        allTransfers.push({ from, to, value: value.toString() });
+
+        // Check if this event matches the expected values
+        if (from === expectedFrom && to === expectedTo && value.toString() === expectedValue.toString()) {
+            if (isExpectedTransferFound) {
+                // Found more than one matching Transfer event, which is not expected
+                expect.fail("Multiple Transfer events match the expected values");
+            }
+            isExpectedTransferFound = true;
+        }
+    }
+
+    // If expected Transfer event is not found, pretty print all transfers
+    if (!isExpectedTransferFound) {
+        console.log("No Transfer event matched the expected values. All Transfer events:");
+        console.table(allTransfers);
+        expect.fail("Expected Transfer event not found");
+    }
+};
+
+
+
+export async function deployValidatorAccount(signer: SignerWithAddress, protocol: Protocol, signers: Signers, bondValue: BigNumber) {
+    const salt = 3;
+
+    const nextAddress = "0xD9bf496401781cc411AE0F465Fe073872A50D639";
+    const depositData = await generateDepositData(nextAddress, salt);
+
+    const config = {
+        timezoneLocation: 'Australia/Brisbane',
+        bondAmount: bondValue,
+        minimumNodeFee: 0,
+        validatorPubkey: depositData.depositData.pubkey,
+        validatorSignature: depositData.depositData.signature,
+        depositDataRoot: depositData.depositDataRoot,
+        salt: salt,
+        expectedMinipoolAddress: depositData.minipoolAddress
+    }
+
+    const proxyVAAddr = await protocol.validatorAccountFactory.connect(signers.hyperdriver).callStatic.createNewValidatorAccount(config, nextAddress, {
+        value: ethers.utils.parseEther("1")
+    })
+
+    await protocol.validatorAccountFactory.connect(signers.hyperdriver).createNewValidatorAccount(config, nextAddress, {
+        value: ethers.utils.parseEther("1")
+    })
+
+    return proxyVAAddr;
+}
+
+
+export async function deployRPMinipool(signer: SignerWithAddress, rocketPool: RocketPool, signers: Signers, bondValue: BigNumber) {
     await registerNode({ from: signer.address });
 
     // Stake RPL to cover minipools
@@ -129,17 +248,18 @@ export async function printEventDetails(tx: ContractTransaction, contract: Contr
         }
     }
 }
-
-
-
-
-export async function removeFeesOnRPLVault(setupData: SetupData) {
-    await setupData.protocol.vCRPL.connect(setupData.signers.admin).setFees(0, 0);
+/**
+* Counts the `ProxyCreated` events emitted by the ValidatorAccountFactory contract.
+* @param provider The Ethereum provider.
+* @returns The number of `ProxyCreated` events.
+*/
+export async function countProxyCreatedEvents(setupData: SetupData): Promise<number> {
+    const events = await setupData.protocol.validatorAccountFactory.queryFilter(setupData.protocol.validatorAccountFactory.filters.ProxyCreated());
+    return events.length;
 }
 
-export async function removeFeesOnBothVaults(setupData: SetupData) {
-    await setupData.protocol.vCRPL.connect(setupData.signers.admin).setFees(0, 0);
-    await setupData.protocol.vCWETH.connect(setupData.signers.admin).setFees(0, 0, 0, 0);
+export async function predictDeploymentAddress(address: string, factoryNonceOffset: number): Promise<string> {
+    return ethers.utils.getContractAddress({ from: address, nonce: factoryNonceOffset });
 }
 
 export const registerNewValidator = async (setupData: SetupData, nodeOperators: SignerWithAddress[]) => {
@@ -156,7 +276,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
     for (let i = 0; i < nodeOperators.length; i++) {
         const nodeOperator = nodeOperators[i];
 
-        const mockMinipool = await deployMockMinipool(nodeOperator, rocketPool, setupData.signers, bondValue);
+        const mockMinipool = await deployRPMinipool(nodeOperator, rocketPool, setupData.signers, bondValue);
 
         await rocketPool.rockStorageContract.connect(nodeOperator).setWithdrawalAddress(nodeOperator.address, setupData.protocol.depositPool.address, true);
 
@@ -184,9 +304,21 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
     }
 };
 
+// TODO: Make sure the minimums are actaully met. 
+// WARNING: This function does not work as exepcted
 export async function prepareOperatorDistributionContract(setupData: SetupData, numOperators: Number) {
-    // sends 8 * numOperators eth to operatorDistribution contract
-    const requiredEth = ethers.utils.parseEther("8").mul(BigNumber.from(numOperators));
+    const vweth = setupData.protocol.vCWETH;
+    const depositAmount = ethers.utils.parseEther("8").mul(BigNumber.from(numOperators));
+    const vaultMinimum = await vweth.getRequiredCollateralAfterDeposit(depositAmount);
+
+    // await setupData.protocol.wETH.connect(setupData.signers.ethWhale).deposit({ value: vaultMinimum });
+    // await setupData.protocol.wETH.connect(setupData.signers.ethWhale).approve(setupData.protocol.vCWETH.address, vaultMinimum);
+    // await setupData.protocol.vCWETH.connect(setupData.signers.ethWhale).deposit(vaultMinimum, setupData.signers.ethWhale.address);
+
+    // sends 8 * numOperators eth to operatorDistribution contract * fee split due to fallback usage
+    console.log("REQUIRE COLLAT", vaultMinimum)
+    const requiredEth = depositAmount.add(vaultMinimum).mul(ethers.utils.parseUnits("1.1", 5)).div(ethers.utils.parseUnits("1", 5));
+    console.log("REQUIRE+ETH", requiredEth);
     await setupData.signers.admin.sendTransaction({
         to: setupData.protocol.operatorDistributor.address,
         value: requiredEth

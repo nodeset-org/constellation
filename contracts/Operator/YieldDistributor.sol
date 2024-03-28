@@ -8,12 +8,16 @@ import '../Whitelist/Whitelist.sol';
 import '../Utils/ProtocolMath.sol';
 import '../UpgradeableBase.sol';
 
+import '../Tokens/WETHVault.sol';
+
 import '../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol';
 import '../Interfaces/RocketTokenRPLInterface.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/Oracles/IXRETHOracle.sol';
 import '../Interfaces/IWETH.sol';
 import '../Utils/Constants.sol';
+
+import "hardhat/console.sol";
 
 struct Reward {
     address recipient;
@@ -118,6 +122,11 @@ contract YieldDistributor is UpgradeableBase {
      * @param _endInterval The interval (inclusive) at which to end distributing the rewards.
      */
     function harvest(address _rewardee, uint256 _startInterval, uint256 _endInterval) public nonReentrant {
+        console.logAddress(_rewardee);
+        console.log("start Interval", _startInterval);
+        console.log("end Interval", _endInterval);
+        console.log("curr Interval", currentInterval);
+
         require(_startInterval <= _endInterval, 'Start interval must be less than or equal to end interval');
         require(_endInterval < currentInterval, 'End interval must be less than current interval');
         require(_rewardee != address(0), 'rewardee cannot be zero address');
@@ -139,6 +148,10 @@ contract YieldDistributor is UpgradeableBase {
             Claim memory claim = claims[i];
 
             uint256 fullEthReward = ((claim.amount * 1e18) / claim.numOperators) / 1e18;
+
+            console.log("full reward", i);
+            console.log(fullEthReward);
+            console.log(claim.amount);
 
             uint256 operatorsPortion = ProtocolMath.exponentialFunction(
                 operator.currentValidatorCount,
@@ -172,6 +185,9 @@ contract YieldDistributor is UpgradeableBase {
      * @dev This function records the rewards for the current interval and increments the interval counter. It's primarily triggered when there's a change in the number of operators or when the duration of the current interval exceeds the `maxIntervalLengthSeconds`. Also, it triggers the process of distributing rewards to the minipools via the `OperatorDistributor`. Intervals without yield are skipped, except for the first interval.
      */
     function finalizeInterval() public onlyProtocolOrAdmin {
+        console.log("calling claim node operator fee");
+        WETHVault(_directory.getWETHVaultAddress()).claimFees();
+
         if (yieldAccruedInInterval == 0 && currentInterval > 0) {
             return;
         }

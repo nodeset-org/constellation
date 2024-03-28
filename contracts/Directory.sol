@@ -8,14 +8,20 @@ import './Interfaces/RocketTokenRPLInterface.sol';
 import './Interfaces/Oracles/IXRETHOracle.sol';
 import './Interfaces/RocketPool/IRocketStorage.sol';
 import './Interfaces/ISanctions.sol';
+import "./Interfaces/RocketPool/IRocketNetworkPrices.sol";
+import "./Interfaces/RocketPool/IRocketNetworkPenalties.sol";
+
 import './UpgradeableBase.sol';
+import './Utils/RocketPoolEncoder.sol';
 import './Utils/Constants.sol';
+
+import "hardhat/console.sol";
 
 //open question: should we be using rocket storage for getting rocket pool contracts?
 struct Protocol {
     address whitelist;
     address payable wethVault;
-    address payable rplVault;
+    address rplVault;
     address payable depositPool;
     address payable operatorDistributor;
     address validatorAccountFactory;
@@ -32,6 +38,12 @@ struct Protocol {
     address sanctions;
 }
 
+// todo: move RP contracts out of protocol and into this struct
+struct RocketIntegrations {
+    address rocketNetworkPenalties;
+    address rocketNetworkPrices;
+}
+
 /// @custom:security-contact info@nodeoperator.org
 /// @notice The Directory contract holds references to all protocol contracts and role mechanisms.
 /// @dev The Directory contract is a central component of the protocol, managing contract addresses and access control roles.
@@ -42,6 +54,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     event SanctionsDisabled();
 
     Protocol private _protocol;
+    RocketIntegrations private _integrations;
     address private _treasury;
     bool private _enabledSanctions;
 
@@ -73,7 +86,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.wethVault;
     }
 
-    function getRPLVaultAddress() public view returns (address payable) {
+    function getRPLVaultAddress() public view returns (address) {
         return _protocol.rplVault;
     }
 
@@ -131,6 +144,14 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     function getUniswapV3PoolAddress() public view returns (address) {
         return _protocol.uniswapV3Pool;
+    }
+
+    function getRocketNetworkPenalties() public view returns(IRocketNetworkPenalties) {
+        return IRocketNetworkPenalties(_integrations.rocketNetworkPenalties);
+    }
+
+    function getRocketNetworkPrices() public view returns(IRocketNetworkPrices) {
+        return IRocketNetworkPrices(_integrations.rocketNetworkPrices);
     }
 
     function initialize(Protocol memory newProtocol, address treasury, address admin) public initializer {
@@ -208,6 +229,21 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
         _treasury = treasury;
         _protocol = newProtocol;
+
+        // set rocket integrations
+        _integrations.rocketNetworkPenalties = IRocketStorage(newProtocol.rocketStorage).getAddress(
+            RocketpoolEncoder.generateBytes32Identifier("rocketNetworkPenalties")
+        );
+
+        console.log("directory value rocket network penality");
+        console.logAddress(_integrations.rocketNetworkPenalties);
+
+        _integrations.rocketNetworkPrices = IRocketStorage(newProtocol.rocketStorage).getAddress(
+            RocketpoolEncoder.generateBytes32Identifier("rocketNetworkPrices")
+        );
+
+        console.log("directory value rocket network price");
+        console.logAddress(_integrations.rocketNetworkPrices);
 
         _enabledSanctions = true;
     }

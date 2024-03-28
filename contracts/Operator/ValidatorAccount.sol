@@ -5,6 +5,7 @@ import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 import './ValidatorAccountFactory.sol';
 
+import '../Whitelist/Whitelist.sol';
 import './OperatorDistributor.sol';
 import '../Whitelist/Whitelist.sol';
 import '../Utils/ProtocolMath.sol';
@@ -20,7 +21,6 @@ import '../Utils/Errors.sol';
 /// @custom:security-contact info@nodeset.io
 /// @notice distributes rewards in weth to node operators
 contract ValidatorAccount is UpgradeableBase, Errors {
-
     struct ValidatorConfig {
         string timezoneLocation;
         uint256 bondAmount;
@@ -40,39 +40,42 @@ contract ValidatorAccount is UpgradeableBase, Errors {
     uint256 public lockStarted;
     uint256 public lockedEth;
 
+    uint256 public bond;
+
     function initialize(
         address _directory,
         address _nodeOperator,
         address _predictedAddress,
         ValidatorConfig calldata _config
     ) public payable initializer {
-        if(_predictedAddress != address(this)) {
-            revert BadPredictedCreation(
-                _predictedAddress,
-                address(this)
-            );
+        if (_predictedAddress != address(this)) {
+            revert BadPredictedCreation(_predictedAddress, address(this));
         }
 
         vaf = ValidatorAccountFactory(msg.sender);
 
         super.initialize(_directory);
-        nodeOperator = _nodeOperator;
+
+        Directory directory = Directory(_directory);
 
         lockedEth = msg.value;
+        bond = _config.bondAmount;
 
-        OperatorDistributor(Directory(_directory).getOperatorDistributorAddress()).OnMinipoolCreated(
-            _config.expectedMinipoolAddress,
-            nodeOperator,
-            _config.bondAmount
-        );
+        bool isWhitelisted = Whitelist(directory.getWhitelistAddress()).getIsAddressInWhitelist(_nodeOperator);
+        require(isWhitelisted, Constants.OPERATOR_NOT_FOUND_ERROR);
 
-        IRocketStorage(Directory(_directory).getRocketStorageAddress()).setWithdrawalAddress(
-            address(this),
-            Directory(_directory).getDepositPoolAddress(),
-            true
-        );
+        nodeOperator = _nodeOperator;
+
+        OperatorDistributor od = OperatorDistributor(directory.getOperatorDistributorAddress());
+
+        od.OnMinipoolCreated(_config.expectedMinipoolAddress, nodeOperator, _config.bondAmount);
 
         _registerNode(_config.timezoneLocation, _config.bondAmount, _nodeOperator);
+
+        address dp = directory.getDepositPoolAddress();
+        IRocketNodeManager(directory.getRocketNodeManagerAddress()).setRPLWithdrawalAddress(address(this), dp, true);
+        IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), dp, true);
+        od.performTopUp(address(this), od.nodeOperatorEthStaked(_nodeOperator));
 
         _createMinipool(
             _config.bondAmount,
@@ -83,13 +86,9 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             _config.salt,
             _config.expectedMinipoolAddress
         );
-
     }
 
     function _registerNode(string calldata _timezoneLocation, uint256 _bond, address _nodeOperator) internal {
-        if (nodeOperator == address(0)) {
-            revert ZeroAddressError();
-        }
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).registerNode(_timezoneLocation);
         OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(
             _nodeOperator,
@@ -134,6 +133,8 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
 
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeOperatorDissolved(nodeOperator, bond);
+
         minipool.close();
     }
 
@@ -148,6 +149,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         lockedEth = 0;
         (bool success, bytes memory data) = nodeOperator.call{value: vaf.lockThreshhold()}('');
         if (!success) {
+            console.log('LowLevelEthTransfer 2');
             revert LowLevelEthTransfer(success, data);
         }
     }
@@ -156,10 +158,11 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
-        require(minipool.getStatus() == MinipoolStatus.Dissolved, "minipool must be dissolved");
+        require(minipool.getStatus() == MinipoolStatus.Dissolved, 'minipool must be dissolved');
 
         (bool success, bytes memory data) = _directory.getDepositPoolAddress().call{value: _amount}('');
         if (!success) {
+            console.log('LowLevelEthTransfer 3');
             revert LowLevelEthTransfer(success, data);
         }
     }

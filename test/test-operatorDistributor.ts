@@ -8,7 +8,6 @@ import { IMinipool, MockMinipool } from "../typechain-types";
 
 describe.skip("Operator Distributor", function () {
 
-	// TODO: Why does this only work when the test is run on its own?
 	it("Tops up the RPL stake if it is below the minimum", async function () {
 		// load fixture
 		const setupData = await loadFixture(protocolFixture);

@@ -2,6 +2,8 @@
 pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol';
+import '@openzeppelin/contracts/utils/math/Math.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 import './WETHVault.sol';
 
@@ -9,17 +11,23 @@ import '../UpgradeableBase.sol';
 import '../DepositPool.sol';
 import '../Operator/OperatorDistributor.sol';
 
+import 'hardhat/console.sol';
+
 /// @custom:security-contact info@nodeoperator.org
 contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
+    event AdminFeeClaimed(uint256 amount);
 
     string constant NAME = 'Constellation RPL';
     string constant SYMBOL = 'xRPL'; // Vaulted Constellation RPL
 
-    bool enforceWethCoverageRatio;
+    bool public enforceWethCoverageRatio;
 
-    uint256 public makerFeeBasePoint; // admin maker fee
-    uint256 public takerFeeBasePoint; // admin taker fee
+    address public admin;
+    uint256 public adminFeeBasisPoint;
+
+    uint256 public principal; // Total principal amount (sum of all deposits)
+    uint256 public lastIncomeClaimed; // Tracks the amount of income already claimed by the admin
 
     uint256 public collateralizationRatioBasePoint; // collateralization ratio
 
@@ -38,56 +46,10 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(rplToken));
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
-        makerFeeBasePoint = 0.05e5;
-        takerFeeBasePoint = 0.05e5;
         collateralizationRatioBasePoint = 0.02e5;
         wethCoverageRatio = 1.75e5;
         enforceWethCoverageRatio = true;
-    }
-
-    /**
-     * @notice Calculates the amount that will be deposited after accounting for the maker fee.
-     * @dev This function subtracts the maker fee from the total assets to provide an accurate preview of the deposit amount.
-     * It overrides the previewDeposit function in the parent contract to include the deduction of the maker fee.
-     * @param assets The total assets that the user intends to deposit.
-     * @return The amount that will be deposited after accounting for the maker fee.
-     */ function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
-        uint256 fee = _feeOnTotal(assets, makerFeeBasePoint);
-        return super.previewDeposit(assets - fee);
-    }
-
-    /**
-     * @notice Calculates the total assets associated with a specified number of shares, inclusive of the maker fee.
-     * @dev This function first determines the raw assets for the given shares from the parent contract and then adds the maker fee.
-     * It overrides the previewMint function in the parent contract to include the addition of the maker fee.
-     * @param shares The number of shares for which the total assets are being determined.
-     * @return The total assets corresponding to the provided shares, inclusive of the maker fee.
-     */ function previewMint(uint256 shares) public view virtual override returns (uint256) {
-        uint256 assets = super.previewMint(shares);
-        return assets + _feeOnRaw(assets, makerFeeBasePoint);
-    }
-
-    /**
-     * @notice Calculates the number of shares required to withdraw a specified amount of assets, taking into account the taker fee.
-     * @dev This function first adjusts the assets by adding the taker fee and then determines the corresponding shares using the parent contract's function.
-     * It overrides the previewWithdraw function in the parent contract to include the consideration of the taker fee.
-     * @param assets The amount of assets for which the corresponding shares are being determined.
-     * @return The number of shares required to withdraw the specified amount of assets, considering the taker fee.
-     */ function previewWithdraw(uint256 assets) public view virtual override returns (uint256) {
-        uint256 fee = _feeOnRaw(assets, takerFeeBasePoint);
-        return super.previewWithdraw(assets + fee);
-    }
-
-    /**
-     * @notice Calculates the amount of assets obtainable for a specified number of shares upon redemption, after deducting the taker fee.
-     * @dev This function first calculates the assets corresponding to the given shares using the parent contract's function.
-     * It then adjusts the resulting assets by deducting the taker fee.
-     * It overrides the previewRedeem function in the parent contract to account for the taker fee deduction.
-     * @param shares The number of shares to be redeemed for assets.
-     * @return The amount of assets obtainable for the specified shares after considering the taker fee deduction.
-     */ function previewRedeem(uint256 shares) public view virtual override returns (uint256) {
-        uint256 assets = super.previewRedeem(shares);
-        return assets - _feeOnTotal(assets, takerFeeBasePoint);
+        adminFeeBasisPoint = 0.01e5;
     }
 
     /**
@@ -107,24 +69,17 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
         require(
-            enforceWethCoverageRatio && vweth.tvlRatioEthRpl() >= wethCoverageRatio,
+            enforceWethCoverageRatio || vweth.tvlRatioEthRpl() >= wethCoverageRatio,
             'insufficient weth coverage ratio'
         );
 
-        uint256 fee = _feeOnTotal(assets, makerFeeBasePoint);
-
-        address recipient1 = _directory.getTreasuryAddress();
+        principal += assets;
 
         address payable pool = _directory.getDepositPoolAddress();
-        DepositPool(pool).sendRplToDistributors();
-
+        _claimAdminFee();
         super._deposit(caller, receiver, assets, shares);
-
-        if (fee > 0 && recipient1 != address(this)) {
-            SafeERC20.safeTransfer(IERC20(asset()), recipient1, fee);
-        }
-        // transfer the rest of the deposit to the pool for utilization
-        SafeERC20.safeTransfer(IERC20(asset()), pool, assets - fee);
+        SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
+        DepositPool(pool).sendRplToDistributors();
     }
 
     /**
@@ -148,46 +103,31 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
-        uint256 fee = _feeOnRaw(assets, takerFeeBasePoint);
-        address recipient1 = _directory.getTreasuryAddress();
 
-        DepositPool(_directory.getDepositPoolAddress()).sendRplToDistributors();
+        _claimAdminFee();
+
+        // required violation of CHECKS/EFFECTS/INTERACTIONS
+        principal -= assets;
 
         super._withdraw(caller, receiver, owner, assets, shares);
+        DepositPool(_directory.getDepositPoolAddress()).sendRplToDistributors();
+    }
 
-        if (fee > 0 && recipient1 != address(this)) {
-            SafeERC20.safeTransfer(IERC20(asset()), recipient1, fee);
+    function currentIncomeFromRewards() public view returns (uint256) {
+        unchecked {
+            uint256 tvl = super.totalAssets() +
+                DepositPool(_directory.getDepositPoolAddress()).getTvlRpl() +
+                OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl();
+
+            if (tvl < principal) {
+                return 0;
+            }
+            return tvl - principal;
         }
     }
 
-    /**
-     * @notice Computes the fee to be applied on a given asset amount.
-     * @dev This function uses the provided fee base point to determine the fee applicable on
-     * the raw assets. It multiplies the asset amount with the fee base point and divides by 1e5
-     * (to represent percentages up to two decimal places) to get the fee value. Rounding is done
-     * upwards for accuracy.
-     * @param assets The raw amount of assets for which the fee needs to be calculated.
-     * @param feeBasePoint The fee rate as a base point (e.g., 0.05e5 represents a 0.05% fee rate).
-     * @return The calculated fee amount to be applied on the assets.
-     */
-    function _feeOnRaw(uint256 assets, uint256 feeBasePoint) private pure returns (uint256) {
-        return assets.mulDiv(feeBasePoint, 1e5, Math.Rounding.Up);
-    }
-
-    /**
-     * @notice Computes the fee to be deducted from the total asset amount.
-     * @dev This function uses the provided fee base point to determine the fee applicable on
-     * the total assets. The calculation method used here is different from _feeOnRaw. This
-     * method is applied when the total assets include the fee itself. The fee is derived by
-     * multiplying the asset amount with the fee base point and dividing it by the sum of the
-     * fee base point and 1e5 (to represent percentages up to two decimal places). Rounding
-     * is done upwards for accuracy.
-     * @param assets The total amount of assets (inclusive of fee) for which the fee needs to be calculated.
-     * @param feeBasePoint The fee rate as a base point (e.g., 0.05e5 represents a 0.05% fee rate).
-     * @return The calculated fee amount to be deducted from the total assets.
-     */
-    function _feeOnTotal(uint256 assets, uint256 feeBasePoint) private pure returns (uint256) {
-        return assets.mulDiv(feeBasePoint, feeBasePoint + 1e5, Math.Rounding.Up);
+    function currentAdminIncomeFromRewards() public view returns (uint256) {
+        return currentIncomeFromRewards().mulDiv(adminFeeBasisPoint, 1e5);
     }
 
     /**
@@ -196,14 +136,15 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * 1. Assets directly held in this vault.
      * 2. Assets held in the associated DepositPool.
      * 3. Assets held in the associated OperatorDistributor.
-     * The sum of these gives the overall total assets managed by the vault.
+     * The sum of these gives the overall total assets managed by the vault - admin owed rewards.
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
         return
-            super.totalAssets() +
-            DepositPool(_directory.getDepositPoolAddress()).getTvlRpl() +
-            OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl();
+            (super.totalAssets() +
+                DepositPool(_directory.getDepositPoolAddress()).getTvlRpl() +
+                OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl()) -
+            currentAdminIncomeFromRewards();
     }
 
     /**
@@ -213,9 +154,10 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * the amount of collateral needed to achieve the desired ratio. Otherwise, it returns 0, indicating no additional collateral
      * is needed. The desired collateralization ratio is defined by `collateralizationRatioBasePoint`.
      * @return The amount of asset required to maintain the desired collateralization ratio, or 0 if no additional collateral is needed.
-     */ function getRequiredCollateral() public view returns (uint256) {
+     */
+    function getRequiredCollateral() public view returns (uint256) {
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
-        uint256 fullBalance = DepositPool(_directory.getDepositPoolAddress()).getTvlRpl();
+        uint256 fullBalance = totalAssets();
 
         uint256 requiredBalance = collateralizationRatioBasePoint.mulDiv(fullBalance, 1e5, Math.Rounding.Up);
 
@@ -224,17 +166,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**ADMIN FUNCTIONS */
 
-    /**
-     * @notice Sets the fee rates for both makers and takers.
-     * @dev This function allows the admin to adjust the fee rates for both makers and takers.
-     * The sum of both fee rates must not exceed 100%.
-     * @param _makerFeeBasePoint The fee rate (expressed in base points, where 1e5 represents 100%) to be set for makers.
-     * @param _takerFeeBasePoint The fee rate (expressed in base points, where 1e5 represents 100%) to be set for takers.
-     */
-    function setFees(uint256 _makerFeeBasePoint, uint256 _takerFeeBasePoint) external onlyAdmin {
-        require(_makerFeeBasePoint + _takerFeeBasePoint <= 1e5, 'fees must be lte 100%');
-        makerFeeBasePoint = _makerFeeBasePoint;
-        takerFeeBasePoint = _takerFeeBasePoint;
+    function setAdminFee(uint256 _adminFeeBasePoint) external onlyAdmin {
+        require(_adminFeeBasePoint <= 1e5, 'Fee too high');
+        adminFeeBasisPoint = _adminFeeBasePoint;
     }
 
     /**
@@ -257,5 +191,45 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function setEnforceWethCoverageRatio(bool _enforceWethCoverageRatio) external onlyAdmin {
         enforceWethCoverageRatio = _enforceWethCoverageRatio;
+    }
+
+    /**
+     * @dev Internal function to claim the admin fees.
+     * This function calculates the current admin income from rewards, determines the fee amount based on the income
+     * that hasn't been claimed yet, and transfers this fee out to the treasury. It then updates the `lastIncomeClaimed`
+     * to the latest claimed amount. It is used within deposit and withdrawal operations to periodically claim the admin fee.
+     *
+     * Emits an `AdminFeeClaimed` event with the amount of the fee claimed.
+     */
+    function _claimAdminFee() internal {
+        uint256 currentAdminIncome = currentAdminIncomeFromRewards();
+        uint256 feeAmount = currentAdminIncome - lastIncomeClaimed;
+
+        _doFeeTransferOut(_directory.getTreasuryAddress(), feeAmount);
+
+        // Update lastIncomeClaimed to reflect the new total income claimed
+        lastIncomeClaimed = currentAdminIncomeFromRewards();
+
+        emit AdminFeeClaimed(feeAmount);
+    }
+
+    function _doFeeTransferOut(address _to, uint256 _amount) internal {
+        IERC20 asset = IERC20(asset());
+        uint256 balance = asset.balanceOf(address(this));
+        uint256 shortfall = _amount > balance ? _amount - balance : 0;
+        if (shortfall > 0) {
+            SafeERC20.safeTransfer(asset, _to, balance);
+            OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+            uint256 transferedIn = od.transferRplToVault(shortfall);
+            console.log("transfering out rpl to vault");
+            SafeERC20.safeTransfer(asset, _to, transferedIn);
+        } else {
+            SafeERC20.safeTransfer(asset, _to, _amount);
+        }
+    }
+
+    /// Claims entire admin fee
+    function claimAdminFee() public onlyAdmin {
+        _claimAdminFee();
     }
 }
