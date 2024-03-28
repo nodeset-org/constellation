@@ -202,7 +202,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         nodeOperatorEthStaked[_nodeOperator] += _bond;
 
         // by default this bonds 150% of stake according to max stake defined here: https://docs.rocketpool.net/guides/node/create-validator#staking-rpl
-        // performTopUp(_validatorAccount, nodeOperatorEthStaked[_nodeOperator]);
         (bool success, bytes memory data) = _validatorAccount.call{value: _bond}('');
         if (!success) {
             console.log("LowLevelEthTransfer 1");
