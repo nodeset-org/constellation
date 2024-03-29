@@ -81,6 +81,7 @@ contract DepositPool is UpgradeableBase {
         // Convert entire WETH balance of this contract to ETH
         IWETH WETH = IWETH(_directory.getWETHAddress());
         uint256 wethBalance = WETH.balanceOf(address(this));
+        // TODO: Wouldn't be more optimized to start with weth then unwrap if needed?
         WETH.withdraw(wethBalance);
         console.log('sendEthToDistributors.B');
 

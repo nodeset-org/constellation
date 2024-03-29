@@ -42,7 +42,7 @@ describe("Yield Distributor", function () {
 
     await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
 
-    await signers.ethWhale.sendTransaction({ to: protocol.operatorDistributor.address, value: ethers.utils.parseEther("24") });
+    await signers.ethWhale.sendTransaction({ to: protocol.operatorDistributor.address, value: ethers.utils.parseEther("30") });
     await registerNewValidator(setupData, [signers.random, signers.random2, signers.random3]);
 
     const tx1 = await protocol.yieldDistributor.connect(signers.ethWhale).harvest(signers.random.address, 1, 1);
@@ -77,7 +77,7 @@ describe("Yield Distributor", function () {
 
     await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
 
-    await signers.ethWhale.sendTransaction({ to: protocol.operatorDistributor.address, value: ethers.utils.parseEther("24") });
+    await signers.ethWhale.sendTransaction({ to: protocol.operatorDistributor.address, value: ethers.utils.parseEther("30") });
     await registerNewValidator(setupData, [signers.random, signers.random2, signers.random3]);
 
     // update operator controllers for each operator

@@ -263,6 +263,55 @@ export async function predictDeploymentAddress(address: string, factoryNonceOffs
 }
 
 export const registerNewValidator = async (setupData: SetupData, nodeOperators: SignerWithAddress[]) => {
+    const requiredEth = ethers.utils.parseEther("8").mul(nodeOperators.length);
+    if ((await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)).lt(requiredEth)) {
+        throw new Error(`Not enough eth in operatorDistributor contract to register ${nodeOperators.length} validators. Required ${ethers.utils.formatEther(requiredEth)} eth but only have ${ethers.utils.formatEther(await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address))} eth`);
+    }
+
+    const { protocol, signers } = setupData;
+
+    for(let i = 0; i < nodeOperators.length; i++) {
+        console.log("setting up node operator %s of %s", i+1, nodeOperators.length)
+        const nodeOperator = nodeOperators[i];
+
+        const bond = ethers.utils.parseEther("8");
+        const salt = i;
+    
+        //expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(false);
+        await prepareOperatorDistributionContract(setupData, 2);
+        //expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(true);
+    
+        if(!(await protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address))) {
+            await protocol.whitelist.connect(signers.admin).addOperator(nodeOperator.address);
+        }
+        
+        const deploymentCount = await countProxyCreatedEvents(setupData);
+        const nextAddress = await predictDeploymentAddress(protocol.validatorAccountFactory.address, deploymentCount + 1)
+        const depositData = await generateDepositData(nextAddress, salt);
+    
+        const config = {
+            timezoneLocation: 'Australia/Brisbane',
+            bondAmount: bond,
+            minimumNodeFee: 0,
+            validatorPubkey: depositData.depositData.pubkey,
+            validatorSignature: depositData.depositData.signature,
+            depositDataRoot: depositData.depositDataRoot,
+            salt: salt,
+            expectedMinipoolAddress: depositData.minipoolAddress
+        }
+    
+        await protocol.validatorAccountFactory.connect(nodeOperator).createNewValidatorAccount(config, nextAddress, {
+            value: ethers.utils.parseEther("1")
+        })
+    
+        expect(await protocol.directory.hasRole(ethers.utils.id("FACTORY_ROLE"), protocol.validatorAccountFactory.address)).equals(true)
+        expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), protocol.validatorAccountFactory.address)).equals(true)
+        expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), nextAddress)).equals(true)
+    }
+} 
+
+// Deprecated: Don't use
+export const registerNewValidatorDeprecated = async (setupData: SetupData, nodeOperators: SignerWithAddress[]) => {
 
     // one currently needs 8 eth in the operatorDistribution contract to register a validator for each node operator
     const requiredEth = ethers.utils.parseEther("8").mul(nodeOperators.length);
@@ -297,7 +346,8 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         // admin will reimburse the node operator for the minipool
         let operatorData = await setupData.protocol.whitelist.getOperatorAtAddress(nodeOperator.address);
         const lastCount = operatorData.currentValidatorCount;
-        await setupData.protocol.operatorDistributor.connect(setupData.signers.admin).reimburseNodeForMinipool(sig, mockMinipool.address);
+        //await setupData.protocol.operatorDistributor.connect(setupData.signers.admin).reimburseNodeForMinipool(sig, mockMinipool.address);
+        // FUNCTION DNE
         operatorData = await setupData.protocol.whitelist.getOperatorAtAddress(nodeOperator.address);
         expect(operatorData.currentValidatorCount).to.equal(lastCount + 1);
 
