@@ -74,13 +74,13 @@ const config: HardhatUserConfig = {
     },
 
     goerli: {
-      url: process.env.GOERLI_URL as string,
-      accounts: [process.env.DEPLOYER_PRIVATE_KEY as string],
+      url: process.env.GOERLI_URL || "" as string,
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY || "" as string],
     },
 
     holesky: {
-      url: process.env.HOLESKY_RPC as string,
-      accounts: [process.env.HOLESKY_DEPLOYER as string, process.env.HOLEKSY_ADMIN as string],
+      url: process.env.HOLESKY_RPC || "" as string,
+      accounts: [process.env.HOLESKY_DEPLOYER || "" as string, process.env.HOLEKSY_ADMIN || "" as string],
     }
   },
   mocha: {
@@ -88,7 +88,7 @@ const config: HardhatUserConfig = {
   },
 
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY as string,
+    apiKey: process.env.ETHERSCAN_API_KEY || "" as string,
   },
 
   contractSizer: {
