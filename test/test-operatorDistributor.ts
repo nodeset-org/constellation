@@ -6,7 +6,7 @@ import { BigNumber as BN } from "ethers";
 import { getMinipoolsInProtocol, getMockMinipoolsInProtocol, prepareOperatorDistributionContract, printEventDetails, registerNewValidator, upgradePriceFetcherToMock } from "./utils/utils";
 import { IMinipool, MockMinipool } from "../typechain-types";
 
-describe.skip("Operator Distributor", function () {
+describe("Operator Distributor", function () {
 
 	it("Tops up the RPL stake if it is below the minimum", async function () {
 		// load fixture
