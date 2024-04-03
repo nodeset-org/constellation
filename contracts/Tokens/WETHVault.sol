@@ -174,18 +174,23 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function currentIncomeFromRewards() public view returns (uint256) {
         unchecked {
             DepositPool dp = DepositPool(getDirectory().getDepositPoolAddress());
+            console.log("WETHVault.currentIncomeFromRewards()");
+            console.log(gasleft());
+            console.log("getDirectory()");
+            console.log("getDirectory().getOperatorDistributorAddress()");
             OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
             uint256 tvl = super.totalAssets() + getDistributableYield() + dp.getTvlEth() + od.getTvlEth();
 
             if (tvl < principal) {
                 return 0;
             }
-            //uint256 currentAdminIncome = (tvl - principal).mulDiv(adminFeeBasisPoint, 1e5);
             return tvl - principal;
         }
     }
 
     function totalAssets() public view override returns (uint256) {
+        //console.log("WETHVault.totalAssets()");
+        //console.log(getDirectory().getDepositPoolAddress());
         DepositPool dp = DepositPool(getDirectory().getDepositPoolAddress());
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         uint256 currentIncome = currentIncomeFromRewards();

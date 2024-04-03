@@ -33,6 +33,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
     }
 
     ValidatorAccountFactory public vaf;
+    ValidatorConfig public config;
 
     IMinipool public minipool;
     address public nodeOperator;
@@ -53,6 +54,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         }
 
         vaf = ValidatorAccountFactory(msg.sender);
+        config = _config;
 
         super.initialize(_directory);
 
@@ -115,7 +117,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         }
 
         lockStarted = block.timestamp;
-
+        console.log("_createMinipool()");
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: targetBond}(
             _bondAmount,
             _minimumNodeFee,
@@ -126,6 +128,11 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             _expectedMinipoolAddress
         );
         minipool = IMinipool(_expectedMinipoolAddress);
+        console.log("_createMinipool.status", uint256(minipool.getStatus()));
+    }
+
+    function stake() external {
+        minipool.stake(config.validatorSignature, config.depositDataRoot);
     }
 
     function close() external {

@@ -262,6 +262,14 @@ export async function predictDeploymentAddress(address: string, factoryNonceOffs
     return ethers.utils.getContractAddress({ from: address, nonce: factoryNonceOffset });
 }
 
+export async function increaseEVMTime(seconds: number) {
+    // Sending the evm_increaseTime request
+    await ethers.provider.send('evm_increaseTime', [seconds]);
+
+    // Mining a new block to apply the EVM time change
+    await ethers.provider.send('evm_mine', []);
+}
+
 export const registerNewValidator = async (setupData: SetupData, nodeOperators: SignerWithAddress[]) => {
     const requiredEth = ethers.utils.parseEther("8").mul(nodeOperators.length);
     if ((await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)).lt(requiredEth)) {
@@ -307,6 +315,18 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         expect(await protocol.directory.hasRole(ethers.utils.id("FACTORY_ROLE"), protocol.validatorAccountFactory.address)).equals(true)
         expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), protocol.validatorAccountFactory.address)).equals(true)
         expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), nextAddress)).equals(true)
+
+        await setupData.rocketPool.rocketDepositPoolContract.deposit({
+            value:ethers.utils.parseEther("32")
+        })
+		await setupData.rocketPool.rocketDepositPoolContract.assignDeposits();
+
+        // waits 32 days which could be a problem for other tests
+        await increaseEVMTime(60 * 60 * 24 * 7 * 32);
+
+        // enter stake mode
+        const validatorAccount = await ethers.getContractAt("ValidatorAccount", nextAddress);
+        await validatorAccount.stake();
     }
 } 
 
@@ -355,7 +375,7 @@ export const registerNewValidatorDeprecated = async (setupData: SetupData, nodeO
 };
 
 // TODO: Make sure the minimums are actaully met. 
-// WARNING: This function does not work as exepcted
+// WARNING: This function does not work as exepcted, WARNING!!! it just sends more eth than required to {::} & RP
 export async function prepareOperatorDistributionContract(setupData: SetupData, numOperators: Number) {
     const vweth = setupData.protocol.vCWETH;
     const depositAmount = ethers.utils.parseEther("8").mul(BigNumber.from(numOperators));
@@ -373,6 +393,9 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
         to: setupData.protocol.operatorDistributor.address,
         value: requiredEth
     });
+
+    // send eth to the rocketpool deposit contract (mint rETH to signers[0])
+    
 
     const rplRequried = await setupData.protocol.operatorDistributor.calculateRequiredRplTopUp(0, requiredEth);
     await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequried);

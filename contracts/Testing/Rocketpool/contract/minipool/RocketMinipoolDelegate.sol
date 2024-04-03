@@ -22,6 +22,9 @@ import '../../types/MinipoolStatus.sol';
 import '../../interface/node/RocketNodeDepositInterface.sol';
 import '../../interface/minipool/RocketMinipoolBondReducerInterface.sol';
 
+
+import 'hardhat/console.sol';
+
 /// @notice Provides the logic for each individual minipool in the Rocket Pool network
 /// @dev Minipools exclusively DELEGATECALL into this contract it is never called directly
 contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolInterface {
@@ -211,6 +214,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Check current status & node deposit status
         require(status == MinipoolStatus.Initialised, 'The pre-deposit can only be made while initialised');
         require(preLaunchValue == 0, 'Pre-deposit already performed');
+        console.log("RocketMinipoolDelegate.preDeposit()");
         // Update node deposit details
         nodeDepositBalance = _bondValue;
         preLaunchValue = msg.value;
@@ -327,6 +331,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         bytes calldata _validatorSignature,
         bytes32 _depositDataRoot
     ) external override onlyMinipoolOwner(msg.sender) onlyInitialised {
+        console.log("RocketMinipoolDelegate.stake()");
         // Get contracts
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(
                 getContractAddress('rocketDAOProtocolSettingsMinipool')
@@ -336,14 +341,19 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             RocketDAONodeTrustedSettingsMinipoolInterface rocketDAONodeTrustedSettingsMinipool = RocketDAONodeTrustedSettingsMinipoolInterface(
                     getContractAddress('rocketDAONodeTrustedSettingsMinipool')
                 );
+   
             uint256 scrubPeriod = rocketDAONodeTrustedSettingsMinipool.getScrubPeriod();
+            console.log("RocketMinipoolDelegate.scrubPeriod=", scrubPeriod);
             // Check current status
             require(status == MinipoolStatus.Prelaunch, 'The minipool can only begin staking while in prelaunch');
             require(block.timestamp > statusTime + scrubPeriod, 'Not enough time has passed to stake');
+            console.log("RocketMinipoolDelegate.(statusTime + scrubPeriod)=", statusTime + scrubPeriod);
             require(!vacant, 'Cannot stake a vacant minipool');
+            console.log("RocketMinipoolDelegate.(!vacant)=", !vacant);
         }
         // Progress to staking
         setStatus(MinipoolStatus.Staking);
+        console.log("RocketMinipoolDelegate.Staking=", true);
         // Load contracts
         DepositInterface casperDeposit = DepositInterface(getContractAddress('casperDeposit'));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(
@@ -362,13 +372,15 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(address(this).balance >= depositAmount, 'Insufficient balance to begin staking');
         // Retrieve validator pubkey from storage
         bytes memory validatorPubkey = rocketMinipoolManager.getMinipoolPubkey(address(this));
-        // Send staking deposit to casper
-        casperDeposit.deposit{value: depositAmount}(
-            validatorPubkey,
-            rocketMinipoolManager.getMinipoolWithdrawalCredentials(address(this)),
-            _validatorSignature,
-            _depositDataRoot
-        );
+        console.log("RocketMinipoolDelegate.validatorPubkey");
+        // Send staking deposit to casper (commented out for hardhat)
+        //casperDeposit.deposit{value: depositAmount}(
+        //    validatorPubkey,
+        //    rocketMinipoolManager.getMinipoolWithdrawalCredentials(address(this)),
+        //    _validatorSignature,
+        //    _depositDataRoot
+        //);
+        console.log("RocketMinipoolDelegate.casperDeposit.deposit");
         // Increment node's number of staking minipools
         rocketMinipoolManager.incrementNodeStakingMinipoolCount(nodeAddress);
     }
@@ -452,6 +464,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(
             getContractAddress('rocketMinipoolManager')
         );
+        console.log("RocketminipoolDelegate.preStake()");
         // Set minipool pubkey
         rocketMinipoolManager.setMinipoolPubkey(_validatorPubkey);
         // Get withdrawal credentials

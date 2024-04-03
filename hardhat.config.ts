@@ -18,6 +18,19 @@ if (dotenvPath !== null) {
   // Handle the case where no .env file is found
   console.error('No .env file found');
 }
+
+if (dotenvPath !== null) {
+  dotenv.config({ path: dotenvPath });
+} else {
+  // Use dummy data for CI/CD testing environment
+  process.env.GOERLI_URL = "http://dummy-goerli-url";
+  process.env.DEPLOYER_PRIVATE_KEY = "0x" + "1".repeat(64); // Dummy private key
+  process.env.HOLESKY_RPC = "http://dummy-holesky-url";
+  process.env.HOLESKY_DEPLOYER = "0x" + "2".repeat(64); // Another dummy private key
+  process.env.HOLEKSY_ADMIN = "0x" + "3".repeat(64); // Yet another dummy private key
+  // Set other necessary dummy environment variables here
+}
+
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [

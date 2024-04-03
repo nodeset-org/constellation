@@ -343,6 +343,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         }
 
         for (uint i = 0; i < numMinipoolsProcessedPerInterval; i++) {
+            console.log("processNextMinipool() at", i);
             _processNextMinipool();
         }
     }
@@ -376,8 +377,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 index = nextMinipoolHavestIndex % minipoolAddresses.length;
         IMinipool minipool = IMinipool(minipoolAddresses[index]);
 
-        if (minipool.getStatus() != MinipoolStatus.Staking) {
-            emit WarningMinipoolNotStaking(address(minipool), minipool.getStatus());
+        MinipoolStatus minipoolStatus = minipool.getStatus();
+        console.log("_processNextMinipool.status=", uint256(minipoolStatus));
+        if (minipoolStatus != MinipoolStatus.Staking) {
+            emit WarningMinipoolNotStaking(address(minipool), minipoolStatus);
             return;
         }
 

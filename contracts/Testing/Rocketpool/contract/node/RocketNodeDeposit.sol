@@ -21,6 +21,8 @@ import '../../interface/node/RocketNodeStakingInterface.sol';
 import '../network/RocketNetworkSnapshots.sol';
 import '../../interface/RocketVaultWithdrawerInterface.sol';
 
+import "hardhat/console.sol";
+
 /// @notice Handles node deposits and minipool creation
 contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaultWithdrawerInterface {
     // Events
@@ -238,6 +240,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
         uint256 _salt,
         address _expectedMinipoolAddress
     ) private {
+        console.log("RocketNodeDeposit._deposit()");
         // Check pre-conditions
         checkDepositsEnabled();
         checkDistributorInitialised();
@@ -268,6 +271,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
             _validatorSignature,
             _depositDataRoot
         );
+        console.log("RocketNodeDeposit: called minipool.preDeposit");
         // Enqueue the minipool
         enqueueMinipool(address(minipool));
         // Assign deposits if enabled
