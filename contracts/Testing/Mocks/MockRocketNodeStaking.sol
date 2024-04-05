@@ -39,4 +39,8 @@ contract MockRocketNodeStaking is IRocketNodeStaking {
     }
 
     function setStakeRPLForAllowed(address _nodeAddress, address _caller, bool _allowed) external override {}
+
+    function getNodeMaximumRPLStake(address _nodeAddress) external view override returns (uint256) {}
+
+    function getNodeETHMatchedLimit(address _nodeAddress) external view override returns (uint256) {}
 }

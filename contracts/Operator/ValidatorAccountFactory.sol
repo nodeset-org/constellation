@@ -23,6 +23,10 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
     uint256 public targetBond;
     uint256 public lockUpTime;
 
+
+    mapping(address => address) public minipoolValidatorAccountMap;
+
+
     /**
      * @notice Initializes the factory with the logic contract address.
      * @param _implementation The address of the logic contract (OperatorAccount).
@@ -47,6 +51,8 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
     ) public payable returns (address) {
         require(hasSufficentLiquidity(_config.bondAmount), 'ValidatorAccount: protocol must have enough rpl and eth');
         require(msg.value == lockThreshhold, 'ValidatorAccount: must lock 1 ether');
+
+        minipoolValidatorAccountMap[ _config.expectedMinipoolAddress] = _predictedAddress;
 
         Directory(_directory).grantRole(Constants.CORE_PROTOCOL_ROLE, _predictedAddress);
 

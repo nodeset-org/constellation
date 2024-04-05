@@ -211,10 +211,14 @@ export async function upgradePriceFetcherToMock(signers: Signers, protocol: Prot
     const mockPriceFetcher = await mockPriceFetcherFactory.deploy();
     await mockPriceFetcher.deployed();
 
+    const lastPrice = await protocol.priceFetcher.getPrice();
+    
     await protocol.priceFetcher.connect(signers.admin).upgradeTo(mockPriceFetcher.address);
 
     const priceFetcherV2 = await ethers.getContractAt("MockPriceFetcher", protocol.priceFetcher.address);
     await priceFetcherV2.setPrice(price);
+
+    return lastPrice;
 };
 
 export async function printEventDetails(tx: ContractTransaction, contract: Contract): Promise<void> {
@@ -235,14 +239,18 @@ export async function printEventDetails(tx: ContractTransaction, contract: Contr
                         });
                 }
             } else if (event.topics && event.topics.length > 0) { // Decode the raw log
-                const eventDescription = contract.interface.getEvent(event.topics[0]);
-                console.log(`Event Name: ${eventDescription.name}`);
-                const decodedData = contract.interface.decodeEventLog(eventDescription, event.data, event.topics);
-                if (decodedData) {
-                    console.log("Arguments:");
-                    Object.keys(decodedData).forEach(key => {
-                        console.log(`  ${key}: ${decodedData[key]}`);
-                    });
+                try {
+                    const eventDescription = contract.interface.getEvent(event.topics[0]);
+                    console.log(`Event Name: ${eventDescription.name}`);
+                    const decodedData = contract.interface.decodeEventLog(eventDescription, event.data, event.topics);
+                    if (decodedData) {
+                        console.log("Arguments:");
+                        Object.keys(decodedData).forEach(key => {
+                            console.log(`  ${key}: ${decodedData[key]}`);
+                        });
+                    }
+                } catch(e) {
+                    console.log("Uh oh, error occured printing events due to manual decoding :(")
                 }
             }
         }
@@ -277,6 +285,9 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
     }
 
     const { protocol, signers } = setupData;
+
+
+    const validatorAccounts = []
 
     for(let i = 0; i < nodeOperators.length; i++) {
         console.log("setting up node operator %s of %s", i+1, nodeOperators.length)
@@ -327,7 +338,11 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         // enter stake mode
         const validatorAccount = await ethers.getContractAt("ValidatorAccount", nextAddress);
         await validatorAccount.stake();
+
+        validatorAccounts.push(nextAddress)
     }
+
+    return validatorAccounts
 } 
 
 // Deprecated: Don't use

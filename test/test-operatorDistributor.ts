@@ -15,29 +15,29 @@ describe("Operator Distributor", function () {
 		const { protocol, signers, rocketPool } = setupData;
 		const { operatorDistributor } = protocol;
 		const { rocketNodeStakingContract, rocketDepositPoolContract } = rocketPool;
-		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", rocketNodeStakingContract.address);
+		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
 		const rocketDepositPool = await ethers.getContractAt("RocketDepositPool", rocketDepositPoolContract.address);
 
 		await prepareOperatorDistributionContract(setupData, 2);
-		await registerNewValidator(setupData, [signers.random, signers.random2])
+		const validatorAccounts = await registerNewValidator(setupData, [signers.random, signers.random2])
 
 		// send rpl to the operator distributor
 		const rplAmount = ethers.utils.parseEther("1000");
 		await rocketPool.rplContract.connect(signers.rplWhale).transfer(operatorDistributor.address, rplAmount);
 
-		const minipools: MockMinipool[] = await getMockMinipoolsInProtocol(setupData);
-		for (let i = 0; i < minipools.length; i++) {
-			const minipool = minipools[i];
-			//await minipool.setNodeDepositBalance(ethers.utils.parseEther("1"));
-		}
+		const lastPrice = await upgradePriceFetcherToMock(signers, protocol, ethers.utils.parseEther("55"));
+		console.log("last price", lastPrice);
 
-		const initialRplStake = await rocketNodeStaking.getNodeRPLStake(signers.random.address);
+		const initialRplStake = await rocketNodeStaking.getNodeRPLStake(validatorAccounts[0]);
+		console.log("od.test.initial stake", initialRplStake)
 		const tx = await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
-		printEventDetails(tx, operatorDistributor);
+		console.log("printing events")
+		await printEventDetails(tx, operatorDistributor);
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
-		const finalRplStake = await rocketNodeStaking.getNodeRPLStake(signers.random.address);
+		const finalRplStake = await rocketNodeStaking.getNodeRPLStake(validatorAccounts[0]);
+		console.log("od.test.finalRplStake stake", finalRplStake)
 
 		expect(finalRplStake.sub(initialRplStake)).gt(ethers.BigNumber.from(0));
 

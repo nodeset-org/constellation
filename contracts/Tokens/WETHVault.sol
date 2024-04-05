@@ -275,7 +275,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         console.log('no fee', feeAmountNodeOperator);
         console.log('no fee', feeAmountAdmin);
         (bool shortfallNo, uint256 noOut, uint256 remainingNo) = _doFeeTransferOut(address(yd), feeAmountNodeOperator);
-        yd.wethReceived(noOut);
+        yd.wethReceivedVoidClaim(noOut);
         console.log('transfered to nodep po');
         (bool shortfallAdmin, uint256 adminOut, uint256 remainingAdmin) = _doFeeTransferOut(
             _directory.getTreasuryAddress(),

@@ -13,6 +13,7 @@ import '../UpgradeableBase.sol';
 
 import '../Interfaces/RocketPool/IRocketNodeDeposit.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
+import '../Interfaces/RocketPool/IRocketNodeManager.sol';
 import '../Interfaces/Oracles/IXRETHOracle.sol';
 import '../Interfaces/IWETH.sol';
 import '../Utils/Constants.sol';
@@ -68,16 +69,24 @@ contract ValidatorAccount is UpgradeableBase, Errors {
 
         nodeOperator = _nodeOperator;
 
-        OperatorDistributor od = OperatorDistributor(directory.getOperatorDistributorAddress());
-
-        od.OnMinipoolCreated(_config.expectedMinipoolAddress, nodeOperator, _config.bondAmount);
-
         _registerNode(_config.timezoneLocation, _config.bondAmount, _nodeOperator);
-
         address dp = directory.getDepositPoolAddress();
         IRocketNodeManager(directory.getRocketNodeManagerAddress()).setRPLWithdrawalAddress(address(this), dp, true);
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), dp, true);
-        od.performTopUp(address(this), od.nodeOperatorEthStaked(_nodeOperator));
+
+        _createMinipool(
+            _config.bondAmount,
+            _config.minimumNodeFee,
+            _config.validatorPubkey,
+            _config.validatorSignature,
+            _config.depositDataRoot,
+            _config.salt,
+            _config.expectedMinipoolAddress
+        );
+    }
+
+    function createMinipool(ValidatorConfig calldata _config) public {
+        require(msg.sender == nodeOperator, 'only nodeOperator');
 
         _createMinipool(
             _config.bondAmount,
@@ -116,8 +125,13 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             revert InsufficientBalance(targetBond, address(this).balance - lockedEth);
         }
 
+        address _nodeOperator = nodeOperator;
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        od.OnMinipoolCreated(_expectedMinipoolAddress, nodeOperator, _bondAmount);
+        od.rebalanceRplStake(address(this), od.nodeOperatorEthStaked(_nodeOperator));
+
         lockStarted = block.timestamp;
-        console.log("_createMinipool()");
+        console.log('_createMinipool()');
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: targetBond}(
             _bondAmount,
             _minimumNodeFee,
@@ -128,10 +142,12 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             _expectedMinipoolAddress
         );
         minipool = IMinipool(_expectedMinipoolAddress);
-        console.log("_createMinipool.status", uint256(minipool.getStatus()));
+        console.log('_createMinipool.status', uint256(minipool.getStatus()));
     }
 
     function stake() external {
+        //require(msg.sender == nodeOperator, 'only nodeOperator');
+
         minipool.stake(config.validatorSignature, config.depositDataRoot);
     }
 
@@ -175,4 +191,8 @@ contract ValidatorAccount is UpgradeableBase, Errors {
     }
 
     function _authorizeUpgrade(address) internal override onlyProtocol {}
+
+    function distributeBalance(bool _rewardsOnly) onlyProtocol external {
+        minipool.distributeBalance(_rewardsOnly);
+    }
 }

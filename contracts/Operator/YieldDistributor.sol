@@ -74,7 +74,11 @@ contract YieldDistributor is UpgradeableBase {
      * @param weth The amount of WETH received by the contract.
      */
     function wethReceived(uint256 weth) external onlyProtocol {
-        _wethReceived(weth);
+        _wethReceived(weth, false);
+    }
+
+    function wethReceivedVoidClaim(uint256 weth) external onlyProtocol {
+        _wethReceived(weth, true);
     }
 
     /**
@@ -83,13 +87,17 @@ contract YieldDistributor is UpgradeableBase {
      *
      * @param weth The amount of WETH received by the contract.
      */
-    function _wethReceived(uint256 weth) internal {
+    function _wethReceived(uint256 weth, bool voidClaim) internal {
         totalYieldAccrued += weth;
         yieldAccruedInInterval += weth;
 
         // if elapsed time since last interval is greater than maxIntervalLengthSeconds, start a new interval
         if (block.timestamp - currentIntervalGenesisTime > maxIntervalLengthSeconds) {
-            finalizeInterval();
+            if(voidClaim) {
+                _finalizeIntervalVoidClaim();
+            } else {
+                finalizeInterval();
+            }
         }
     }
 
@@ -187,7 +195,10 @@ contract YieldDistributor is UpgradeableBase {
     function finalizeInterval() public onlyProtocolOrAdmin {
         console.log("calling claim node operator fee");
         WETHVault(_directory.getWETHVaultAddress()).claimFees();
+        _finalizeIntervalVoidClaim();
+    }
 
+    function _finalizeIntervalVoidClaim() internal {
         if (yieldAccruedInInterval == 0 && currentInterval > 0) {
             return;
         }
@@ -279,6 +290,6 @@ contract YieldDistributor is UpgradeableBase {
     receive() external payable {
         // mint weth
         IWETH(_directory.getWETHAddress()).deposit{value: msg.value}();
-        _wethReceived(msg.value);
+        _wethReceived(msg.value, false);
     }
 }
