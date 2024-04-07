@@ -337,7 +337,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
 
         // enter stake mode
         const validatorAccount = await ethers.getContractAt("ValidatorAccount", nextAddress);
-        await validatorAccount.stake();
+        await validatorAccount.connect(nodeOperator).stake();
 
         validatorAccounts.push(nextAddress)
     }
