@@ -44,6 +44,14 @@ contract ValidatorAccount is UpgradeableBase, Errors {
 
     uint256 public bond;
 
+    modifier onlyNodeOperatorOrProtocol() {
+        require(
+            _directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender) || msg.sender == nodeOperator,
+            'Can only be called by Protocol or NodeOperator!'
+        );
+        _;
+    }
+
     function initialize(
         address _directory,
         address _nodeOperator,
@@ -145,9 +153,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         console.log('_createMinipool.status', uint256(minipool.getStatus()));
     }
 
-    function stake() external {
-        //require(msg.sender == nodeOperator, 'only nodeOperator');
-
+    function stake() external onlyNodeOperatorOrProtocol {
         minipool.stake(config.validatorSignature, config.depositDataRoot);
     }
 
@@ -192,7 +198,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
 
     function _authorizeUpgrade(address) internal override onlyProtocol {}
 
-    function distributeBalance(bool _rewardsOnly) onlyProtocol external {
+    function distributeBalance(bool _rewardsOnly) external onlyNodeOperatorOrProtocol {
         minipool.distributeBalance(_rewardsOnly);
     }
 }

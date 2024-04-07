@@ -8,7 +8,7 @@ import { evaluateModel, expectNumberE18ToBeApproximately, registerNewValidator }
 describe("Yield Distributor", function () {
   describe("Setters", function () {
     it("Random address cannot setMaxIntervalTime", async function () {
-      const setupData = await protocolFixture();
+      const setupData = await loadFixture(protocolFixture);
       const { protocol, signers } = setupData;
 
       await expect(protocol.yieldDistributor.connect(signers.random).setMaxIntervalTime(1))
@@ -29,7 +29,7 @@ describe("Yield Distributor", function () {
 
 
   it("Distributes fees appropriately", async function () {
-    const setupData = await protocolFixture()
+    const setupData = await loadFixture(protocolFixture)
     const { protocol, signers, rocketPool: rp } = setupData;
     const yieldDistributor = protocol.yieldDistributor;
 
@@ -64,7 +64,7 @@ describe("Yield Distributor", function () {
   });
 
   it("Distributes fees to operator controller appropriately", async function () {
-    const setupData = await protocolFixture()
+    const setupData = await loadFixture(protocolFixture)
     const { protocol, signers, rocketPool: rp } = setupData;
     const yieldDistributor = protocol.yieldDistributor;
 

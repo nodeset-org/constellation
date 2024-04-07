@@ -15,7 +15,7 @@ describe("adminTreasury", function () {
   let directory: Directory;
 
   beforeEach(async function () {
-    const setupData = await protocolFixture();
+    const setupData = await loadFixture(protocolFixture);
 
     admin = setupData.signers.admin;
     nonAdmin = setupData.signers.random;
