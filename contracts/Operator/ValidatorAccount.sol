@@ -14,6 +14,8 @@ import '../UpgradeableBase.sol';
 import '../Interfaces/RocketPool/IRocketNodeDeposit.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketNodeManager.sol';
+import '../Interfaces/RocketPool/IRocketNetworkVoting.sol';
+import '../Interfaces/RocketPool/IRocketDAOProtocolProposal.sol';
 import '../Interfaces/Oracles/IXRETHOracle.sol';
 import '../Interfaces/IWETH.sol';
 import '../Utils/Constants.sol';
@@ -200,5 +202,52 @@ contract ValidatorAccount is UpgradeableBase, Errors {
 
     function distributeBalance(bool _rewardsOnly) external onlyNodeOperatorOrProtocol {
         minipool.distributeBalance(_rewardsOnly);
+    }
+
+    function setDelegate(address _newDelegate) external onlyNodeOperatorOrProtocol {
+        IRocketNetworkVoting(_directory.getRocketNetworkVotingAddress()).setDelegate(_newDelegate);
+    }
+
+    function initialiseVoting() external onlyNodeOperatorOrProtocol {
+        IRocketNetworkVoting(_directory.getRocketNetworkVotingAddress()).initialiseVoting();
+    }
+
+    function propose(
+        string memory _proposalMessage,
+        bytes calldata _payload,
+        uint32 _blockNumber,
+        IRocketDAOProtocolProposal.Node[] calldata _treeNodes
+    ) external onlyNodeOperatorOrProtocol {
+        IRocketDAOProtocolProposal(_directory.getRocketDAOProtocolProposalAddress()).propose(
+            _proposalMessage,
+            _payload,
+            _blockNumber,
+            _treeNodes
+        );
+    }
+
+    function vote(
+        uint256 _proposalID,
+        IRocketDAOProtocolProposal.VoteDirection _voteDirection,
+        uint256 _votingPower,
+        uint256 _nodeIndex,
+        IRocketDAOProtocolProposal.Node[] calldata _witness
+    ) external onlyNodeOperatorOrProtocol {
+        IRocketDAOProtocolProposal(_directory.getRocketDAOProtocolProposalAddress()).vote(
+            _proposalID,
+            _voteDirection,
+            _votingPower,
+            _nodeIndex,
+            _witness
+        );
+    }
+    function overrideVote(
+        uint256 _proposalID,
+        IRocketDAOProtocolProposal.VoteDirection _voteDirection
+    ) external onlyNodeOperatorOrProtocol {
+        IRocketDAOProtocolProposal(_directory.getRocketDAOProtocolProposalAddress()).overrideVote(
+            _proposalID,
+            _voteDirection
+        );
     }
 }
