@@ -214,20 +214,6 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         IRocketNetworkVoting(_directory.getRocketNetworkVotingAddress()).initialiseVoting();
     }
 
-    function propose(
-        string memory _proposalMessage,
-        bytes calldata _payload,
-        uint32 _blockNumber,
-        Node[] calldata _treeNodes
-    ) external onlyNodeOperatorOrProtocol {
-        IRocketDAOProtocolProposal(_directory.getRocketDAOProtocolProposalAddress()).propose(
-            _proposalMessage,
-            _payload,
-            _blockNumber,
-            _treeNodes
-        );
-    }
-
     function vote(
         uint256 _proposalID,
         VoteDirection _voteDirection,

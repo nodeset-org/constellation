@@ -45,7 +45,6 @@ struct RocketIntegrations {
     address rocketMerkleDistributorMainnet;
     address rocketNetworkVoting;
     address rocketDAOProtocolProposal;
-    address rocketDAOProtocolVerifier;
 }
 
 /// @custom:security-contact info@nodeoperator.org
@@ -174,10 +173,6 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _integrations.rocketNetworkVoting;
     }
 
-    function getRocketDAOProtocolVerifierAddress() public view returns (address) {
-        return _integrations.rocketDAOProtocolVerifier;
-    }
-
     function initialize(Protocol memory newProtocol, address treasury, address admin) public initializer {
         require(msg.sender != admin, Constants.INITIALIZATION_ERROR);
         require(
@@ -251,12 +246,6 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         );
 
         require(_integrations.rocketDAOProtocolProposal != address(0), 'rocketDAOProtocolProposal is 0x0');
-
-        _integrations.rocketDAOProtocolVerifier = IRocketStorage(newProtocol.rocketStorage).getAddress(
-            RocketpoolEncoder.generateBytes32Identifier('rocketDAOProtocolVerifier')
-        );
-
-        require(_integrations.rocketDAOProtocolVerifier != address(0), 'rocketDAOProtocolVerifier is 0x0');
 
         _integrations.rocketNetworkVoting = IRocketStorage(newProtocol.rocketStorage).getAddress(
             RocketpoolEncoder.generateBytes32Identifier('rocketNetworkVoting')
