@@ -10,6 +10,7 @@ import './Interfaces/RocketPool/IRocketNodeStaking.sol';
 import './Tokens/WETHVault.sol';
 import './Tokens/RPLVault.sol';
 
+import './Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
 import './Interfaces/IWETH.sol';
 import './Utils/Constants.sol';
 
@@ -74,6 +75,26 @@ contract DepositPool is UpgradeableBase {
             _amount
         );
         IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, _amount);
+    }
+
+        // Node operators can call this method to claim rewards for one or more reward intervals and specify an amount of RPL to stake at the same time
+    function claim(
+        address _nodeAddress,
+        uint256[] calldata _rewardIndex,
+        uint256[] calldata _amountRPL,
+        uint256[] calldata _amountETH,
+        bytes32[][] calldata _merkleProof
+    ) public {
+        
+        // handle MEV incentives here
+
+        IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
+            _nodeAddress,
+            _rewardIndex,
+            _amountRPL,
+            _amountETH,
+            _merkleProof
+        );
     }
 
     function sendEthToDistributors() public {
