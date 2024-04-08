@@ -41,7 +41,7 @@ contract DepositPool is UpgradeableBase {
     /// @dev This function calculates and returns the total amount of RPL tokens held by the deposit pool.
     /// @return The total value in RPL locked in the deposit pool.
     function getTvlRpl() public view returns (uint) {
-        return RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this));
+        return IERC20(_directory.getRPLAddress()).balanceOf(address(this));
     }
 
     ///--------
@@ -64,12 +64,12 @@ contract DepositPool is UpgradeableBase {
     /// @dev This function ensures that the specified amount of RPL tokens is approved and then staked for the given node operator.
     function stakeRPLFor(address _nodeAddress, uint256 _amount) external onlyProtocolOrAdmin {
         SafeERC20.safeApprove(
-            RocketTokenRPLInterface(_directory.getRPLAddress()),
+            IERC20(_directory.getRPLAddress()),
             _directory.getRocketNodeStakingAddress(),
             0
         );
         SafeERC20.safeApprove(
-            RocketTokenRPLInterface(_directory.getRPLAddress()),
+            IERC20(_directory.getRPLAddress()),
             _directory.getRocketNodeStakingAddress(),
             _amount
         );
@@ -131,7 +131,7 @@ contract DepositPool is UpgradeableBase {
         // Initialize the RPLVault and the Operator Distributor addresses
         RPLVault vrpl = RPLVault(getDirectory().getRPLVaultAddress());
         address operatorDistributor = getDirectory().getOperatorDistributorAddress();
-        RocketTokenRPLInterface RPL = RocketTokenRPLInterface(_directory.getRPLAddress());
+        IERC20 RPL = IERC20(_directory.getRPLAddress());
         console.log('sendRplToDistributors.B');
 
         // Fetch the required capital in RPL and the total RPL balance of the contract

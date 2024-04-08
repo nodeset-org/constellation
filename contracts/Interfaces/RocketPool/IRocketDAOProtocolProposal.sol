@@ -1,21 +1,10 @@
 pragma solidity >0.5.0 <0.9.0;
 
+import "./RocketTypes.sol";
+
 // SPDX-License-Identifier: GPL-3.0-only
 
 interface IRocketDAOProtocolProposal {
-    struct Node {
-        uint256 sum;
-        bytes32 hash;
-    }
-
-    enum VoteDirection {
-        NoVote,
-        Abstain,
-        For,
-        Against,
-        AgainstWithVeto
-    }
-
     function propose(
         string memory _proposalMessage,
         bytes calldata _payload,

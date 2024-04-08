@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketTokenRPLInterface, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, ValidatorAccountFactory, RocketDepositPool, RocketNodeDeposit } from "../typechain-types";
+import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, ValidatorAccountFactory, RocketDepositPool, RocketNodeDeposit } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
 import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketNodeManager, RocketNodeManagerNew, RocketNodeStaking, RocketNodeStakingNew, RocketStorage, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
@@ -13,6 +13,8 @@ import { suppressLog } from "./rocketpool/_helpers/console";
 import { deployRocketPool } from "./rocketpool/_helpers/deployment";
 import { upgradeExecuted } from "./rocketpool/_utils/upgrade";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { ERC20 } from "../typechain-types/contracts/Testing/Rocketpool/contract/util";
+import { IERC20 } from "../typechain-types/oz-contracts-3-4-0/token/ERC20";
 
 export const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
 
@@ -55,7 +57,7 @@ export type Signers = {
 }
 
 export type RocketPool = {
-	rplContract: RocketTokenRPLInterface, //RocketTokenRPLInterface
+	rplContract: ERC20, //RocketTokenRPLInterface
 	rockStorageContract: IRocketStorage,
 	rocketNodeManagerContract: RocketNodeManagerInterface,
 	rocketNodeStakingContract: IRocketNodeStaking,
@@ -80,9 +82,9 @@ export function getAllAddresses(Signers: Signers, Protocol: Protocol, RocketPool
 export async function getRocketPool(directory: Directory): Promise<RocketPool> {
 
 	const rplContract = (await ethers.getContractAt(
-		"contracts/Interfaces/RocketTokenRPLInterface.sol:RocketTokenRPLInterface",
+		"@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
 		await directory.getRPLAddress()
-	)) as RocketTokenRPLInterface;
+	)) as ERC20;
 
 	const rockStorageContract = (await ethers.getContractAt(
 		"RocketStorage",
@@ -121,9 +123,9 @@ async function deployProtocol(signers: Signers): Promise<Protocol> {
 
 	const RplToken = await RocketTokenRPL.deployed();
 	const rplContract = (await ethers.getContractAt(
-		"contracts/Interfaces/RocketTokenRPLInterface.sol:RocketTokenRPLInterface",
+		"@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
 		RplToken.address
-	)) as RocketTokenRPLInterface;
+	)) as ERC20;
 
 	const predictedNonce = 12;
 	try {

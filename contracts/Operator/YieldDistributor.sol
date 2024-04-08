@@ -10,8 +10,6 @@ import '../UpgradeableBase.sol';
 
 import '../Tokens/WETHVault.sol';
 
-import '../Interfaces/RocketDAOProtocolSettingsNetworkInterface.sol';
-import '../Interfaces/RocketTokenRPLInterface.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/Oracles/IXRETHOracle.sol';
 import '../Interfaces/IWETH.sol';

@@ -11,6 +11,8 @@ import '../Whitelist/Whitelist.sol';
 import '../Utils/ProtocolMath.sol';
 import '../UpgradeableBase.sol';
 
+import "../Interfaces/RocketPool/RocketTypes.sol";
+
 import '../Interfaces/RocketPool/IRocketNodeDeposit.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketNodeManager.sol';
@@ -216,7 +218,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         string memory _proposalMessage,
         bytes calldata _payload,
         uint32 _blockNumber,
-        IRocketDAOProtocolProposal.Node[] calldata _treeNodes
+        Node[] calldata _treeNodes
     ) external onlyNodeOperatorOrProtocol {
         IRocketDAOProtocolProposal(_directory.getRocketDAOProtocolProposalAddress()).propose(
             _proposalMessage,
@@ -228,10 +230,10 @@ contract ValidatorAccount is UpgradeableBase, Errors {
 
     function vote(
         uint256 _proposalID,
-        IRocketDAOProtocolProposal.VoteDirection _voteDirection,
+        VoteDirection _voteDirection,
         uint256 _votingPower,
         uint256 _nodeIndex,
-        IRocketDAOProtocolProposal.Node[] calldata _witness
+        Node[] calldata _witness
     ) external onlyNodeOperatorOrProtocol {
         IRocketDAOProtocolProposal(_directory.getRocketDAOProtocolProposalAddress()).vote(
             _proposalID,
@@ -243,7 +245,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
     }
     function overrideVote(
         uint256 _proposalID,
-        IRocketDAOProtocolProposal.VoteDirection _voteDirection
+        VoteDirection _voteDirection
     ) external onlyNodeOperatorOrProtocol {
         IRocketDAOProtocolProposal(_directory.getRocketDAOProtocolProposalAddress()).overrideVote(
             _proposalID,

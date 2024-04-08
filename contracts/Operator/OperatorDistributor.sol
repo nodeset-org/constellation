@@ -115,7 +115,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /// Ensure that all sources of RPL (like the OperatorDistributor) are accurately accounted for.
     /// @return The total amount of RPL tokens locked inside the protocol.
     function getTvlRpl() public view returns (uint) {
-        return RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this)) + fundedRpl;
+        return IERC20(_directory.getRPLAddress()).balanceOf(address(this)) + fundedRpl;
     }
 
     /**
@@ -236,14 +236,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     function _performTopUp(address _validatorAccount, uint256 _requiredStake) internal {
-        uint256 currentRplBalance = RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this));
+        uint256 currentRplBalance = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
         if (currentRplBalance >= _requiredStake) {
             if (_requiredStake == 0) {
                 return;
             }
             // stakeRPLOnBehalfOf
             // transfer RPL to deposit pool
-            RocketTokenRPLInterface(_directory.getRPLAddress()).transfer(
+            IERC20(_directory.getRPLAddress()).transfer(
                 _directory.getDepositPoolAddress(),
                 _requiredStake
             );
@@ -253,7 +253,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 return;
             }
             // stake what we have
-            RocketTokenRPLInterface(_directory.getRPLAddress()).transfer(
+            IERC20(_directory.getRPLAddress()).transfer(
                 _directory.getDepositPoolAddress(),
                 currentRplBalance
             );
