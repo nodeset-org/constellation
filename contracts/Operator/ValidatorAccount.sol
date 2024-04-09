@@ -11,7 +11,7 @@ import '../Whitelist/Whitelist.sol';
 import '../Utils/ProtocolMath.sol';
 import '../UpgradeableBase.sol';
 
-import "../Interfaces/RocketPool/RocketTypes.sol";
+import '../Interfaces/RocketPool/RocketTypes.sol';
 
 import '../Interfaces/RocketPool/IRocketNodeDeposit.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
@@ -229,13 +229,23 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             _witness
         );
     }
-    function overrideVote(
-        uint256 _proposalID,
-        VoteDirection _voteDirection
-    ) external onlyNodeOperatorOrProtocol {
+
+    function overrideVote(uint256 _proposalID, VoteDirection _voteDirection) external onlyNodeOperatorOrProtocol {
         IRocketDAOProtocolProposal(_directory.getRocketDAOProtocolProposalAddress()).overrideVote(
             _proposalID,
             _voteDirection
         );
+    }
+
+    function delegateUpgrade() external onlyNodeOperatorOrProtocol {
+        minipool.delegateUpgrade();
+    }
+
+    function delegateRollback() external onlyNodeOperatorOrProtocol {
+        minipool.delegateRollback();
+    }
+
+    function setUseLatestDelegate(bool _setting) external onlyNodeOperatorOrProtocol {
+        minipool.setUseLatestDelegate(_setting);
     }
 }
