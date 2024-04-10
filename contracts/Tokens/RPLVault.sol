@@ -205,7 +205,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 currentAdminIncome = currentAdminIncomeFromRewards();
         uint256 feeAmount = currentAdminIncome - lastIncomeClaimed;
 
-        _doFeeTransferOut(_directory.getTreasuryAddress(), feeAmount);
+        _doTransferOut(_directory.getTreasuryAddress(), feeAmount);
 
         // Update lastIncomeClaimed to reflect the new total income claimed
         lastIncomeClaimed = currentAdminIncomeFromRewards();
@@ -213,7 +213,11 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         emit AdminFeeClaimed(feeAmount);
     }
 
-    function _doFeeTransferOut(address _to, uint256 _amount) internal {
+    function doTransferOut(address _to, uint256 _amount) external onlyProtocol {
+        _doTransferOut(_to, _amount);
+    }
+
+    function _doTransferOut(address _to, uint256 _amount) internal {
         IERC20 asset = IERC20(asset());
         uint256 balance = asset.balanceOf(address(this));
         uint256 shortfall = _amount > balance ? _amount - balance : 0;

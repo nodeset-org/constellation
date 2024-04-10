@@ -274,10 +274,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         console.log('no fee', feeAmountNodeOperator);
         console.log('no fee', feeAmountAdmin);
-        (bool shortfallNo, uint256 noOut, uint256 remainingNo) = _doFeeTransferOut(address(yd), feeAmountNodeOperator);
+        (bool shortfallNo, uint256 noOut, uint256 remainingNo) = _doTransferOut(address(yd), feeAmountNodeOperator);
         yd.wethReceivedVoidClaim(noOut);
         console.log('transfered to nodep po');
-        (bool shortfallAdmin, uint256 adminOut, uint256 remainingAdmin) = _doFeeTransferOut(
+        (bool shortfallAdmin, uint256 adminOut, uint256 remainingAdmin) = _doTransferOut(
             _directory.getTreasuryAddress(),
             feeAmountAdmin
         );
@@ -292,7 +292,11 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         emit AdminFeeClaimed(feeAmountAdmin);
     }
 
-    function _doFeeTransferOut(address _to, uint256 _amount) internal returns (bool, uint256, uint256) {
+    function doTransferOut(address _to, uint256 _amount) external onlyProtocol returns (bool, uint256, uint256) {
+        return _doTransferOut(_to, _amount);
+    }
+
+    function _doTransferOut(address _to, uint256 _amount) internal returns (bool, uint256, uint256) {
         IERC20 asset = IERC20(asset());
         uint256 balance = asset.balanceOf(address(this));
         uint256 shortfall = _amount > balance ? _amount - balance : 0;

@@ -18,7 +18,13 @@ import './Utils/Constants.sol';
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
 /// ETH + RPL intakes from token mints and validator yields and sends to respective ERC4246 vaults.
 contract DepositPool is UpgradeableBase {
-    constructor() initializer {}
+    using Math for uint256;
+
+    uint256 public claimingIncentive;
+
+    constructor() initializer {
+        claimingIncentive = 0.01e5;
+    }
 
     /// @dev Initializes the DepositPool contract with the specified directory address.
     /// @param directoryAddress The address of the directory contract.
@@ -64,29 +70,33 @@ contract DepositPool is UpgradeableBase {
     /// @param _amount The amount of RPL tokens to stake.
     /// @dev This function ensures that the specified amount of RPL tokens is approved and then staked for the given node operator.
     function stakeRPLFor(address _nodeAddress, uint256 _amount) external onlyProtocolOrAdmin {
-        SafeERC20.safeApprove(
-            IERC20(_directory.getRPLAddress()),
-            _directory.getRocketNodeStakingAddress(),
-            0
-        );
-        SafeERC20.safeApprove(
-            IERC20(_directory.getRPLAddress()),
-            _directory.getRocketNodeStakingAddress(),
-            _amount
-        );
+        SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), 0);
+        SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), _amount);
         IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, _amount);
     }
 
-        // Node operators can call this method to claim rewards for one or more reward intervals and specify an amount of RPL to stake at the same time
-    function claim(
+    // Node operators can call this method to claim rewards for one or more reward intervals and specify an amount of RPL to stake at the same time
+    function merkleClaim(
         address _nodeAddress,
         uint256[] calldata _rewardIndex,
         uint256[] calldata _amountRPL,
         uint256[] calldata _amountETH,
         bytes32[][] calldata _merkleProof
     ) public {
-        
-        // handle MEV incentives here
+
+        uint256 totalAmountRPL = 0;
+        uint256 totalAmountETH = 0;
+
+        for (uint256 i = 0; i < _rewardIndex.length; i++) {
+            totalAmountRPL += _amountRPL[i];
+            totalAmountETH += _amountETH[i];
+        }
+
+        uint256 mevFeeRPL = totalAmountRPL.mulDiv(claimingIncentive, 1e5);
+        uint256 mevFeeETH = totalAmountETH.mulDiv(claimingIncentive, 1e5);
+
+        WETHVault(_directory.getWETHVaultAddress()).doTransferOut(msg.sender, mevFeeETH);
+        RPLVault(_directory.getRPLVaultAddress()).doTransferOut(msg.sender, mevFeeRPL);
 
         IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
             _nodeAddress,
