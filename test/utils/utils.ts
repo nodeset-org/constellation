@@ -339,7 +339,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         const validatorAccount = await ethers.getContractAt("ValidatorAccount", nextAddress);
         await validatorAccount.connect(nodeOperator).stake();
 
-        validatorAccounts.push(nextAddress)
+        validatorAccounts.push(validatorAccount)
     }
 
     return validatorAccounts
