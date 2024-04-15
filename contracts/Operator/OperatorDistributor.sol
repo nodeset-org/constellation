@@ -415,10 +415,15 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         requiredLEBStaked = _requiredLEBStaked;
     }
 
+    function setTargetStakeRatio(uint256 _targetStakeRatio) external onlyAdmin {
+        targetStakeRatio = _targetStakeRatio;
+    }
+
     function onNodeOperatorDissolved(address _nodeOperator, uint256 _bond) external onlyProtocol {
         fundedEth -= _bond;
         nodeOperatorEthStaked[_nodeOperator] -= _bond;
     }
+
 
     /**
      * @notice Retrieves the list of minipool addresses managed by the contract.

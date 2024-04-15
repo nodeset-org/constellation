@@ -28,7 +28,7 @@ describe("Operator Distributor", function () {
 		const lastPrice = await upgradePriceFetcherToMock(signers, protocol, ethers.utils.parseEther("55"));
 		console.log("last price", lastPrice);
 
-		const initialRplStake = await rocketNodeStaking.getNodeRPLStake(validatorAccounts[0]);
+		const initialRplStake = await rocketNodeStaking.getNodeRPLStake(validatorAccounts[0].address);
 		console.log("od.test.initial stake", initialRplStake)
 		const tx = await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		console.log("printing events")
@@ -36,7 +36,7 @@ describe("Operator Distributor", function () {
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
-		const finalRplStake = await rocketNodeStaking.getNodeRPLStake(validatorAccounts[0]);
+		const finalRplStake = await rocketNodeStaking.getNodeRPLStake(validatorAccounts[0].address);
 		console.log("od.test.finalRplStake stake", finalRplStake)
 
 		expect(finalRplStake.sub(initialRplStake)).gt(ethers.BigNumber.from(0));
