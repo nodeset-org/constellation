@@ -4,44 +4,47 @@ pragma solidity 0.8.17;
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
-import './Interfaces/RocketTokenRPLInterface.sol';
 import './Interfaces/Oracles/IXRETHOracle.sol';
 import './Interfaces/RocketPool/IRocketStorage.sol';
 import './Interfaces/ISanctions.sol';
-import "./Interfaces/RocketPool/IRocketNetworkPrices.sol";
-import "./Interfaces/RocketPool/IRocketNetworkPenalties.sol";
+import './Interfaces/RocketPool/IRocketNetworkPrices.sol';
+import './Interfaces/RocketPool/IRocketNetworkPenalties.sol';
 
 import './UpgradeableBase.sol';
 import './Utils/RocketPoolEncoder.sol';
 import './Utils/Constants.sol';
 
-import "hardhat/console.sol";
+import 'hardhat/console.sol';
 
-//open question: should we be using rocket storage for getting rocket pool contracts?
 struct Protocol {
     address whitelist;
     address payable wethVault;
     address rplVault;
     address payable depositPool;
     address payable operatorDistributor;
-    address validatorAccountFactory;
+    address NodeAccountFactory;
     address payable yieldDistributor;
     address oracle;
     address priceFetcher;
+    // external dependencies
     address rocketStorage;
-    address rocketNodeManager;
-    address rocketNodeStaking;
-    address rocketNodeDeposit;
-    address rplToken;
     address payable weth;
     address uniswapV3Pool;
     address sanctions;
 }
 
-// todo: move RP contracts out of protocol and into this struct
+// rocket pool internal dependencies that may branch to other external systems
 struct RocketIntegrations {
     address rocketNetworkPenalties;
     address rocketNetworkPrices;
+    address rocketNodeDeposit;
+    address rocketNodeManager;
+    address rocketNodeStaking;
+    address rplToken;
+    address rocketDepositPool;
+    address rocketMerkleDistributorMainnet;
+    address rocketNetworkVoting;
+    address rocketDAOProtocolProposal;
 }
 
 /// @custom:security-contact info@nodeoperator.org
@@ -106,8 +109,8 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.operatorDistributor;
     }
 
-    function getValidatorAccountFactoryAddress() public view returns (address) {
-        return _protocol.validatorAccountFactory;
+    function getNodeAccountFactoryAddress() public view returns (address) {
+        return _protocol.NodeAccountFactory;
     }
 
     function getYieldDistributorAddress() public view returns (address payable) {
@@ -115,15 +118,15 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     }
 
     function getRocketNodeManagerAddress() public view returns (address) {
-        return _protocol.rocketNodeManager;
+        return _integrations.rocketNodeManager;
     }
 
     function getRocketNodeDepositAddress() public view returns (address) {
-        return _protocol.rocketNodeDeposit;
+        return _integrations.rocketNodeDeposit;
     }
 
     function getRocketNodeStakingAddress() public view returns (address) {
-        return _protocol.rocketNodeStaking;
+        return _integrations.rocketNodeStaking;
     }
 
     function getPriceFetcherAddress() public view returns (address) {
@@ -135,7 +138,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     }
 
     function getRPLAddress() public view returns (address) {
-        return _protocol.rplToken;
+        return _integrations.rplToken;
     }
 
     function getTreasuryAddress() public view returns (address) {
@@ -146,12 +149,28 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.uniswapV3Pool;
     }
 
-    function getRocketNetworkPenalties() public view returns(IRocketNetworkPenalties) {
+    function getRocketNetworkPenalties() public view returns (IRocketNetworkPenalties) {
         return IRocketNetworkPenalties(_integrations.rocketNetworkPenalties);
     }
 
-    function getRocketNetworkPrices() public view returns(IRocketNetworkPrices) {
+    function getRocketDepositPoolAddress() public view returns (address) {
+        return _integrations.rocketDepositPool;
+    }
+
+    function getRocketNetworkPrices() public view returns (IRocketNetworkPrices) {
         return IRocketNetworkPrices(_integrations.rocketNetworkPrices);
+    }
+
+    function getRocketDAOProtocolProposalAddress() public view returns (address) {
+        return _integrations.rocketDAOProtocolProposal;
+    }
+
+    function getRocketMerkleDistributorMainnetAddress() public view returns (address) {
+        return _integrations.rocketMerkleDistributorMainnet;
+    }
+
+    function getRocketNetworkVotingAddress() public view returns (address) {
+        return _integrations.rocketNetworkVoting;
     }
 
     function initialize(Protocol memory newProtocol, address treasury, address admin) public initializer {
@@ -186,15 +205,6 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
             _protocol.rocketStorage == address(0) && newProtocol.rocketStorage != address(0),
             Constants.INITIALIZATION_ERROR
         );
-        require(
-            _protocol.rocketNodeManager == address(0) && newProtocol.rocketNodeManager != address(0),
-            Constants.INITIALIZATION_ERROR
-        );
-        require(
-            _protocol.rocketNodeStaking == address(0) && newProtocol.rocketNodeStaking != address(0),
-            Constants.INITIALIZATION_ERROR
-        );
-        require(_protocol.rplToken == address(0) && newProtocol.rplToken != address(0), Constants.INITIALIZATION_ERROR);
         require(_protocol.weth == address(0) && newProtocol.weth != address(0), Constants.INITIALIZATION_ERROR);
         require(
             _protocol.uniswapV3Pool == address(0) && newProtocol.uniswapV3Pool != address(0),
@@ -214,8 +224,8 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _grantRole(Constants.ADMIN_ROLE, admin);
         _grantRole(Constants.FACTORY_ROLE, admin);
 
-        _grantRole(Constants.FACTORY_ROLE, newProtocol.validatorAccountFactory);
-        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.validatorAccountFactory);
+        _grantRole(Constants.FACTORY_ROLE, newProtocol.NodeAccountFactory);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.NodeAccountFactory);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.whitelist);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.wethVault);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.rplVault);
@@ -231,19 +241,64 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _protocol = newProtocol;
 
         // set rocket integrations
-        _integrations.rocketNetworkPenalties = IRocketStorage(newProtocol.rocketStorage).getAddress(
-            RocketpoolEncoder.generateBytes32Identifier("rocketNetworkPenalties")
+        _integrations.rocketDAOProtocolProposal = IRocketStorage(newProtocol.rocketStorage).getAddress(
+            RocketpoolEncoder.generateBytes32Identifier('rocketDAOProtocolProposal')
         );
 
-        console.log("directory value rocket network penality");
-        console.logAddress(_integrations.rocketNetworkPenalties);
+        require(_integrations.rocketDAOProtocolProposal != address(0), 'rocketDAOProtocolProposal is 0x0');
+
+        _integrations.rocketNetworkVoting = IRocketStorage(newProtocol.rocketStorage).getAddress(
+            RocketpoolEncoder.generateBytes32Identifier('rocketNetworkVoting')
+        );
+
+        require(_integrations.rocketNetworkVoting != address(0), 'rocketNetworkVoting is 0x0');
+
+        _integrations.rocketMerkleDistributorMainnet = IRocketStorage(newProtocol.rocketStorage).getAddress(
+            RocketpoolEncoder.generateBytes32Identifier('rocketMerkleDistributorMainnet')
+        );
+
+        require(_integrations.rocketMerkleDistributorMainnet != address(0), 'rocketMerkleDistributorMainnet is 0x0');
+
+        _integrations.rocketNetworkPenalties = IRocketStorage(newProtocol.rocketStorage).getAddress(
+            RocketpoolEncoder.generateBytes32Identifier('rocketNetworkPenalties')
+        );
+
+        require(_integrations.rocketNetworkPenalties != address(0), 'rocketNetworkPenalties is 0x0');
+
+        _integrations.rocketNodeManager = IRocketStorage(newProtocol.rocketStorage).getAddress(
+            RocketpoolEncoder.generateBytes32Identifier('rocketNodeManager')
+        );
+
+        require(_integrations.rocketNodeManager != address(0), 'rocketNodeManager is 0x0');
+
+        _integrations.rocketNodeStaking = IRocketStorage(newProtocol.rocketStorage).getAddress(
+            RocketpoolEncoder.generateBytes32Identifier('rocketNodeStaking')
+        );
+
+        require(_integrations.rocketNodeStaking != address(0), 'rocketNodeStaking is 0x0');
 
         _integrations.rocketNetworkPrices = IRocketStorage(newProtocol.rocketStorage).getAddress(
-            RocketpoolEncoder.generateBytes32Identifier("rocketNetworkPrices")
+            RocketpoolEncoder.generateBytes32Identifier('rocketNetworkPrices')
         );
 
-        console.log("directory value rocket network price");
-        console.logAddress(_integrations.rocketNetworkPrices);
+        require(_integrations.rocketNetworkPrices != address(0), 'rocketNetworkPrices is 0x0');
+
+        _integrations.rocketNodeDeposit = IRocketStorage(newProtocol.rocketStorage).getAddress(
+            RocketpoolEncoder.generateBytes32Identifier('rocketNodeDeposit')
+        );
+        require(_integrations.rocketNodeDeposit != address(0), 'rocketNodeDeposit is 0x0');
+
+        _integrations.rplToken = IRocketStorage(newProtocol.rocketStorage).getAddress(
+            RocketpoolEncoder.generateBytes32Identifier('rocketTokenRPL')
+        );
+
+        require(_integrations.rplToken != address(0), 'rplToken is 0x0');
+
+        _integrations.rocketDepositPool = IRocketStorage(newProtocol.rocketStorage).getAddress(
+            RocketpoolEncoder.generateBytes32Identifier('rocketDepositPool')
+        );
+
+        require(_integrations.rocketDepositPool != address(0), 'rocketDepositPool is 0x0');
 
         _enabledSanctions = true;
     }

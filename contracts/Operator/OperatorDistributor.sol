@@ -5,9 +5,11 @@ import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 import '../UpgradeableBase.sol';
 import '../Whitelist/Whitelist.sol';
-import '../DepositPool.sol';
+import '../FundRouter.sol';
 import '../PriceFetcher.sol';
 import '../Tokens/WETHVault.sol';
+import './NodeAccountFactory.sol';
+import './NodeAccount.sol';
 
 import '../Utils/Constants.sol';
 import '../Utils/Errors.sol';
@@ -79,7 +81,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         if (msg.sender != dp) {
             (bool success, ) = dp.call{value: msg.value}('');
             require(success, 'low level call failed in od');
-            DepositPool(dp).sendEthToDistributors();
+            FundRouter(dp).sendEthToDistributors();
         }
 
         console.log('fallback od final');
@@ -90,11 +92,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         address payable dp = _directory.getDepositPoolAddress();
         (bool success, ) = dp.call{value: address(this).balance}('');
         require(success, 'low level call failed in od');
-        DepositPool(dp).sendEthToDistributors();
+        FundRouter(dp).sendEthToDistributors();
 
         IERC20 rpl = IERC20(_directory.getRPLAddress());
         SafeERC20.safeTransfer(rpl, dp, rpl.balanceOf(address(this)));
-        DepositPool(dp).sendRplToDistributors();
+        FundRouter(dp).sendRplToDistributors();
     }
 
     /// @notice Gets the total ETH value locked inside the protocol, including inside of validators, the OperatorDistributor,
@@ -113,7 +115,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /// Ensure that all sources of RPL (like the OperatorDistributor) are accurately accounted for.
     /// @return The total amount of RPL tokens locked inside the protocol.
     function getTvlRpl() public view returns (uint) {
-        return RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this)) + fundedRpl;
+        return IERC20(_directory.getRPLAddress()).balanceOf(address(this)) + fundedRpl;
     }
 
     /**
@@ -161,39 +163,15 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Stakes the minimum required RPL tokens on behalf of a node.
-     * @dev This function first fetches the node's minimum RPL stake requirement,
-     * approves the Node Staking contract to spend the RPL, and then stakes the RPL for the node.
-     * It assumes that the contract already holds enough RPL tokens for the staking process.
-     * @param _nodeAddress The address of the node for which RPL should be staked.
-     */
-    function _stakeRPLFor(address _nodeAddress) internal {
-        IRocketNodeStaking nodeStaking = IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress());
-        uint256 minimumRplStake = IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress())
-            .getNodeMinimumRPLStake(_nodeAddress);
-
-        fundedRpl += minimumRplStake;
-
-        // approve the node staking contract to spend the RPL
-        RocketTokenRPLInterface rpl = RocketTokenRPLInterface(_directory.getRPLAddress());
-        require(rpl.approve(getDirectory().getRocketNodeStakingAddress(), minimumRplStake));
-
-        // update amount funded rpl
-        minipoolAmountFundedRpl[_nodeAddress] = minimumRplStake;
-
-        nodeStaking.stakeRPLFor(_nodeAddress, minimumRplStake);
-    }
-
-    /**
      * @notice Prepares a node for minipool creation by setting up necessary staking and validations.
      * @dev This function first validates the node's withdrawal address, then calculates the required amount of
      * RPL to stake based on the number of validators associated with the node, and performs a top-up.
      * Only the protocol or admin can call this function.
-     * @param _validatorAccount The address of the validator account belonging to the Node Operator
+     * @param _NodeAccount The address of the validator account belonging to the Node Operator
      */
     function provisionLiquiditiesForMinipoolCreation(
         address _nodeOperator,
-        address _validatorAccount,
+        address _NodeAccount,
         uint256 _bond
     ) external onlyProtocolOrAdmin {
         _rebalanceLiquidity();
@@ -202,10 +180,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         nodeOperatorEthStaked[_nodeOperator] += _bond;
 
         // by default this bonds 150% of stake according to max stake defined here: https://docs.rocketpool.net/guides/node/create-validator#staking-rpl
-        (bool success, bytes memory data) = _validatorAccount.call{value: _bond}('');
+        (bool success, bytes memory data) = _NodeAccount.call{value: _bond}('');
         if (!success) {
-            console.log("LowLevelEthTransfer 1");
-            console.log("balance eth", address(this).balance);
+            console.log('LowLevelEthTransfer 1');
+            console.log('balance eth', address(this).balance);
             console.log(_bond);
             revert LowLevelEthTransfer(success, data);
         }
@@ -217,62 +195,69 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * divided by RPL staked). If the ratio is below a predefined target, it calculates the necessary RPL amount to
      * bring the stake ratio back to the target. Then, the function either stakes the required RPL or stakes
      * the remaining RPL balance if it's not enough.
-     * @param _validatorAccount The address of the node.
+     * @param _NodeAccount The address of the node.
      * @param _ethStaked The amount of ETH currently staked by the node operator.
      */
-    function performTopUp(address _validatorAccount, uint256 _ethStaked) public onlyProtocolOrAdmin {
-        uint256 rplStaked = IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStake(
-            _validatorAccount
-        );
-        uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+    function rebalanceRplStake(address _NodeAccount, uint256 _ethStaked) public onlyProtocolOrAdmin {
+        console.log('rebalanceRplStake()');
+        IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
+        uint256 rplStaked = rocketNodeStaking.getNodeRPLStake(_NodeAccount);
 
-        uint256 stakeRatio = rplStaked == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / rplStaked;
-        if (stakeRatio < targetStakeRatio) {
-            uint256 minuend = ((_ethStaked * ethPriceInRpl) / targetStakeRatio);
-            uint256 requiredStakeRpl = minuend < rplStaked ? 0 : minuend - rplStaked;
-            // Make sure the contract has enough RPL to stake
-            uint256 currentRplBalance = RocketTokenRPLInterface(_directory.getRPLAddress()).balanceOf(address(this));
-            if (currentRplBalance >= requiredStakeRpl) {
-                if (requiredStakeRpl == 0) {
-                    return;
-                }
-                // stakeRPLOnBehalfOf
-                // transfer RPL to deposit pool
-                RocketTokenRPLInterface(_directory.getRPLAddress()).transfer(
-                    _directory.getDepositPoolAddress(),
-                    requiredStakeRpl
-                );
-                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_validatorAccount, requiredStakeRpl);
-            } else {
-                if (currentRplBalance == 0) {
-                    return;
-                }
-                // stake what we have
-                RocketTokenRPLInterface(_directory.getRPLAddress()).transfer(
-                    _directory.getDepositPoolAddress(),
-                    currentRplBalance
-                );
-                DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_validatorAccount, currentRplBalance);
-            }
+        console.log('rebalanceRplStake.rplStaked', rplStaked);
+
+        uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+        console.log('rebalanceRplStake.ethPriceInRpl', ethPriceInRpl);
+
+        uint256 stakeRatio = rplStaked == 0 ? 1e18 : ((_ethStaked * ethPriceInRpl * 1e18) / rplStaked) / 1e18;
+        console.log('rebalanceRplStake.stakeRatio', stakeRatio);
+        console.log('rebalanceRplStake.targetStakeRatio', targetStakeRatio);
+
+        uint256 targetStake = ((_ethStaked * ethPriceInRpl) / targetStakeRatio);
+
+        if (targetStake > rplStaked) {
+            // stake more
+            uint256 stakeIncrease = targetStake - rplStaked;
+            fundedRpl += stakeIncrease;
+
+            console.log('rebalanceRplStake.stakeIncrease', stakeIncrease);
+            _performTopUp(_NodeAccount, stakeIncrease);
+        }
+
+        if (targetStake < rplStaked) {
+            uint256 excessRpl = rplStaked - targetStake;
+            console.log('rebalanceRplStake.excessRpl', excessRpl);
+
+            fundedRpl -= excessRpl;
+            FundRouter(_directory.getDepositPoolAddress()).unstakeRpl(_NodeAccount, excessRpl);
+
+            // Update the amount of RPL funded by the node
+            minipoolAmountFundedRpl[_NodeAccount] -= excessRpl;
         }
     }
 
-    function performTopDown(address _nodeAddress, uint256 _ethStaked) public onlyProtocolOrAdmin {
-        uint256 rplStaked = IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStake(_nodeAddress);
-        uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
-
-        uint256 stakeRatio = rplStaked == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / rplStaked;
-        if (stakeRatio > targetStakeRatio) {
-            uint256 maxRplStake = (_ethStaked * ethPriceInRpl) / targetStakeRatio;
-            uint256 excessRpl = rplStaked > maxRplStake ? rplStaked - maxRplStake : 0;
-
-            if (excessRpl > 0) {
-                fundedRpl -= excessRpl;
-                DepositPool(_directory.getDepositPoolAddress()).unstakeRpl(_nodeAddress, excessRpl);
-
-                // Update the amount of RPL funded by the node
-                minipoolAmountFundedRpl[_nodeAddress] -= excessRpl;
+    function _performTopUp(address _NodeAccount, uint256 _requiredStake) internal {
+        uint256 currentRplBalance = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
+        if (currentRplBalance >= _requiredStake) {
+            if (_requiredStake == 0) {
+                return;
             }
+            // stakeRPLOnBehalfOf
+            // transfer RPL to deposit pool
+            IERC20(_directory.getRPLAddress()).transfer(
+                _directory.getDepositPoolAddress(),
+                _requiredStake
+            );
+            FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_NodeAccount, _requiredStake);
+        } else {
+            if (currentRplBalance == 0) {
+                return;
+            }
+            // stake what we have
+            IERC20(_directory.getRPLAddress()).transfer(
+                _directory.getDepositPoolAddress(),
+                currentRplBalance
+            );
+            FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_NodeAccount, currentRplBalance);
         }
     }
 
@@ -343,6 +328,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         }
 
         for (uint i = 0; i < numMinipoolsProcessedPerInterval; i++) {
+            console.log('processNextMinipool() at', i);
             _processNextMinipool();
         }
     }
@@ -373,26 +359,45 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @dev Processes a single minipool by performing RPL top-up and distributing balance if certain conditions are met.
      */
     function _processNextMinipool() internal {
-        uint256 index = nextMinipoolHavestIndex % minipoolAddresses.length;
+        if(nextMinipoolHavestIndex > minipoolAddresses.length - 1) {
+            nextMinipoolHavestIndex = 0;
+        }
+
+        uint256 index = nextMinipoolHavestIndex;
         IMinipool minipool = IMinipool(minipoolAddresses[index]);
 
-        if (minipool.getStatus() != MinipoolStatus.Staking) {
-            emit WarningMinipoolNotStaking(address(minipool), minipool.getStatus());
+        MinipoolStatus minipoolStatus = minipool.getStatus();
+        console.log('_processNextMinipool.status=', uint256(minipoolStatus));
+        if (minipoolStatus != MinipoolStatus.Staking) {
+            emit WarningMinipoolNotStaking(address(minipool), minipoolStatus);
             return;
         }
 
         // process top up
         address nodeAddress = minipool.getNodeAddress();
+        address nodeOperator = NodeAccount(nodeAddress).nodeOperator();
+        console.log('_processNextMinipool.nodeAddress:');
+        console.logAddress(nodeAddress);
+        uint256 ethStaked = nodeOperatorEthStaked[nodeOperator];
 
-        uint256 ethStaked = nodeOperatorEthStaked[nodeAddress];
+        console.log('_processNextMinipool.ethStaked', ethStaked);
 
-        performTopUp(nodeAddress, ethStaked);
-        performTopDown(nodeAddress, ethStaked);
+        rebalanceRplStake(nodeAddress, ethStaked);
+        //performTopDown(nodeAddress, ethStaked);
 
-        nextMinipoolHavestIndex = index + 1;
 
         uint256 balance = minipool.getNodeDepositBalance();
-        minipool.distributeBalance(balance >= 8 ether);
+        // TODO: Talk to Mike: used to pass  balance >= 8 ether but whent this is true, it will always revert
+        if (balance >= 8 ether) {
+            //minipool.distributeBalance(false);
+            NodeAccount(
+                NodeAccountFactory(_directory.getNodeAccountFactoryAddress()).minipoolNodeAccountMap(
+                    address(minipool)
+                )
+            ).distributeBalance(false, address(minipool));
+        }
+
+        nextMinipoolHavestIndex++;
     }
 
     /**
@@ -410,10 +415,15 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         requiredLEBStaked = _requiredLEBStaked;
     }
 
+    function setTargetStakeRatio(uint256 _targetStakeRatio) external onlyAdmin {
+        targetStakeRatio = _targetStakeRatio;
+    }
+
     function onNodeOperatorDissolved(address _nodeOperator, uint256 _bond) external onlyProtocol {
         fundedEth -= _bond;
         nodeOperatorEthStaked[_nodeOperator] -= _bond;
     }
+
 
     /**
      * @notice Retrieves the list of minipool addresses managed by the contract.

@@ -14,6 +14,10 @@ interface IRocketNodeStaking {
     /// @param _amount The amount of RPL to stake
     function stakeRPLFor(address _nodeAddress, uint256 _amount) external;
 
+    function getNodeMaximumRPLStake(address _nodeAddress) external view returns (uint256);
+    
+    function getNodeETHMatchedLimit(address _nodeAddress) external view returns (uint256);
+
     /// @notice Returns the amount a given node operator has staked
     /// @param _nodeAddress The address of the node operator to query
     function getNodeRPLStake(address _nodeAddress) external view returns (uint256);

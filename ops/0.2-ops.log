@@ -31,7 +31,7 @@ WARNING: You are currently using Node.js v21.4.0, which is not supported by Hard
  ··········································|································|·································
  |  Deployer                               ·                 0.062 (0.000)  ·                 0.090 (0.000)  │
  ··········································|································|·································
- |  DepositPool                            ·                 8.874 (0.000)  ·                 9.542 (0.000)  │
+ |  FundRouter                            ·                 8.874 (0.000)  ·                 9.542 (0.000)  │
  ··········································|································|·································
  |  Directory                              ·                11.056 (0.000)  ·                11.438 (0.000)  │
  ··········································|································|·································
@@ -267,9 +267,9 @@ WARNING: You are currently using Node.js v21.4.0, which is not supported by Hard
  ··········································|································|·································
  |  StringsUpgradeable                     ·                 0.084 (0.000)  ·                 0.138 (0.000)  │
  ··········································|································|·································
- |  ValidatorAccount                       ·                 6.927 (0.000)  ·                 7.314 (0.000)  │
+ |  NodeAccount                       ·                 6.927 (0.000)  ·                 7.314 (0.000)  │
  ··········································|································|·································
- |  ValidatorAccountFactory                ·                 7.595 (0.000)  ·                 7.982 (0.000)  │
+ |  NodeAccountFactory                ·                 7.595 (0.000)  ·                 7.982 (0.000)  │
  ··········································|································|·································
  |  WETH                                   ·                 2.941 (0.000)  ·                 3.440 (0.000)  │
  ··········································|································|·································
@@ -285,7 +285,7 @@ Welcome to Node.js v21.4.0.
 Type ".help" for more information.
 > (node:48709) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-> const vaf = await ethers.getContractAt("ValidatorAccountFactory", "0x50ea5ba8241a3357275a7b0b61735d1b46F4499F")
+> const vaf = await ethers.getContractAt("NodeAccountFactory", "0x50ea5ba8241a3357275a7b0b61735d1b46F4499F")
 undefined
 > const [deployer, admin] = await ethers.getSigners()
 undefined
@@ -2607,7 +2607,7 @@ Uncaught TypeError: ethers.utils.parseEth is not a function
     at REPL751:1:78
 > await vaf.hasSufficentLiquidity(ethers.utils.parseEther("8"))
 false
-> let depositPool = await ethers.getContractAt("DepositPool", "0xdeFD1eCceC757Ec205509d72C50946699e4d1Bec")
+> let depositPool = await ethers.getContractAt("FundRouter", "0xdeFD1eCceC757Ec205509d72C50946699e4d1Bec")
 undefined
 > await depositPool.connect(admin).sendRplToDistributors()
 {

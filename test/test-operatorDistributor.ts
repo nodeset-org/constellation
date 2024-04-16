@@ -5,39 +5,41 @@ import { protocolFixture, SetupData } from "./test";
 import { BigNumber as BN } from "ethers";
 import { getMinipoolsInProtocol, getMockMinipoolsInProtocol, prepareOperatorDistributionContract, printEventDetails, registerNewValidator, upgradePriceFetcherToMock } from "./utils/utils";
 import { IMinipool, MockMinipool } from "../typechain-types";
+import { RocketDepositPool } from "./rocketpool/_utils/artifacts";
 
-describe.skip("Operator Distributor", function () {
+describe("Operator Distributor", function () {
 
 	it("Tops up the RPL stake if it is below the minimum", async function () {
 		// load fixture
 		const setupData = await loadFixture(protocolFixture);
 		const { protocol, signers, rocketPool } = setupData;
 		const { operatorDistributor } = protocol;
-		const { rocketNodeStakingContract } = rocketPool;
-		const mockRocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", rocketNodeStakingContract.address);
+		const { rocketNodeStakingContract, rocketDepositPoolContract } = rocketPool;
+		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
+		const rocketDepositPool = await ethers.getContractAt("RocketDepositPool", rocketDepositPoolContract.address);
 
 		await prepareOperatorDistributionContract(setupData, 2);
-		await registerNewValidator(setupData, [signers.random, signers.random2])
+		const NodeAccounts = await registerNewValidator(setupData, [signers.random, signers.random2])
 
 		// send rpl to the operator distributor
 		const rplAmount = ethers.utils.parseEther("1000");
 		await rocketPool.rplContract.connect(signers.rplWhale).transfer(operatorDistributor.address, rplAmount);
 
-		const minipools: MockMinipool[] = await getMockMinipoolsInProtocol(setupData);
-		for (let i = 0; i < minipools.length; i++) {
-			const minipool = minipools[i];
-			//await minipool.setNodeDepositBalance(ethers.utils.parseEther("1"));
-		}
+		const lastPrice = await upgradePriceFetcherToMock(signers, protocol, ethers.utils.parseEther("55"));
+		console.log("last price", lastPrice);
 
-		const initialRplStake = await mockRocketNodeStaking.getNodeRPLStake(signers.random.address);
+		const initialRplStake = await rocketNodeStaking.getNodeRPLStake(NodeAccounts[0].address);
+		console.log("od.test.initial stake", initialRplStake)
 		const tx = await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
-		printEventDetails(tx, operatorDistributor);
+		console.log("printing events")
+		await printEventDetails(tx, operatorDistributor);
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
-		const finalRplStake = await mockRocketNodeStaking.getNodeRPLStake(signers.random.address);
+		const finalRplStake = await rocketNodeStaking.getNodeRPLStake(NodeAccounts[0].address);
+		console.log("od.test.finalRplStake stake", finalRplStake)
 
-		expect(finalRplStake.sub(initialRplStake)).gt(0);
+		expect(finalRplStake.sub(initialRplStake)).gt(ethers.BigNumber.from(0));
 
 	});
 

@@ -2,8 +2,9 @@
 
 pragma solidity 0.8.17;
 
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+
 import '../../Interfaces/RocketPool/IRocketNodeStaking.sol';
-import '../../Interfaces/RocketTokenRPLInterface.sol';
 
 import '../../Utils/Constants.sol';
 
@@ -33,10 +34,14 @@ contract MockRocketNodeStaking is IRocketNodeStaking {
 
     function withdrawRPL(address _nodeAddress, uint256 _amount) external override {
         // Transfer RPL from this contract to msg.sender
-        RocketTokenRPLInterface rplToken = RocketTokenRPLInterface(0xD33526068D116cE69F19A9ee46F0bd304F21A51f);
+        IERC20 rplToken = IERC20(0xD33526068D116cE69F19A9ee46F0bd304F21A51f);
         rplStaked -= _amount;
         rplToken.transfer(_nodeAddress, _amount);
     }
 
     function setStakeRPLForAllowed(address _nodeAddress, address _caller, bool _allowed) external override {}
+
+    function getNodeMaximumRPLStake(address _nodeAddress) external view override returns (uint256) {}
+
+    function getNodeETHMatchedLimit(address _nodeAddress) external view override returns (uint256) {}
 }

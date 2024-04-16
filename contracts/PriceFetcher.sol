@@ -32,6 +32,7 @@ contract PriceFetcher is UpgradeableBase {
     function getPriceFromODAO() public view returns (uint256) {
         console.log("getPriceFromODAO");
         console.logAddress(address(_directory.getRocketNetworkPrices()));
+        // do we use rocketNetworkSnapshots instead and pass priceKey, ..., 14?
         return _directory.getRocketNetworkPrices().getRPLPrice();
     }
 

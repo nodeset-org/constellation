@@ -3,7 +3,7 @@ import { getRocketPool, protocolFixture, protocolParams } from "../test/test";
 import { setDefaultParameters } from "../test/rocketpool/_helpers/defaults";
 import { deployRocketPool } from "../test/rocketpool/_helpers/deployment";
 import { getNextContractAddress } from "../test/utils/utils";
-import { IXRETHOracle, ValidatorAccountFactory } from "../typechain-types";
+import { IXRETHOracle, NodeAccountFactory } from "../typechain-types";
 import { expect } from "chai";
 import readline from 'readline';
 
@@ -159,14 +159,14 @@ async function main() {
     console.log("vCRPL address", vCRPL.address)
 
     const depositPoolProxyAbi = await retryOperation(async () => {
-        const deployedProxy = await upgrades.deployProxy(await ethers.getContractFactory("DepositPool"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        const deployedProxy = await upgrades.deployProxy(await ethers.getContractFactory("FundRouter"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         await deployedProxy.deployTransaction.wait();
         return deployedProxy;
     });
     console.log("depositPoolProxyAbi address", depositPoolProxyAbi.address);
 
 
-    const depositPool = await ethers.getContractAt("DepositPool", depositPoolProxyAbi.address);
+    const depositPool = await ethers.getContractAt("FundRouter", depositPoolProxyAbi.address);
     console.log("depositPool address", depositPool.address)
 
     const operatorDistributorProxyAbi = await retryOperation(async () => {
@@ -213,15 +213,15 @@ async function main() {
     });
     console.log("sanctions address", sanctions.address);
 
-    const validatorAccountFactory = await retryOperation(async () => {
-        const ValidatorAccountLogic = await ethers.getContractFactory("ValidatorAccount");
-        const validatorAccountLogic = await ValidatorAccountLogic.deploy();
-        await validatorAccountLogic.deployed();
-        const factory = await upgrades.deployProxy(await ethers.getContractFactory("ValidatorAccountFactory"), [directoryAddress, validatorAccountLogic.address], { 'initializer': 'initializeWithImplementation', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+    const NodeAccountFactory = await retryOperation(async () => {
+        const NodeAccountLogic = await ethers.getContractFactory("NodeAccount");
+        const NodeAccountLogic = await NodeAccountLogic.deploy();
+        await NodeAccountLogic.deployed();
+        const factory = await upgrades.deployProxy(await ethers.getContractFactory("NodeAccountFactory"), [directoryAddress, NodeAccountLogic.address], { 'initializer': 'initializeWithImplementation', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
         await factory.deployTransaction.wait();
         return factory;
-    }) as ValidatorAccountFactory;
-    console.log("validator factory address", validatorAccountFactory.address);
+    }) as NodeAccountFactory;
+    console.log("validator factory address", NodeAccountFactory.address);
 
     const directoryProxyAbi = await retryOperation(async () => {
         const deployedProxy = await upgrades.deployProxy(await ethers.getContractFactory("Directory"),
@@ -232,7 +232,7 @@ async function main() {
                     vCRPL.address,
                     depositPool.address,
                     operatorDistributor.address,
-                    validatorAccountFactory.address,
+                    NodeAccountFactory.address,
                     yieldDistributor.address,
                     oracle.address,
                     priceFetcher.address,

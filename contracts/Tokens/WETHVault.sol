@@ -6,10 +6,11 @@ import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgrad
 import './RPLVault.sol';
 import '../PriceFetcher.sol';
 import '../UpgradeableBase.sol';
-import '../DepositPool.sol';
+import '../FundRouter.sol';
 import '../Operator/YieldDistributor.sol';
 import '../Utils/Constants.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
+import '../Interfaces/Oracles/IXRETHOracle.sol';
 
 import 'hardhat/console.sol';
 
@@ -109,7 +110,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         principal += assets;
 
-        DepositPool(pool).sendEthToDistributors();
+        FundRouter(pool).sendEthToDistributors();
 
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
 
@@ -144,7 +145,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         console.log('ABC1');
 
-        DepositPool(_directory.getDepositPoolAddress()).sendEthToDistributors();
+        FundRouter(_directory.getDepositPoolAddress()).sendEthToDistributors();
 
         console.log('ABC2');
 
@@ -173,20 +174,25 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     function currentIncomeFromRewards() public view returns (uint256) {
         unchecked {
-            DepositPool dp = DepositPool(getDirectory().getDepositPoolAddress());
+            FundRouter dp = FundRouter(getDirectory().getDepositPoolAddress());
+            console.log("WETHVault.currentIncomeFromRewards()");
+            console.log(gasleft());
+            console.log("getDirectory()");
+            console.log("getDirectory().getOperatorDistributorAddress()");
             OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
             uint256 tvl = super.totalAssets() + getDistributableYield() + dp.getTvlEth() + od.getTvlEth();
 
             if (tvl < principal) {
                 return 0;
             }
-            //uint256 currentAdminIncome = (tvl - principal).mulDiv(adminFeeBasisPoint, 1e5);
             return tvl - principal;
         }
     }
 
     function totalAssets() public view override returns (uint256) {
-        DepositPool dp = DepositPool(getDirectory().getDepositPoolAddress());
+        //console.log("WETHVault.totalAssets()");
+        //console.log(getDirectory().getDepositPoolAddress());
+        FundRouter dp = FundRouter(getDirectory().getDepositPoolAddress());
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         uint256 currentIncome = currentIncomeFromRewards();
         uint256 currentAdminIncome = currentIncome.mulDiv(adminFeeBasePoint, 1e5);
@@ -269,10 +275,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         console.log('no fee', feeAmountNodeOperator);
         console.log('no fee', feeAmountAdmin);
-        (bool shortfallNo, uint256 noOut, uint256 remainingNo) = _doFeeTransferOut(address(yd), feeAmountNodeOperator);
-        yd.wethReceived(noOut);
+        (bool shortfallNo, uint256 noOut, uint256 remainingNo) = _doTransferOut(address(yd), feeAmountNodeOperator);
+        yd.wethReceivedVoidClaim(noOut);
         console.log('transfered to nodep po');
-        (bool shortfallAdmin, uint256 adminOut, uint256 remainingAdmin) = _doFeeTransferOut(
+        (bool shortfallAdmin, uint256 adminOut, uint256 remainingAdmin) = _doTransferOut(
             _directory.getTreasuryAddress(),
             feeAmountAdmin
         );
@@ -287,7 +293,11 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         emit AdminFeeClaimed(feeAmountAdmin);
     }
 
-    function _doFeeTransferOut(address _to, uint256 _amount) internal returns (bool, uint256, uint256) {
+    function doTransferOut(address _to, uint256 _amount) external onlyProtocol returns (bool, uint256, uint256) {
+        return _doTransferOut(_to, _amount);
+    }
+
+    function _doTransferOut(address _to, uint256 _amount) internal returns (bool, uint256, uint256) {
         IERC20 asset = IERC20(asset());
         uint256 balance = asset.balanceOf(address(this));
         uint256 shortfall = _amount > balance ? _amount - balance : 0;

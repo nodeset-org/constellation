@@ -140,4 +140,10 @@ contract MockMinipool is IMinipool {
     function voteScrub() external override {}
 
     function reduceBondAmount() external override {}
+
+    function delegateUpgrade() external override {}
+
+    function delegateRollback() external override {}
+
+    function setUseLatestDelegate(bool _setting) external override {}
 }

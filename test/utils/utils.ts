@@ -155,7 +155,7 @@ export const assertSingleTransferExists = async (
 
 
 
-export async function deployValidatorAccount(signer: SignerWithAddress, protocol: Protocol, signers: Signers, bondValue: BigNumber) {
+export async function deployNodeAccount(signer: SignerWithAddress, protocol: Protocol, signers: Signers, bondValue: BigNumber) {
     const salt = 3;
 
     const nextAddress = "0xD9bf496401781cc411AE0F465Fe073872A50D639";
@@ -172,11 +172,11 @@ export async function deployValidatorAccount(signer: SignerWithAddress, protocol
         expectedMinipoolAddress: depositData.minipoolAddress
     }
 
-    const proxyVAAddr = await protocol.validatorAccountFactory.connect(signers.hyperdriver).callStatic.createNewValidatorAccount(config, nextAddress, {
+    const proxyVAAddr = await protocol.NodeAccountFactory.connect(signers.hyperdriver).callStatic.createNewNodeAccount(config, nextAddress, {
         value: ethers.utils.parseEther("1")
     })
 
-    await protocol.validatorAccountFactory.connect(signers.hyperdriver).createNewValidatorAccount(config, nextAddress, {
+    await protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(config, nextAddress, {
         value: ethers.utils.parseEther("1")
     })
 
@@ -211,10 +211,14 @@ export async function upgradePriceFetcherToMock(signers: Signers, protocol: Prot
     const mockPriceFetcher = await mockPriceFetcherFactory.deploy();
     await mockPriceFetcher.deployed();
 
+    const lastPrice = await protocol.priceFetcher.getPrice();
+    
     await protocol.priceFetcher.connect(signers.admin).upgradeTo(mockPriceFetcher.address);
 
     const priceFetcherV2 = await ethers.getContractAt("MockPriceFetcher", protocol.priceFetcher.address);
     await priceFetcherV2.setPrice(price);
+
+    return lastPrice;
 };
 
 export async function printEventDetails(tx: ContractTransaction, contract: Contract): Promise<void> {
@@ -235,26 +239,30 @@ export async function printEventDetails(tx: ContractTransaction, contract: Contr
                         });
                 }
             } else if (event.topics && event.topics.length > 0) { // Decode the raw log
-                const eventDescription = contract.interface.getEvent(event.topics[0]);
-                console.log(`Event Name: ${eventDescription.name}`);
-                const decodedData = contract.interface.decodeEventLog(eventDescription, event.data, event.topics);
-                if (decodedData) {
-                    console.log("Arguments:");
-                    Object.keys(decodedData).forEach(key => {
-                        console.log(`  ${key}: ${decodedData[key]}`);
-                    });
+                try {
+                    const eventDescription = contract.interface.getEvent(event.topics[0]);
+                    console.log(`Event Name: ${eventDescription.name}`);
+                    const decodedData = contract.interface.decodeEventLog(eventDescription, event.data, event.topics);
+                    if (decodedData) {
+                        console.log("Arguments:");
+                        Object.keys(decodedData).forEach(key => {
+                            console.log(`  ${key}: ${decodedData[key]}`);
+                        });
+                    }
+                } catch(e) {
+                    console.log("Uh oh, error occured printing events due to manual decoding :(")
                 }
             }
         }
     }
 }
 /**
-* Counts the `ProxyCreated` events emitted by the ValidatorAccountFactory contract.
+* Counts the `ProxyCreated` events emitted by the NodeAccountFactory contract.
 * @param provider The Ethereum provider.
 * @returns The number of `ProxyCreated` events.
 */
 export async function countProxyCreatedEvents(setupData: SetupData): Promise<number> {
-    const events = await setupData.protocol.validatorAccountFactory.queryFilter(setupData.protocol.validatorAccountFactory.filters.ProxyCreated());
+    const events = await setupData.protocol.NodeAccountFactory.queryFilter(setupData.protocol.NodeAccountFactory.filters.ProxyCreated());
     return events.length;
 }
 
@@ -262,7 +270,83 @@ export async function predictDeploymentAddress(address: string, factoryNonceOffs
     return ethers.utils.getContractAddress({ from: address, nonce: factoryNonceOffset });
 }
 
+export async function increaseEVMTime(seconds: number) {
+    // Sending the evm_increaseTime request
+    await ethers.provider.send('evm_increaseTime', [seconds]);
+
+    // Mining a new block to apply the EVM time change
+    await ethers.provider.send('evm_mine', []);
+}
+
 export const registerNewValidator = async (setupData: SetupData, nodeOperators: SignerWithAddress[]) => {
+    const requiredEth = ethers.utils.parseEther("8").mul(nodeOperators.length);
+    if ((await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)).lt(requiredEth)) {
+        throw new Error(`Not enough eth in operatorDistributor contract to register ${nodeOperators.length} validators. Required ${ethers.utils.formatEther(requiredEth)} eth but only have ${ethers.utils.formatEther(await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address))} eth`);
+    }
+
+    const { protocol, signers } = setupData;
+
+
+    const NodeAccounts = []
+
+    for(let i = 0; i < nodeOperators.length; i++) {
+        console.log("setting up node operator %s of %s", i+1, nodeOperators.length)
+        const nodeOperator = nodeOperators[i];
+
+        const bond = ethers.utils.parseEther("8");
+        const salt = i;
+    
+        //expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(false);
+        await prepareOperatorDistributionContract(setupData, 2);
+        //expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(true);
+    
+        if(!(await protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address))) {
+            await protocol.whitelist.connect(signers.admin).addOperator(nodeOperator.address);
+        }
+        
+        const deploymentCount = await countProxyCreatedEvents(setupData);
+        const nextAddress = await predictDeploymentAddress(protocol.NodeAccountFactory.address, deploymentCount + 1)
+        const depositData = await generateDepositData(nextAddress, salt);
+    
+        const config = {
+            timezoneLocation: 'Australia/Brisbane',
+            bondAmount: bond,
+            minimumNodeFee: 0,
+            validatorPubkey: depositData.depositData.pubkey,
+            validatorSignature: depositData.depositData.signature,
+            depositDataRoot: depositData.depositDataRoot,
+            salt: salt,
+            expectedMinipoolAddress: depositData.minipoolAddress
+        }
+    
+        await protocol.NodeAccountFactory.connect(nodeOperator).createNewNodeAccount(config, nextAddress, {
+            value: ethers.utils.parseEther("1")
+        })
+    
+        expect(await protocol.directory.hasRole(ethers.utils.id("FACTORY_ROLE"), protocol.NodeAccountFactory.address)).equals(true)
+        expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), protocol.NodeAccountFactory.address)).equals(true)
+        expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), nextAddress)).equals(true)
+
+        await setupData.rocketPool.rocketDepositPoolContract.deposit({
+            value:ethers.utils.parseEther("32")
+        })
+		await setupData.rocketPool.rocketDepositPoolContract.assignDeposits();
+
+        // waits 32 days which could be a problem for other tests
+        await increaseEVMTime(60 * 60 * 24 * 7 * 32);
+
+        // enter stake mode
+        const NodeAccount = await ethers.getContractAt("NodeAccount", nextAddress);
+        await NodeAccount.connect(nodeOperator).stake(config.expectedMinipoolAddress);
+
+        NodeAccounts.push(NodeAccount)
+    }
+
+    return NodeAccounts
+} 
+
+// Deprecated: Don't use
+export const registerNewValidatorDeprecated = async (setupData: SetupData, nodeOperators: SignerWithAddress[]) => {
 
     // one currently needs 8 eth in the operatorDistribution contract to register a validator for each node operator
     const requiredEth = ethers.utils.parseEther("8").mul(nodeOperators.length);
@@ -297,7 +381,8 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         // admin will reimburse the node operator for the minipool
         let operatorData = await setupData.protocol.whitelist.getOperatorAtAddress(nodeOperator.address);
         const lastCount = operatorData.currentValidatorCount;
-        await setupData.protocol.operatorDistributor.connect(setupData.signers.admin).reimburseNodeForMinipool(sig, mockMinipool.address);
+        //await setupData.protocol.operatorDistributor.connect(setupData.signers.admin).reimburseNodeForMinipool(sig, mockMinipool.address);
+        // FUNCTION DNE
         operatorData = await setupData.protocol.whitelist.getOperatorAtAddress(nodeOperator.address);
         expect(operatorData.currentValidatorCount).to.equal(lastCount + 1);
 
@@ -305,7 +390,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
 };
 
 // TODO: Make sure the minimums are actaully met. 
-// WARNING: This function does not work as exepcted
+// WARNING: This function does not work as exepcted, WARNING!!! it just sends more eth than required to {::} & RP
 export async function prepareOperatorDistributionContract(setupData: SetupData, numOperators: Number) {
     const vweth = setupData.protocol.vCWETH;
     const depositAmount = ethers.utils.parseEther("8").mul(BigNumber.from(numOperators));
@@ -323,6 +408,9 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
         to: setupData.protocol.operatorDistributor.address,
         value: requiredEth
     });
+
+    // send eth to the rocketpool deposit contract (mint rETH to signers[0])
+    
 
     const rplRequried = await setupData.protocol.operatorDistributor.calculateRequiredRplTopUp(0, requiredEth);
     await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequried);

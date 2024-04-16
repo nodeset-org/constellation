@@ -17,14 +17,14 @@ describe("Validator Account Factory", function () {
         const bond = ethers.utils.parseEther("8");
         const salt = 3;
 
-        expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(false);
+        expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(false);
         await prepareOperatorDistributionContract(setupData, 2);
-        expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(true);
+        expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(true);
 
         await protocol.whitelist.connect(signers.admin).addOperator(signers.hyperdriver.address);
         
         const deploymentCount = await countProxyCreatedEvents(setupData);
-        const nextAddress = await predictDeploymentAddress(protocol.validatorAccountFactory.address, deploymentCount + 1)
+        const nextAddress = await predictDeploymentAddress(protocol.NodeAccountFactory.address, deploymentCount + 1)
         const depositData = await generateDepositData(nextAddress, salt);
 
         const config = {
@@ -38,12 +38,12 @@ describe("Validator Account Factory", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         }
 
-        await protocol.validatorAccountFactory.connect(signers.hyperdriver).createNewValidatorAccount(config, nextAddress, {
+        await protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(config, nextAddress, {
             value: ethers.utils.parseEther("1")
         })
 
-        expect(await protocol.directory.hasRole(ethers.utils.id("FACTORY_ROLE"), protocol.validatorAccountFactory.address)).equals(true)
-        expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), protocol.validatorAccountFactory.address)).equals(true)
+        expect(await protocol.directory.hasRole(ethers.utils.id("FACTORY_ROLE"), protocol.NodeAccountFactory.address)).equals(true)
+        expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), protocol.NodeAccountFactory.address)).equals(true)
         expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), nextAddress)).equals(true)
     });
 
@@ -54,12 +54,12 @@ describe("Validator Account Factory", function () {
         const bond = ethers.utils.parseEther("8");
         const salt = 3;
 
-        expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(false);
+        expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(false);
         await prepareOperatorDistributionContract(setupData, 1);
-        expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(true);
+        expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(true);
 
         const deploymentCount = await countProxyCreatedEvents(setupData);
-        const nextAddress = await predictDeploymentAddress(protocol.validatorAccountFactory.address, deploymentCount + 1)
+        const nextAddress = await predictDeploymentAddress(protocol.NodeAccountFactory.address, deploymentCount + 1)
         const depositData = await generateDepositData(nextAddress, salt);
 
         const config = {
@@ -73,7 +73,7 @@ describe("Validator Account Factory", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         }
 
-        await expect(protocol.validatorAccountFactory.connect(signers.hyperdriver).createNewValidatorAccount(config, nextAddress, {
+        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(config, nextAddress, {
             value: ethers.utils.parseEther("1")
         })).to.be.revertedWith("Whitelist: Provided address is not an allowed operator!")
     });
@@ -95,9 +95,9 @@ describe("Validator Account Factory", function () {
             expectedMinipoolAddress: "0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97"
         }
 
-        await expect(protocol.validatorAccountFactory.connect(signers.hyperdriver).createNewValidatorAccount(badConfig, nextBadAddress, {
+        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(badConfig, nextBadAddress, {
             value: ethers.utils.parseEther("1")
-        })).to.be.revertedWithCustomError(protocol.validatorAccountFactory, "BadPredictedCreation");
+        })).to.be.revertedWithCustomError(protocol.NodeAccountFactory, "BadPredictedCreation");
     })
 
     it("fails - forget to lock 1 eth", async () => {
@@ -117,9 +117,9 @@ describe("Validator Account Factory", function () {
             expectedMinipoolAddress: "0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97"
         }
 
-        await expect(protocol.validatorAccountFactory.connect(signers.hyperdriver).createNewValidatorAccount(badConfig, nextBadAddress, {
+        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(badConfig, nextBadAddress, {
             value: ethers.utils.parseEther("0")
-        })).to.be.revertedWith("ValidatorAccount: must lock 1 ether");
+        })).to.be.revertedWith("NodeAccount: must lock 1 ether");
     });
 
     it("fails - no liquidity for given bond", async () => {
@@ -139,8 +139,8 @@ describe("Validator Account Factory", function () {
             expectedMinipoolAddress: "0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97"
         }
 
-        await expect(protocol.validatorAccountFactory.connect(signers.hyperdriver).createNewValidatorAccount(badConfig, nextBadAddress, {
+        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(badConfig, nextBadAddress, {
             value: ethers.utils.parseEther("1")
-        })).to.be.revertedWith("ValidatorAccount: protocol must have enough rpl and eth");
+        })).to.be.revertedWith("NodeAccount: protocol must have enough rpl and eth");
     });
 });

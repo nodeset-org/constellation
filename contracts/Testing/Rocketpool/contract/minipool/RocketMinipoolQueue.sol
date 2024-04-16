@@ -12,6 +12,8 @@ import '../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolI
 import '../../interface/util/AddressQueueStorageInterface.sol';
 import '../../types/MinipoolDeposit.sol';
 
+import "hardhat/console.sol";
+
 /// @notice Minipool queueing for deposit assignment
 contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     // Libs
@@ -139,11 +141,13 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         onlyLatestContract('rocketMinipoolQueue', address(this))
         onlyLatestContract('rocketNodeDeposit', msg.sender)
     {
+        console.log("RocketMinipoolQueue.enqueueMinipool");
         // Enqueue
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(
             getContractAddress('addressQueueStorage')
         );
         addressQueueStorage.enqueueItem(queueKeyVariable, _minipool);
+
         // Emit enqueued event
         emit MinipoolEnqueued(_minipool, queueKeyVariable, block.timestamp);
     }
@@ -180,6 +184,9 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         returns (address[] memory minipoolAddress)
     {
         uint256 queueLength = getLength();
+        console.log("RocketMinipoolQueue.dequeueMinipools()");
+        console.log("RocketMinipoolQueue.queueLength=", queueLength);
+        console.log("RocketMinipoolQueue._maxToDequeue=", _maxToDequeue);
         uint256 count = _maxToDequeue;
         if (count > queueLength) {
             count = queueLength;
