@@ -1245,12 +1245,6 @@ function totalAssets() public view returns (uint256)
 
 Returns the total assets managed by this vault.
 
-_This function aggregates the total assets from three sources:
-1. Assets directly held in this vault.
-2. Assets held in the associated FundRouter.
-3. Assets held in the associated OperatorDistributor.
-The sum of these gives the overall total assets managed by the vault._
-
 #### Return Values
 
 | Name | Type | Description |

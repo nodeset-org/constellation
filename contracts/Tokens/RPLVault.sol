@@ -132,11 +132,6 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Returns the total assets managed by this vault.
-     * @dev This function aggregates the total assets from three sources:
-     * 1. Assets directly held in this vault.
-     * 2. Assets held in the associated FundRouter.
-     * 3. Assets held in the associated OperatorDistributor.
-     * The sum of these gives the overall total assets managed by the vault - admin owed rewards.
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
