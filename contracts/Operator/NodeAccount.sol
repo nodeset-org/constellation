@@ -55,17 +55,7 @@ contract NodeAccount is UpgradeableBase, Errors {
     }
 
     modifier hasConfig(address _minipool) {
-        require(
-            keccak256(abi.encodePacked(configs[_minipool].timezoneLocation)) != keccak256(abi.encodePacked('')) &&
-                configs[_minipool].bondAmount != 0 &&
-                configs[_minipool].minimumNodeFee != 0 &&
-                configs[_minipool].validatorPubkey.length != 0 &&
-                configs[_minipool].validatorSignature.length != 0 &&
-                configs[_minipool].depositDataRoot != bytes32(0) &&
-                configs[_minipool].salt != 0 &&
-                configs[_minipool].expectedMinipoolAddress != address(0),
-            'ValidatorConfig is not initialized!'
-        );
+        require(lockStarted[_minipool] != 0, "nodeAccount not initialized");
         _;
     }
 
