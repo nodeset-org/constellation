@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 const fs = require("fs");
 
 // Load the compiled artifact JSON
-const artifact = JSON.parse(fs.readFileSync("artifacts/contracts/Operator/ValidatorAccount.sol/ValidatorAccount.json", "utf8"));
+const artifact = JSON.parse(fs.readFileSync("artifacts/contracts/Operator/NodeAccount.sol/NodeAccount.json", "utf8"));
 
 // Extract the bytecode
 const bytecode = artifact.bytecode;

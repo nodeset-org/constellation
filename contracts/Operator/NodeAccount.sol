@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
-import './ValidatorAccountFactory.sol';
+import './NodeAccountFactory.sol';
 
 import '../Whitelist/Whitelist.sol';
 import './OperatorDistributor.sol';
@@ -25,7 +25,7 @@ import '../Utils/Errors.sol';
 
 /// @custom:security-contact info@nodeset.io
 /// @notice distributes rewards in weth to node operators
-contract ValidatorAccount is UpgradeableBase, Errors {
+contract NodeAccount is UpgradeableBase, Errors {
     struct ValidatorConfig {
         string timezoneLocation;
         uint256 bondAmount;
@@ -37,7 +37,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
         address expectedMinipoolAddress;
     }
 
-    ValidatorAccountFactory public vaf;
+    NodeAccountFactory public vaf;
     ValidatorConfig public config;
 
     IMinipool public minipool;
@@ -66,7 +66,7 @@ contract ValidatorAccount is UpgradeableBase, Errors {
             revert BadPredictedCreation(_predictedAddress, address(this));
         }
 
-        vaf = ValidatorAccountFactory(msg.sender);
+        vaf = NodeAccountFactory(msg.sender);
         config = _config;
 
         super.initialize(_directory);
@@ -174,10 +174,10 @@ contract ValidatorAccount is UpgradeableBase, Errors {
     function unlock() external {
         require(
             block.timestamp - lockStarted > vaf.lockUpTime() || minipool.getStatus() == MinipoolStatus.Staking,
-            'ValidatorAccount: locked eth can be redeemed after lockUpTime has elapsed or minipool is staking'
+            'NodeAccount: locked eth can be redeemed after lockUpTime has elapsed or minipool is staking'
         );
-        require(msg.sender == nodeOperator, 'ValidatorAccount: Only node operator can redeem lock');
-        require(lockedEth != 0, 'ValidatorAccount: funds already unlocked');
+        require(msg.sender == nodeOperator, 'NodeAccount: Only node operator can redeem lock');
+        require(lockedEth != 0, 'NodeAccount: funds already unlocked');
 
         lockedEth = 0;
         (bool success, bytes memory data) = nodeOperator.call{value: vaf.lockThreshhold()}('');

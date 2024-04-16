@@ -22,7 +22,7 @@ struct Protocol {
     address rplVault;
     address payable depositPool;
     address payable operatorDistributor;
-    address validatorAccountFactory;
+    address NodeAccountFactory;
     address payable yieldDistributor;
     address oracle;
     address priceFetcher;
@@ -109,8 +109,8 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.operatorDistributor;
     }
 
-    function getValidatorAccountFactoryAddress() public view returns (address) {
-        return _protocol.validatorAccountFactory;
+    function getNodeAccountFactoryAddress() public view returns (address) {
+        return _protocol.NodeAccountFactory;
     }
 
     function getYieldDistributorAddress() public view returns (address payable) {
@@ -224,8 +224,8 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _grantRole(Constants.ADMIN_ROLE, admin);
         _grantRole(Constants.FACTORY_ROLE, admin);
 
-        _grantRole(Constants.FACTORY_ROLE, newProtocol.validatorAccountFactory);
-        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.validatorAccountFactory);
+        _grantRole(Constants.FACTORY_ROLE, newProtocol.NodeAccountFactory);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.NodeAccountFactory);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.whitelist);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.wethVault);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.rplVault);

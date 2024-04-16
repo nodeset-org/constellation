@@ -83,20 +83,21 @@ contract DepositPool is UpgradeableBase {
         uint256[] calldata _amountETH,
         bytes32[][] calldata _merkleProof
     ) public {
+        if (claimingIncentive != 0) {
+            uint256 totalAmountRPL = 0;
+            uint256 totalAmountETH = 0;
 
-        uint256 totalAmountRPL = 0;
-        uint256 totalAmountETH = 0;
+            for (uint256 i = 0; i < _rewardIndex.length; i++) {
+                totalAmountRPL += _amountRPL[i];
+                totalAmountETH += _amountETH[i];
+            }
 
-        for (uint256 i = 0; i < _rewardIndex.length; i++) {
-            totalAmountRPL += _amountRPL[i];
-            totalAmountETH += _amountETH[i];
+            uint256 mevFeeRPL = totalAmountRPL.mulDiv(claimingIncentive, 1e5);
+            uint256 mevFeeETH = totalAmountETH.mulDiv(claimingIncentive, 1e5);
+
+            WETHVault(_directory.getWETHVaultAddress()).doTransferOut(msg.sender, mevFeeETH);
+            RPLVault(_directory.getRPLVaultAddress()).doTransferOut(msg.sender, mevFeeRPL);
         }
-
-        uint256 mevFeeRPL = totalAmountRPL.mulDiv(claimingIncentive, 1e5);
-        uint256 mevFeeETH = totalAmountETH.mulDiv(claimingIncentive, 1e5);
-
-        WETHVault(_directory.getWETHVaultAddress()).doTransferOut(msg.sender, mevFeeETH);
-        RPLVault(_directory.getRPLVaultAddress()).doTransferOut(msg.sender, mevFeeRPL);
 
         IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
             _nodeAddress,

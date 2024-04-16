@@ -8,7 +8,7 @@ import { Signers } from "../test";
 import { RocketPool } from "../test";
 import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault, IWETH, RocketMinipoolInterface } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
-import { deployRPMinipool, deployValidatorAccount, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances } from "../utils/utils";
+import { deployRPMinipool, deployNodeAccount, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances } from "../utils/utils";
 
 
 describe("Node Operator Onboarding", function () {
@@ -47,16 +47,16 @@ describe("Node Operator Onboarding", function () {
     });
 
     it("node operator creates minipool via creating validator account", async function () {
-        expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bondValue)).equals(false);
+        expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bondValue)).equals(false);
 
         await prepareOperatorDistributionContract(setupData, 1);
-        expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bondValue)).equals(true);
+        expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bondValue)).equals(true);
 
 
-        const validatorAccount = await deployValidatorAccount(signers.hyperdriver, protocol, signers, bondValue);
+        const NodeAccount = await deployNodeAccount(signers.hyperdriver, protocol, signers, bondValue);
 
         console.log("VAF:")
-        console.log(validatorAccount)
+        console.log(NodeAccount)
 
     });
 

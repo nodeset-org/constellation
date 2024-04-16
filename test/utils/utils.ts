@@ -155,7 +155,7 @@ export const assertSingleTransferExists = async (
 
 
 
-export async function deployValidatorAccount(signer: SignerWithAddress, protocol: Protocol, signers: Signers, bondValue: BigNumber) {
+export async function deployNodeAccount(signer: SignerWithAddress, protocol: Protocol, signers: Signers, bondValue: BigNumber) {
     const salt = 3;
 
     const nextAddress = "0xD9bf496401781cc411AE0F465Fe073872A50D639";
@@ -172,11 +172,11 @@ export async function deployValidatorAccount(signer: SignerWithAddress, protocol
         expectedMinipoolAddress: depositData.minipoolAddress
     }
 
-    const proxyVAAddr = await protocol.validatorAccountFactory.connect(signers.hyperdriver).callStatic.createNewValidatorAccount(config, nextAddress, {
+    const proxyVAAddr = await protocol.NodeAccountFactory.connect(signers.hyperdriver).callStatic.createNewNodeAccount(config, nextAddress, {
         value: ethers.utils.parseEther("1")
     })
 
-    await protocol.validatorAccountFactory.connect(signers.hyperdriver).createNewValidatorAccount(config, nextAddress, {
+    await protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(config, nextAddress, {
         value: ethers.utils.parseEther("1")
     })
 
@@ -257,12 +257,12 @@ export async function printEventDetails(tx: ContractTransaction, contract: Contr
     }
 }
 /**
-* Counts the `ProxyCreated` events emitted by the ValidatorAccountFactory contract.
+* Counts the `ProxyCreated` events emitted by the NodeAccountFactory contract.
 * @param provider The Ethereum provider.
 * @returns The number of `ProxyCreated` events.
 */
 export async function countProxyCreatedEvents(setupData: SetupData): Promise<number> {
-    const events = await setupData.protocol.validatorAccountFactory.queryFilter(setupData.protocol.validatorAccountFactory.filters.ProxyCreated());
+    const events = await setupData.protocol.NodeAccountFactory.queryFilter(setupData.protocol.NodeAccountFactory.filters.ProxyCreated());
     return events.length;
 }
 
@@ -287,7 +287,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
     const { protocol, signers } = setupData;
 
 
-    const validatorAccounts = []
+    const NodeAccounts = []
 
     for(let i = 0; i < nodeOperators.length; i++) {
         console.log("setting up node operator %s of %s", i+1, nodeOperators.length)
@@ -296,16 +296,16 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         const bond = ethers.utils.parseEther("8");
         const salt = i;
     
-        //expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(false);
+        //expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(false);
         await prepareOperatorDistributionContract(setupData, 2);
-        //expect(await protocol.validatorAccountFactory.hasSufficentLiquidity(bond)).equals(true);
+        //expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(true);
     
         if(!(await protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address))) {
             await protocol.whitelist.connect(signers.admin).addOperator(nodeOperator.address);
         }
         
         const deploymentCount = await countProxyCreatedEvents(setupData);
-        const nextAddress = await predictDeploymentAddress(protocol.validatorAccountFactory.address, deploymentCount + 1)
+        const nextAddress = await predictDeploymentAddress(protocol.NodeAccountFactory.address, deploymentCount + 1)
         const depositData = await generateDepositData(nextAddress, salt);
     
         const config = {
@@ -319,12 +319,12 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
             expectedMinipoolAddress: depositData.minipoolAddress
         }
     
-        await protocol.validatorAccountFactory.connect(nodeOperator).createNewValidatorAccount(config, nextAddress, {
+        await protocol.NodeAccountFactory.connect(nodeOperator).createNewNodeAccount(config, nextAddress, {
             value: ethers.utils.parseEther("1")
         })
     
-        expect(await protocol.directory.hasRole(ethers.utils.id("FACTORY_ROLE"), protocol.validatorAccountFactory.address)).equals(true)
-        expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), protocol.validatorAccountFactory.address)).equals(true)
+        expect(await protocol.directory.hasRole(ethers.utils.id("FACTORY_ROLE"), protocol.NodeAccountFactory.address)).equals(true)
+        expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), protocol.NodeAccountFactory.address)).equals(true)
         expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), nextAddress)).equals(true)
 
         await setupData.rocketPool.rocketDepositPoolContract.deposit({
@@ -336,13 +336,13 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         await increaseEVMTime(60 * 60 * 24 * 7 * 32);
 
         // enter stake mode
-        const validatorAccount = await ethers.getContractAt("ValidatorAccount", nextAddress);
-        await validatorAccount.connect(nodeOperator).stake();
+        const NodeAccount = await ethers.getContractAt("NodeAccount", nextAddress);
+        await NodeAccount.connect(nodeOperator).stake();
 
-        validatorAccounts.push(validatorAccount)
+        NodeAccounts.push(NodeAccount)
     }
 
-    return validatorAccounts
+    return NodeAccounts
 } 
 
 // Deprecated: Don't use

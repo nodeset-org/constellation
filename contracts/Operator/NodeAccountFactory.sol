@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import './ValidatorAccount.sol';
+import './NodeAccount.sol';
 import './OperatorDistributor.sol';
 import '../Utils/Errors.sol';
 import '../UpgradeableBase.sol';
@@ -11,7 +11,7 @@ import '@openzeppelin/contracts/utils/Address.sol';
 
 import 'hardhat/console.sol';
 
-contract ValidatorAccountFactory is UpgradeableBase, Errors {
+contract NodeAccountFactory is UpgradeableBase, Errors {
     
     event ProxyCreated(address indexed proxyAddress);
 
@@ -24,7 +24,7 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
     uint256 public lockUpTime;
 
 
-    mapping(address => address) public minipoolValidatorAccountMap;
+    mapping(address => address) public minipoolNodeAccountMap;
 
 
     /**
@@ -45,14 +45,14 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequried && od.balance >= _bond;
     }
 
-    function createNewValidatorAccount(
-        ValidatorAccount.ValidatorConfig calldata _config,
+    function createNewNodeAccount(
+        NodeAccount.ValidatorConfig calldata _config,
         address _predictedAddress
     ) public payable returns (address) {
-        require(hasSufficentLiquidity(_config.bondAmount), 'ValidatorAccount: protocol must have enough rpl and eth');
-        require(msg.value == lockThreshhold, 'ValidatorAccount: must lock 1 ether');
+        require(hasSufficentLiquidity(_config.bondAmount), 'NodeAccount: protocol must have enough rpl and eth');
+        require(msg.value == lockThreshhold, 'NodeAccount: must lock 1 ether');
 
-        minipoolValidatorAccountMap[ _config.expectedMinipoolAddress] = _predictedAddress;
+        minipoolNodeAccountMap[ _config.expectedMinipoolAddress] = _predictedAddress;
 
         Directory(_directory).grantRole(Constants.CORE_PROTOCOL_ROLE, _predictedAddress);
 
@@ -60,7 +60,7 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
         ERC1967Proxy proxy = new ERC1967Proxy(
             implementationAddress,
             abi.encodeWithSelector(
-                ValidatorAccount.initialize.selector,
+                NodeAccount.initialize.selector,
                 address(_directory),
                 msg.sender,
                 _predictedAddress,
@@ -77,7 +77,7 @@ contract ValidatorAccountFactory is UpgradeableBase, Errors {
      * @param proxyAddress The address of the proxy to be upgraded.
      * @param newImplementation The address of the new logic contract.
      */
-    function upgradeValidatorAccountProxy(address proxyAddress, address newImplementation) public {
+    function upgradeNodeAccountProxy(address proxyAddress, address newImplementation) public {
         if (!Address.isContract(proxyAddress)) {
             revert NotAContract(proxyAddress);
         }

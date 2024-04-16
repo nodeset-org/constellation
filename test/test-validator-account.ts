@@ -16,7 +16,7 @@ describe("Validator Account Factory", function () {
         const { protocol, signers } = setupData;
 
         await prepareOperatorDistributionContract(setupData, 2);
-        const validatorAccounts = await registerNewValidator(setupData, [signers.random, signers.random2]);
+        const NodeAccounts = await registerNewValidator(setupData, [signers.random, signers.random2]);
 
         
     });
