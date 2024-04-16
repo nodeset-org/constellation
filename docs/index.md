@@ -1,6 +1,6 @@
 # Solidity API
 
-## DepositPool
+## FundRouter
 
 Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
 ETH + RPL intakes from token mints and validator yields and sends to respective ERC4246 vaults.
@@ -49,7 +49,7 @@ constructor() public
 function initialize(address directoryAddress) public virtual
 ```
 
-_Initializes the DepositPool contract with the specified directory address._
+_Initializes the FundRouter contract with the specified directory address._
 
 #### Parameters
 
@@ -1247,7 +1247,7 @@ Returns the total assets managed by this vault.
 
 _This function aggregates the total assets from three sources:
 1. Assets directly held in this vault.
-2. Assets held in the associated DepositPool.
+2. Assets held in the associated FundRouter.
 3. Assets held in the associated OperatorDistributor.
 The sum of these gives the overall total assets managed by the vault._
 

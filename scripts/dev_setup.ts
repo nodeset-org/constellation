@@ -159,14 +159,14 @@ async function main() {
     console.log("vCRPL address", vCRPL.address)
 
     const depositPoolProxyAbi = await retryOperation(async () => {
-        const deployedProxy = await upgrades.deployProxy(await ethers.getContractFactory("DepositPool"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        const deployedProxy = await upgrades.deployProxy(await ethers.getContractFactory("FundRouter"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         await deployedProxy.deployTransaction.wait();
         return deployedProxy;
     });
     console.log("depositPoolProxyAbi address", depositPoolProxyAbi.address);
 
 
-    const depositPool = await ethers.getContractAt("DepositPool", depositPoolProxyAbi.address);
+    const depositPool = await ethers.getContractAt("FundRouter", depositPoolProxyAbi.address);
     console.log("depositPool address", depositPool.address)
 
     const operatorDistributorProxyAbi = await retryOperation(async () => {

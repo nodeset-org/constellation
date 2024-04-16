@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { DepositPool, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, NodeAccountFactory, RocketDepositPool, RocketNodeDeposit } from "../typechain-types";
+import { FundRouter, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, NodeAccountFactory, RocketDepositPool, RocketNodeDeposit } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
 import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketNodeManager, RocketNodeManagerNew, RocketNodeStaking, RocketNodeStakingNew, RocketStorage, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
@@ -29,7 +29,7 @@ export type Protocol = {
 	whitelist: Contract,
 	vCWETH: WETHVault,
 	vCRPL: RPLVault,
-	depositPool: DepositPool,
+	depositPool: FundRouter,
 	operatorDistributor: OperatorDistributor,
 	NodeAccountFactory: NodeAccountFactory,
 	yieldDistributor: YieldDistributor,
@@ -154,8 +154,8 @@ async function deployProtocol(signers: Signers): Promise<Protocol> {
 		const vCWETH = await ethers.getContractAt("WETHVault", vCWETHProxyAbi.address);
 		const vCRPLProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("RPLVault"), [directoryAddress, rplContract.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
 		const vCRPL = await ethers.getContractAt("RPLVault", vCRPLProxyAbi.address);
-		const depositPoolProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("DepositPool"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-		const depositPool = await ethers.getContractAt("DepositPool", depositPoolProxyAbi.address);
+		const depositPoolProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("FundRouter"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+		const depositPool = await ethers.getContractAt("FundRouter", depositPoolProxyAbi.address);
 		const operatorDistributorProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("OperatorDistributor"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
 		const operatorDistributor = await ethers.getContractAt("OperatorDistributor", operatorDistributorProxyAbi.address);
 		const yieldDistributorProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("YieldDistributor"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });

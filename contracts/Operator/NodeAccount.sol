@@ -19,6 +19,7 @@ import '../Interfaces/RocketPool/IRocketNodeManager.sol';
 import '../Interfaces/RocketPool/IRocketNetworkVoting.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolProposal.sol';
 import '../Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
+import '../Interfaces/RocketPool/IRocketStorage.sol';
 import '../Interfaces/Oracles/IXRETHOracle.sol';
 import '../Interfaces/IWETH.sol';
 import '../Utils/Constants.sol';

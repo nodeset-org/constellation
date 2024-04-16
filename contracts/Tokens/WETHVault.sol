@@ -6,10 +6,11 @@ import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgrad
 import './RPLVault.sol';
 import '../PriceFetcher.sol';
 import '../UpgradeableBase.sol';
-import '../DepositPool.sol';
+import '../FundRouter.sol';
 import '../Operator/YieldDistributor.sol';
 import '../Utils/Constants.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
+import '../Interfaces/Oracles/IXRETHOracle.sol';
 
 import 'hardhat/console.sol';
 
@@ -109,7 +110,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         principal += assets;
 
-        DepositPool(pool).sendEthToDistributors();
+        FundRouter(pool).sendEthToDistributors();
 
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
 
@@ -144,7 +145,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         console.log('ABC1');
 
-        DepositPool(_directory.getDepositPoolAddress()).sendEthToDistributors();
+        FundRouter(_directory.getDepositPoolAddress()).sendEthToDistributors();
 
         console.log('ABC2');
 
@@ -173,7 +174,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     function currentIncomeFromRewards() public view returns (uint256) {
         unchecked {
-            DepositPool dp = DepositPool(getDirectory().getDepositPoolAddress());
+            FundRouter dp = FundRouter(getDirectory().getDepositPoolAddress());
             console.log("WETHVault.currentIncomeFromRewards()");
             console.log(gasleft());
             console.log("getDirectory()");
@@ -191,7 +192,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function totalAssets() public view override returns (uint256) {
         //console.log("WETHVault.totalAssets()");
         //console.log(getDirectory().getDepositPoolAddress());
-        DepositPool dp = DepositPool(getDirectory().getDepositPoolAddress());
+        FundRouter dp = FundRouter(getDirectory().getDepositPoolAddress());
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         uint256 currentIncome = currentIncomeFromRewards();
         uint256 currentAdminIncome = currentIncome.mulDiv(adminFeeBasePoint, 1e5);

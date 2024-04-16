@@ -909,16 +909,16 @@
             "offset": 0,
             "slot": "103",
             "type": "t_uint256",
-            "contract": "DepositPool",
-            "src": "contracts/DepositPool.sol:21"
+            "contract": "FundRouter",
+            "src": "contracts/FundRouter.sol:21"
           },
           {
             "label": "splitRatioRpl",
             "offset": 0,
             "slot": "104",
             "type": "t_uint256",
-            "contract": "DepositPool",
-            "src": "contracts/DepositPool.sol:22"
+            "contract": "FundRouter",
+            "src": "contracts/FundRouter.sol:22"
           }
         ],
         "types": {

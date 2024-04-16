@@ -12,12 +12,13 @@ import './Tokens/RPLVault.sol';
 
 import './Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
 import './Interfaces/IWETH.sol';
+import './Interfaces/Oracles/IXRETHOracle.sol';
 import './Utils/Constants.sol';
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
 /// ETH + RPL intakes from token mints and validator yields and sends to respective ERC4246 vaults.
-contract DepositPool is UpgradeableBase {
+contract FundRouter is UpgradeableBase {
     using Math for uint256;
 
     uint256 public claimingIncentive;
@@ -26,7 +27,7 @@ contract DepositPool is UpgradeableBase {
         claimingIncentive = 0.01e5;
     }
 
-    /// @dev Initializes the DepositPool contract with the specified directory address.
+    /// @dev Initializes the FundRouter contract with the specified directory address.
     /// @param directoryAddress The address of the directory contract.
     function initialize(address directoryAddress) public virtual override initializer {
         super.initialize(directoryAddress);

@@ -31,7 +31,7 @@ WARNING: You are currently using Node.js v21.4.0, which is not supported by Hard
  ··········································|································|·································
  |  Deployer                               ·                 0.062 (0.000)  ·                 0.090 (0.000)  │
  ··········································|································|·································
- |  DepositPool                            ·                 8.874 (0.000)  ·                 9.542 (0.000)  │
+ |  FundRouter                            ·                 8.874 (0.000)  ·                 9.542 (0.000)  │
  ··········································|································|·································
  |  Directory                              ·                11.056 (0.000)  ·                11.438 (0.000)  │
  ··········································|································|·································
@@ -2607,7 +2607,7 @@ Uncaught TypeError: ethers.utils.parseEth is not a function
     at REPL751:1:78
 > await vaf.hasSufficentLiquidity(ethers.utils.parseEther("8"))
 false
-> let depositPool = await ethers.getContractAt("DepositPool", "0xdeFD1eCceC757Ec205509d72C50946699e4d1Bec")
+> let depositPool = await ethers.getContractAt("FundRouter", "0xdeFD1eCceC757Ec205509d72C50946699e4d1Bec")
 undefined
 > await depositPool.connect(admin).sendRplToDistributors()
 {

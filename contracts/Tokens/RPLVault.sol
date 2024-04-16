@@ -8,7 +8,7 @@ import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import './WETHVault.sol';
 
 import '../UpgradeableBase.sol';
-import '../DepositPool.sol';
+import '../FundRouter.sol';
 import '../Operator/OperatorDistributor.sol';
 
 import 'hardhat/console.sol';
@@ -79,7 +79,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         _claimAdminFee();
         super._deposit(caller, receiver, assets, shares);
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
-        DepositPool(pool).sendRplToDistributors();
+        FundRouter(pool).sendRplToDistributors();
     }
 
     /**
@@ -110,13 +110,13 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         principal -= assets;
 
         super._withdraw(caller, receiver, owner, assets, shares);
-        DepositPool(_directory.getDepositPoolAddress()).sendRplToDistributors();
+        FundRouter(_directory.getDepositPoolAddress()).sendRplToDistributors();
     }
 
     function currentIncomeFromRewards() public view returns (uint256) {
         unchecked {
             uint256 tvl = super.totalAssets() +
-                DepositPool(_directory.getDepositPoolAddress()).getTvlRpl() +
+                FundRouter(_directory.getDepositPoolAddress()).getTvlRpl() +
                 OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl();
 
             if (tvl < principal) {
@@ -134,7 +134,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @notice Returns the total assets managed by this vault.
      * @dev This function aggregates the total assets from three sources:
      * 1. Assets directly held in this vault.
-     * 2. Assets held in the associated DepositPool.
+     * 2. Assets held in the associated FundRouter.
      * 3. Assets held in the associated OperatorDistributor.
      * The sum of these gives the overall total assets managed by the vault - admin owed rewards.
      * @return The aggregated total assets managed by this vault.
@@ -142,7 +142,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     function totalAssets() public view override returns (uint256) {
         return
             (super.totalAssets() +
-                DepositPool(_directory.getDepositPoolAddress()).getTvlRpl() +
+                FundRouter(_directory.getDepositPoolAddress()).getTvlRpl() +
                 OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl()) -
             currentAdminIncomeFromRewards();
     }

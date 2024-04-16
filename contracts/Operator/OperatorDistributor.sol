@@ -5,7 +5,7 @@ import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 import '../UpgradeableBase.sol';
 import '../Whitelist/Whitelist.sol';
-import '../DepositPool.sol';
+import '../FundRouter.sol';
 import '../PriceFetcher.sol';
 import '../Tokens/WETHVault.sol';
 import './NodeAccountFactory.sol';
@@ -81,7 +81,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         if (msg.sender != dp) {
             (bool success, ) = dp.call{value: msg.value}('');
             require(success, 'low level call failed in od');
-            DepositPool(dp).sendEthToDistributors();
+            FundRouter(dp).sendEthToDistributors();
         }
 
         console.log('fallback od final');
@@ -92,11 +92,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         address payable dp = _directory.getDepositPoolAddress();
         (bool success, ) = dp.call{value: address(this).balance}('');
         require(success, 'low level call failed in od');
-        DepositPool(dp).sendEthToDistributors();
+        FundRouter(dp).sendEthToDistributors();
 
         IERC20 rpl = IERC20(_directory.getRPLAddress());
         SafeERC20.safeTransfer(rpl, dp, rpl.balanceOf(address(this)));
-        DepositPool(dp).sendRplToDistributors();
+        FundRouter(dp).sendRplToDistributors();
     }
 
     /// @notice Gets the total ETH value locked inside the protocol, including inside of validators, the OperatorDistributor,
@@ -228,7 +228,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             console.log('rebalanceRplStake.excessRpl', excessRpl);
 
             fundedRpl -= excessRpl;
-            DepositPool(_directory.getDepositPoolAddress()).unstakeRpl(_NodeAccount, excessRpl);
+            FundRouter(_directory.getDepositPoolAddress()).unstakeRpl(_NodeAccount, excessRpl);
 
             // Update the amount of RPL funded by the node
             minipoolAmountFundedRpl[_NodeAccount] -= excessRpl;
@@ -247,7 +247,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 _directory.getDepositPoolAddress(),
                 _requiredStake
             );
-            DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_NodeAccount, _requiredStake);
+            FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_NodeAccount, _requiredStake);
         } else {
             if (currentRplBalance == 0) {
                 return;
@@ -257,7 +257,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 _directory.getDepositPoolAddress(),
                 currentRplBalance
             );
-            DepositPool(_directory.getDepositPoolAddress()).stakeRPLFor(_NodeAccount, currentRplBalance);
+            FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_NodeAccount, currentRplBalance);
         }
     }
 
