@@ -12,7 +12,6 @@ import '@openzeppelin/contracts/utils/Address.sol';
 import 'hardhat/console.sol';
 
 contract NodeAccountFactory is UpgradeableBase, Errors {
-    
     event ProxyCreated(address indexed proxyAddress);
 
     using Address for address;
@@ -50,7 +49,7 @@ contract NodeAccountFactory is UpgradeableBase, Errors {
         require(hasSufficentLiquidity(_config.bondAmount), 'NodeAccount: protocol must have enough rpl and eth');
         require(msg.value == lockThreshhold, 'NodeAccount: must lock 1 ether');
 
-        minipoolNodeAccountMap[ _config.expectedMinipoolAddress] = _predictedAddress;
+        minipoolNodeAccountMap[_config.expectedMinipoolAddress] = _predictedAddress;
 
         Directory(_directory).grantRole(Constants.CORE_PROTOCOL_ROLE, _predictedAddress);
 
@@ -124,5 +123,12 @@ contract NodeAccountFactory is UpgradeableBase, Errors {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
         lockUpTime = _newLockUpTime;
+    }
+
+    function setImplementation(address _implementationAddress) external {
+        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
+            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
+        }
+        implementationAddress = _implementationAddress;
     }
 }

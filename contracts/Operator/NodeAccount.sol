@@ -4,15 +4,13 @@ pragma solidity 0.8.17;
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 import './NodeAccountFactory.sol';
+import './OperatorDistributor.sol';
 
 import '../Whitelist/Whitelist.sol';
-import './OperatorDistributor.sol';
 import '../Whitelist/Whitelist.sol';
-import '../Utils/ProtocolMath.sol';
 import '../UpgradeableBase.sol';
 
 import '../Interfaces/RocketPool/RocketTypes.sol';
-
 import '../Interfaces/RocketPool/IRocketNodeDeposit.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketNodeManager.sol';
@@ -22,6 +20,8 @@ import '../Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
 import '../Interfaces/RocketPool/IRocketStorage.sol';
 import '../Interfaces/Oracles/IXRETHOracle.sol';
 import '../Interfaces/IWETH.sol';
+
+import '../Utils/ProtocolMath.sol';
 import '../Utils/Constants.sol';
 import '../Utils/Errors.sol';
 
@@ -52,6 +52,14 @@ contract NodeAccount is UpgradeableBase, Errors {
         require(
             _directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender) || msg.sender == nodeOperator,
             'Can only be called by Protocol or NodeOperator!'
+        );
+        _;
+    }
+
+    modifier onlyNodeOperatorOrAdmin() {
+        require(
+            _directory.hasRole(Constants.ADMIN_ROLE, msg.sender) || msg.sender == nodeOperator,
+            'Can only be called by Admin or NodeOperator!'
         );
         _;
     }
@@ -210,7 +218,9 @@ contract NodeAccount is UpgradeableBase, Errors {
         }
     }
 
-    function _authorizeUpgrade(address) internal override onlyProtocol {}
+    function _authorizeUpgrade(address _implementationAddress) internal view override onlyNodeOperatorOrAdmin {
+        require(_implementationAddress == vaf.implementationAddress(), 'only upgradable to vaf.implementationAddress');
+    }
 
     function distributeBalance(
         bool _rewardsOnly,
