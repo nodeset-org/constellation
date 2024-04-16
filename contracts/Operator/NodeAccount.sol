@@ -18,6 +18,7 @@ import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketNodeManager.sol';
 import '../Interfaces/RocketPool/IRocketNetworkVoting.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolProposal.sol';
+import '../Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
 import '../Interfaces/Oracles/IXRETHOracle.sol';
 import '../Interfaces/IWETH.sol';
 import '../Utils/Constants.sol';
@@ -55,7 +56,7 @@ contract NodeAccount is UpgradeableBase, Errors {
     }
 
     modifier hasConfig(address _minipool) {
-        require(lockStarted[_minipool] != 0, "nodeAccount not initialized");
+        require(lockStarted[_minipool] != 0, 'nodeAccount not initialized');
         _;
     }
 
@@ -76,7 +77,7 @@ contract NodeAccount is UpgradeableBase, Errors {
 
         Directory directory = Directory(_directory);
 
-        require(lockedEth[_config.expectedMinipoolAddress] == 0, "minipool already initialized");
+        require(lockedEth[_config.expectedMinipoolAddress] == 0, 'minipool already initialized');
         lockedEth[_config.expectedMinipoolAddress] = msg.value;
         totalEthLocked += msg.value;
 
@@ -172,11 +173,13 @@ contract NodeAccount is UpgradeableBase, Errors {
         }
 
         IMinipool minipool = IMinipool(_minipool);
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeOperatorDissolved(nodeOperator, configs[_minipool].bondAmount);
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeOperatorDissolved(
+            nodeOperator,
+            configs[_minipool].bondAmount
+        );
 
         minipool.close();
     }
-
 
     function unlockEth(address _minipool) external onlyNodeOperatorOrProtocol hasConfig(_minipool) {
         require(lockedEth[_minipool] >= 1 ether, 'Insufficient locked ETH');
@@ -222,6 +225,22 @@ contract NodeAccount is UpgradeableBase, Errors {
 
     function initialiseVoting() external onlyNodeOperatorOrProtocol {
         IRocketNetworkVoting(_directory.getRocketNetworkVotingAddress()).initialiseVoting();
+    }
+
+    function merkleClaim(
+        address _nodeAddress,
+        uint256[] calldata _rewardIndex,
+        uint256[] calldata _amountRPL,
+        uint256[] calldata _amountETH,
+        bytes32[][] calldata _merkleProof
+    ) public {
+        IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
+            _nodeAddress,
+            _rewardIndex,
+            _amountRPL,
+            _amountETH,
+            _merkleProof
+        );
     }
 
     function vote(
