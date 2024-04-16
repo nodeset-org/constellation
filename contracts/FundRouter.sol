@@ -21,10 +21,8 @@ import './Utils/Constants.sol';
 contract FundRouter is UpgradeableBase {
     using Math for uint256;
 
-    uint256 public claimingIncentive;
 
     constructor() initializer {
-        claimingIncentive = 0.01e5;
     }
 
     /// @dev Initializes the FundRouter contract with the specified directory address.
