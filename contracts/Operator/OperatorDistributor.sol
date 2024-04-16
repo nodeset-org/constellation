@@ -394,7 +394,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 NodeAccountFactory(_directory.getNodeAccountFactoryAddress()).minipoolNodeAccountMap(
                     address(minipool)
                 )
-            ).distributeBalance(false);
+            ).distributeBalance(false, address(minipool));
         }
 
         nextMinipoolHavestIndex++;

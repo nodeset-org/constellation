@@ -23,9 +23,7 @@ contract NodeAccountFactory is UpgradeableBase, Errors {
     uint256 public targetBond;
     uint256 public lockUpTime;
 
-
     mapping(address => address) public minipoolNodeAccountMap;
-
 
     /**
      * @notice Initializes the factory with the logic contract address.
