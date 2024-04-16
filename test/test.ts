@@ -164,9 +164,9 @@ async function deployProtocol(signers: Signers): Promise<Protocol> {
 		const priceFetcher = await upgrades.deployProxy(await ethers.getContractFactory("PriceFetcher"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 		const adminTreasury = await upgrades.deployProxy(await ethers.getContractFactory("AdminTreasury"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 		const NodeAccountLogic = await ethers.getContractFactory("NodeAccount");
-		const NodeAccountLogic = await NodeAccountLogic.deploy();
-		await NodeAccountLogic.deployed();
-		const NodeAccountFactory = await upgrades.deployProxy(await ethers.getContractFactory("NodeAccountFactory"), [directoryAddress, NodeAccountLogic.address], { 'initializer': 'initializeWithImplementation', 'kind': 'uups', 'unsafeAllow': ['constructor'] }) as NodeAccountFactory;
+		const nodeAccountLogic = await NodeAccountLogic.deploy();
+		await nodeAccountLogic.deployed();
+		const NodeAccountFactory = await upgrades.deployProxy(await ethers.getContractFactory("NodeAccountFactory"), [directoryAddress, nodeAccountLogic.address], { 'initializer': 'initializeWithImplementation', 'kind': 'uups', 'unsafeAllow': ['constructor'] }) as NodeAccountFactory;
 		
 		const directoryProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("Directory"),
 		[
