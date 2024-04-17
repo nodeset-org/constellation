@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+
 import '../UpgradeableBase.sol';
 import '../Operator/YieldDistributor.sol';
 import '../Utils/Constants.sol';
@@ -127,11 +129,16 @@ contract Whitelist is UpgradeableBase {
     /// @notice Adds a new operator to the whitelist.
     /// @dev This function can only be called by a 24-hour timelock and ensures that the operator being added is not a duplicate.
     ///      It emits the 'OperatorAdded' event to notify when an operator has been successfully added.
-    /// @param a The address of the operator to be added.
+    /// @param _operator The address of the operator to be added.
     /// @dev Throws an error if the operator being added already exists in the whitelist.
-    function addOperator(address a) public only24HourTimelock {
-        require(!_permissions[a], Constants.OPERATOR_DUPLICATE_ERROR);
-        emit OperatorAdded(_addOperator(a));
+    function addOperator(address _operator, uint256 salt, bytes calldata _sig) public {
+        require(!_permissions[_operator], Constants.OPERATOR_DUPLICATE_ERROR);
+        bytes32 messageHash = keccak256(abi.encodePacked(_operator, address(this), salt));
+        bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
+        address recoveredAddress = ECDSA.recover(ethSignedMessageHash, _sig);
+        require(_directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress));
+
+        emit OperatorAdded(_addOperator(_operator));
     }
 
     /// @notice Internal function to remove an operator from the whitelist.
