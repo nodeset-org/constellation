@@ -75,6 +75,8 @@ contract NodeAccount is UpgradeableBase, Errors {
         address _predictedAddress,
         ValidatorConfig calldata _config
     ) public payable initializer {
+        super.initialize(_directory);
+
         if (_predictedAddress != address(this)) {
             revert BadPredictedCreation(_predictedAddress, address(this));
         }
@@ -82,13 +84,8 @@ contract NodeAccount is UpgradeableBase, Errors {
         vaf = NodeAccountFactory(msg.sender);
         configs[_config.expectedMinipoolAddress] = _config;
 
-        super.initialize(_directory);
 
         Directory directory = Directory(_directory);
-
-        require(lockedEth[_config.expectedMinipoolAddress] == 0, 'minipool already initialized');
-        lockedEth[_config.expectedMinipoolAddress] = msg.value;
-        totalEthLocked += msg.value;
 
         bool isWhitelisted = Whitelist(directory.getWhitelistAddress()).getIsAddressInWhitelist(_nodeOperator);
         require(isWhitelisted, Constants.OPERATOR_NOT_FOUND_ERROR);
@@ -111,8 +108,9 @@ contract NodeAccount is UpgradeableBase, Errors {
         );
     }
 
-    function createMinipool(ValidatorConfig calldata _config) public {
+    function createMinipool(ValidatorConfig calldata _config) public payable {
         require(msg.sender == nodeOperator, 'only nodeOperator');
+        require(msg.value == vaf.lockThreshhold(), 'NodeAccount: must lock 1 ether');
 
         _createMinipool(
             _config.bondAmount,
@@ -150,13 +148,17 @@ contract NodeAccount is UpgradeableBase, Errors {
         if (targetBond > address(this).balance - totalEthLocked) {
             revert InsufficientBalance(targetBond, address(this).balance - totalEthLocked);
         }
+        require(lockedEth[_expectedMinipoolAddress] == 0, 'minipool already initialized');
+
+        lockedEth[_expectedMinipoolAddress] = msg.value;
+        totalEthLocked += msg.value;
+        lockStarted[_expectedMinipoolAddress] = block.timestamp;
 
         address _nodeOperator = nodeOperator;
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         od.OnMinipoolCreated(_expectedMinipoolAddress, nodeOperator, _bondAmount);
         od.rebalanceRplStake(address(this), od.nodeOperatorEthStaked(_nodeOperator));
 
-        lockStarted[_expectedMinipoolAddress] = block.timestamp;
         console.log('_createMinipool()');
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: targetBond}(
             _bondAmount,
