@@ -8,7 +8,7 @@ import { Signers } from "../test";
 import { RocketPool } from "../test";
 import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault, IWETH, RocketMinipoolInterface } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
-import { deployRPMinipool, deployNodeAccount, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances } from "../utils/utils";
+import { deployRPMinipool, deployNodeAccount, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances, assertAddOperator } from "../utils/utils";
 
 
 describe("Node Operator Onboarding", function () {
@@ -43,7 +43,7 @@ describe("Node Operator Onboarding", function () {
     });
 
     it("admin needs to kyc the node operator and register them in the whitelist", async function () {
-        await protocol.whitelist.connect(signers.admin).addOperator(signers.hyperdriver.address);
+        await assertAddOperator(setupData, signers.hyperdriver);
     });
 
     it("node operator creates minipool via creating validator account", async function () {

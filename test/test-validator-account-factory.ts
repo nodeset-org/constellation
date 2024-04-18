@@ -5,7 +5,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { OperatorStruct } from "../typechain-types/contracts/Whitelist/Whitelist";
 import { protocolFixture } from "./test";
 import { BigNumber } from "ethers";
-import { countProxyCreatedEvents, getNextContractAddress, getNextFactoryContractAddress, predictDeploymentAddress, prepareOperatorDistributionContract } from "./utils/utils";
+import { assertAddOperator, countProxyCreatedEvents, getNextContractAddress, getNextFactoryContractAddress, predictDeploymentAddress, prepareOperatorDistributionContract } from "./utils/utils";
 import { generateDepositData } from "./rocketpool/_helpers/minipool";
 
 describe("Validator Account Factory", function () {
@@ -21,7 +21,7 @@ describe("Validator Account Factory", function () {
         await prepareOperatorDistributionContract(setupData, 2);
         expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(true);
 
-        await protocol.whitelist.connect(signers.admin).addOperator(signers.hyperdriver.address);
+        await assertAddOperator(setupData, signers.hyperdriver);
         
         const deploymentCount = await countProxyCreatedEvents(setupData);
         const nextAddress = await predictDeploymentAddress(protocol.NodeAccountFactory.address, deploymentCount + 1)

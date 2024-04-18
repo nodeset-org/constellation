@@ -105,10 +105,19 @@ contract Whitelist is UpgradeableBase {
     /// @notice Internal function to add a new operator to the whitelist.
     /// @dev This function is used internally to add a new operator to the whitelist, including updating permissions, initializing operator data,
     ///      and emitting the 'OperatorAdded' event.
-    /// @param a The address of the operator to be added.
+    /// @param _operator The address of the operator to be added.
     /// @return An Operator struct containing details about the newly added operator.
-    function _addOperator(address a) internal returns (Operator memory) {
-        _permissions[a] = true;
+    function _addOperator(address _operator, bytes memory _sig) internal returns (Operator memory) {
+        bytes32 messageHash = keccak256(abi.encodePacked(_operator, address(this)));
+        console.log("_addOperator: message hash");
+        console.logBytes32(messageHash);
+        bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
+        console.log("_addOperator: ethSignedMessageHash");
+        console.logBytes32(ethSignedMessageHash);
+        address recoveredAddress = ECDSA.recover(ethSignedMessageHash, _sig);
+        require(_directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress), "signer must be admin server role");
+
+        _permissions[_operator] = true;
 
         YieldDistributor distributor = YieldDistributor(payable(getDirectory().getYieldDistributorAddress()));
 
@@ -117,11 +126,11 @@ contract Whitelist is UpgradeableBase {
         distributor.finalizeInterval(); // operator controller will be entitled to rewards in the next interval
 
         uint256 nextInterval = distributor.currentInterval();
-        Operator memory operator = Operator(block.timestamp, 0, nextInterval - 1, a);
+        Operator memory operator = Operator(block.timestamp, 0, nextInterval - 1, _operator);
 
-        nodeMap[a] = operator;
-        nodeIndexMap[numOperators] = a;
-        reverseNodeIndexMap[a] = numOperators + 1;
+        nodeMap[_operator] = operator;
+        nodeIndexMap[numOperators] = _operator;
+        reverseNodeIndexMap[_operator] = numOperators + 1;
 
         return operator;
     }
@@ -131,14 +140,9 @@ contract Whitelist is UpgradeableBase {
     ///      It emits the 'OperatorAdded' event to notify when an operator has been successfully added.
     /// @param _operator The address of the operator to be added.
     /// @dev Throws an error if the operator being added already exists in the whitelist.
-    function addOperator(address _operator, uint256 salt, bytes calldata _sig) public {
+    function addOperator(address _operator, bytes calldata _sig) public {
         require(!_permissions[_operator], Constants.OPERATOR_DUPLICATE_ERROR);
-        bytes32 messageHash = keccak256(abi.encodePacked(_operator, address(this), salt));
-        bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
-        address recoveredAddress = ECDSA.recover(ethSignedMessageHash, _sig);
-        require(_directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress));
-
-        emit OperatorAdded(_addOperator(_operator));
+        emit OperatorAdded(_addOperator(_operator, _sig));
     }
 
     /// @notice Internal function to remove an operator from the whitelist.
@@ -179,12 +183,12 @@ contract Whitelist is UpgradeableBase {
     ///      It checks for duplicates among the provided addresses, adds valid operators, and emits the 'OperatorsAdded' event.
     /// @param operators An array of addresses representing the operators to be added.
     /// @dev Throws an error if any of the operators being added already exist in the whitelist.
-    function addOperators(address[] memory operators) public only24HourTimelock {
+    function addOperators(address[] memory operators, bytes[] memory _sig) public {
         for (uint i = 0; i < operators.length; i++) {
             require(!_permissions[operators[i]], Constants.OPERATOR_DUPLICATE_ERROR);
         }
         for (uint i = 0; i < operators.length; i++) {
-            _addOperator(operators[i]);
+            _addOperator(operators[i], _sig[i]);
         }
         emit OperatorsAdded(operators);
     }
