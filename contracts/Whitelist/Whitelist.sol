@@ -102,20 +102,23 @@ contract Whitelist is UpgradeableBase {
     // ADMIN
     //----
 
-    /// @notice Internal function to add a new operator to the whitelist.
+    /// @notice Internal function to add a new operator to the whitelist. Signs an address; optimized for server-side signatures with isolated scope on Ethereum.
     /// @dev This function is used internally to add a new operator to the whitelist, including updating permissions, initializing operator data,
-    ///      and emitting the 'OperatorAdded' event.
+    /// and emitting the 'OperatorAdded' event. This method signs the address directly, which is typically discouraged due to potential risks
+    /// of address reuse across different protocols or chains. However, for this specific application where
+    /// the signer is only the server and its operational scope is limited to this Ethereum deployment,
+    /// it is considered safe and more optimal. Signatures are completely isolated to this scope.
     /// @param _operator The address of the operator to be added.
     /// @return An Operator struct containing details about the newly added operator.
     function _addOperator(address _operator, bytes memory _sig) internal returns (Operator memory) {
         bytes32 messageHash = keccak256(abi.encodePacked(_operator, address(this)));
-        console.log("_addOperator: message hash");
+        console.log('_addOperator: message hash');
         console.logBytes32(messageHash);
         bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
-        console.log("_addOperator: ethSignedMessageHash");
+        console.log('_addOperator: ethSignedMessageHash');
         console.logBytes32(ethSignedMessageHash);
         address recoveredAddress = ECDSA.recover(ethSignedMessageHash, _sig);
-        require(_directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress), "signer must be admin server role");
+        require(_directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress), 'signer must be admin server role');
 
         _permissions[_operator] = true;
 
