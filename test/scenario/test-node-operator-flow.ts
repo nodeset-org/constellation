@@ -53,7 +53,7 @@ describe("Node Operator Onboarding", function () {
         expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bondValue)).equals(true);
 
 
-        const NodeAccount = await deployNodeAccount(signers.hyperdriver, protocol, signers, bondValue);
+        const NodeAccount = await deployNodeAccount(setupData, bondValue);
 
         console.log("VAF:")
         console.log(NodeAccount)

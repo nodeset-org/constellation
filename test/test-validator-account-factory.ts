@@ -5,7 +5,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { OperatorStruct } from "../typechain-types/contracts/Whitelist/Whitelist";
 import { protocolFixture } from "./test";
 import { BigNumber } from "ethers";
-import { assertAddOperator, countProxyCreatedEvents, getNextContractAddress, getNextFactoryContractAddress, predictDeploymentAddress, prepareOperatorDistributionContract } from "./utils/utils";
+import { approveHasSignedExitMessageSig, assertAddOperator, countProxyCreatedEvents, getNextContractAddress, getNextFactoryContractAddress, predictDeploymentAddress, prepareOperatorDistributionContract } from "./utils/utils";
 import { generateDepositData } from "./rocketpool/_helpers/minipool";
 
 describe("Validator Account Factory", function () {
@@ -38,7 +38,9 @@ describe("Validator Account Factory", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         }
 
-        await protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(config, nextAddress, {
+        const sig = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
+
+        await protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(config, nextAddress, sig, {
             value: ethers.utils.parseEther("1")
         })
 
@@ -72,8 +74,9 @@ describe("Validator Account Factory", function () {
             salt: salt,
             expectedMinipoolAddress: depositData.minipoolAddress
         }
+        const sig = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
 
-        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(config, nextAddress, {
+        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(config, nextAddress,sig, {
             value: ethers.utils.parseEther("1")
         })).to.be.revertedWith("Whitelist: Provided address is not an allowed operator!")
     });
@@ -94,8 +97,9 @@ describe("Validator Account Factory", function () {
             salt: 0,
             expectedMinipoolAddress: "0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97"
         }
+        const sig = await approveHasSignedExitMessageSig(setupData, badConfig.expectedMinipoolAddress, badConfig.salt)
 
-        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(badConfig, nextBadAddress, {
+        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(badConfig, nextBadAddress,sig, {
             value: ethers.utils.parseEther("1")
         })).to.be.revertedWithCustomError(protocol.NodeAccountFactory, "BadPredictedCreation");
     })
@@ -116,8 +120,9 @@ describe("Validator Account Factory", function () {
             salt: 0,
             expectedMinipoolAddress: "0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97"
         }
+        const sig = await approveHasSignedExitMessageSig(setupData, badConfig.expectedMinipoolAddress, badConfig.salt)
 
-        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(badConfig, nextBadAddress, {
+        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(badConfig, nextBadAddress,sig,{
             value: ethers.utils.parseEther("0")
         })).to.be.revertedWith("NodeAccount: must lock 1 ether");
     });
@@ -138,8 +143,9 @@ describe("Validator Account Factory", function () {
             salt: 0,
             expectedMinipoolAddress: "0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97"
         }
+        const sig = await approveHasSignedExitMessageSig(setupData, badConfig.expectedMinipoolAddress, badConfig.salt)
 
-        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(badConfig, nextBadAddress, {
+        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(badConfig, nextBadAddress, sig,{
             value: ethers.utils.parseEther("1")
         })).to.be.revertedWith("NodeAccount: protocol must have enough rpl and eth");
     });
