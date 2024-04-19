@@ -22,6 +22,8 @@ contract NodeAccountFactory is UpgradeableBase, Errors {
     uint256 public targetBond;
     uint256 public lockUpTime;
 
+    bool public preSignedExitMessageCheck;
+
     mapping(address => address) public minipoolNodeAccountMap;
 
     /**
@@ -33,6 +35,7 @@ contract NodeAccountFactory is UpgradeableBase, Errors {
         implementationAddress = _implementation;
         lockThreshhold = 1 ether;
         lockUpTime = 28 days;
+        preSignedExitMessageCheck = true;
         targetBond = 8e18; // initially set for LEB8
     }
 
@@ -130,5 +133,13 @@ contract NodeAccountFactory is UpgradeableBase, Errors {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
         implementationAddress = _implementationAddress;
+    }
+
+    function usePreSignedExitMessageCheck() external onlyAdmin {
+        preSignedExitMessageCheck = true;
+    }
+
+    function disablePreSignedExitMessageCheck() external onlyAdmin {
+        preSignedExitMessageCheck = false;
     }
 }

@@ -4,7 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { assertMultipleTransfers, assertSingleTransferExists } from "./utils/utils";
+import { assertAddOperator, assertMultipleTransfers, assertSingleTransferExists } from "./utils/utils";
 
 describe("xRPL", function () {
 
@@ -33,7 +33,7 @@ describe("xRPL", function () {
     expect(await protocol.sanctions.isSanctioned(signers.random.address)).equals(true);
 
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, ethers.utils.parseEther("100"));
-    await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address);
+    await assertAddOperator(setupData, signers.random);
 
     await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
 
@@ -60,7 +60,7 @@ describe("xRPL", function () {
     const { protocol, signers, rocketPool } = setupData;
 
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, ethers.utils.parseEther("100"));
-    await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address);
+    await assertAddOperator(setupData, signers.random);
 
     await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
     await protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("100"), signers.random.address);
@@ -75,10 +75,10 @@ describe("xRPL", function () {
     const { protocol, signers, rocketPool } = setupData;
 
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, ethers.utils.parseEther("1000000"));
-    await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address);
+    await assertAddOperator(setupData, signers.random);
 
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random2.address, ethers.utils.parseEther("100"));
-    await protocol.whitelist.connect(signers.admin).addOperator(signers.random2.address);
+    await assertAddOperator(setupData, signers.random2);
     
     await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("1000000"));
     await protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("1000000"), signers.random.address);
@@ -107,7 +107,7 @@ describe("xRPL", function () {
     const { protocol, signers, rocketPool } = setupData;
 
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, ethers.utils.parseEther("100"));
-    await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address);
+    await assertAddOperator(setupData, signers.random);
 
     await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
     await protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("100"), signers.random.address);

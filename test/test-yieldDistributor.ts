@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
-import { evaluateModel, expectNumberE18ToBeApproximately, registerNewValidator } from "./utils/utils";
+import { assertAddOperator, evaluateModel, expectNumberE18ToBeApproximately, registerNewValidator } from "./utils/utils";
 
 describe("Yield Distributor", function () {
   describe("Setters", function () {
@@ -19,9 +19,9 @@ describe("Yield Distributor", function () {
   async function simulateYield(setupData: SetupData, yieldAmountEth: BigNumber) {
     const { protocol, signers, rocketPool: rp } = setupData;
 
-    await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address);
-    await protocol.whitelist.connect(signers.admin).addOperator(signers.random2.address);
-    await protocol.whitelist.connect(signers.admin).addOperator(signers.random3.address);
+    await assertAddOperator(setupData, signers.random);
+    await assertAddOperator(setupData, signers.random2);
+    await assertAddOperator(setupData, signers.random3);
 
     // simulate yield from validator
     await signers.ethWhale.sendTransaction({ to: protocol.yieldDistributor.address, value: yieldAmountEth});
@@ -116,9 +116,9 @@ describe("Yield Distributor", function () {
       expect(numOperators).to.equal(0);
 
       // add 3 operators
-      await whitelist.addOperator(signers.random.address);
-      await whitelist.addOperator(signers.random2.address);
-      await whitelist.addOperator(signers.random3.address);
+      await assertAddOperator(setupData, signers.random);
+      await assertAddOperator(setupData, signers.random2);
+      await assertAddOperator(setupData, signers.random3);
 
       // send eth into yield distributor simulating yield at interval 0
       const firstYield = ethers.utils.parseEther("13");
@@ -131,8 +131,8 @@ describe("Yield Distributor", function () {
       expect(currentInterval0).to.equal(0);
 
       // add 2 more operators, this should have created a new interval
-      await whitelist.addOperator(signers.random4.address);
-      await whitelist.addOperator(signers.random5.address);
+      await assertAddOperator(setupData, signers.random4);
+      await assertAddOperator(setupData, signers.random5);
 
       // send 5 more eth into yield distributor simulating yield at interval 1
       const secondYield = ethers.utils.parseEther("5");
@@ -186,9 +186,9 @@ describe("Yield Distributor", function () {
       const { yieldDistributor, whitelist } = protocol;
 
       // add 3 operators
-      await whitelist.addOperator(signers.random.address);
-      await whitelist.addOperator(signers.random2.address);
-      await whitelist.addOperator(signers.random3.address);
+      await assertAddOperator(setupData, signers.random);
+      await assertAddOperator(setupData, signers.random2);
+      await assertAddOperator(setupData, signers.random3);
 
       // send eth into yield distributor simulating yield at interval 0
       const firstYield = ethers.utils.parseEther("0.0017");
@@ -215,7 +215,7 @@ describe("Yield Distributor", function () {
       const { yieldDistributor, whitelist } = protocol;
 
       // add 1/3 operators
-      await whitelist.addOperator(signers.random.address);
+      await assertAddOperator(setupData, signers.random);
 
       // send eth into yield distributor simulating yield at interval 0
       const firstYield = ethers.utils.parseEther("0.17");
@@ -228,7 +228,7 @@ describe("Yield Distributor", function () {
       // since there are no operators, nobody can claim
 
       // add 2/3 operators
-      await whitelist.addOperator(signers.random2.address);
+      await assertAddOperator(setupData, signers.random2);
 
       // send eth into yield distributor simulating yield at interval 1
       const secondYield = ethers.utils.parseEther("0.317");
@@ -240,7 +240,7 @@ describe("Yield Distributor", function () {
       expect(await yieldDistributor.currentInterval()).to.equal(2)
 
       // add 3/3 operators
-      await whitelist.addOperator(signers.random3.address);
+      await assertAddOperator(setupData, signers.random3);
 
       // send eth into yield distributor simulating yield at interval 2
       const thirdYield = ethers.utils.parseEther("3.0017");

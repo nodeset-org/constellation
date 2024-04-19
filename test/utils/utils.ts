@@ -301,7 +301,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         //expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(true);
     
         if(!(await protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address))) {
-            await protocol.whitelist.connect(signers.admin).addOperator(nodeOperator.address);
+            await assertAddOperator(setupData, nodeOperator);
         }
         
         const deploymentCount = await countProxyCreatedEvents(setupData);
@@ -345,6 +345,35 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
     return NodeAccounts
 } 
 
+export const whitelistUserServerSig = async (setupData: SetupData, nodeOperator: SignerWithAddress) => {
+    const goodSigner = setupData.signers.adminServer;
+    const role = await setupData.protocol.directory.hasRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE")), goodSigner.address)
+    expect(role).equals(true);
+    const packedData = ethers.utils.solidityPack(["address", "address"], [nodeOperator.address, setupData.protocol.whitelist.address]);
+    const messageHash = ethers.utils.keccak256(packedData);
+    const messageHashBytes = ethers.utils.arrayify(messageHash);
+    const sig = await goodSigner.signMessage(messageHashBytes);
+    return sig;
+}
+
+export const assertAddOperator = async (setupData: SetupData, nodeOperator: SignerWithAddress) => {
+    const sig = await whitelistUserServerSig(setupData, nodeOperator);
+    expect(await setupData.protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address)).equals(false);
+    await setupData.protocol.whitelist.connect(setupData.signers.adminServer).addOperator(nodeOperator.address, sig);
+    expect(await setupData.protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address)).equals(true);
+}
+
+export const badAutWhitelistUserServerSig = async (setupData: SetupData, nodeOperator: SignerWithAddress) => {
+    const badSigner = setupData.signers.random5;
+    const role = await setupData.protocol.directory.hasRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE")), badSigner.address)
+    expect(role).equals(false);
+    const packedData = ethers.utils.solidityPack(["address", "address"], [nodeOperator.address, setupData.protocol.whitelist.address]);
+    const messageHash = ethers.utils.keccak256(packedData);
+    const messageHashBytes = ethers.utils.arrayify(messageHash);
+    const sig = await badSigner.signMessage(messageHashBytes);
+    return sig;
+}
+
 // Deprecated: Don't use
 export const registerNewValidatorDeprecated = async (setupData: SetupData, nodeOperators: SignerWithAddress[]) => {
 
@@ -369,7 +398,7 @@ export const registerNewValidatorDeprecated = async (setupData: SetupData, nodeO
 
         // admin needs to kyc the node operator and register them in the whitelist if they aren't already
         if (!(await setupData.protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address))) {
-            await setupData.protocol.whitelist.connect(setupData.signers.admin).addOperator(nodeOperator.address);
+            await assertAddOperator(setupData, nodeOperator);
         }
 
         // admin will sign mockMinipool's address via signMessage
