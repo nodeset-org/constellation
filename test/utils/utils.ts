@@ -155,7 +155,7 @@ export const assertSingleTransferExists = async (
 
 
 
-export async function deployNodeAccount(signer: SignerWithAddress, protocol: Protocol, signers: Signers, bondValue: BigNumber) {
+export async function deployNodeAccount(setupData: SetupData,  bondValue: BigNumber) {
     const salt = 3;
 
     const nextAddress = "0xD9bf496401781cc411AE0F465Fe073872A50D639";
@@ -172,11 +172,13 @@ export async function deployNodeAccount(signer: SignerWithAddress, protocol: Pro
         expectedMinipoolAddress: depositData.minipoolAddress
     }
 
-    const proxyVAAddr = await protocol.NodeAccountFactory.connect(signers.hyperdriver).callStatic.createNewNodeAccount(config, nextAddress, {
+    const sig = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
+
+    const proxyVAAddr = await setupData.protocol.NodeAccountFactory.connect(setupData.signers.hyperdriver).callStatic.createNewNodeAccount(config, nextAddress,sig, {
         value: ethers.utils.parseEther("1")
     })
 
-    await protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(config, nextAddress, {
+    await setupData.protocol.NodeAccountFactory.connect(setupData.signers.hyperdriver).createNewNodeAccount(config, nextAddress,sig, {
         value: ethers.utils.parseEther("1")
     })
 
@@ -212,7 +214,7 @@ export async function upgradePriceFetcherToMock(signers: Signers, protocol: Prot
     await mockPriceFetcher.deployed();
 
     const lastPrice = await protocol.priceFetcher.getPrice();
-    
+
     await protocol.priceFetcher.connect(signers.admin).upgradeTo(mockPriceFetcher.address);
 
     const priceFetcherV2 = await ethers.getContractAt("MockPriceFetcher", protocol.priceFetcher.address);
@@ -249,7 +251,7 @@ export async function printEventDetails(tx: ContractTransaction, contract: Contr
                             console.log(`  ${key}: ${decodedData[key]}`);
                         });
                     }
-                } catch(e) {
+                } catch (e) {
                     console.log("Uh oh, error occured printing events due to manual decoding :(")
                 }
             }
@@ -289,25 +291,25 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
 
     const NodeAccounts = []
 
-    for(let i = 0; i < nodeOperators.length; i++) {
-        console.log("setting up node operator %s of %s", i+1, nodeOperators.length)
+    for (let i = 0; i < nodeOperators.length; i++) {
+        console.log("setting up node operator %s of %s", i + 1, nodeOperators.length)
         const nodeOperator = nodeOperators[i];
 
         const bond = ethers.utils.parseEther("8");
         const salt = i;
-    
+
         //expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(false);
         await prepareOperatorDistributionContract(setupData, 2);
         //expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(true);
-    
-        if(!(await protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address))) {
+
+        if (!(await protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address))) {
             await assertAddOperator(setupData, nodeOperator);
         }
-        
+
         const deploymentCount = await countProxyCreatedEvents(setupData);
         const nextAddress = await predictDeploymentAddress(protocol.NodeAccountFactory.address, deploymentCount + 1)
         const depositData = await generateDepositData(nextAddress, salt);
-    
+
         const config = {
             timezoneLocation: 'Australia/Brisbane',
             bondAmount: bond,
@@ -318,19 +320,20 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
             salt: salt,
             expectedMinipoolAddress: depositData.minipoolAddress
         }
-    
-        await protocol.NodeAccountFactory.connect(nodeOperator).createNewNodeAccount(config, nextAddress, {
+        const sig = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
+
+        await protocol.NodeAccountFactory.connect(nodeOperator).createNewNodeAccount(config, nextAddress, sig, {
             value: ethers.utils.parseEther("1")
         })
-    
+
         expect(await protocol.directory.hasRole(ethers.utils.id("FACTORY_ROLE"), protocol.NodeAccountFactory.address)).equals(true)
         expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), protocol.NodeAccountFactory.address)).equals(true)
         expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), nextAddress)).equals(true)
 
         await setupData.rocketPool.rocketDepositPoolContract.deposit({
-            value:ethers.utils.parseEther("32")
+            value: ethers.utils.parseEther("32")
         })
-		await setupData.rocketPool.rocketDepositPoolContract.assignDeposits();
+        await setupData.rocketPool.rocketDepositPoolContract.assignDeposits();
 
         // waits 32 days which could be a problem for other tests
         await increaseEVMTime(60 * 60 * 24 * 7 * 32);
@@ -343,7 +346,28 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
     }
 
     return NodeAccounts
-} 
+}
+
+export const approveHasSignedExitMessageSig = async (setupData: SetupData, expectedMinipoolAddress: string, salt: number) => {
+    const goodSigner = setupData.signers.adminServer;
+    const role = await setupData.protocol.directory.hasRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE")), goodSigner.address)
+    expect(role).equals(true);
+    const packedData = ethers.utils.solidityPack(
+        [
+        "address",
+         "uint256", 
+         "address"
+    ], [
+        expectedMinipoolAddress, 
+        salt, 
+        setupData.protocol.NodeAccountFactory.address
+    ]);
+
+    const messageHash = ethers.utils.keccak256(packedData);
+    const messageHashBytes = ethers.utils.arrayify(messageHash);
+    const sig = await goodSigner.signMessage(messageHashBytes);
+    return sig;
+}
 
 export const whitelistUserServerSig = async (setupData: SetupData, nodeOperator: SignerWithAddress) => {
     const goodSigner = setupData.signers.adminServer;
@@ -439,7 +463,7 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
     });
 
     // send eth to the rocketpool deposit contract (mint rETH to signers[0])
-    
+
 
     const rplRequried = await setupData.protocol.operatorDistributor.calculateRequiredRplTopUp(0, requiredEth);
     await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequried);

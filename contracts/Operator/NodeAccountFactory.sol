@@ -47,7 +47,8 @@ contract NodeAccountFactory is UpgradeableBase, Errors {
 
     function createNewNodeAccount(
         NodeAccount.ValidatorConfig calldata _config,
-        address _predictedAddress
+        address _predictedAddress,
+        bytes memory _sig
     ) public payable returns (address) {
         require(hasSufficentLiquidity(_config.bondAmount), 'NodeAccount: protocol must have enough rpl and eth');
         require(msg.value == lockThreshhold, 'NodeAccount: must lock 1 ether');
@@ -64,7 +65,8 @@ contract NodeAccountFactory is UpgradeableBase, Errors {
                 address(_directory),
                 msg.sender,
                 _predictedAddress,
-                _config
+                _config,
+                _sig
             )
         );
 

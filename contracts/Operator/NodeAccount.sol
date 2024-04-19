@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 import './NodeAccountFactory.sol';
 import './OperatorDistributor.sol';
@@ -73,7 +74,8 @@ contract NodeAccount is UpgradeableBase, Errors {
         address _directory,
         address _nodeOperator,
         address _predictedAddress,
-        ValidatorConfig calldata _config
+        ValidatorConfig calldata _config,
+        bytes memory _sig
     ) public payable initializer {
         super.initialize(_directory);
 
@@ -83,7 +85,6 @@ contract NodeAccount is UpgradeableBase, Errors {
 
         vaf = NodeAccountFactory(msg.sender);
         configs[_config.expectedMinipoolAddress] = _config;
-
 
         Directory directory = Directory(_directory);
 
@@ -97,30 +98,14 @@ contract NodeAccount is UpgradeableBase, Errors {
         IRocketNodeManager(directory.getRocketNodeManagerAddress()).setRPLWithdrawalAddress(address(this), dp, true);
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), dp, true);
 
-        _createMinipool(
-            _config.bondAmount,
-            _config.minimumNodeFee,
-            _config.validatorPubkey,
-            _config.validatorSignature,
-            _config.depositDataRoot,
-            _config.salt,
-            _config.expectedMinipoolAddress
-        );
+        _createMinipool(_config, _sig);
     }
 
-    function createMinipool(ValidatorConfig calldata _config) public payable {
+    function createMinipool(ValidatorConfig calldata _config, bytes memory _sig) public payable {
         require(msg.sender == nodeOperator, 'only nodeOperator');
         require(msg.value == vaf.lockThreshhold(), 'NodeAccount: must lock 1 ether');
 
-        _createMinipool(
-            _config.bondAmount,
-            _config.minimumNodeFee,
-            _config.validatorPubkey,
-            _config.validatorSignature,
-            _config.depositDataRoot,
-            _config.salt,
-            _config.expectedMinipoolAddress
-        );
+        _createMinipool(_config, _sig);
     }
 
     function _registerNode(string calldata _timezoneLocation, uint256 _bond, address _nodeOperator) internal {
@@ -132,44 +117,52 @@ contract NodeAccount is UpgradeableBase, Errors {
         );
     }
 
-    function _createMinipool(
-        uint256 _bondAmount,
-        uint256 _minimumNodeFee,
-        bytes calldata _validatorPubkey,
-        bytes calldata _validatorSignature,
-        bytes32 _depositDataRoot,
-        uint256 _salt,
-        address _expectedMinipoolAddress
-    ) internal {
+    function _createMinipool(ValidatorConfig calldata _config, bytes memory _sig) internal {
+        if (vaf.preSignedExitMessageCheck()) {
+            console.log('_createMinipool: message hash');
+            console.logBytes32(
+                keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt, address(vaf)))
+            );
+            address recoveredAddress = ECDSA.recover(
+                ECDSA.toEthSignedMessageHash(
+                    keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt, address(vaf)))
+                ),
+                _sig
+            );
+            require(
+                _directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress),
+                'signer must have permission from admin server role'
+            );
+        }
+
         uint256 targetBond = vaf.targetBond();
-        if (targetBond != _bondAmount) {
-            revert BadBondAmount(targetBond, _bondAmount);
+        if (targetBond != _config.bondAmount) {
+            revert BadBondAmount(targetBond, _config.bondAmount);
         }
         if (targetBond > address(this).balance - totalEthLocked) {
             revert InsufficientBalance(targetBond, address(this).balance - totalEthLocked);
         }
-        require(lockedEth[_expectedMinipoolAddress] == 0, 'minipool already initialized');
+        require(lockedEth[_config.expectedMinipoolAddress] == 0, 'minipool already initialized');
 
-        lockedEth[_expectedMinipoolAddress] = msg.value;
+        lockedEth[_config.expectedMinipoolAddress] = msg.value;
         totalEthLocked += msg.value;
-        lockStarted[_expectedMinipoolAddress] = block.timestamp;
+        lockStarted[_config.expectedMinipoolAddress] = block.timestamp;
 
-        address _nodeOperator = nodeOperator;
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        od.OnMinipoolCreated(_expectedMinipoolAddress, nodeOperator, _bondAmount);
-        od.rebalanceRplStake(address(this), od.nodeOperatorEthStaked(_nodeOperator));
+        od.OnMinipoolCreated(_config.expectedMinipoolAddress, nodeOperator, _config.bondAmount);
+        od.rebalanceRplStake(address(this), od.nodeOperatorEthStaked(nodeOperator));
 
         console.log('_createMinipool()');
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: targetBond}(
-            _bondAmount,
-            _minimumNodeFee,
-            _validatorPubkey,
-            _validatorSignature,
-            _depositDataRoot,
-            _salt,
-            _expectedMinipoolAddress
+            _config.bondAmount,
+            _config.minimumNodeFee,
+            _config.validatorPubkey,
+            _config.validatorSignature,
+            _config.depositDataRoot,
+            _config.salt,
+            _config.expectedMinipoolAddress
         );
-        IMinipool minipool = IMinipool(_expectedMinipoolAddress);
+        IMinipool minipool = IMinipool(_config.expectedMinipoolAddress);
         console.log('_createMinipool.status', uint256(minipool.getStatus()));
     }
 
