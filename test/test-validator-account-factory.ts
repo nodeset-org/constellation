@@ -22,7 +22,7 @@ describe("Validator Account Factory", function () {
         expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(true);
 
         await assertAddOperator(setupData, signers.hyperdriver);
-        
+
         const deploymentCount = await countProxyCreatedEvents(setupData);
         const nextAddress = await predictDeploymentAddress(protocol.NodeAccountFactory.address, deploymentCount + 1)
         const depositData = await generateDepositData(nextAddress, salt);
@@ -38,7 +38,7 @@ describe("Validator Account Factory", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         }
 
-        const sig = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
+        const sig = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt)
 
         await protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(config, nextAddress, sig, {
             value: ethers.utils.parseEther("1")
@@ -47,6 +47,49 @@ describe("Validator Account Factory", function () {
         expect(await protocol.directory.hasRole(ethers.utils.id("FACTORY_ROLE"), protocol.NodeAccountFactory.address)).equals(true)
         expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), protocol.NodeAccountFactory.address)).equals(true)
         expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), nextAddress)).equals(true)
+    });
+
+    it("fails - sig cannot be reused", async function () {
+        const setupData = await loadFixture(protocolFixture);
+        const { protocol, signers } = setupData;
+
+        const bond = ethers.utils.parseEther("8");
+        const salt = 3;
+
+        expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(false);
+        await prepareOperatorDistributionContract(setupData, 2);
+        await prepareOperatorDistributionContract(setupData, 2);
+        expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(true);
+
+        await assertAddOperator(setupData, signers.hyperdriver);
+
+        var deploymentCount = await countProxyCreatedEvents(setupData);
+        var nextAddress = await predictDeploymentAddress(protocol.NodeAccountFactory.address, deploymentCount + 1)
+        const depositData = await generateDepositData(nextAddress, salt);
+
+        const config = {
+            timezoneLocation: 'Australia/Brisbane',
+            bondAmount: bond,
+            minimumNodeFee: 0,
+            validatorPubkey: depositData.depositData.pubkey,
+            validatorSignature: depositData.depositData.signature,
+            depositDataRoot: depositData.depositDataRoot,
+            salt: salt,
+            expectedMinipoolAddress: depositData.minipoolAddress
+        }
+
+        const sig = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt)
+
+        await protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(config, nextAddress, sig, {
+            value: ethers.utils.parseEther("1")
+        })
+
+        deploymentCount = await countProxyCreatedEvents(setupData);
+        nextAddress = await predictDeploymentAddress(protocol.NodeAccountFactory.address, deploymentCount + 1)
+
+        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(config, nextAddress, sig, {
+            value: ethers.utils.parseEther("1")
+        })).to.be.revertedWith("sig already used");
     });
 
     it("fails - not whitelisted", async function () {
@@ -74,9 +117,9 @@ describe("Validator Account Factory", function () {
             salt: salt,
             expectedMinipoolAddress: depositData.minipoolAddress
         }
-        const sig = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
+        const sig = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt)
 
-        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(config, nextAddress,sig, {
+        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(config, nextAddress, sig, {
             value: ethers.utils.parseEther("1")
         })).to.be.revertedWith("Whitelist: Provided address is not an allowed operator!")
     });
@@ -99,7 +142,7 @@ describe("Validator Account Factory", function () {
         }
         const sig = await approveHasSignedExitMessageSig(setupData, badConfig.expectedMinipoolAddress, badConfig.salt)
 
-        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(badConfig, nextBadAddress,sig, {
+        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(badConfig, nextBadAddress, sig, {
             value: ethers.utils.parseEther("1")
         })).to.be.revertedWithCustomError(protocol.NodeAccountFactory, "BadPredictedCreation");
     })
@@ -122,7 +165,7 @@ describe("Validator Account Factory", function () {
         }
         const sig = await approveHasSignedExitMessageSig(setupData, badConfig.expectedMinipoolAddress, badConfig.salt)
 
-        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(badConfig, nextBadAddress,sig,{
+        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(badConfig, nextBadAddress, sig, {
             value: ethers.utils.parseEther("0")
         })).to.be.revertedWith("NodeAccount: must lock 1 ether");
     });
@@ -145,7 +188,7 @@ describe("Validator Account Factory", function () {
         }
         const sig = await approveHasSignedExitMessageSig(setupData, badConfig.expectedMinipoolAddress, badConfig.salt)
 
-        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(badConfig, nextBadAddress, sig,{
+        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(badConfig, nextBadAddress, sig, {
             value: ethers.utils.parseEther("1")
         })).to.be.revertedWith("NodeAccount: protocol must have enough rpl and eth");
     });

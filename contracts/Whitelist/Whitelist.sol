@@ -33,6 +33,7 @@ contract Whitelist is UpgradeableBase {
     mapping(address => Operator) public nodeMap;
     mapping(uint256 => address) public nodeIndexMap;
     mapping(address => uint256) public reverseNodeIndexMap;
+    mapping(bytes => bool) public sigsUsed;
 
     uint256 public numOperators;
 
@@ -111,6 +112,8 @@ contract Whitelist is UpgradeableBase {
     /// @param _operator The address of the operator to be added.
     /// @return An Operator struct containing details about the newly added operator.
     function _addOperator(address _operator, bytes memory _sig) internal returns (Operator memory) {
+        require(!sigsUsed[_sig], 'sig already used');
+        sigsUsed[_sig] = true;
         bytes32 messageHash = keccak256(abi.encodePacked(_operator, address(this)));
         console.log('_addOperator: message hash');
         console.logBytes32(messageHash);

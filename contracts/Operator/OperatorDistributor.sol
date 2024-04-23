@@ -243,20 +243,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             }
             // stakeRPLOnBehalfOf
             // transfer RPL to deposit pool
-            IERC20(_directory.getRPLAddress()).transfer(
-                _directory.getDepositPoolAddress(),
-                _requiredStake
-            );
+            IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), _requiredStake);
             FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_NodeAccount, _requiredStake);
         } else {
             if (currentRplBalance == 0) {
                 return;
             }
             // stake what we have
-            IERC20(_directory.getRPLAddress()).transfer(
-                _directory.getDepositPoolAddress(),
-                currentRplBalance
-            );
+            IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), currentRplBalance);
             FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_NodeAccount, currentRplBalance);
         }
     }
@@ -359,7 +353,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @dev Processes a single minipool by performing RPL top-up and distributing balance if certain conditions are met.
      */
     function _processNextMinipool() internal {
-        if(nextMinipoolHavestIndex > minipoolAddresses.length - 1) {
+        if (nextMinipoolHavestIndex > minipoolAddresses.length - 1) {
             nextMinipoolHavestIndex = 0;
         }
 
@@ -383,19 +377,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('_processNextMinipool.ethStaked', ethStaked);
 
         rebalanceRplStake(nodeAddress, ethStaked);
-        //performTopDown(nodeAddress, ethStaked);
 
-
-        uint256 balance = minipool.getNodeDepositBalance();
-        // TODO: Talk to Mike: used to pass  balance >= 8 ether but whent this is true, it will always revert
-        if (balance >= 8 ether) {
-            //minipool.distributeBalance(false);
-            NodeAccount(
-                NodeAccountFactory(_directory.getNodeAccountFactoryAddress()).minipoolNodeAccountMap(
-                    address(minipool)
-                )
-            ).distributeBalance(false, address(minipool));
-        }
+        uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
+        NodeAccount(
+            NodeAccountFactory(_directory.getNodeAccountFactoryAddress()).minipoolNodeAccountMap(address(minipool))
+        ).distributeBalance(totalBalance < 8 ether, address(minipool));
 
         nextMinipoolHavestIndex++;
     }
@@ -423,7 +409,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         fundedEth -= _bond;
         nodeOperatorEthStaked[_nodeOperator] -= _bond;
     }
-
 
     /**
      * @notice Retrieves the list of minipool addresses managed by the contract.

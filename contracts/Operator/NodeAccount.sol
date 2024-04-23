@@ -118,6 +118,7 @@ contract NodeAccount is UpgradeableBase, Errors {
     }
 
     function _createMinipool(ValidatorConfig calldata _config, bytes memory _sig) internal {
+        vaf.validateSigUsedSigUsed(_sig);
         if (vaf.preSignedExitMessageCheck()) {
             console.log('_createMinipool: message hash');
             console.logBytes32(
