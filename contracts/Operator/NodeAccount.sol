@@ -221,7 +221,7 @@ contract NodeAccount is UpgradeableBase, Errors {
     function distributeBalance(
         bool _rewardsOnly,
         address _minipool
-    ) external onlyNodeOperatorOrProtocol hasConfig(_minipool) {
+    ) external onlyAdmin hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.distributeBalance(_rewardsOnly);
         if (minipool.getFinalised()) {

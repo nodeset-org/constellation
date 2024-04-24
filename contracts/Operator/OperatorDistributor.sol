@@ -389,6 +389,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         if (totalBalance < 8 ether) {
             minipool.distributeBalance(true);
         } 
+        
         nextMinipoolHavestIndex++;
     }
 
