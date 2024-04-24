@@ -386,10 +386,16 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
 
+        /**
+         * @dev We are only calling distributeBalance with a true flag to prevent griefing vectors. This ensures we
+         * are only collecting skimmed rewards and not doing anything related to full withdrawals or finalizations.
+         * One example is that if we pass false to distributeBalance, it opens a scenario where operators are forced to
+         * finalize due to having more than 8 ETH. This could result in slashings from griefing vectors.
+         */
         if (totalBalance < 8 ether) {
             minipool.distributeBalance(true);
-        } 
-        
+        }
+
         nextMinipoolHavestIndex++;
     }
 

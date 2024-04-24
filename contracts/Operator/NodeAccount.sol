@@ -218,10 +218,13 @@ contract NodeAccount is UpgradeableBase, Errors {
         require(_implementationAddress == vaf.implementationAddress(), 'only upgradable to vaf.implementationAddress');
     }
 
-    function distributeBalance(
-        bool _rewardsOnly,
-        address _minipool
-    ) external onlyAdmin hasConfig(_minipool) {
+    /**
+     * @dev Restricting this function to admin is the only way we can technologically enforce
+     * a node operator to not slash the capital they get from constellation depositors. If we
+     * open this function to node operators, they could inappropriately finalize and fully
+     * withdraw a minipool, creating slashings on depositor capital.
+     */
+    function distributeBalance(bool _rewardsOnly, address _minipool) external onlyAdmin hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.distributeBalance(_rewardsOnly);
         if (minipool.getFinalised()) {
