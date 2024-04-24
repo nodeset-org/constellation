@@ -388,18 +388,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         if (totalBalance < 8 ether) {
             minipool.distributeBalance(true);
-        } else {
-            if (!minipool.userDistributeAllowed()) {
-                // alternatives for try-catch
-                // 1) integrate settings contract and fetch from storage bloating setup process for only use here
-                // 2) use mapping to track which users have begunUserDistribute
-                try minipool.beginUserDistribute() {} catch {}
-            } else {
-                // we do it this way to prevent minipool auto finalizations
-                minipool.distributeBalance(false);
-            }
-        }
-
+        } 
         nextMinipoolHavestIndex++;
     }
 
