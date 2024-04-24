@@ -387,11 +387,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
 
         if (totalBalance < 8 ether) {
-            NodeAccount(
-                NodeAccountFactory(_directory.getNodeAccountFactoryAddress()).minipoolNodeAccountMap(address(minipool))
-            ).distributeBalance(true, address(minipool));
+            minipool.distributeBalance(true);
         } else {
-            if(!minipool.userDistributeAllowed()) {
+            if (!minipool.userDistributeAllowed()) {
                 // alternatives for try-catch
                 // 1) integrate settings contract and fetch from storage bloating setup process for only use here
                 // 2) use mapping to track which users have begunUserDistribute
