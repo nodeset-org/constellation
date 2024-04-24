@@ -178,7 +178,7 @@ contract NodeAccount is UpgradeableBase, Errors {
         }
 
         IMinipool minipool = IMinipool(_minipool);
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeOperatorDissolved(
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(
             nodeOperator,
             configs[_minipool].bondAmount
         );
@@ -224,6 +224,12 @@ contract NodeAccount is UpgradeableBase, Errors {
     ) external onlyNodeOperatorOrProtocol hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.distributeBalance(_rewardsOnly);
+        if (minipool.getFinalised()) {
+            OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(
+                nodeOperator,
+                configs[_minipool].bondAmount
+            );
+        }
     }
 
     function setDelegate(address _newDelegate) external onlyNodeOperatorOrProtocol {

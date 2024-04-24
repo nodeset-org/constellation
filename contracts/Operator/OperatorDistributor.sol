@@ -24,7 +24,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
     event MinipoolDestroyed(address indexed _minipoolAddress, address indexed _nodeAddress);
     event WarningNoMiniPoolsToHarvest();
-    event WarningMinipoolNotStaking(address indexed _minipoolAddress, MinipoolStatus indexed _status);
+    event WarningMinipoolNotStaking(
+        address indexed _minipoolAddress,
+        MinipoolStatus indexed _status,
+        bool indexed _isFinalized
+    );
 
     using Math for uint256;
 
@@ -361,9 +365,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         IMinipool minipool = IMinipool(minipoolAddresses[index]);
 
         MinipoolStatus minipoolStatus = minipool.getStatus();
+        bool isFinalized = minipool.getFinalised();
         console.log('_processNextMinipool.status=', uint256(minipoolStatus));
-        if (minipoolStatus != MinipoolStatus.Staking) {
-            emit WarningMinipoolNotStaking(address(minipool), minipoolStatus);
+        console.log('_processNextMinipool.isFinalized=', isFinalized);
+        if (minipoolStatus != MinipoolStatus.Staking || isFinalized) {
+            emit WarningMinipoolNotStaking(address(minipool), minipoolStatus, isFinalized);
             return;
         }
 
@@ -379,9 +385,22 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         rebalanceRplStake(nodeAddress, ethStaked);
 
         uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
-        NodeAccount(
-            NodeAccountFactory(_directory.getNodeAccountFactoryAddress()).minipoolNodeAccountMap(address(minipool))
-        ).distributeBalance(totalBalance < 8 ether, address(minipool));
+
+        if (totalBalance < 8 ether) {
+            NodeAccount(
+                NodeAccountFactory(_directory.getNodeAccountFactoryAddress()).minipoolNodeAccountMap(address(minipool))
+            ).distributeBalance(true, address(minipool));
+        } else {
+            if(!minipool.userDistributeAllowed()) {
+                // alternatives for try-catch
+                // 1) integrate settings contract and fetch from storage bloating setup process for only use here
+                // 2) use mapping to track which users have begunUserDistribute
+                try minipool.beginUserDistribute() {} catch {}
+            } else {
+                // we do it this way to prevent minipool auto finalizations
+                minipool.distributeBalance(false);
+            }
+        }
 
         nextMinipoolHavestIndex++;
     }
@@ -405,7 +424,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         targetStakeRatio = _targetStakeRatio;
     }
 
-    function onNodeOperatorDissolved(address _nodeOperator, uint256 _bond) external onlyProtocol {
+    function onNodeMinipoolDestroy(address _nodeOperator, uint256 _bond) external onlyProtocol {
         fundedEth -= _bond;
         nodeOperatorEthStaked[_nodeOperator] -= _bond;
     }
