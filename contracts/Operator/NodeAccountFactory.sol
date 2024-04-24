@@ -131,7 +131,7 @@ contract NodeAccountFactory is UpgradeableBase, Errors {
         lockUpTime = _newLockUpTime;
     }
 
-    function validateSigUsedSigUsed(bytes memory _sig) external onlyProtocol {
+    function validateSigUsed(bytes memory _sig) external onlyProtocol {
         require(!sigsUsed[_sig], "sig already used");
         sigsUsed[_sig] = true;
     }
