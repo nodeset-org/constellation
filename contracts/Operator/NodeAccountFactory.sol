@@ -24,6 +24,7 @@ contract NodeAccountFactory is UpgradeableBase, Errors {
 
     bool public preSignedExitMessageCheck;
 
+    mapping(bytes => bool) public sigsUsed;
     mapping(address => address) public minipoolNodeAccountMap;
 
     /**
@@ -128,6 +129,11 @@ contract NodeAccountFactory is UpgradeableBase, Errors {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
         lockUpTime = _newLockUpTime;
+    }
+
+    function validateSigUsed(bytes memory _sig) external onlyProtocol {
+        require(!sigsUsed[_sig], "sig already used");
+        sigsUsed[_sig] = true;
     }
 
     function setImplementation(address _implementationAddress) external {

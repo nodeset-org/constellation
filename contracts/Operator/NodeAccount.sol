@@ -118,6 +118,7 @@ contract NodeAccount is UpgradeableBase, Errors {
     }
 
     function _createMinipool(ValidatorConfig calldata _config, bytes memory _sig) internal {
+        vaf.validateSigUsed(_sig);
         if (vaf.preSignedExitMessageCheck()) {
             console.log('_createMinipool: message hash');
             console.logBytes32(
@@ -177,7 +178,7 @@ contract NodeAccount is UpgradeableBase, Errors {
         }
 
         IMinipool minipool = IMinipool(_minipool);
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeOperatorDissolved(
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(
             nodeOperator,
             configs[_minipool].bondAmount
         );
@@ -217,12 +218,21 @@ contract NodeAccount is UpgradeableBase, Errors {
         require(_implementationAddress == vaf.implementationAddress(), 'only upgradable to vaf.implementationAddress');
     }
 
-    function distributeBalance(
-        bool _rewardsOnly,
-        address _minipool
-    ) external onlyNodeOperatorOrProtocol hasConfig(_minipool) {
+    /**
+     * @dev Restricting this function to admin is the only way we can technologically enforce
+     * a node operator to not slash the capital they get from constellation depositors. If we
+     * open this function to node operators, they could inappropriately finalize and fully
+     * withdraw a minipool, creating slashings on depositor capital.
+     */
+    function distributeBalance(bool _rewardsOnly, address _minipool) external onlyAdmin hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.distributeBalance(_rewardsOnly);
+        if (minipool.getFinalised()) {
+            OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(
+                nodeOperator,
+                configs[_minipool].bondAmount
+            );
+        }
     }
 
     function setDelegate(address _newDelegate) external onlyNodeOperatorOrProtocol {

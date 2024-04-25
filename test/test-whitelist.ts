@@ -162,6 +162,17 @@ describe("Whitelist", function () {
             .to.be.revertedWith("Can only be called by 24 hour timelock!");
     });
 
+    it("Sig cannot be reused to self add attack", async function () {
+        const setupData = await loadFixture(protocolFixture);
+        const { protocol, signers } = setupData;
+
+        const sig = await whitelistUserServerSig(setupData, signers.random);
+
+        await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address, sig);
+        await protocol.whitelist.connect(signers.admin).removeOperator(signers.random.address);
+        await expect(protocol.whitelist.connect(signers.admin).addOperator(signers.random.address, sig)).to.be.revertedWith("sig already used");
+    });
+
     it("Admin can batch add addresses to whitelist", async function () {
         const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;

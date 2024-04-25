@@ -24,7 +24,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
     event MinipoolDestroyed(address indexed _minipoolAddress, address indexed _nodeAddress);
     event WarningNoMiniPoolsToHarvest();
-    event WarningMinipoolNotStaking(address indexed _minipoolAddress, MinipoolStatus indexed _status);
+    event WarningMinipoolNotStaking(
+        address indexed _minipoolAddress,
+        MinipoolStatus indexed _status,
+        bool indexed _isFinalized
+    );
 
     using Math for uint256;
 
@@ -243,20 +247,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             }
             // stakeRPLOnBehalfOf
             // transfer RPL to deposit pool
-            IERC20(_directory.getRPLAddress()).transfer(
-                _directory.getDepositPoolAddress(),
-                _requiredStake
-            );
+            IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), _requiredStake);
             FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_NodeAccount, _requiredStake);
         } else {
             if (currentRplBalance == 0) {
                 return;
             }
             // stake what we have
-            IERC20(_directory.getRPLAddress()).transfer(
-                _directory.getDepositPoolAddress(),
-                currentRplBalance
-            );
+            IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), currentRplBalance);
             FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_NodeAccount, currentRplBalance);
         }
     }
@@ -359,7 +357,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @dev Processes a single minipool by performing RPL top-up and distributing balance if certain conditions are met.
      */
     function _processNextMinipool() internal {
-        if(nextMinipoolHavestIndex > minipoolAddresses.length - 1) {
+        if (nextMinipoolHavestIndex > minipoolAddresses.length - 1) {
             nextMinipoolHavestIndex = 0;
         }
 
@@ -367,9 +365,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         IMinipool minipool = IMinipool(minipoolAddresses[index]);
 
         MinipoolStatus minipoolStatus = minipool.getStatus();
+        bool isFinalized = minipool.getFinalised();
         console.log('_processNextMinipool.status=', uint256(minipoolStatus));
-        if (minipoolStatus != MinipoolStatus.Staking) {
-            emit WarningMinipoolNotStaking(address(minipool), minipoolStatus);
+        console.log('_processNextMinipool.isFinalized=', isFinalized);
+        if (minipoolStatus != MinipoolStatus.Staking || isFinalized) {
+            emit WarningMinipoolNotStaking(address(minipool), minipoolStatus, isFinalized);
             return;
         }
 
@@ -383,18 +383,17 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('_processNextMinipool.ethStaked', ethStaked);
 
         rebalanceRplStake(nodeAddress, ethStaked);
-        //performTopDown(nodeAddress, ethStaked);
 
+        uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
 
-        uint256 balance = minipool.getNodeDepositBalance();
-        // TODO: Talk to Mike: used to pass  balance >= 8 ether but whent this is true, it will always revert
-        if (balance >= 8 ether) {
-            //minipool.distributeBalance(false);
-            NodeAccount(
-                NodeAccountFactory(_directory.getNodeAccountFactoryAddress()).minipoolNodeAccountMap(
-                    address(minipool)
-                )
-            ).distributeBalance(false, address(minipool));
+        /**
+         * @dev We are only calling distributeBalance with a true flag to prevent griefing vectors. This ensures we
+         * are only collecting skimmed rewards and not doing anything related to full withdrawals or finalizations.
+         * One example is that if we pass false to distributeBalance, it opens a scenario where operators are forced to
+         * finalize due to having more than 8 ETH. This could result in slashings from griefing vectors.
+         */
+        if (totalBalance < 8 ether) {
+            minipool.distributeBalance(true);
         }
 
         nextMinipoolHavestIndex++;
@@ -419,11 +418,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         targetStakeRatio = _targetStakeRatio;
     }
 
-    function onNodeOperatorDissolved(address _nodeOperator, uint256 _bond) external onlyProtocol {
+    function onNodeMinipoolDestroy(address _nodeOperator, uint256 _bond) external onlyProtocol {
         fundedEth -= _bond;
         nodeOperatorEthStaked[_nodeOperator] -= _bond;
     }
-
 
     /**
      * @notice Retrieves the list of minipool addresses managed by the contract.
