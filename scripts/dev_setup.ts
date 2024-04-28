@@ -6,53 +6,12 @@ import { getNextContractAddress } from "../test/utils/utils";
 import { IXRETHOracle, NodeAccountFactory } from "../typechain-types";
 import { expect } from "chai";
 import readline from 'readline';
+import { generateBytes32Identifier, retryOperation } from "./utils/deployment";
 
-// Function to prompt user for input
-function askQuestion(query: string): Promise<string> {
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-    });
-
-    return new Promise<string>(resolve => rl.question(query, ans => {
-        rl.close();
-        resolve(ans);
-    }));
-}
-
-// Updated retry operation function
-async function retryOperation(operation: () => Promise<any>, retries: number = 3, extendedRetries: number = 3) {
-    try {
-        return await operation();
-    } catch (error) {
-        console.log(error);
-
-        if (retries > 0) {
-            console.log(`Retrying operation, attempts remaining: ${retries}...`);
-            return await retryOperation(operation, retries - 1, extendedRetries);
-        } else if (extendedRetries > 0) {
-            const answer = await askQuestion('Operation failed. Do you want to retry? (y/n): ');
-            if (answer.toLowerCase() === 'y') {
-                console.log(`Extended retry, attempts remaining: ${extendedRetries}...`);
-                return await retryOperation(operation, 0, extendedRetries - 1);
-            } else {
-                throw new Error('Operation aborted by the user.');
-            }
-        } else {
-            throw error;
-        }
-    }
-}
 
 async function main() {
     const predictedNonce = 12;
     const [deployer, admin] = await ethers.getSigners();
-
-    // Function to generate bytes32 representation for contract identifiers
-    const generateBytes32Identifier = (identifier: string) => {
-        // Correctly concatenate 'contract.address' with the identifier before hashing
-        return ethers.utils.solidityKeccak256(["string"], [`contract.address${identifier}`]);
-    };
 
 
     // Contract identifiers

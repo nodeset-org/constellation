@@ -149,11 +149,13 @@ async function deployProtocol(signers: Signers): Promise<Protocol> {
 
 		const directoryAddress = await getNextContractAddress(deployer, predictedNonce-1)
 		const initNonce = await deployer.getTransactionCount();
+		
 		const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directoryAddress], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 		const vCWETHProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("WETHVault"), [directoryAddress, wETH.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
 		const vCWETH = await ethers.getContractAt("WETHVault", vCWETHProxyAbi.address);
 		const vCRPLProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("RPLVault"), [directoryAddress, rplContract.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
 		const vCRPL = await ethers.getContractAt("RPLVault", vCRPLProxyAbi.address);
+		
 		const depositPoolProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("FundRouter"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
 		const depositPool = await ethers.getContractAt("FundRouter", depositPoolProxyAbi.address);
 		const operatorDistributorProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("OperatorDistributor"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
