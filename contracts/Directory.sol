@@ -174,7 +174,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     }
 
     function initialize(Protocol memory newProtocol, address treasury, address admin) public initializer {
-        require(msg.sender != admin, Constants.INITIALIZATION_ERROR);
+        // require(msg.sender != admin, Constants.INITIALIZATION_ERROR);
         require(
             _protocol.whitelist == address(0) && newProtocol.whitelist != address(0),
             Constants.INITIALIZATION_ERROR
