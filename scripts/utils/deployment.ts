@@ -128,6 +128,22 @@ export async function fastDeployProtocol(deployer: SignerWithAddress, directoryD
         return naf
     });
 
+    console.log("verify directory input");
+
+    console.log("whitelistProxy.address", whitelistProxy.address)
+    console.log("vCWETHProxy.address", vCWETHProxy.address)
+    console.log("vCRPLProxy.address", vCRPLProxy.address)
+    console.log("depositPoolProxy.address", depositPoolProxy.address)
+    console.log("operatorDistributorProxy.address", operatorDistributorProxy.address)
+    console.log("nodeAccountFactoryProxy.address", nodeAccountFactoryProxy.address)
+    console.log("yieldDistributorProxy.address", yieldDistributorProxy.address)
+    console.log("oracle", oracle)
+    console.log("priceFetcherProxy.address", priceFetcherProxy.address)
+    console.log("rocketStorage", rocketStorage)
+    console.log("weth", weth)
+    console.log("uniswapV3", uniswapV3)
+    console.log("sanctions", sanctions)
+
     const directoryProxy = await retryOperation(async () => {
         const dir = await upgrades.deployProxy(await ethers.getContractFactory("Directory", directoryDeployer),
             [
