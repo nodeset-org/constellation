@@ -5,7 +5,8 @@ import { FunctionFragment } from 'ethers/lib/utils';
 import { getNextContractAddress } from "../../test/utils/utils";
 import { getInitializerData } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import readline from 'readline';
-import { RPLVault, WETHVault, Whitelist } from "../../typechain-types";
+import { AdminTreasury, Directory, FundRouter, NodeAccountFactory, OperatorDistributor, PriceFetcher, RPLVault, WETHVault, Whitelist, YieldDistributor } from "../../typechain-types";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 // Function to prompt user for input
 function askQuestion(query: string): Promise<string> {
@@ -50,18 +51,20 @@ export const generateBytes32Identifier = (identifier: string) => {
     return ethers.utils.solidityKeccak256(["string"], [`contract.address${identifier}`]);
 };
 
-export async function deployProtocol(rocketStorage: string, weth: string, sanctions: string, uniswapV3: string, log: boolean) {
-
-    const [deployer, directoryDeployer] = await ethers.getSigners();
+export async function deployProtocol(deployer: SignerWithAddress, directoryDeployer: SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, uniswapV3: string, oracle: string, admin: string, log: boolean) {
 
     const directoryAddress = await getNextContractAddress(directoryDeployer, 1)
 
-    const whitelistProxy = await retryOperation(async function () {
-        return await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directoryAddress], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+    const whitelistProxy = await retryOperation(async () => {
+        const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist", deployer), [directoryAddress], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+        if (log) console.log("whitelist deployed to", whitelist.address)
+        return whitelist;
     });
 
-    const vCWETHProxy = await retryOperation(async function () {
-        return await upgrades.deployProxy(await ethers.getContractFactory("WETHVault"), [directoryAddress, weth], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+    const vCWETHProxy = await retryOperation(async () => {
+        const vCWETH = await upgrades.deployProxy(await ethers.getContractFactory("WETHVault", deployer), [directoryAddress, weth], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        if (log) console.log("vaulted constellation eth deployed to", vCWETH.address)
+        return vCWETH;
     });
 
     const bytes32IdentifierRplContract = generateBytes32Identifier('rocketTokenRPL');
@@ -70,12 +73,93 @@ export async function deployProtocol(rocketStorage: string, weth: string, sancti
     });
 
     const vCRPLProxy = await retryOperation(async function () {
-        return await upgrades.deployProxy(await ethers.getContractFactory("RPLVault"), [directoryAddress, rplContract.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        const vCRPL = await upgrades.deployProxy(await ethers.getContractFactory("RPLVault", deployer), [directoryAddress, rplContract.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        if (log) console.log("vaulted constellation rpl deployed to", vCRPL.address)
+        return vCRPL
     })
+
+    const depositPoolProxy = await retryOperation(async function () {
+        const dp = await upgrades.deployProxy(await ethers.getContractFactory("FundRouter", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        if (log) console.log("Fund Router (Deposit Pool) deployed to", dp.address)
+        return dp
+    })
+
+    const operatorDistributorProxy = await retryOperation(async function () {
+        const od = await upgrades.deployProxy(await ethers.getContractFactory("OperatorDistributor", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        if (log) console.log("operator distributor deployed to", od.address)
+        return od
+    })
+
+    const yieldDistributorProxy = await retryOperation(async function () {
+        const yd = await upgrades.deployProxy(await ethers.getContractFactory("YieldDistributor", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        if (log) console.log("yield distributor deployed to", yd.address)
+        return yd
+    })
+
+    const priceFetcherProxy = await retryOperation(async function () {
+        const pf = await upgrades.deployProxy(await ethers.getContractFactory("PriceFetcher", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+        if (log) console.log("price fetcher deployed to", pf.address)
+        return pf
+    })
+
+    const adminTreasuryProxy = await retryOperation(async function () {
+        const at = await upgrades.deployProxy(await ethers.getContractFactory("AdminTreasury", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+        if (log) console.log("admin treasury deployed to", at.address)
+        return at
+    })
+
+    const nodeAccountLogic = await retryOperation(async function () {
+        const NodeAccountLogic = await ethers.getContractFactory("NodeAccount", deployer);
+        const nodeAccountLogic = await NodeAccountLogic.deploy();
+        await nodeAccountLogic.deployed();
+        if (log) console.log("node account impl for cloning deployed to", nodeAccountLogic.address)
+        return nodeAccountLogic;
+    })
+
+    const nodeAccountFactoryProxy = await retryOperation(async () => {
+        const naf = await upgrades.deployProxy(await ethers.getContractFactory("NodeAccountFactory", deployer), [directoryAddress, nodeAccountLogic.address], { 'initializer': 'initializeWithImplementation', 'kind': 'uups', 'unsafeAllow': ['constructor'] })
+        if (log) console.log("node account factory deployed to", naf.address)
+        return naf
+    });
+
+    const directoryProxy = await retryOperation(async () => {
+        const dir = await upgrades.deployProxy(await ethers.getContractFactory("Directory", directoryDeployer),
+            [
+                [
+                    whitelistProxy.address,
+                    vCWETHProxy.address,
+                    vCRPLProxy.address,
+                    depositPoolProxy.address,
+                    operatorDistributorProxy.address,
+                    nodeAccountFactoryProxy.address,
+                    yieldDistributorProxy.address,
+                    oracle,
+                    priceFetcherProxy.address,
+                    rocketStorage,
+                    weth,
+                    uniswapV3,
+                    sanctions,
+                ],
+                adminTreasuryProxy.address,
+                admin,
+            ], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+
+        if (log) console.log("directory deployed to", dir.address)
+
+        return dir
+    })
+
 
     return {
         whitelist: whitelistProxy as Whitelist,
         vCWETH: vCWETHProxy as WETHVault,
-        vCRPL: vCRPLProxy as RPLVault
+        vCRPL: vCRPLProxy as RPLVault,
+        depositPool: depositPoolProxy as FundRouter,
+        operatorDistributor: operatorDistributorProxy as OperatorDistributor,
+        yieldDistributor: yieldDistributorProxy as YieldDistributor,
+        priceFetcher: priceFetcherProxy as PriceFetcher,
+        adminTreasury: adminTreasuryProxy as AdminTreasury,
+        nodeAccountFactory: nodeAccountFactoryProxy as NodeAccountFactory,
+        directory: directoryProxy as Directory
     }
 }
