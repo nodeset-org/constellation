@@ -91,7 +91,7 @@ contract FundRouter is UpgradeableBase {
         );
     }
 
-    function sendEthToDistributors() public {
+    function sendEthToDistributors() public nonReentrant {
         console.log('sendEthToDistributors.A');
         // Convert entire WETH balance of this contract to ETH
         IWETH WETH = IWETH(_directory.getWETHAddress());
@@ -140,7 +140,7 @@ contract FundRouter is UpgradeableBase {
         console.log('sendEthToDistributors.I');
     }
 
-    function sendRplToDistributors() public {
+    function sendRplToDistributors() public nonReentrant {
         console.log('sendRplToDistributors.A');
 
         // Initialize the RPLVault and the Operator Distributor addresses

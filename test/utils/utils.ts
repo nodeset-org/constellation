@@ -158,7 +158,7 @@ export const assertSingleTransferExists = async (
 export async function deployNodeAccount(setupData: SetupData,  bondValue: BigNumber) {
     const salt = 3;
 
-    const nextAddress = "0xD9bf496401781cc411AE0F465Fe073872A50D639";
+    const nextAddress = "0x3622082BD98490ddd32c9aaD1AdCdc472569e864";
     const depositData = await generateDepositData(nextAddress, salt);
 
     const config = {
