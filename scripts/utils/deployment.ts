@@ -51,7 +51,7 @@ export const generateBytes32Identifier = (identifier: string) => {
     return ethers.utils.solidityKeccak256(["string"], [`contract.address${identifier}`]);
 };
 
-export async function deployProtocol(deployer: SignerWithAddress, directoryDeployer: SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, uniswapV3: string, oracle: string, admin: string, log: boolean) {
+export async function fastDeployProtocol(deployer: SignerWithAddress, directoryDeployer: SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, uniswapV3: string, oracle: string, admin: string, log: boolean) {
 
     const directoryAddress = await getNextContractAddress(directoryDeployer, 1)
 
@@ -67,9 +67,15 @@ export async function deployProtocol(deployer: SignerWithAddress, directoryDeplo
         return vCWETH;
     });
 
-    const bytes32IdentifierRplContract = generateBytes32Identifier('rocketTokenRPL');
+    const addressRplContract = await retryOperation(async () => {
+        const bytes32IdentifierRplContract = generateBytes32Identifier('rocketTokenRPL');
+        const rocketStorageDeployment = await ethers.getContractAt("RocketStorage", rocketStorage);
+        const addressRplContract = await rocketStorageDeployment.getAddress(bytes32IdentifierRplContract);
+        return addressRplContract
+    })
+
     const rplContract = await retryOperation(async function () {
-        return await ethers.getContractAt("contracts/Interfaces/RocketTokenRPLInterface.sol:RocketTokenRPLInterface", bytes32IdentifierRplContract);
+        return await ethers.getContractAt("@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20", addressRplContract);
     });
 
     const vCRPLProxy = await retryOperation(async function () {
@@ -148,6 +154,15 @@ export async function deployProtocol(deployer: SignerWithAddress, directoryDeplo
 
         return dir
     })
+
+    if(log) {
+        if(directoryAddress.toLocaleLowerCase() === directoryProxy.address.toLocaleLowerCase()) {
+            console.log("directory matches predicted address", directoryAddress)
+        } else {
+            console.error("failed to deploy directory address to predicted address", directoryAddress, directoryProxy.address)
+            throw new Error("Bad predicted directory")
+        }
+    }
 
 
     return {

@@ -15,6 +15,7 @@ import { upgradeExecuted } from "./rocketpool/_utils/upgrade";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ERC20 } from "../typechain-types/contracts/Testing/Rocketpool/contract/util";
 import { IERC20 } from "../typechain-types/oz-contracts-3-4-0/token/ERC20";
+import { fastDeployProtocol } from "../scripts/utils/deployment";
 
 export const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
 
@@ -147,54 +148,21 @@ async function deployProtocol(signers: Signers): Promise<Protocol> {
 
 		const deployer = (await ethers.getSigners())[0];
 
-		const directoryAddress = await getNextContractAddress(deployer, predictedNonce-1)
 		const initNonce = await deployer.getTransactionCount();
 		
-		const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist"), [directoryAddress], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-		const vCWETHProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("WETHVault"), [directoryAddress, wETH.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-		const vCWETH = await ethers.getContractAt("WETHVault", vCWETHProxyAbi.address);
-		const vCRPLProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("RPLVault"), [directoryAddress, rplContract.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-		const vCRPL = await ethers.getContractAt("RPLVault", vCRPLProxyAbi.address);
-		const depositPoolProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("FundRouter"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-		const depositPool = await ethers.getContractAt("FundRouter", depositPoolProxyAbi.address);
-		const operatorDistributorProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("OperatorDistributor"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-		const operatorDistributor = await ethers.getContractAt("OperatorDistributor", operatorDistributorProxyAbi.address);
-		const yieldDistributorProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("YieldDistributor"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-		const yieldDistributor = await ethers.getContractAt("YieldDistributor", yieldDistributorProxyAbi.address);
-		
 		const oracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
-		
-		const priceFetcher = await upgrades.deployProxy(await ethers.getContractFactory("PriceFetcher"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-		const adminTreasury = await upgrades.deployProxy(await ethers.getContractFactory("AdminTreasury"), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-		const NodeAccountLogic = await ethers.getContractFactory("NodeAccount");
-		const nodeAccountLogic = await NodeAccountLogic.deploy();
-		await nodeAccountLogic.deployed();
-		const NodeAccountFactory = await upgrades.deployProxy(await ethers.getContractFactory("NodeAccountFactory"), [directoryAddress, nodeAccountLogic.address], { 'initializer': 'initializeWithImplementation', 'kind': 'uups', 'unsafeAllow': ['constructor'] }) as NodeAccountFactory;
-		
-		const directoryProxyAbi = await upgrades.deployProxy(await ethers.getContractFactory("Directory"),
-		[
-			[
-				whitelist.address,
-				vCWETH.address,
-				vCRPL.address,
-				depositPool.address,
-				operatorDistributor.address,
-				NodeAccountFactory.address,
-				yieldDistributor.address,
-				oracle.address,
-				priceFetcher.address,
-				rockStorageContract.address,
-				wETH.address,
-				uniswapV3Pool.address,
-				sanctions.address,
-			],
-			adminTreasury.address,
+
+		const {whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, nodeAccountFactory, yieldDistributor, priceFetcher, directory, adminTreasury} = await fastDeployProtocol(
+			signers.deployer,
+			signers.random5,
+			rockStorageContract.address,
+			wETH.address,
+			sanctions.address,
+			uniswapV3Pool.address,
+			oracle.address,
 			signers.admin.address,
-		], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
-		const finalNonce = await deployer.getTransactionCount();
-		const directory = await ethers.getContractAt("Directory", directoryProxyAbi.address);
-		expect(finalNonce - initNonce).to.equal(predictedNonce);
-		expect(directory.address).to.hexEqual(directoryAddress);
+			true
+		)
 
 		// set adminServer to be ADMIN_SERVER_ROLE
 		const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
@@ -212,7 +180,7 @@ async function deployProtocol(signers: Signers): Promise<Protocol> {
 		expect(await directory.getTreasuryAddress()).to.equal(adminTreasury.address);
 		await directory.connect(signers.admin).setTreasury(deployer.address);
 
-		const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, NodeAccountFactory, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
+		const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, NodeAccountFactory: nodeAccountFactory, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
 
 		// send all rpl from admin to rplWhale
 		const rplWhaleBalance = await rplContract.balanceOf(signers.deployer.address);
