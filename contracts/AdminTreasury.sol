@@ -81,4 +81,7 @@ contract AdminTreasury is UpgradeableBase {
             _executeInternal(_targets[i], _functionData[i], msg.value);
         }
     }
+
+    // we accept donations
+    receive() external payable {}
 }
