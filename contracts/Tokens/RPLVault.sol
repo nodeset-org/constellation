@@ -63,7 +63,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param assets The amount of assets being deposited.
      * @param shares The number of shares to be exchanged for the deposit.
      */ function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
-        require(caller == receiver, "caller must be receiver");
+        require(caller == receiver, 'caller must be receiver');
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
@@ -101,6 +101,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 assets,
         uint256 shares
     ) internal virtual override {
+        require(caller == receiver, 'caller must be receiver');
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
@@ -221,7 +222,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
             SafeERC20.safeTransfer(asset, _to, balance);
             OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
             uint256 transferedIn = od.transferRplToVault(shortfall);
-            console.log("transfering out rpl to vault");
+            console.log('transfering out rpl to vault');
             SafeERC20.safeTransfer(asset, _to, transferedIn);
         } else {
             SafeERC20.safeTransfer(asset, _to, _amount);
