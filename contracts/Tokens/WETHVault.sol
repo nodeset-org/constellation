@@ -84,6 +84,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 assets,
         uint256 shares
     ) internal virtual override nonReentrant {
+        require(caller == receiver, 'caller must be receiver');
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
@@ -124,6 +125,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 assets,
         uint256 shares
     ) internal virtual override nonReentrant {
+        require(caller == receiver, 'caller must be receiver');
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
@@ -175,10 +177,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function currentIncomeFromRewards() public view returns (uint256) {
         unchecked {
             FundRouter dp = FundRouter(getDirectory().getDepositPoolAddress());
-            console.log("WETHVault.currentIncomeFromRewards()");
+            console.log('WETHVault.currentIncomeFromRewards()');
             console.log(gasleft());
-            console.log("getDirectory()");
-            console.log("getDirectory().getOperatorDistributorAddress()");
+            console.log('getDirectory()');
+            console.log('getDirectory().getOperatorDistributorAddress()');
             OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
             uint256 tvl = super.totalAssets() + getDistributableYield() + dp.getTvlEth() + od.getTvlEth();
 
@@ -221,7 +223,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         return (tvlEth * ethPriceInRpl) / tvlRpl;
     }
 
-    function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns(uint256) {
+    function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns (uint256) {
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 fullBalance = totalAssets() + deposit;
         uint256 requiredBalance = collateralizationRatioBasePoint.mulDiv(fullBalance, 1e5, Math.Rounding.Up);
