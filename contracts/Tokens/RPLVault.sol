@@ -63,7 +63,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param assets The amount of assets being deposited.
      * @param shares The number of shares to be exchanged for the deposit.
      */ function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
-        require(caller == receiver, 'caller must be receiver');
+        require(caller == receiver, "caller must be receiver");
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
