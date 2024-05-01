@@ -54,7 +54,7 @@ describe("adminTreasury", function () {
 
       const totalSupply = await token.totalSupply();
       await token.transfer(adminTreasury.address, totalSupply);
-      await expect(adminTreasury.connect(admin)['claimToken(address,address)'](token.address, admin.address)).to.emit(adminTreasury, "ClaimedToken").withArgs(admin.address, totalSupply);
+      await expect(adminTreasury.connect(admin)['claimToken(address,address)'](token.address, admin.address)).to.emit(adminTreasury, "ClaimedToken").withArgs(token.address, admin.address, totalSupply);
       const adminBalance = await token.balanceOf(admin.address);
       expect(adminBalance).to.equal(totalSupply);
     });
@@ -66,7 +66,7 @@ describe("adminTreasury", function () {
       const totalSupply = await token.totalSupply();
       const decimals = await token.decimals();
       await token.transfer(adminTreasury.address, totalSupply);
-      await expect(adminTreasury.connect(admin)["claimToken(address,address,uint256)"](token.address, admin.address, ethers.utils.parseUnits("1000", decimals))).to.emit(adminTreasury, "ClaimedToken").withArgs(admin.address, ethers.utils.parseUnits("1000", decimals));
+      await expect(adminTreasury.connect(admin)["claimToken(address,address,uint256)"](token.address, admin.address, ethers.utils.parseUnits("1000", decimals))).to.emit(adminTreasury, "ClaimedToken").withArgs(token.address, admin.address, ethers.utils.parseUnits("1000", decimals));
       const adminBalance = await token.balanceOf(admin.address);
       expect(adminBalance).to.equal(ethers.utils.parseUnits("1000", decimals));
       expect(await token.balanceOf(adminTreasury.address)).to.equal(totalSupply.sub(ethers.utils.parseUnits("1000", decimals)));
