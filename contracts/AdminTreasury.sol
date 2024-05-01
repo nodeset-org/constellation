@@ -9,6 +9,10 @@ import './Utils/Constants.sol';
 /// @notice A contract that allows an admin to manage and execute transfers of ETH and ERC20 tokens.
 /// @dev Inherits from UpgradeableBase to allow for future upgrades.
 contract AdminTreasury is UpgradeableBase {
+
+    event ClaimedToken(address indexed _token, address indexed _to, uint256 indexed _amount);
+    event ClaimedEth(address indexed _to, uint256 indexed _amount);
+
     /// @notice Initializer that replaces constructor for upgradeable contracts.
     constructor() initializer {}
 
@@ -21,10 +25,12 @@ contract AdminTreasury is UpgradeableBase {
 
     function _claimTokenInternal(address _tokenAddress, address _to, uint256 _amount) internal {
         IERC20(_tokenAddress).transfer(_to, _amount);
+        emit ClaimedToken(_tokenAddress, _to, _amount);
     }
 
     function _claimEthInternal(address payable _to, uint256 _amount) internal {
         _to.transfer(_amount);
+        emit ClaimedEth(_to, _amount);
     }
 
     function _executeInternal(address _target, bytes memory _functionData, uint256 _value) internal {

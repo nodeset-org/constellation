@@ -54,10 +54,23 @@ describe("adminTreasury", function () {
 
       const totalSupply = await token.totalSupply();
       await token.transfer(adminTreasury.address, totalSupply);
-      await adminTreasury.connect(admin)['claimToken(address,address)'](token.address, admin.address);
+      await expect(adminTreasury.connect(admin)['claimToken(address,address)'](token.address, admin.address)).to.emit(adminTreasury, "ClaimedToken").withArgs(admin.address, totalSupply);
       const adminBalance = await token.balanceOf(admin.address);
       expect(adminBalance).to.equal(totalSupply);
     });
+
+    it("success - admin can partially claim tokens in contract", async () => {
+      const adminRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("ADMIN_ROLE"))), admin.address);
+      expect(adminRole).to.equal(true);
+
+      const totalSupply = await token.totalSupply();
+      const decimals = await token.decimals();
+      await token.transfer(adminTreasury.address, totalSupply);
+      await expect(adminTreasury.connect(admin)["claimToken(address,address,uint256)"](token.address, admin.address, ethers.utils.parseUnits("1000", decimals))).to.emit(adminTreasury, "ClaimedToken").withArgs(admin.address, ethers.utils.parseUnits("1000", decimals));
+      const adminBalance = await token.balanceOf(admin.address);
+      expect(adminBalance).to.equal(ethers.utils.parseUnits("1000", decimals));
+      expect(await token.balanceOf(adminTreasury.address)).to.equal(totalSupply.sub(ethers.utils.parseUnits("1000", decimals)));
+    })
 
     it("fail - non-admin claim tokens", async function () {
       await token.transfer(adminTreasury.address, ethers.utils.parseEther("100"));
@@ -79,7 +92,7 @@ describe("adminTreasury", function () {
         value: ethers.utils.parseEther("1")
       })
       expect(await ethers.provider.getBalance(adminTreasury.address)).equals(ethers.utils.parseEther("1"))
-      await adminTreasury.connect(admin)["claimEth(address)"](signers.admin.address);
+      await expect(adminTreasury.connect(admin)["claimEth(address)"](signers.admin.address)).to.emit(adminTreasury, "ClaimedEth").withArgs(signers.admin.address, ethers.utils.parseEther("1"));
       expect(await ethers.provider.getBalance(adminTreasury.address)).equals(ethers.utils.parseEther("0"))
     })
 
