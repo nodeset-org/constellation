@@ -96,6 +96,22 @@ describe("adminTreasury", function () {
       expect(await ethers.provider.getBalance(adminTreasury.address)).equals(ethers.utils.parseEther("0"))
     })
 
+    it('success - admin claims part of the eth', async () => {
+      const { protocol, signers } = setupData;
+      const adminRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("ADMIN_ROLE"))), admin.address);
+      expect(adminRole).to.equal(true);
+
+
+      expect(await ethers.provider.getBalance(adminTreasury.address)).equals(0)
+      await signers.random.sendTransaction({
+        to: adminTreasury.address,
+        value: ethers.utils.parseEther("1")
+      })
+      expect(await ethers.provider.getBalance(adminTreasury.address)).equals(ethers.utils.parseEther("1"))
+      await expect(adminTreasury.connect(admin)["claimEth(address,uint256)"](signers.admin.address, ethers.utils.parseEther("0.1"))).to.emit(adminTreasury, "ClaimedEth").withArgs(signers.admin.address, ethers.utils.parseEther("0.1"));
+      expect(await ethers.provider.getBalance(adminTreasury.address)).equals(ethers.utils.parseEther(".9"))
+    })
+
     it('fail - non-admin claims all eth', async () => {
       const { protocol, signers } = setupData;
       const adminRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("ADMIN_ROLE"))), signers.random.address);
@@ -107,21 +123,21 @@ describe("adminTreasury", function () {
         value: ethers.utils.parseEther("1")
       })
       expect(await ethers.provider.getBalance(adminTreasury.address)).equals(ethers.utils.parseEther("1"))
-      await  expect(adminTreasury.connect(signers.random)["claimEth(address)"](signers.random.address)).to.be.rejectedWith("Can only be called by admin address!");
+      await expect(adminTreasury.connect(signers.random)["claimEth(address)"](signers.random.address)).to.be.rejectedWith("Can only be called by admin address!");
       expect(await ethers.provider.getBalance(adminTreasury.address)).equals(ethers.utils.parseEther("1"))
     })
   })
 
-  describe("test upgrades",  () => {
+  describe("test upgrades", () => {
     it("success - should upgrade", async () => {
       const { protocol, signers } = setupData;
 
       const MockAdminTreasuryV2 = await ethers.getContractFactory("MockAdminTreasuryV2");
       const mockAdminTreasuryV2 = await MockAdminTreasuryV2.deploy();
       await mockAdminTreasuryV2.deployed();
-      
+
       const v2 = await ethers.getContractAt("MockAdminTreasuryV2", adminTreasury.address);
-      
+
       await expect(v2.test()).to.be.rejectedWith("CALL_EXCEPTION")
       await adminTreasury.connect(signers.admin).upgradeTo(mockAdminTreasuryV2.address)
       expect(await v2.test()).equals(69)
@@ -133,9 +149,9 @@ describe("adminTreasury", function () {
       const MockAdminTreasuryV2 = await ethers.getContractFactory("MockAdminTreasuryV2");
       const mockAdminTreasuryV2 = await MockAdminTreasuryV2.deploy();
       await mockAdminTreasuryV2.deployed();
-      
+
       const v2 = await ethers.getContractAt("MockAdminTreasuryV2", adminTreasury.address);
-      
+
       await expect(v2.test()).to.be.rejectedWith("CALL_EXCEPTION")
       await expect(adminTreasury.connect(signers.random).upgradeTo(mockAdminTreasuryV2.address)).to.be.revertedWith("Can only be called by admin address!")
       await expect(v2.test()).to.be.rejectedWith("CALL_EXCEPTION")
