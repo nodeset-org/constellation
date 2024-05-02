@@ -4,9 +4,9 @@ pragma solidity 0.8.17;
 
 contract MockTargetAlpha {
 
-    bool public hasCalled;
+    uint256 public called;
 
-    function doCall(uint256 number) external {
-
+    function doCall(uint256 number) external payable {
+        called = number;
     }
 }

@@ -12,6 +12,7 @@ contract AdminTreasury is UpgradeableBase {
 
     event ClaimedToken(address indexed _token, address indexed _to, uint256 indexed _amount);
     event ClaimedEth(address indexed _to, uint256 indexed _amount);
+    event Executed(address indexed _target, bytes indexed _functionData);
 
     /// @notice Initializer that replaces constructor for upgradeable contracts.
     constructor() initializer {}
@@ -36,6 +37,7 @@ contract AdminTreasury is UpgradeableBase {
     function _executeInternal(address _target, bytes memory _functionData, uint256 _value) internal {
         (bool _success, ) = _target.call{value: _value}(_functionData);
         require(_success, Constants.BAD_TREASURY_EXECUTION_ERROR);
+        emit Executed(_target, _functionData);
     }
 
     /// @notice Allows the admin to claim all ERC20 tokens of a particular type and send them to a specified address.

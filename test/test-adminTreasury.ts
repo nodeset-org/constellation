@@ -128,6 +128,119 @@ describe("adminTreasury", function () {
     })
   })
 
+  describe("arbitrary execution", async () => {
+
+    it("success - admin can execute single target", async () => {
+      const MockTargetAlpha = await ethers.getContractFactory("MockTargetAlpha");
+      const mockTargetAlpha = await MockTargetAlpha.deploy();
+      await mockTargetAlpha.deployed();
+
+      const encoding = mockTargetAlpha.interface.encodeFunctionData("doCall", [69]);
+
+      await expect(adminTreasury.connect(admin).execute(mockTargetAlpha.address, encoding)).to.emit(adminTreasury, "Executed").withArgs(mockTargetAlpha.address, encoding);
+    })
+
+    it("success - admin can execute single payable target", async () => {
+      const MockTargetAlpha = await ethers.getContractFactory("MockTargetAlpha");
+      const mockTargetAlpha = await MockTargetAlpha.deploy();
+      await mockTargetAlpha.deployed();
+
+      const encoding = mockTargetAlpha.interface.encodeFunctionData("doCall", [69]);
+
+      expect(await ethers.provider.getBalance(mockTargetAlpha.address)).equals(ethers.utils.parseEther("0"))
+
+      await expect(adminTreasury.connect(admin).execute(mockTargetAlpha.address, encoding, {
+        value: ethers.utils.parseEther("1")
+      })).to.emit(adminTreasury, "Executed").withArgs(mockTargetAlpha.address, encoding);
+
+      expect(await ethers.provider.getBalance(mockTargetAlpha.address)).equals(ethers.utils.parseEther("1"))
+    })
+
+    it("fail - non-admin can execute single target", async () => {
+      const MockTargetAlpha = await ethers.getContractFactory("MockTargetAlpha");
+      const mockTargetAlpha = await MockTargetAlpha.deploy();
+      await mockTargetAlpha.deployed();
+
+      const encoding = mockTargetAlpha.interface.encodeFunctionData("doCall", [69]);
+
+      await expect(adminTreasury.execute(mockTargetAlpha.address, encoding)).to.be.revertedWith("Can only be called by admin address!")
+    })
+
+    it("success - admin can execute many targets", async () => {
+      const MockTargetAlpha = await ethers.getContractFactory("MockTargetAlpha");
+      const mockTargetAlpha = await MockTargetAlpha.deploy();
+      await mockTargetAlpha.deployed();
+
+      const mockTargetBravo = await MockTargetAlpha.deploy();
+      await mockTargetBravo.deployed();
+
+      const mockTargetCharlie = await MockTargetAlpha.deploy();
+      await mockTargetCharlie.deployed();
+
+      const encodingAlpha = mockTargetAlpha.interface.encodeFunctionData("doCall", [69]);
+      const encodingBravo = mockTargetAlpha.interface.encodeFunctionData("doCall", [420]);
+      const encodingCharlie = mockTargetAlpha.interface.encodeFunctionData("doCall", [314159268]);
+
+
+      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie])).to.emit(adminTreasury, "Executed").withArgs(mockTargetAlpha.address, encodingAlpha);
+      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie])).to.emit(adminTreasury, "Executed").withArgs(mockTargetBravo.address, encodingBravo);
+      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie])).to.emit(adminTreasury, "Executed").withArgs(mockTargetCharlie.address, encodingCharlie);
+    })
+
+    it("success - admin can execute many payable targets", async () => {
+      const MockTargetAlpha = await ethers.getContractFactory("MockTargetAlpha");
+      const mockTargetAlpha = await MockTargetAlpha.deploy();
+      await mockTargetAlpha.deployed();
+
+      const mockTargetBravo = await MockTargetAlpha.deploy();
+      await mockTargetBravo.deployed();
+
+      const mockTargetCharlie = await MockTargetAlpha.deploy();
+      await mockTargetCharlie.deployed();
+
+      const encodingAlpha = mockTargetAlpha.interface.encodeFunctionData("doCall", [69]);
+      const encodingBravo = mockTargetAlpha.interface.encodeFunctionData("doCall", [420]);
+      const encodingCharlie = mockTargetAlpha.interface.encodeFunctionData("doCall", [314159268]);
+
+      expect(await ethers.provider.getBalance(mockTargetAlpha.address)).equals(ethers.utils.parseEther("0"))
+      expect(await ethers.provider.getBalance(mockTargetBravo.address)).equals(ethers.utils.parseEther("0"))
+      expect(await ethers.provider.getBalance(mockTargetCharlie.address)).equals(ethers.utils.parseEther("0"))
+
+      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], {
+        value: ethers.utils.parseEther("1")
+      })).to.emit(adminTreasury, "Executed").withArgs(mockTargetAlpha.address, encodingAlpha);
+      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], {
+        value: ethers.utils.parseEther("2")
+      })).to.emit(adminTreasury, "Executed").withArgs(mockTargetBravo.address, encodingBravo);
+      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], {
+        value: ethers.utils.parseEther("3")
+      })).to.emit(adminTreasury, "Executed").withArgs(mockTargetCharlie.address, encodingCharlie);
+
+      expect(await ethers.provider.getBalance(mockTargetAlpha.address)).equals(ethers.utils.parseEther("1"))
+      expect(await ethers.provider.getBalance(mockTargetBravo.address)).equals(ethers.utils.parseEther("2"))
+      expect(await ethers.provider.getBalance(mockTargetCharlie.address)).equals(ethers.utils.parseEther("3"))
+    })
+
+    it("fail - non-admin can execute many targets", async () => {
+      const MockTargetAlpha = await ethers.getContractFactory("MockTargetAlpha");
+      const mockTargetAlpha = await MockTargetAlpha.deploy();
+      await mockTargetAlpha.deployed();
+
+      const mockTargetBravo = await MockTargetAlpha.deploy();
+      await mockTargetBravo.deployed();
+
+      const mockTargetCharlie = await MockTargetAlpha.deploy();
+      await mockTargetCharlie.deployed();
+
+      const encodingAlpha = mockTargetAlpha.interface.encodeFunctionData("doCall", [69]);
+      const encodingBravo = mockTargetAlpha.interface.encodeFunctionData("doCall", [420]);
+      const encodingCharlie = mockTargetAlpha.interface.encodeFunctionData("doCall", [314159268]);
+
+      await expect(adminTreasury.executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie])).to.be.revertedWith("Can only be called by admin address!")
+    })
+
+  })
+
   describe("test upgrades", () => {
     it("success - should upgrade", async () => {
       const { protocol, signers } = setupData;
