@@ -6,6 +6,9 @@ import "hardhat-gas-reporter";
 import '@nomiclabs/hardhat-truffle5';
 import 'solidity-docgen';
 
+// task commands
+import './tasks/adminTasks'
+
 // init dotenv
 import dotenv from "dotenv";
 import findConfig from 'find-config';
