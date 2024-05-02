@@ -34,7 +34,7 @@ contract AdminTreasury is UpgradeableBase {
         emit ClaimedEth(_to, _amount);
     }
 
-    function _executeInternal(address _target, bytes memory _functionData, uint256 _value) internal {
+    function _executeInternal(address payable _target, bytes memory _functionData, uint256 _value) internal {
         (bool _success, ) = _target.call{value: _value}(_functionData);
         require(_success, Constants.BAD_TREASURY_EXECUTION_ERROR);
         emit Executed(_target, _functionData);
@@ -72,7 +72,7 @@ contract AdminTreasury is UpgradeableBase {
     /// @dev The `call` is a low-level interface for interacting with contracts.
     /// @param _target The contract address to execute the call on.
     /// @param _functionData The calldata to send for the call.
-    function execute(address _target, bytes calldata _functionData) external payable onlyAdmin nonReentrant {
+    function execute(address payable _target, bytes calldata _functionData) external payable onlyAdmin nonReentrant {
         _executeInternal(_target, _functionData, msg.value);
     }
 

@@ -137,7 +137,9 @@ describe("adminTreasury", function () {
 
       const encoding = mockTargetAlpha.interface.encodeFunctionData("doCall", [69]);
 
+      expect(await mockTargetAlpha.called()).equals(0);
       await expect(adminTreasury.connect(admin).execute(mockTargetAlpha.address, encoding)).to.emit(adminTreasury, "Executed").withArgs(mockTargetAlpha.address, encoding);
+      expect(await mockTargetAlpha.called()).equals(69);
     })
 
     it("success - admin can execute single payable target", async () => {
@@ -181,10 +183,19 @@ describe("adminTreasury", function () {
       const encodingBravo = mockTargetAlpha.interface.encodeFunctionData("doCall", [420]);
       const encodingCharlie = mockTargetAlpha.interface.encodeFunctionData("doCall", [314159268]);
 
+      expect(await mockTargetAlpha.called()).equals(0);
+      expect(await mockTargetBravo.called()).equals(0);
+      expect(await mockTargetCharlie.called()).equals(0);
 
       await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie])).to.emit(adminTreasury, "Executed").withArgs(mockTargetAlpha.address, encodingAlpha);
+      
+      expect(await mockTargetAlpha.called()).equals(69);
+      expect(await mockTargetBravo.called()).equals(420);
+      expect(await mockTargetCharlie.called()).equals(314159268);
+
       await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie])).to.emit(adminTreasury, "Executed").withArgs(mockTargetBravo.address, encodingBravo);
       await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie])).to.emit(adminTreasury, "Executed").withArgs(mockTargetCharlie.address, encodingCharlie);
+    
     })
 
     it("success - admin can execute many payable targets", async () => {
