@@ -9,7 +9,6 @@ import './Utils/Constants.sol';
 /// @notice A contract that allows an admin to manage and execute transfers of ETH and ERC20 tokens.
 /// @dev Inherits from UpgradeableBase to allow for future upgrades.
 contract AdminTreasury is UpgradeableBase {
-
     event ClaimedToken(address indexed _token, address indexed _to, uint256 indexed _amount);
     event ClaimedEth(address indexed _to, uint256 indexed _amount);
     event Executed(address indexed _target, bytes indexed _functionData);
@@ -35,8 +34,13 @@ contract AdminTreasury is UpgradeableBase {
     }
 
     function _executeInternal(address payable _target, bytes memory _functionData, uint256 _value) internal {
-        (bool _success, ) = _target.call{value: _value}(_functionData);
-        require(_success, Constants.BAD_TREASURY_EXECUTION_ERROR);
+        (bool _success, bytes memory _returnData) = _target.call{value: _value}(_functionData);
+        if (!_success) {
+            assembly {
+                let _returnData_size := mload(_returnData)
+                revert(add(32, _returnData), _returnData_size)
+            }
+        }
         emit Executed(_target, _functionData);
     }
 
@@ -80,13 +84,16 @@ contract AdminTreasury is UpgradeableBase {
     /// @dev Useful for performing multiple administrative tasks in one transaction.
     /// @param _targets An array of contract addresses to execute the calls on.
     /// @param _functionData An array of calldata to send for the calls.
+    /// @param _values msg.value per target
     function executeAll(
         address payable[] calldata _targets,
-        bytes[] calldata _functionData
+        bytes[] calldata _functionData,
+        uint256[] calldata _values
     ) external payable onlyAdmin nonReentrant {
         require(_targets.length == _functionData.length, Constants.BAD_TREASURY_BATCH_CALL);
+        require(_values.length == _functionData.length, Constants.BAD_TREASURY_BATCH_CALL);
         for (uint256 i = 0; i < _targets.length; i++) {
-            _executeInternal(_targets[i], _functionData[i], msg.value);
+            _executeInternal(_targets[i], _functionData[i], _values[i]);
         }
     }
 

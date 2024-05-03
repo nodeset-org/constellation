@@ -187,14 +187,14 @@ describe("adminTreasury", function () {
       expect(await mockTargetBravo.called()).equals(0);
       expect(await mockTargetCharlie.called()).equals(0);
 
-      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie])).to.emit(adminTreasury, "Executed").withArgs(mockTargetAlpha.address, encodingAlpha);
+      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0, 0])).to.emit(adminTreasury, "Executed").withArgs(mockTargetAlpha.address, encodingAlpha);
       
       expect(await mockTargetAlpha.called()).equals(69);
       expect(await mockTargetBravo.called()).equals(420);
       expect(await mockTargetCharlie.called()).equals(314159268);
 
-      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie])).to.emit(adminTreasury, "Executed").withArgs(mockTargetBravo.address, encodingBravo);
-      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie])).to.emit(adminTreasury, "Executed").withArgs(mockTargetCharlie.address, encodingCharlie);
+      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0, 0])).to.emit(adminTreasury, "Executed").withArgs(mockTargetBravo.address, encodingBravo);
+      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0, 0])).to.emit(adminTreasury, "Executed").withArgs(mockTargetCharlie.address, encodingCharlie);
     
     })
 
@@ -217,13 +217,13 @@ describe("adminTreasury", function () {
       expect(await ethers.provider.getBalance(mockTargetBravo.address)).equals(ethers.utils.parseEther("0"))
       expect(await ethers.provider.getBalance(mockTargetCharlie.address)).equals(ethers.utils.parseEther("0"))
 
-      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], {
+      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [ethers.utils.parseEther("1"), 0, 0], {
         value: ethers.utils.parseEther("1")
       })).to.emit(adminTreasury, "Executed").withArgs(mockTargetAlpha.address, encodingAlpha);
-      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], {
+      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, ethers.utils.parseEther("2"), 0], {
         value: ethers.utils.parseEther("2")
       })).to.emit(adminTreasury, "Executed").withArgs(mockTargetBravo.address, encodingBravo);
-      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], {
+      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0, ethers.utils.parseEther("3")], {
         value: ethers.utils.parseEther("3")
       })).to.emit(adminTreasury, "Executed").withArgs(mockTargetCharlie.address, encodingCharlie);
 
@@ -247,9 +247,28 @@ describe("adminTreasury", function () {
       const encodingBravo = mockTargetAlpha.interface.encodeFunctionData("doCall", [420]);
       const encodingCharlie = mockTargetAlpha.interface.encodeFunctionData("doCall", [314159268]);
 
-      await expect(adminTreasury.executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie])).to.be.revertedWith("Can only be called by admin address!")
+      await expect(adminTreasury.executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0, 0])).to.be.revertedWith("Can only be called by admin address!")
     })
 
+    it("fail - admin calls executeAll with varying param lengths", async () => {
+      const MockTargetAlpha = await ethers.getContractFactory("MockTargetAlpha");
+      const mockTargetAlpha = await MockTargetAlpha.deploy();
+      await mockTargetAlpha.deployed();
+
+      const mockTargetBravo = await MockTargetAlpha.deploy();
+      await mockTargetBravo.deployed();
+
+      const mockTargetCharlie = await MockTargetAlpha.deploy();
+      await mockTargetCharlie.deployed();
+
+      const encodingAlpha = mockTargetAlpha.interface.encodeFunctionData("doCall", [69]);
+      const encodingBravo = mockTargetAlpha.interface.encodeFunctionData("doCall", [420]);
+      const encodingCharlie = mockTargetAlpha.interface.encodeFunctionData("doCall", [314159268]);
+
+      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0])).to.be.revertedWith("Treasury: array length mismatch.")
+      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo], [0, 0, 0])).to.be.revertedWith("Treasury: array length mismatch.")
+      await expect(adminTreasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0, 0])).to.be.revertedWith("Treasury: array length mismatch.")
+    })
   })
 
   describe("test upgrades", () => {
