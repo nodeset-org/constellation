@@ -3,6 +3,7 @@
  */
 
 import { bufferToHex, keccak256 } from 'ethereumjs-util';
+import { ethers } from 'hardhat';
 import web3 from 'web3';
 
 
@@ -202,13 +203,16 @@ export function parseRewardsMap(rewards) {
     return memo;
   }, {});
 
+  console.log(rewards)
   const rewardsPerNetworkBN = rewards.reduce((perNetwork, {network, trustedNodeRPL, nodeRPL, nodeETH}) => {
+    console.log("in merkle claim, perNetwork", perNetwork)
     if(!(network in perNetwork)){
       perNetwork[network] = {
-        RPL: '0'.BN,
-        ETH: '0'.BN,
+        RPL: ethers.BigNumber.from("0"),
+        ETH: ethers.BigNumber.from("0"),
       };
     }
+    console.log(perNetwork)
     perNetwork[network].RPL = perNetwork[network].RPL.add(nodeRPL.add(trustedNodeRPL));
     perNetwork[network].ETH = perNetwork[network].ETH.add(nodeETH);
     return perNetwork;

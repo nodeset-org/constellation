@@ -6,6 +6,7 @@ import { protocolFixture, SetupData } from "./test";
 import { BigNumber as BN } from "ethers";
 import { assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract, registerNewValidator } from "./utils/utils";
 import { parseRewardsMap } from "./utils/merkleClaim";
+import { submitRewards } from "./rocketpool/rewards/scenario-submit-rewards";
 
 describe(`FundRouter`, () => {
 
@@ -155,42 +156,43 @@ describe(`FundRouter`, () => {
 
         interface Claims {
             [address: string]: any;
-          }
-          
+        }
+
 
         it("run proof", async () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
 
-            await prepareOperatorDistributionContract(setupData, 1);
-            const [validator1, validator2] = await registerNewValidator(setupData, [signers.random, signers.random2]);
+            await prepareOperatorDistributionContract(setupData, 2);
+            const [validator0, validator1] = await registerNewValidator(setupData, [signers.random, signers.random2]);
 
             // Submit rewards snapshot
             const rewards = [
                 {
-                    address: registeredNode1,
+                    address: validator0.address,
                     network: 0,
-                    trustedNodeRPL: '0'.ether,
-                    nodeRPL: '1'.ether,
-                    nodeETH: '0'.ether
+                    trustedNodeRPL: ethers.utils.parseEther("0"),
+                    nodeRPL: ethers.utils.parseEther("1"),
+                    nodeETH: ethers.utils.parseEther("0")
                 },
                 {
-                    address: registeredNode2,
+                    address: validator1.address,
                     network: 0,
-                    trustedNodeRPL: '0'.ether,
-                    nodeRPL: '2'.ether,
-                    nodeETH: '0'.ether
+                    trustedNodeRPL: ethers.utils.parseEther("0"),
+                    nodeRPL: ethers.utils.parseEther("2"),
+                    nodeETH: ethers.utils.parseEther("0")
                 }
             ]
 
             let treeData = parseRewardsMap(rewards);
-            let proof = (treeData.proof.claims as Claims)[`${validator.address}`];
+            let proof = (treeData.proof.claims as Claims)[`${validator0.address}`];
             let amountsRPL = [proof.amountRPL];
             let amountsETH = [proof.amountETH];
             let proofs = [proof.proof];
 
+            console.log(treeData)
 
-            await protocol.depositPool.merkleClaim(validator.address, [0], amountsRPL, amountsETH, proof);
+
         })
 
     })
