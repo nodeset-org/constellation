@@ -184,7 +184,7 @@ describe(`FundRouter`, () => {
                 }
             ]
 
-            let treeData = parseRewardsMap(rewards);
+            let treeData = await parseRewardsMap(rewards);
             let proof = (treeData.proof.claims as Claims)[`${validator0.address}`];
             let amountsRPL = [proof.amountRPL];
             let amountsETH = [proof.amountETH];

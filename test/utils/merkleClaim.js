@@ -82,7 +82,7 @@ export class MerkleTree {
     }
 
     return this.layers.reduce((proof, layer) => {
-      if (layer.length > 1){
+      if (layer.length > 1) {
         const pairElement = MerkleTree.getPairElement(idx, layer);
 
         // Dangling element is paired with null
@@ -141,6 +141,7 @@ export class MerkleTree {
 
 export class RewardClaimTree {
   constructor(balances) {
+    console.log("Reward Claim Tree balances:", balances)
     this.tree = new MerkleTree(
       balances.map(({ address, network, amountRPL, amountETH }) => {
         return RewardClaimTree.toNode(address, network, amountRPL, amountETH);
@@ -163,10 +164,10 @@ export class RewardClaimTree {
   static toNode(nodeAddress, network, amountRPL, amountETH) {
     let node = Buffer.from(
       web3.utils.soliditySha3(
-        {t: 'address', v: nodeAddress},
-        {t: 'uint256', v: network},
-        {t: 'uint256', v: amountRPL},
-        {t: 'uint256', v: amountETH},
+        { t: 'address', v: nodeAddress },
+        { t: 'uint256', v: network },
+        { t: 'uint256', v: amountRPL },
+        { t: 'uint256', v: amountETH },
       ).substr(2), 'hex'
     );
     return node;
@@ -186,7 +187,9 @@ export class RewardClaimTree {
 
 
 // Takes an array of objects with the form [{address, id, network, amountRPL, amountETH},...] and returns a RewardClaimTree object
-export function parseRewardsMap(rewards) {
+export async function parseRewardsMap(rewards) {
+
+  const chainId = (await ethers.provider.getNetwork()).chainId;
 
   // Transform input into a mapping of address => { address, network, amountRPL, amountETH }
   const dataByAddress = rewards.reduce((memo, { address, network, trustedNodeRPL, nodeRPL, nodeETH }) => {
@@ -194,19 +197,25 @@ export function parseRewardsMap(rewards) {
       throw new Error(`Found invalid address: ${address}`);
     }
 
+    console.log("pre memo key set", memo[address])
+    console.log(nodeRPL)
+    console.log(nodeETH)
     memo[address] = {
       address: web3.utils.toChecksumAddress(address),
       amountRPL: nodeRPL.add(trustedNodeRPL),
       amountETH: nodeETH,
-      network: network.BN,
+      network: chainId,
     };
+
+    console.log("post memo key set", memo[address])
+
     return memo;
   }, {});
 
   console.log(rewards)
-  const rewardsPerNetworkBN = rewards.reduce((perNetwork, {network, trustedNodeRPL, nodeRPL, nodeETH}) => {
+  const rewardsPerNetworkBN = rewards.reduce((perNetwork, { network, trustedNodeRPL, nodeRPL, nodeETH }) => {
     console.log("in merkle claim, perNetwork", perNetwork)
-    if(!(network in perNetwork)){
+    if (!(network in perNetwork)) {
       perNetwork[network] = {
         RPL: ethers.BigNumber.from("0"),
         ETH: ethers.BigNumber.from("0"),
@@ -252,12 +261,12 @@ export function parseRewardsMap(rewards) {
 
   const totalRewardsRPL = sortedAddresses.reduce(
     (memo, key) => memo.add(dataByAddress[key].amountRPL),
-    '0'.BN
+    ethers.BigNumber.from('0')
   );
 
   const totalRewardsETH = sortedAddresses.reduce(
     (memo, key) => memo.add(dataByAddress[key].amountETH),
-    '0'.BN
+    ethers.BigNumber.from('0')
   );
 
   return {
