@@ -159,7 +159,7 @@ describe(`FundRouter`, () => {
         }
 
 
-        it("run proof", async () => {
+        it.only("run proof", async () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
 
@@ -176,7 +176,7 @@ describe(`FundRouter`, () => {
                     nodeETH: ethers.utils.parseEther("0")
                 },
                 {
-                    address: validator1.address,
+                    address: validator0.address,
                     network: 0,
                     trustedNodeRPL: ethers.utils.parseEther("0"),
                     nodeRPL: ethers.utils.parseEther("2"),
@@ -190,7 +190,48 @@ describe(`FundRouter`, () => {
             let amountsETH = [proof.amountETH];
             let proofs = [proof.proof];
 
-            console.log(treeData)
+            const trustedNodeRPL = [];
+            const nodeRPL = [];
+            const nodeETH = [];
+        
+            let maxNetwork = rewards.reduce((a,b) => Math.max(a, b.network), 0);
+        
+            for(let i = 0; i <= maxNetwork; i++) {
+                trustedNodeRPL[i] = ethers.BigNumber.from('0')
+                nodeRPL[i] = ethers.BigNumber.from('0')
+                nodeETH[i] = ethers.BigNumber.from('0')
+            }
+        
+            for(let i = 0; i < rewards.length; i++) {
+                trustedNodeRPL[rewards[i].network] = trustedNodeRPL[rewards[i].network].add(rewards[i].trustedNodeRPL)
+                nodeRPL[rewards[i].network] = nodeRPL[rewards[i].network].add(rewards[i].nodeRPL)
+                nodeETH[rewards[i].network] = nodeETH[rewards[i].network].add(rewards[i].nodeETH)
+            }
+        
+            // web3 doesn't like an array of BigNumbers, have to convert to dec string
+            for(let i = 0; i <= maxNetwork; i++) {
+                trustedNodeRPL[i] = trustedNodeRPL[i].toString()
+                nodeRPL[i] = nodeRPL[i].toString()
+                nodeETH[i] = nodeETH[i].toString()
+            }
+
+            const submission = {
+                rewardIndex: 0,
+                executionBlock: '0',
+                consensusBlock: '0',
+                merkleRoot: treeData.proof.merkleRoot,
+                merkleTreeCID: '0',
+                intervalsPassed: '1',
+                treasuryRPL: '0',
+                trustedNodeRPL: trustedNodeRPL,
+                nodeRPL: nodeRPL,
+                nodeETH: nodeETH,
+                userETH: '0'
+            }
+
+            await rp.rocketRewardsPool.submitRewardSnapshot(submission);
+
+            const tx = await protocol.depositPool.merkleClaim(validator0.address, [0], amountsRPL, amountsETH, proofs);
 
 
         })

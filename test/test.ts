@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { FundRouter, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, NodeAccountFactory, RocketDepositPool, RocketNodeDeposit } from "../typechain-types";
+import { FundRouter, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, NodeAccountFactory, RocketDepositPool, RocketNodeDeposit, RocketDAONodeTrusted, RocketTokenRETH, RocketClaimDAO, RocketRewardsPool } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
 import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketNodeManager, RocketNodeManagerNew, RocketNodeStaking, RocketNodeStakingNew, RocketStorage, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
@@ -63,7 +63,11 @@ export type RocketPool = {
 	rocketNodeManagerContract: RocketNodeManagerInterface,
 	rocketNodeStakingContract: IRocketNodeStaking,
 	rocketNodeDepositContract: RocketNodeDepositInterface,
-	rocketDepositPoolContract: RocketDepositPool
+	rocketDepositPoolContract: RocketDepositPool,
+	rocketDaoNodeTrusted: RocketDAONodeTrusted,
+	rocketTokenRETH: RocketTokenRETH,
+	rocketClaimDao: RocketClaimDAO,
+	rocketRewardsPool: RocketRewardsPool
 }
 
 export function getAllAddresses(Signers: Signers, Protocol: Protocol, RocketPool: RocketPool) {
@@ -112,7 +116,27 @@ export async function getRocketPool(directory: Directory): Promise<RocketPool> {
 		await directory.getRocketDepositPoolAddress()
 	) as RocketDepositPool;
 
-	return { rplContract, rockStorageContract, rocketDepositPoolContract, rocketNodeManagerContract, rocketNodeStakingContract, rocketNodeDepositContract };
+	const rocketDaoNodeTrusted = await ethers.getContractAt(
+		"RocketDAONodeTrusted",
+		await directory.getRocketPoolAddressByTag("rocketDAONodeTrusted")
+	) as RocketDAONodeTrusted;
+
+	const rocketTokenRETH = await ethers.getContractAt(
+		"RocketTokenRETH",
+		await directory.getRocketPoolAddressByTag("rocketTokenRETH")
+	) as RocketTokenRETH;
+
+	const rocketClaimDao = await ethers.getContractAt(
+		"RocketClaimDAO",
+		await directory.getRocketPoolAddressByTag("rocketClaimDAO")
+	) as RocketClaimDAO;
+
+	const rocketRewardsPool = await ethers.getContractAt(
+		"RocketRewardsPool",
+		await directory.getRocketPoolAddressByTag("rocketRewardsPool")
+	) as RocketRewardsPool;
+
+	return { rocketRewardsPool, rocketClaimDao, rocketTokenRETH, rocketDaoNodeTrusted, rplContract, rockStorageContract, rocketDepositPoolContract, rocketNodeManagerContract, rocketNodeStakingContract, rocketNodeDepositContract };
 }
 
 async function deployProtocol(signers: Signers): Promise<Protocol> {

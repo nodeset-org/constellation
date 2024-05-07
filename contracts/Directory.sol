@@ -173,6 +173,12 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _integrations.rocketNetworkVoting;
     }
 
+    function getRocketPoolAddressByTag(string calldata _tag) public view returns (address) {
+        return IRocketStorage(_protocol.rocketStorage).getAddress(
+            RocketpoolEncoder.generateBytes32Identifier(_tag)
+        );
+    }
+
     function initialize(Protocol memory newProtocol, address treasury, address admin) public initializer {
         // require(msg.sender != admin, Constants.INITIALIZATION_ERROR);
         require(
