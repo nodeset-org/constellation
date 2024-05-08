@@ -232,9 +232,11 @@ describe(`FundRouter`, () => {
 
             // todo: _memberAdd() call before submitting snapshot, somehow ROCKET REWARDS POOL.getMemberCount() is 0
 
+            await rp.rocketDaoNodeTrustedActions.memberQuickAdd(signers.deployer.address);
+
             await rp.rocketRewardsPool.submitRewardSnapshot(submission);
 
-            const tx = await protocol.depositPool.merkleClaim(validator0.address, [0], amountsRPL, amountsETH, proofs);
+            const tx = await protocol.depositPool.merkleClaim(validator0.address, [0, 1], amountsRPL, amountsETH, proof);
 
 
         })

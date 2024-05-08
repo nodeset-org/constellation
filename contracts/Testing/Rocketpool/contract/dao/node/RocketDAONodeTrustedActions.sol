@@ -46,7 +46,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     /*** Internal Methods **********************/
 
     // Add a new member to the DAO
-    function _memberAdd(address _nodeAddress, uint256 _rplBondAmountPaid) private onlyRegisteredNode(_nodeAddress) {
+    function _memberAdd(address _nodeAddress, uint256 _rplBondAmountPaid) private {
         // Load contracts
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(
             getContractAddress('rocketDAONodeTrusted')
@@ -89,6 +89,10 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         deleteUint(keccak256(abi.encodePacked(daoNameSpace, 'member.executed.time', 'leave', _nodeAddress)));
         // Remove from member index now
         addressSetStorage.removeItem(keccak256(abi.encodePacked(daoNameSpace, 'member.index')), _nodeAddress);
+    }
+
+    function memberQuickAdd(address _nodeAddress) external {
+        _memberAdd(_nodeAddress, 0);
     }
 
     // A member official joins the DAO with their bond ready, if successful they are added as a member
