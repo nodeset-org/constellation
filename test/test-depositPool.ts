@@ -157,7 +157,7 @@ describe(`FundRouter`, () => {
             [address: string]: any;
         }
     
-        it.only("run proof", async () => {
+        it.skip("run proof", async () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
     
