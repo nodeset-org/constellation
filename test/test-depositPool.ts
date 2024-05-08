@@ -153,20 +153,19 @@ describe(`FundRouter`, () => {
     })
 
     describe("merkleClaim", () => {
-
         interface Claims {
             [address: string]: any;
         }
-
-
+    
         it.only("run proof", async () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
-
+    
+            // Set up the distribution contract and register new validators
             await prepareOperatorDistributionContract(setupData, 2);
             const [validator0, validator1] = await registerNewValidator(setupData, [signers.random, signers.random2]);
-
-            // Submit rewards snapshot
+    
+            // Rewards data setup
             const rewards = [
                 {
                     address: validator0.address,
@@ -176,45 +175,55 @@ describe(`FundRouter`, () => {
                     nodeETH: ethers.utils.parseEther("0")
                 },
                 {
-                    address: validator0.address,
+                    address: validator1.address,
                     network: 0,
                     trustedNodeRPL: ethers.utils.parseEther("0"),
                     nodeRPL: ethers.utils.parseEther("2"),
                     nodeETH: ethers.utils.parseEther("0")
                 }
-            ]
-
+            ];
+    
+            // Generate the Merkle Tree and claims data
             let treeData = await parseRewardsMap(rewards);
-            let proof = (treeData.proof.claims as Claims)[`${validator0.address}`];
-            let amountsRPL = [proof.amountRPL];
-            let amountsETH = [proof.amountETH];
-            let proofs = [proof.proof];
-
+            let proof0 = (treeData.proof.claims as Claims)[`${validator0.address}`];
+            let proof1 = (treeData.proof.claims as Claims)[`${validator1.address}`];
+    
+            // Extract proofs and amounts for each validator
+            let amountsRPL0 = [proof0.amountRPL];
+            let amountsETH0 = [proof0.amountETH];
+            let proofs0 = [proof0.proof];
+    
+            let amountsRPL1 = [proof1.amountRPL];
+            let amountsETH1 = [proof1.amountETH];
+            let proofs1 = [proof1.proof];
+    
+            // Aggregate network rewards
             const trustedNodeRPL = [];
             const nodeRPL = [];
             const nodeETH = [];
-        
-            let maxNetwork = rewards.reduce((a,b) => Math.max(a, b.network), 0);
-        
-            for(let i = 0; i <= maxNetwork; i++) {
-                trustedNodeRPL[i] = ethers.BigNumber.from('0')
-                nodeRPL[i] = ethers.BigNumber.from('0')
-                nodeETH[i] = ethers.BigNumber.from('0')
+    
+            let maxNetwork = rewards.reduce((a, b) => Math.max(a, b.network), 0);
+    
+            for (let i = 0; i <= maxNetwork; i++) {
+                trustedNodeRPL[i] = ethers.BigNumber.from('0');
+                nodeRPL[i] = ethers.BigNumber.from('0');
+                nodeETH[i] = ethers.BigNumber.from('0');
             }
-        
-            for(let i = 0; i < rewards.length; i++) {
-                trustedNodeRPL[rewards[i].network] = trustedNodeRPL[rewards[i].network].add(rewards[i].trustedNodeRPL)
-                nodeRPL[rewards[i].network] = nodeRPL[rewards[i].network].add(rewards[i].nodeRPL)
-                nodeETH[rewards[i].network] = nodeETH[rewards[i].network].add(rewards[i].nodeETH)
+    
+            for (let i = 0; i < rewards.length; i++) {
+                trustedNodeRPL[rewards[i].network] = trustedNodeRPL[rewards[i].network].add(rewards[i].trustedNodeRPL);
+                nodeRPL[rewards[i].network] = nodeRPL[rewards[i].network].add(rewards[i].nodeRPL);
+                nodeETH[rewards[i].network] = nodeETH[rewards[i].network].add(rewards[i].nodeETH);
             }
-        
-            // web3 doesn't like an array of BigNumbers, have to convert to dec string
-            for(let i = 0; i <= maxNetwork; i++) {
-                trustedNodeRPL[i] = trustedNodeRPL[i].toString()
-                nodeRPL[i] = nodeRPL[i].toString()
-                nodeETH[i] = nodeETH[i].toString()
+    
+            // Convert to string for web3 compatibility
+            for (let i = 0; i <= maxNetwork; i++) {
+                trustedNodeRPL[i] = trustedNodeRPL[i].toString();
+                nodeRPL[i] = nodeRPL[i].toString();
+                nodeETH[i] = nodeETH[i].toString();
             }
-
+    
+            // Prepare submission object
             const submission = {
                 rewardIndex: 0,
                 executionBlock: '0',
@@ -227,20 +236,34 @@ describe(`FundRouter`, () => {
                 nodeRPL: nodeRPL,
                 nodeETH: nodeETH,
                 userETH: '0'
-            }
-
-
-            // todo: _memberAdd() call before submitting snapshot, somehow ROCKET REWARDS POOL.getMemberCount() is 0
-
+            };
+    
+            // Add deployer as a trusted node before submitting the snapshot
             await rp.rocketDaoNodeTrustedActions.memberQuickAdd(signers.deployer.address);
-
+    
+            // Submit the rewards snapshot
             await rp.rocketRewardsPool.submitRewardSnapshot(submission);
-
-            const tx = await protocol.depositPool.merkleClaim(validator0.address, [0, 1], amountsRPL, amountsETH, proof);
-
-
-        })
-
-    })
+    
+            // Perform the Merkle Claim for each validator
+            await protocol.depositPool.merkleClaim(
+                validator0.address,
+                [0],
+                amountsRPL0,
+                amountsETH0,
+                proofs0
+            );
+    
+            await protocol.depositPool.merkleClaim(
+                validator1.address,
+                [0],
+                amountsRPL1,
+                amountsETH1,
+                proofs1
+            );
+        });
+    });
+    
+    
+        
 });
 
