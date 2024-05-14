@@ -40,14 +40,22 @@ contract NodeAccount is UpgradeableBase, Errors {
         address expectedMinipoolAddress;
     }
 
-    NodeAccountFactory public vaf;
-
     mapping(address => ValidatorConfig) public configs;
     mapping(address => uint256) public lockedEth;
     mapping(address => uint256) public lockStarted;
 
     address public nodeOperator;
+    mapping (address => address) nodeOperatorMinipool;
+
     uint256 public totalEthLocked;
+
+    // ex-vaf vars
+    bool public preSignedExitMessageCheck;
+    mapping(bytes => bool) public sigsUsed;
+
+    uint256 public lockThreshhold;
+    uint256 public targetBond;
+    uint256 public lockUpTime;
 
     modifier onlyNodeOperatorOrProtocol() {
         require(
@@ -71,62 +79,45 @@ contract NodeAccount is UpgradeableBase, Errors {
     }
 
     function initialize(
-        address _directory,
-        address _nodeOperator,
-        address _predictedAddress,
-        ValidatorConfig calldata _config,
-        bytes memory _sig
-    ) public payable initializer {
+        address _directory
+    ) public initializer override {
         super.initialize(_directory);
-
-        if (_predictedAddress != address(this)) {
-            revert BadPredictedCreation(_predictedAddress, address(this));
-        }
-
-        vaf = NodeAccountFactory(msg.sender);
-        configs[_config.expectedMinipoolAddress] = _config;
 
         Directory directory = Directory(_directory);
 
-        bool isWhitelisted = Whitelist(directory.getWhitelistAddress()).getIsAddressInWhitelist(_nodeOperator);
-        require(isWhitelisted, Constants.OPERATOR_NOT_FOUND_ERROR);
-
-        nodeOperator = _nodeOperator;
-
-        _registerNode(_config.timezoneLocation, _config.bondAmount, _nodeOperator);
+        _registerNode("US/PST", 8 ether);
         address dp = directory.getDepositPoolAddress();
         IRocketNodeManager(directory.getRocketNodeManagerAddress()).setRPLWithdrawalAddress(address(this), dp, true);
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), dp, true);
 
-        _createMinipool(_config, _sig);
     }
 
     function createMinipool(ValidatorConfig calldata _config, bytes memory _sig) public payable {
         require(msg.sender == nodeOperator, 'only nodeOperator');
-        require(msg.value == vaf.lockThreshhold(), 'NodeAccount: must lock 1 ether');
+        require(msg.value == lockThreshhold, 'NodeAccount: must lock 1 ether');
 
         _createMinipool(_config, _sig);
     }
 
-    function _registerNode(string calldata _timezoneLocation, uint256 _bond, address _nodeOperator) internal {
+    function _registerNode(string memory _timezoneLocation, uint256 _bond) internal {
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).registerNode(_timezoneLocation);
         OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(
-            _nodeOperator,
+            address(this),
             address(this),
             _bond
         );
     }
 
     function _createMinipool(ValidatorConfig calldata _config, bytes memory _sig) internal {
-        vaf.validateSigUsed(_sig);
-        if (vaf.preSignedExitMessageCheck()) {
+        validateSigUsed(_sig);
+        if (preSignedExitMessageCheck) {
             console.log('_createMinipool: message hash');
             console.logBytes32(
-                keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt, address(vaf)))
+                keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt))
             );
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
-                    keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt, address(vaf)))
+                    keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt))
                 ),
                 _sig
             );
@@ -136,7 +127,7 @@ contract NodeAccount is UpgradeableBase, Errors {
             );
         }
 
-        uint256 targetBond = vaf.targetBond();
+        uint256 targetBond = targetBond;
         if (targetBond != _config.bondAmount) {
             revert BadBondAmount(targetBond, _config.bondAmount);
         }
@@ -189,7 +180,7 @@ contract NodeAccount is UpgradeableBase, Errors {
     function unlockEth(address _minipool) external onlyNodeOperatorOrProtocol hasConfig(_minipool) {
         require(lockedEth[_minipool] >= 1 ether, 'Insufficient locked ETH');
         require(
-            block.timestamp - lockStarted[_minipool] > vaf.lockUpTime() ||
+            block.timestamp - lockStarted[_minipool] > lockUpTime ||
                 IMinipool(configs[_minipool].expectedMinipoolAddress).getStatus() == MinipoolStatus.Staking,
             'Lock conditions not met'
         );
@@ -214,8 +205,7 @@ contract NodeAccount is UpgradeableBase, Errors {
         }
     }
 
-    function _authorizeUpgrade(address _implementationAddress) internal view override onlyNodeOperatorOrAdmin {
-        require(_implementationAddress == vaf.implementationAddress(), 'only upgradable to vaf.implementationAddress');
+    function _authorizeUpgrade(address _implementationAddress) internal view override only24HourTimelock {
     }
 
     /**
@@ -298,5 +288,55 @@ contract NodeAccount is UpgradeableBase, Errors {
     ) external onlyNodeOperatorOrProtocol hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.setUseLatestDelegate(_setting);
+    }
+
+    function validateSigUsed(bytes memory _sig) public onlyProtocol {
+        require(!sigsUsed[_sig], "sig already used");
+        sigsUsed[_sig] = true;
+    }
+
+
+    function usePreSignedExitMessageCheck() external onlyAdmin {
+        preSignedExitMessageCheck = true;
+    }
+
+    function disablePreSignedExitMessageCheck() external onlyAdmin {
+        preSignedExitMessageCheck = false;
+    }
+
+        /**
+     * @notice Sets a new lock threshold.
+     * @dev Only callable by the contract owner or authorized admin.
+     * @param _newLockThreshold The new lock threshold value in wei.
+     */
+    function setLockThreshold(uint256 _newLockThreshold) external {
+        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
+            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
+        }
+        lockThreshhold = _newLockThreshold;
+    }
+
+    /**
+     * @notice Sets a new target bond.
+     * @dev Only callable by the contract owner or authorized admin.
+     * @param _newTargetBond The new target bond value in wei.
+     */
+    function setTargetBond(uint256 _newTargetBond) external {
+        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
+            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
+        }
+        targetBond = _newTargetBond;
+    }
+
+    /**
+     * @notice Sets a new lock-up time.
+     * @dev Only callable by the contract owner or authorized admin.
+     * @param _newLockUpTime The new lock-up time in seconds.
+     */
+    function setLockUpTime(uint256 _newLockUpTime) external {
+        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
+            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
+        }
+        lockUpTime = _newLockUpTime;
     }
 }

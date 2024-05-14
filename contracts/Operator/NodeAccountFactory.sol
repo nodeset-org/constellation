@@ -11,20 +11,13 @@ import '@openzeppelin/contracts/utils/Address.sol';
 
 import 'hardhat/console.sol';
 
+
+// can probz delete fully
 contract NodeAccountFactory is UpgradeableBase, Errors {
     event ProxyCreated(address indexed proxyAddress);
 
     using Address for address;
 
-    address public implementationAddress;
-
-    uint256 public lockThreshhold;
-    uint256 public targetBond;
-    uint256 public lockUpTime;
-
-    bool public preSignedExitMessageCheck;
-
-    mapping(bytes => bool) public sigsUsed;
     mapping(address => address) public minipoolNodeAccountMap;
 
     /**
@@ -33,11 +26,6 @@ contract NodeAccountFactory is UpgradeableBase, Errors {
      */
     function initializeWithImplementation(address _directory, address _implementation) public initializer {
         super.initialize(_directory);
-        implementationAddress = _implementation;
-        lockThreshhold = 1 ether;
-        lockUpTime = 28 days;
-        preSignedExitMessageCheck = true;
-        targetBond = 8e18; // initially set for LEB8
     }
 
     function hasSufficentLiquidity(uint256 _bond) public view returns (bool) {
@@ -52,27 +40,11 @@ contract NodeAccountFactory is UpgradeableBase, Errors {
         bytes memory _sig
     ) public payable returns (address) {
         require(hasSufficentLiquidity(_config.bondAmount), 'NodeAccount: protocol must have enough rpl and eth');
-        require(msg.value == lockThreshhold, 'NodeAccount: must lock 1 ether');
 
         minipoolNodeAccountMap[_config.expectedMinipoolAddress] = _predictedAddress;
 
         Directory(_directory).grantRole(Constants.CORE_PROTOCOL_ROLE, _predictedAddress);
 
-        // Deploy the proxy contract using create op
-        ERC1967Proxy proxy = new ERC1967Proxy(
-            implementationAddress,
-            abi.encodeWithSelector(
-                NodeAccount.initialize.selector,
-                address(_directory),
-                msg.sender,
-                _predictedAddress,
-                _config,
-                _sig
-            )
-        );
-
-        emit ProxyCreated(address(proxy));
-        return address(proxy);
     }
 
     /**
@@ -95,59 +67,6 @@ contract NodeAccountFactory is UpgradeableBase, Errors {
         }
     }
 
-    /**
-     * @notice Sets a new lock threshold.
-     * @dev Only callable by the contract owner or authorized admin.
-     * @param _newLockThreshold The new lock threshold value in wei.
-     */
-    function setLockThreshold(uint256 _newLockThreshold) external {
-        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
-            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
-        }
-        lockThreshhold = _newLockThreshold;
-    }
 
-    /**
-     * @notice Sets a new target bond.
-     * @dev Only callable by the contract owner or authorized admin.
-     * @param _newTargetBond The new target bond value in wei.
-     */
-    function setTargetBond(uint256 _newTargetBond) external {
-        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
-            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
-        }
-        targetBond = _newTargetBond;
-    }
 
-    /**
-     * @notice Sets a new lock-up time.
-     * @dev Only callable by the contract owner or authorized admin.
-     * @param _newLockUpTime The new lock-up time in seconds.
-     */
-    function setLockUpTime(uint256 _newLockUpTime) external {
-        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
-            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
-        }
-        lockUpTime = _newLockUpTime;
-    }
-
-    function validateSigUsed(bytes memory _sig) external onlyProtocol {
-        require(!sigsUsed[_sig], "sig already used");
-        sigsUsed[_sig] = true;
-    }
-
-    function setImplementation(address _implementationAddress) external {
-        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
-            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
-        }
-        implementationAddress = _implementationAddress;
-    }
-
-    function usePreSignedExitMessageCheck() external onlyAdmin {
-        preSignedExitMessageCheck = true;
-    }
-
-    function disablePreSignedExitMessageCheck() external onlyAdmin {
-        preSignedExitMessageCheck = false;
-    }
 }
