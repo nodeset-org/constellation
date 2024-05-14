@@ -9,6 +9,10 @@ import './Utils/Constants.sol';
 /// @notice A contract that allows an admin to manage and execute transfers of ETH and ERC20 tokens.
 /// @dev Inherits from UpgradeableBase to allow for future upgrades.
 contract AdminTreasury is UpgradeableBase {
+    event ClaimedToken(address indexed _token, address indexed _to, uint256 indexed _amount);
+    event ClaimedEth(address indexed _to, uint256 indexed _amount);
+    event Executed(address indexed _target, bytes indexed _functionData);
+
     /// @notice Initializer that replaces constructor for upgradeable contracts.
     constructor() initializer {}
 
@@ -21,15 +25,23 @@ contract AdminTreasury is UpgradeableBase {
 
     function _claimTokenInternal(address _tokenAddress, address _to, uint256 _amount) internal {
         IERC20(_tokenAddress).transfer(_to, _amount);
+        emit ClaimedToken(_tokenAddress, _to, _amount);
     }
 
     function _claimEthInternal(address payable _to, uint256 _amount) internal {
         _to.transfer(_amount);
+        emit ClaimedEth(_to, _amount);
     }
 
-    function _executeInternal(address _target, bytes memory _functionData, uint256 _value) internal {
-        (bool _success, ) = _target.call{value: _value}(_functionData);
-        require(_success, Constants.BAD_TREASURY_EXECUTION_ERROR);
+    function _executeInternal(address payable _target, bytes memory _functionData, uint256 _value) internal {
+        (bool _success, bytes memory _returnData) = _target.call{value: _value}(_functionData);
+        if (!_success) {
+            assembly {
+                let _returnData_size := mload(_returnData)
+                revert(add(32, _returnData), _returnData_size)
+            }
+        }
+        emit Executed(_target, _functionData);
     }
 
     /// @notice Allows the admin to claim all ERC20 tokens of a particular type and send them to a specified address.
@@ -64,7 +76,7 @@ contract AdminTreasury is UpgradeableBase {
     /// @dev The `call` is a low-level interface for interacting with contracts.
     /// @param _target The contract address to execute the call on.
     /// @param _functionData The calldata to send for the call.
-    function execute(address _target, bytes calldata _functionData) external payable onlyAdmin nonReentrant {
+    function execute(address payable _target, bytes calldata _functionData) external payable onlyAdmin nonReentrant {
         _executeInternal(_target, _functionData, msg.value);
     }
 
@@ -72,13 +84,16 @@ contract AdminTreasury is UpgradeableBase {
     /// @dev Useful for performing multiple administrative tasks in one transaction.
     /// @param _targets An array of contract addresses to execute the calls on.
     /// @param _functionData An array of calldata to send for the calls.
+    /// @param _values msg.value per target
     function executeAll(
         address payable[] calldata _targets,
-        bytes[] calldata _functionData
+        bytes[] calldata _functionData,
+        uint256[] calldata _values
     ) external payable onlyAdmin nonReentrant {
         require(_targets.length == _functionData.length, Constants.BAD_TREASURY_BATCH_CALL);
+        require(_values.length == _functionData.length, Constants.BAD_TREASURY_BATCH_CALL);
         for (uint256 i = 0; i < _targets.length; i++) {
-            _executeInternal(_targets[i], _functionData[i], msg.value);
+            _executeInternal(_targets[i], _functionData[i], _values[i]);
         }
     }
 
