@@ -44,8 +44,7 @@ contract NodeAccount is UpgradeableBase, Errors {
     mapping(address => uint256) public lockedEth;
     mapping(address => uint256) public lockStarted;
 
-    address public nodeOperator;
-    mapping (address => address) nodeOperatorMinipool;
+    mapping(address => address) subNodeOperatorMinipool;
 
     uint256 public totalEthLocked;
 
@@ -57,17 +56,17 @@ contract NodeAccount is UpgradeableBase, Errors {
     uint256 public targetBond;
     uint256 public lockUpTime;
 
-    modifier onlyNodeOperatorOrProtocol() {
+    modifier onlySubNodeOperatorOrProtocol(address _minipool) {
         require(
-            _directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender) || msg.sender == nodeOperator,
+            _directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender) || msg.sender == subNodeOperatorMinipool[_minipool],
             'Can only be called by Protocol or NodeOperator!'
         );
         _;
     }
 
-    modifier onlyNodeOperatorOrAdmin() {
+    modifier onlyNodeOperatorOrAdmin(address _minipool) {
         require(
-            _directory.hasRole(Constants.ADMIN_ROLE, msg.sender) || msg.sender == nodeOperator,
+            _directory.hasRole(Constants.ADMIN_ROLE, msg.sender) || msg.sender == subNodeOperatorMinipool[_minipool],
             'Can only be called by Admin or NodeOperator!'
         );
         _;
@@ -78,25 +77,23 @@ contract NodeAccount is UpgradeableBase, Errors {
         _;
     }
 
-    function initialize(
-        address _directory
-    ) public initializer override {
+    function initialize(address _directory) public override initializer {
         super.initialize(_directory);
 
         Directory directory = Directory(_directory);
 
-        _registerNode("US/PST", 8 ether);
+        _registerNode('US/PST', 8 ether);
         address dp = directory.getDepositPoolAddress();
         IRocketNodeManager(directory.getRocketNodeManagerAddress()).setRPLWithdrawalAddress(address(this), dp, true);
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), dp, true);
-
     }
 
     function createMinipool(ValidatorConfig calldata _config, bytes memory _sig) public payable {
-        require(msg.sender == nodeOperator, 'only nodeOperator');
+        require(msg.sender == subNodeOperatorMinipool[_config.expectedMinipoolAddress], 'only nodeOperator');
         require(msg.value == lockThreshhold, 'NodeAccount: must lock 1 ether');
+        require(hasSufficentLiquidity(_config.bondAmount), 'NodeAccount: protocol must have enough rpl and eth');
 
-        _createMinipool(_config, _sig);
+        _createMinipool(_config, _sig, msg.sender);
     }
 
     function _registerNode(string memory _timezoneLocation, uint256 _bond) internal {
@@ -108,13 +105,11 @@ contract NodeAccount is UpgradeableBase, Errors {
         );
     }
 
-    function _createMinipool(ValidatorConfig calldata _config, bytes memory _sig) internal {
+    function _createMinipool(ValidatorConfig calldata _config, bytes memory _sig, address subNodeOperator) internal {
         validateSigUsed(_sig);
         if (preSignedExitMessageCheck) {
             console.log('_createMinipool: message hash');
-            console.logBytes32(
-                keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt))
-            );
+            console.logBytes32(keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt)));
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
                     keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt))
@@ -126,6 +121,8 @@ contract NodeAccount is UpgradeableBase, Errors {
                 'signer must have permission from admin server role'
             );
         }
+
+        subNodeOperatorMinipool[_config.expectedMinipoolAddress] = subNodeOperator;
 
         uint256 targetBond = targetBond;
         if (targetBond != _config.bondAmount) {
@@ -141,8 +138,8 @@ contract NodeAccount is UpgradeableBase, Errors {
         lockStarted[_config.expectedMinipoolAddress] = block.timestamp;
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        od.OnMinipoolCreated(_config.expectedMinipoolAddress, nodeOperator, _config.bondAmount);
-        od.rebalanceRplStake(address(this), od.nodeOperatorEthStaked(nodeOperator));
+        od.OnMinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator, _config.bondAmount);
+        od.rebalanceRplStake(address(this), od.nodeOperatorEthStaked(subNodeOperator));
 
         console.log('_createMinipool()');
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: targetBond}(
@@ -158,7 +155,7 @@ contract NodeAccount is UpgradeableBase, Errors {
         console.log('_createMinipool.status', uint256(minipool.getStatus()));
     }
 
-    function stake(address _minipool) external onlyNodeOperatorOrProtocol hasConfig(_minipool) {
+    function stake(address _minipool) external onlySubNodeOperatorOrProtocol(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.stake(configs[_minipool].validatorSignature, configs[_minipool].depositDataRoot);
     }
@@ -170,14 +167,14 @@ contract NodeAccount is UpgradeableBase, Errors {
 
         IMinipool minipool = IMinipool(_minipool);
         OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(
-            nodeOperator,
+            subNodeOperatorMinipool[_minipool],
             configs[_minipool].bondAmount
         );
 
         minipool.close();
     }
 
-    function unlockEth(address _minipool) external onlyNodeOperatorOrProtocol hasConfig(_minipool) {
+    function unlockEth(address _minipool) external onlySubNodeOperatorOrProtocol(_minipool) hasConfig(_minipool) {
         require(lockedEth[_minipool] >= 1 ether, 'Insufficient locked ETH');
         require(
             block.timestamp - lockStarted[_minipool] > lockUpTime ||
@@ -205,8 +202,7 @@ contract NodeAccount is UpgradeableBase, Errors {
         }
     }
 
-    function _authorizeUpgrade(address _implementationAddress) internal view override only24HourTimelock {
-    }
+    function _authorizeUpgrade(address _implementationAddress) internal view override only24HourTimelock {}
 
     /**
      * @dev Restricting this function to admin is the only way we can technologically enforce
@@ -219,18 +215,10 @@ contract NodeAccount is UpgradeableBase, Errors {
         minipool.distributeBalance(_rewardsOnly);
         if (minipool.getFinalised()) {
             OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(
-                nodeOperator,
+                subNodeOperatorMinipool[_minipool],
                 configs[_minipool].bondAmount
             );
         }
-    }
-
-    function setDelegate(address _newDelegate) external onlyNodeOperatorOrProtocol {
-        IRocketNetworkVoting(_directory.getRocketNetworkVotingAddress()).setDelegate(_newDelegate);
-    }
-
-    function initialiseVoting() external onlyNodeOperatorOrProtocol {
-        IRocketNetworkVoting(_directory.getRocketNetworkVotingAddress()).initialiseVoting();
     }
 
     function merkleClaim(
@@ -249,35 +237,12 @@ contract NodeAccount is UpgradeableBase, Errors {
         );
     }
 
-    function vote(
-        uint256 _proposalID,
-        VoteDirection _voteDirection,
-        uint256 _votingPower,
-        uint256 _nodeIndex,
-        Node[] calldata _witness
-    ) external onlyNodeOperatorOrProtocol {
-        IRocketDAOProtocolProposal(_directory.getRocketDAOProtocolProposalAddress()).vote(
-            _proposalID,
-            _voteDirection,
-            _votingPower,
-            _nodeIndex,
-            _witness
-        );
-    }
-
-    function overrideVote(uint256 _proposalID, VoteDirection _voteDirection) external onlyNodeOperatorOrProtocol {
-        IRocketDAOProtocolProposal(_directory.getRocketDAOProtocolProposalAddress()).overrideVote(
-            _proposalID,
-            _voteDirection
-        );
-    }
-
-    function delegateUpgrade(address _minipool) external onlyNodeOperatorOrProtocol hasConfig(_minipool) {
+    function delegateUpgrade(address _minipool) external onlySubNodeOperatorOrProtocol(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateUpgrade();
     }
 
-    function delegateRollback(address _minipool) external onlyNodeOperatorOrProtocol hasConfig(_minipool) {
+    function delegateRollback(address _minipool) external onlySubNodeOperatorOrProtocol(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateRollback();
     }
@@ -285,16 +250,15 @@ contract NodeAccount is UpgradeableBase, Errors {
     function setUseLatestDelegate(
         bool _setting,
         address _minipool
-    ) external onlyNodeOperatorOrProtocol hasConfig(_minipool) {
+    ) external onlySubNodeOperatorOrProtocol(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.setUseLatestDelegate(_setting);
     }
 
     function validateSigUsed(bytes memory _sig) public onlyProtocol {
-        require(!sigsUsed[_sig], "sig already used");
+        require(!sigsUsed[_sig], 'sig already used');
         sigsUsed[_sig] = true;
     }
-
 
     function usePreSignedExitMessageCheck() external onlyAdmin {
         preSignedExitMessageCheck = true;
@@ -304,7 +268,7 @@ contract NodeAccount is UpgradeableBase, Errors {
         preSignedExitMessageCheck = false;
     }
 
-        /**
+    /**
      * @notice Sets a new lock threshold.
      * @dev Only callable by the contract owner or authorized admin.
      * @param _newLockThreshold The new lock threshold value in wei.
@@ -338,5 +302,11 @@ contract NodeAccount is UpgradeableBase, Errors {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
         lockUpTime = _newLockUpTime;
+    }
+
+    function hasSufficentLiquidity(uint256 _bond) public view returns (bool) {
+        address payable od = _directory.getOperatorDistributorAddress();
+        uint256 rplRequried = OperatorDistributor(od).calculateRequiredRplTopUp(0, _bond);
+        return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequried && od.balance >= _bond;
     }
 }

@@ -375,7 +375,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         // process top up
         address nodeAddress = minipool.getNodeAddress();
-        address nodeOperator = NodeAccount(nodeAddress).nodeOperator();
+        address nodeOperator = nodeAddress;
         console.log('_processNextMinipool.nodeAddress:');
         console.logAddress(nodeAddress);
         uint256 ethStaked = nodeOperatorEthStaked[nodeOperator];
