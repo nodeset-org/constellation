@@ -40,12 +40,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     // This field is used to track the RPL token balance managed by the contract,
     uint256 public fundedRpl;
 
-    address[] public minipoolAddresses;
-
-    uint256 public nextMinipoolHavestIndex;
     uint256 public targetStakeRatio;
-
-    uint256 public numMinipoolsProcessedPerInterval;
 
     uint256 public requiredLEBStaked;
 
@@ -67,7 +62,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     function initialize(address _directory) public override initializer {
         super.initialize(_directory);
         targetStakeRatio = 1.5e18; // 150%
-        numMinipoolsProcessedPerInterval = 1;
 
         // defaulting these to 8eth to only allow LEB8 minipools
         requiredLEBStaked = 8 ether;
@@ -132,15 +126,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * Emits a `MinipoolDestroyed` event upon successful removal.
      */ function removeMinipoolAddress(address _address) public onlyProtocolOrAdmin {
         uint index = minipoolIndexMap[_address] - 1;
-        require(index < minipoolAddresses.length, 'Address not found.');
 
-        // Move the last address into the spot located by index
-        address lastAddress = minipoolAddresses[minipoolAddresses.length - 1];
-        minipoolAddresses[index] = lastAddress;
-        minipoolIndexMap[lastAddress] = index;
-
-        // Remove the last address
-        minipoolAddresses.pop();
         delete minipoolIndexMap[_address];
 
         // Set amount funded to 0 since it's being returned to DP
@@ -320,15 +306,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * by numMinipoolsProcessedPerInterval.
      */
     function processNextMinipool() external onlyProtocol {
-        if (minipoolAddresses.length == 0) {
-            emit WarningNoMiniPoolsToHarvest();
-            return;
-        }
-
-        for (uint i = 0; i < numMinipoolsProcessedPerInterval; i++) {
-            console.log('processNextMinipool() at', i);
             _processNextMinipool();
-        }
     }
 
     function OnMinipoolCreated(address newMinipoolAddress, address nodeAddress, uint256 bond) external {
@@ -343,9 +321,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         // new minipool owned by node operator
         nodeOperatorOwnedMinipools[nodeAddress].push(newMinipoolAddress);
 
-        // add minipool to minipoolAddresses
-        minipoolAddresses.push(newMinipoolAddress);
-        minipoolIndexMap[newMinipoolAddress] = minipoolAddresses.length;
 
         emit MinipoolCreated(newMinipoolAddress, nodeAddress);
 
@@ -357,34 +332,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @dev Processes a single minipool by performing RPL top-up and distributing balance if certain conditions are met.
      */
     function _processNextMinipool() internal {
-        if (nextMinipoolHavestIndex > minipoolAddresses.length - 1) {
-            nextMinipoolHavestIndex = 0;
-        }
 
-        uint256 index = nextMinipoolHavestIndex;
-        IMinipool minipool = IMinipool(minipoolAddresses[index]);
+        SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
 
-        MinipoolStatus minipoolStatus = minipool.getStatus();
-        bool isFinalized = minipool.getFinalised();
-        console.log('_processNextMinipool.status=', uint256(minipoolStatus));
-        console.log('_processNextMinipool.isFinalized=', isFinalized);
-        if (minipoolStatus != MinipoolStatus.Staking || isFinalized) {
-            emit WarningMinipoolNotStaking(address(minipool), minipoolStatus, isFinalized);
-            return;
-        }
-
-        // process top up
-        address nodeAddress = minipool.getNodeAddress();
-        address nodeOperator = nodeAddress;
-        console.log('_processNextMinipool.nodeAddress:');
-        console.logAddress(nodeAddress);
-        uint256 ethStaked = nodeOperatorEthStaked[nodeOperator];
-
-        console.log('_processNextMinipool.ethStaked', ethStaked);
-
-        rebalanceRplStake(nodeAddress, ethStaked);
-
-        uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
+        rebalanceRplStake(address(sna), sna.totalEthStaking());
 
         /**
          * @dev We are only calling distributeBalance with a true flag to prevent griefing vectors. This ensures we
@@ -392,22 +343,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
          * One example is that if we pass false to distributeBalance, it opens a scenario where operators are forced to
          * finalize due to having more than 8 ETH. This could result in slashings from griefing vectors.
          */
-        if (totalBalance < 8 ether) {
-            minipool.distributeBalance(true);
-        }
-
-        nextMinipoolHavestIndex++;
-    }
-
-    /**
-     * @notice Set the number of minipools to be processed per interval.
-     * @dev This function can only be called by the contract's admin.
-     * Adjusting this parameter allows the admin to control and optimize the load
-     * on the network for each interval, especially in scenarios with a large number of minipools.
-     * @param _numMinipoolsProcessedPerInterval The new number of minipools to process per interval.
-     */
-    function setNumMinipoolsProcessedPerInterval(uint256 _numMinipoolsProcessedPerInterval) external onlyAdmin {
-        numMinipoolsProcessedPerInterval = _numMinipoolsProcessedPerInterval;
+        //if (totalBalance < 8 ether) {
+        //    minipool.distributeBalance(true);
+        //}
     }
 
     function setBondRequirments(uint256 _requiredLEBStaked) external onlyAdmin {
@@ -421,17 +359,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     function onNodeMinipoolDestroy(address _nodeOperator, uint256 _bond) external onlyProtocol {
         fundedEth -= _bond;
         nodeOperatorEthStaked[_nodeOperator] -= _bond;
-    }
-
-    /**
-     * @notice Retrieves the list of minipool addresses managed by the contract.
-     * @dev This function provides a way to fetch all the current minipool addresses in memory.
-     * Useful for off-chain services or frontend interfaces that need to display or interact
-     * with the various minipools.
-     * @return A list of addresses corresponding to the minipools.
-     */
-    function getMinipoolAddresses() external view returns (address[] memory) {
-        return minipoolAddresses;
     }
 
     function transferWEthToVault(uint256 _amount) external returns (uint256) {

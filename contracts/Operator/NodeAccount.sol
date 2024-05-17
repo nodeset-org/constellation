@@ -28,7 +28,7 @@ import '../Utils/Errors.sol';
 
 /// @custom:security-contact info@nodeset.io
 /// @notice distributes rewards in weth to node operators
-contract NodeAccount is UpgradeableBase, Errors {
+contract SuperNodeAccount is UpgradeableBase, Errors {
     struct ValidatorConfig {
         string timezoneLocation;
         uint256 bondAmount;
@@ -47,6 +47,7 @@ contract NodeAccount is UpgradeableBase, Errors {
     mapping(address => address) subNodeOperatorMinipool;
 
     uint256 public totalEthLocked;
+    uint256 public totalEthStaking;
 
     // ex-vaf vars
     bool public preSignedExitMessageCheck;
@@ -124,7 +125,6 @@ contract NodeAccount is UpgradeableBase, Errors {
 
         subNodeOperatorMinipool[_config.expectedMinipoolAddress] = subNodeOperator;
 
-        uint256 targetBond = targetBond;
         if (targetBond != _config.bondAmount) {
             revert BadBondAmount(targetBond, _config.bondAmount);
         }
@@ -158,6 +158,7 @@ contract NodeAccount is UpgradeableBase, Errors {
     function stake(address _minipool) external onlySubNodeOperatorOrProtocol(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.stake(configs[_minipool].validatorSignature, configs[_minipool].depositDataRoot);
+        totalEthStaking += configs[_minipool].bondAmount;
     }
 
     function close(address _minipool) external hasConfig(_minipool) {
@@ -170,6 +171,8 @@ contract NodeAccount is UpgradeableBase, Errors {
             subNodeOperatorMinipool[_minipool],
             configs[_minipool].bondAmount
         );
+
+        totalEthStaking -= configs[_minipool].bondAmount;
 
         minipool.close();
     }

@@ -26,6 +26,7 @@ struct Protocol {
     address payable yieldDistributor;
     address oracle;
     address priceFetcher;
+    address superNode;
     // external dependencies
     address rocketStorage;
     address payable weth;
@@ -135,6 +136,10 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     function getWETHAddress() public view returns (address payable) {
         return _protocol.weth;
+    }
+
+    function getSuperNodeAddress() public view returns(address) {
+        return _protocol.superNode;
     }
 
     function getRPLAddress() public view returns (address) {
