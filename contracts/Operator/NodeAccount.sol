@@ -81,12 +81,12 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function initialize(address _directory) public override initializer {
         super.initialize(_directory);
 
-        Directory directory = Directory(_directory);
-
-        _registerNode('US/PST', 8 ether);
-        address dp = directory.getDepositPoolAddress();
-        IRocketNodeManager(directory.getRocketNodeManagerAddress()).setRPLWithdrawalAddress(address(this), dp, true);
-        IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), dp, true);
+        // TODO: probz need to do lazy instantiation here
+        //Directory directory = Directory(_directory);
+        //_registerNode('US/PST', 8 ether);
+        //address dp = directory.getDepositPoolAddress();
+        //IRocketNodeManager(directory.getRocketNodeManagerAddress()).setRPLWithdrawalAddress(address(this), dp, true);
+        //IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), dp, true);
     }
 
     function createMinipool(ValidatorConfig calldata _config, bytes memory _sig) public payable {

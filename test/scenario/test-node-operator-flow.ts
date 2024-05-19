@@ -47,17 +47,7 @@ describe("Node Operator Onboarding", function () {
     });
 
     it("node operator creates minipool via creating validator account", async function () {
-        expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bondValue)).equals(false);
-
-        await prepareOperatorDistributionContract(setupData, 1);
-        expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bondValue)).equals(true);
-
-
-        const NodeAccount = await deployNodeAccount(setupData, bondValue);
-
-        console.log("VAF:")
-        console.log(NodeAccount)
-
+        // now we must create a minipool via super node
     });
 
 

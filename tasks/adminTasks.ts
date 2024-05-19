@@ -7,9 +7,10 @@ task("usePreSignedExitMessageCheck", "Sets preSignedExitMessageCheck to true")
     const [deployer, admin] = await hre.ethers.getSigners();
     const factoryContract = await hre.ethers.getContractAt("NodeAccountFactory", address, admin);
 
-    console.log("Setting preSignedExitMessageCheck to true...");
-    const tx = await factoryContract.connect(admin).usePreSignedExitMessageCheck();
-    await tx.wait();
+    console.log("Command is deprecated");
+    //console.log("Setting preSignedExitMessageCheck to true...");
+    //const tx = await factoryContract.connect(admin).usePreSignedExitMessageCheck();
+    //await tx.wait();
 
-    console.log(`preSignedExitMessageCheck set to true successfully. Transaction Hash: ${tx.hash}`);
+    //console.log(`preSignedExitMessageCheck set to true successfully. Transaction Hash: ${tx.hash}`);
 });

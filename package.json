@@ -14,7 +14,8 @@
     "stake",
     "rocket pool"
   ],
-  "author": "Mike Leach (Wander) <info@nodeset.io>",
+  "private": "true",
+  "author": "Theodore Clapp (mryamz), Mike Leach (Wander) <info@nodeset.io>",
   "devDependencies": {
     "@babel/polyfill": "^7.12.1",
     "@babel/preset-env": "^7.20.2",
