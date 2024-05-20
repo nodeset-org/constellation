@@ -237,6 +237,9 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
 		log
 	)
 
+    // lazy initialie super node account
+    
+
 	// set adminServer to be ADMIN_SERVER_ROLE
 	const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
 	await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(adminRole), signers.adminServer.address);

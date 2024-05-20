@@ -59,7 +59,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     modifier onlySubNodeOperatorOrProtocol(address _minipool) {
         require(
-            _directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender) || msg.sender == subNodeOperatorMinipool[_minipool],
+            _directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender) ||
+                msg.sender == subNodeOperatorMinipool[_minipool],
             'Can only be called by Protocol or NodeOperator!'
         );
         _;
@@ -80,13 +81,14 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     function initialize(address _directory) public override initializer {
         super.initialize(_directory);
+    }
 
-        // TODO: probz need to do lazy instantiation here
-        //Directory directory = Directory(_directory);
-        //_registerNode('US/PST', 8 ether);
-        //address dp = directory.getDepositPoolAddress();
-        //IRocketNodeManager(directory.getRocketNodeManagerAddress()).setRPLWithdrawalAddress(address(this), dp, true);
-        //IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), dp, true);
+    function lazyInitialize() external onlyAdmin {
+        Directory directory = Directory(_directory);
+        _registerNode('US/PST', 8 ether);
+        address dp = directory.getDepositPoolAddress();
+        IRocketNodeManager(directory.getRocketNodeManagerAddress()).setRPLWithdrawalAddress(address(this), dp, true);
+        IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), dp, true);
     }
 
     function createMinipool(ValidatorConfig calldata _config, bytes memory _sig) public payable {
@@ -245,7 +247,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         minipool.delegateUpgrade();
     }
 
-    function delegateRollback(address _minipool) external onlySubNodeOperatorOrProtocol(_minipool) hasConfig(_minipool) {
+    function delegateRollback(
+        address _minipool
+    ) external onlySubNodeOperatorOrProtocol(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateRollback();
     }
