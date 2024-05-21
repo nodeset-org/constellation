@@ -57,6 +57,14 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     uint256 public targetBond;
     uint256 public lockUpTime;
 
+    bool lazyInit;
+
+    modifier lazyInitializer() {
+        require(!lazyInit, "already lazily initialized");
+        _;
+        lazyInit = true;
+    }
+
     modifier onlySubNodeOperatorOrProtocol(address _minipool) {
         require(
             _directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender) ||
@@ -83,9 +91,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         super.initialize(_directory);
     }
 
-    function lazyInitialize() external onlyAdmin {
+    function lazyInitialize() external lazyInitializer {
         Directory directory = Directory(_directory);
-        _registerNode('US/PST', 8 ether);
+        _registerNode('Australia/Brisbane', 8 ether);
         address dp = directory.getDepositPoolAddress();
         IRocketNodeManager(directory.getRocketNodeManagerAddress()).setRPLWithdrawalAddress(address(this), dp, true);
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), dp, true);

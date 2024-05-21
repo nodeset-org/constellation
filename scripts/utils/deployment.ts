@@ -177,6 +177,11 @@ export async function fastDeployProtocol(deployer: SignerWithAddress, directoryD
         }
     }
 
+    // todo: try lazily instantiation here
+    await retryOperation(async () => {
+        console.log("trying to lazyInitialize superNodeProxy...")
+        await superNodeProxy.lazyInitialize();
+    })
 
     return {
         whitelist: whitelistProxy as Whitelist,
@@ -236,9 +241,6 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
 		signers.admin.address,
 		log
 	)
-
-    // lazy initialie super node account
-    
 
 	// set adminServer to be ADMIN_SERVER_ROLE
 	const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));

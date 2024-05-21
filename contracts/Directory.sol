@@ -225,6 +225,8 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         AccessControlUpgradeable.__AccessControl_init();
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.TIMELOCK_24_HOUR, Constants.ADMIN_ROLE);
+
+        // todo: clean up and rm factory role logic
         _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.FACTORY_ROLE);
 
         _grantRole(Constants.ADMIN_ROLE, admin);
@@ -238,6 +240,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.yieldDistributor);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.oracle);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.priceFetcher);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.superNode);
 
         _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
