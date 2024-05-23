@@ -158,8 +158,7 @@ export const assertSingleTransferExists = async (
 export async function deployMinipool(setupData: SetupData,  bondValue: BigNumber) {
     const salt = 3;
 
-    const nextAddress = "0x3622082BD98490ddd32c9aaD1AdCdc472569e864";
-    const depositData = await generateDepositData(nextAddress, salt);
+    const depositData = await generateDepositData(setupData.protocol.superNode.address, salt);
 
     const config = {
         timezoneLocation: 'Australia/Brisbane',
@@ -174,15 +173,14 @@ export async function deployMinipool(setupData: SetupData,  bondValue: BigNumber
 
     const sig = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
 
-    const proxyVAAddr = await setupData.protocol.superNode.connect(setupData.signers.hyperdriver).callStatic.createMinipool(config,sig, {
-        value: ethers.utils.parseEther("1")
-    })
+    // can probz delete this line
+    //const proxyVAAddr = await setupData.protocol.superNode.connect(setupData.signers.hyperdriver).callStatic.createMinipool(config,sig, {
+    //    value: ethers.utils.parseEther("1")
+    //})
 
     await setupData.protocol.superNode.connect(setupData.signers.hyperdriver).createMinipool(config,sig, {
         value: ethers.utils.parseEther("1")
     })
-
-    return proxyVAAddr;
 }
 
 

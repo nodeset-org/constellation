@@ -122,10 +122,10 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         );
         if (preSignedExitMessageCheck) {
             console.log('_createMinipool: message hash');
-            console.logBytes32(keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt)));
+            console.logBytes32(keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt, address(this))));
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
-                    keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt))
+                    keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt, address(this)))
                 ),
                 _sig
             );
@@ -135,7 +135,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             );
         }
 
-        subNodeOperatorMinipool[_config.expectedMinipoolAddress] = subNodeOperator;
+        subNodeOperatorMinipool[subNodeOperator] = _config.expectedMinipoolAddress;
 
         require(lockedEth[_config.expectedMinipoolAddress] == 0, 'minipool already initialized');
 

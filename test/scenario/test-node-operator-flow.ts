@@ -57,6 +57,9 @@ describe("Node Operator Onboarding", function () {
         expect(await protocol.superNode.subNodeOperatorMinipool(signers.hyperdriver.address)).not.equals(ethers.constants.AddressZero);
     });
 
+    it("sub node operator 'hyperdriver' can begin staking process", async () => {
+
+    })
 
     it("eth whale supplies Nodeset deposit pool with eth and rpl", async function () {
 
