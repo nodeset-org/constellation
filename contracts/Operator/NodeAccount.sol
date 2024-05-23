@@ -109,11 +109,11 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     function _registerNode(string memory _timezoneLocation, uint256 _bond) internal {
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).registerNode(_timezoneLocation);
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(
-            address(this),
-            address(this),
-            _bond
-        );
+        //OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(
+        //    address(this),
+        //    address(this),
+        //    _bond
+        //);
     }
 
     function _createMinipool(ValidatorConfig calldata _config, bytes memory _sig, address subNodeOperator) internal {

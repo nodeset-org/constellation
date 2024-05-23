@@ -306,9 +306,7 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
             await assertAddOperator(setupData, nodeOperator);
         }
 
-        const deploymentCount = await countProxyCreatedEvents(setupData);
-        const nextAddress = await predictDeploymentAddress(protocol.NodeAccountFactory.address, deploymentCount + 1)
-        const depositData = await generateDepositData(nextAddress, salt);
+        const depositData = await generateDepositData(protocol.superNode.address, salt);
 
         const config = {
             timezoneLocation: 'Australia/Brisbane',
@@ -322,13 +320,6 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
         }
         const sig = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
 
-        await protocol.NodeAccountFactory.connect(nodeOperator).createNewNodeAccount(config, nextAddress, sig, {
-            value: ethers.utils.parseEther("1")
-        })
-
-        expect(await protocol.directory.hasRole(ethers.utils.id("FACTORY_ROLE"), protocol.NodeAccountFactory.address)).equals(true)
-        expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), protocol.NodeAccountFactory.address)).equals(true)
-        expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), nextAddress)).equals(true)
 
         await setupData.rocketPool.rocketDepositPoolContract.deposit({
             value: ethers.utils.parseEther("32")
@@ -360,7 +351,7 @@ export const approveHasSignedExitMessageSig = async (setupData: SetupData, expec
     ], [
         expectedMinipoolAddress, 
         salt, 
-        setupData.protocol.NodeAccountFactory.address
+        setupData.protocol.superNode.address
     ]);
 
     const messageHash = ethers.utils.keccak256(packedData);
@@ -468,26 +459,6 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
     const rplRequried = await setupData.protocol.operatorDistributor.calculateRequiredRplTopUp(0, requiredEth);
     await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequried);
 
-}
-
-export async function getMinipoolsInProtocol(setupData: SetupData): Promise<IMinipool[]> {
-    const minipoolAddresses = await setupData.protocol.operatorDistributor.getMinipoolAddresses();
-    const minipools: IMinipool[] = [];
-    for (let i = 0; i < minipoolAddresses.length; i++) {
-        const minipool = await ethers.getContractAt("IMinipool", minipoolAddresses[i]);
-        minipools.push(minipool);
-    }
-    return minipools;
-}
-
-export async function getMockMinipoolsInProtocol(setupData: SetupData): Promise<MockMinipool[]> {
-    const minipoolAddresses = await setupData.protocol.operatorDistributor.getMinipoolAddresses();
-    const minipools: MockMinipool[] = [];
-    for (let i = 0; i < minipoolAddresses.length; i++) {
-        const minipool = await ethers.getContractAt("MockMinipool", minipoolAddresses[i]);
-        minipools.push(minipool);
-    }
-    return minipools;
 }
 
 export async function getNextContractAddress(signer: SignerWithAddress, offset = 0) {
