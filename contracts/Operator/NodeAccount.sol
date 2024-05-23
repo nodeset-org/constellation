@@ -44,7 +44,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     mapping(address => uint256) public lockedEth;
     mapping(address => uint256) public lockStarted;
 
-    mapping(address => address) subNodeOperatorMinipool;
+    mapping(address => address) public subNodeOperatorMinipool;
 
     uint256 public totalEthLocked;
     uint256 public totalEthStaking;
@@ -54,13 +54,12 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     mapping(bytes => bool) public sigsUsed;
 
     uint256 public lockThreshhold;
-    uint256 public targetBond;
     uint256 public lockUpTime;
 
     bool lazyInit;
 
     modifier lazyInitializer() {
-        require(!lazyInit, "already lazily initialized");
+        require(!lazyInit, 'already lazily initialized');
         _;
         lazyInit = true;
     }
@@ -89,35 +88,38 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     function initialize(address _directory) public override initializer {
         super.initialize(_directory);
+
+        lockThreshhold = 1 ether;
+        lockUpTime = 28 days;
+        preSignedExitMessageCheck = true;
     }
 
     function lazyInitialize() external lazyInitializer {
         Directory directory = Directory(_directory);
-        _registerNode('Australia/Brisbane', 8 ether);
+        _registerNode('Australia/Brisbane');
         address dp = directory.getDepositPoolAddress();
         IRocketNodeManager(directory.getRocketNodeManagerAddress()).setRPLWithdrawalAddress(address(this), dp, true);
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), dp, true);
     }
 
     function createMinipool(ValidatorConfig calldata _config, bytes memory _sig) public payable {
-        require(msg.sender == subNodeOperatorMinipool[_config.expectedMinipoolAddress], 'only nodeOperator');
-        require(msg.value == lockThreshhold, 'NodeAccount: must lock 1 ether');
+        //require(msg.sender == subNodeOperatorMinipool[_config.expectedMinipoolAddress], 'only nodeOperator');
+        require(msg.value == lockThreshhold, 'SuperNode: must lock 1 ether');
         require(hasSufficentLiquidity(_config.bondAmount), 'NodeAccount: protocol must have enough rpl and eth');
 
         _createMinipool(_config, _sig, msg.sender);
     }
 
-    function _registerNode(string memory _timezoneLocation, uint256 _bond) internal {
+    function _registerNode(string memory _timezoneLocation) internal {
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).registerNode(_timezoneLocation);
-        //OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(
-        //    address(this),
-        //    address(this),
-        //    _bond
-        //);
     }
 
     function _createMinipool(ValidatorConfig calldata _config, bytes memory _sig, address subNodeOperator) internal {
-        validateSigUsed(_sig);
+        _validateSigUsed(_sig);
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(
+            subNodeOperator,
+            _config.bondAmount
+        );
         if (preSignedExitMessageCheck) {
             console.log('_createMinipool: message hash');
             console.logBytes32(keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt)));
@@ -135,12 +137,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         subNodeOperatorMinipool[_config.expectedMinipoolAddress] = subNodeOperator;
 
-        if (targetBond != _config.bondAmount) {
-            revert BadBondAmount(targetBond, _config.bondAmount);
-        }
-        if (targetBond > address(this).balance - totalEthLocked) {
-            revert InsufficientBalance(targetBond, address(this).balance - totalEthLocked);
-        }
         require(lockedEth[_config.expectedMinipoolAddress] == 0, 'minipool already initialized');
 
         lockedEth[_config.expectedMinipoolAddress] = msg.value;
@@ -152,7 +148,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         od.rebalanceRplStake(address(this), od.nodeOperatorEthStaked(subNodeOperator));
 
         console.log('_createMinipool()');
-        IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: targetBond}(
+        IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: _config.bondAmount}(
             _config.bondAmount,
             _config.minimumNodeFee,
             _config.validatorPubkey,
@@ -270,7 +266,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         minipool.setUseLatestDelegate(_setting);
     }
 
-    function validateSigUsed(bytes memory _sig) public onlyProtocol {
+    function _validateSigUsed(bytes memory _sig) internal {
         require(!sigsUsed[_sig], 'sig already used');
         sigsUsed[_sig] = true;
     }
@@ -296,18 +292,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Sets a new target bond.
-     * @dev Only callable by the contract owner or authorized admin.
-     * @param _newTargetBond The new target bond value in wei.
-     */
-    function setTargetBond(uint256 _newTargetBond) external {
-        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
-            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
-        }
-        targetBond = _newTargetBond;
-    }
-
-    /**
      * @notice Sets a new lock-up time.
      * @dev Only callable by the contract owner or authorized admin.
      * @param _newLockUpTime The new lock-up time in seconds.
@@ -323,5 +307,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         address payable od = _directory.getOperatorDistributorAddress();
         uint256 rplRequried = OperatorDistributor(od).calculateRequiredRplTopUp(0, _bond);
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequried && od.balance >= _bond;
+    }
+
+    receive() external payable {
+
     }
 }

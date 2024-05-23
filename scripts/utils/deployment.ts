@@ -177,7 +177,6 @@ export async function fastDeployProtocol(deployer: SignerWithAddress, directoryD
         }
     }
 
-    // todo: try lazily instantiation here
     await retryOperation(async () => {
         console.log("trying to lazyInitialize superNodeProxy...")
         await superNodeProxy.lazyInitialize();

@@ -152,31 +152,27 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         delete nodeOperatorOwnedMinipools[_address];
     }
 
-    /**
-     * @notice Prepares a node for minipool creation by setting up necessary staking and validations.
-     * @dev This function first validates the node's withdrawal address, then calculates the required amount of
-     * RPL to stake based on the number of validators associated with the node, and performs a top-up.
-     * Only the protocol or admin can call this function.
-     * @param _NodeAccount The address of the validator account belonging to the Node Operator
-     */
     function provisionLiquiditiesForMinipoolCreation(
-        address _nodeOperator,
-        address _NodeAccount,
+        address _subNodeOperator,
         uint256 _bond
     ) external onlyProtocolOrAdmin {
+        console.log('provisionLiquiditiesForMinipoolCreation.pre-RebalanceLiquidities');
         _rebalanceLiquidity();
+        console.log('provisionLiquiditiesForMinipoolCreation.post-RebalanceLiquidities');
         require(_bond == requiredLEBStaked, 'OperatorDistributor: Bad _bond amount, should be `requiredLEBStaked`');
         fundedEth += _bond;
-        nodeOperatorEthStaked[_nodeOperator] += _bond;
+        nodeOperatorEthStaked[_subNodeOperator] += _bond;
 
-        // by default this bonds 150% of stake according to max stake defined here: https://docs.rocketpool.net/guides/node/create-validator#staking-rpl
-        (bool success, bytes memory data) = _NodeAccount.call{value: _bond}('');
+        address superNode = _directory.getSuperNodeAddress();
+
+        (bool success, bytes memory data) = superNode.call{value: _bond}('');
         if (!success) {
             console.log('LowLevelEthTransfer 1');
             console.log('balance eth', address(this).balance);
             console.log(_bond);
             revert LowLevelEthTransfer(success, data);
         }
+        console.log("finished provisionLiquiditiesForMinipoolCreation");
     }
 
     /**
@@ -306,7 +302,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * by numMinipoolsProcessedPerInterval.
      */
     function processNextMinipool() external onlyProtocol {
-            _processNextMinipool();
+        _processNextMinipool();
     }
 
     function OnMinipoolCreated(address newMinipoolAddress, address nodeAddress, uint256 bond) external {
@@ -321,7 +317,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         // new minipool owned by node operator
         nodeOperatorOwnedMinipools[nodeAddress].push(newMinipoolAddress);
 
-
         emit MinipoolCreated(newMinipoolAddress, nodeAddress);
 
         // updated amount funded eth
@@ -332,7 +327,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @dev Processes a single minipool by performing RPL top-up and distributing balance if certain conditions are met.
      */
     function _processNextMinipool() internal {
-
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
 
         rebalanceRplStake(address(sna), sna.totalEthStaking());

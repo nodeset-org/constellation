@@ -8,7 +8,7 @@ import { Signers } from "../test";
 import { RocketPool } from "../test";
 import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault, IWETH, RocketMinipoolInterface } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
-import { deployRPMinipool, deployNodeAccount, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances, assertAddOperator } from "../utils/utils";
+import { deployRPMinipool, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances, assertAddOperator, deployMinipool } from "../utils/utils";
 
 
 describe("Node Operator Onboarding", function () {
@@ -48,6 +48,13 @@ describe("Node Operator Onboarding", function () {
 
     it("node operator creates minipool via creating validator account", async function () {
         // now we must create a minipool via super node
+        expect(await protocol.superNode.hasSufficentLiquidity(bondValue)).equals(false);
+        await prepareOperatorDistributionContract(setupData, 1);
+        expect(await protocol.superNode.hasSufficentLiquidity(bondValue)).equals(true);
+
+        expect(await protocol.superNode.subNodeOperatorMinipool(signers.hyperdriver.address)).equals(ethers.constants.AddressZero);
+        await deployMinipool(setupData, bondValue);
+        expect(await protocol.superNode.subNodeOperatorMinipool(signers.hyperdriver.address)).not.equals(ethers.constants.AddressZero);
     });
 
 
