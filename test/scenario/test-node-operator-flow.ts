@@ -8,7 +8,7 @@ import { Signers } from "../test";
 import { RocketPool } from "../test";
 import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault, IWETH, RocketMinipoolInterface } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
-import { deployRPMinipool, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances, assertAddOperator, deployMinipool } from "../utils/utils";
+import { deployRPMinipool, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances, assertAddOperator, deployMinipool, increaseEVMTime } from "../utils/utils";
 
 
 describe("Node Operator Onboarding", function () {
@@ -17,7 +17,7 @@ describe("Node Operator Onboarding", function () {
     let protocol: Protocol;
     let signers: Signers;
     let rocketPool: RocketPool;
-    let mockMinipool: RocketMinipoolInterface;
+    let minipoolAddress: string;
 
     let xrETH: WETHVault;
     let xRPL: RPLVault;
@@ -53,12 +53,20 @@ describe("Node Operator Onboarding", function () {
         expect(await protocol.superNode.hasSufficentLiquidity(bondValue)).equals(true);
 
         expect(await protocol.superNode.subNodeOperatorMinipool(signers.hyperdriver.address)).equals(ethers.constants.AddressZero);
-        await deployMinipool(setupData, bondValue);
+        minipoolAddress = await deployMinipool(setupData, bondValue);
         expect(await protocol.superNode.subNodeOperatorMinipool(signers.hyperdriver.address)).not.equals(ethers.constants.AddressZero);
     });
 
-    it("sub node operator 'hyperdriver' can begin staking process", async () => {
+    // continue debugging staking ops
+    it.skip("sub node operator 'hyperdriver' can begin staking process", async () => {
+        await setupData.rocketPool.rocketDepositPoolContract.deposit({
+            value: ethers.utils.parseEther("32")
+        })
+        await setupData.rocketPool.rocketDepositPoolContract.assignDeposits();
 
+        await increaseEVMTime(60 * 60 * 24 * 7 * 32);
+
+        await protocol.superNode.connect(signers.hyperdriver).stake(minipoolAddress);
     })
 
     it("eth whale supplies Nodeset deposit pool with eth and rpl", async function () {

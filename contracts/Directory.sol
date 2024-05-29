@@ -45,6 +45,7 @@ struct RocketIntegrations {
     address rocketMerkleDistributorMainnet;
     address rocketNetworkVoting;
     address rocketDAOProtocolProposal;
+    address rocketDAOProtocolSettingsRewards;
 }
 
 /// @custom:security-contact info@nodeoperator.org
@@ -135,6 +136,10 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     function getSuperNodeAddress() public view returns(address payable) {
         return _protocol.superNode;
+    }
+
+    function getRocketDAOProtocolSettingsRewardsAddress() public view returns(address) {
+        return _integrations.rocketDAOProtocolSettingsRewards;
     }
 
     function getRPLAddress() public view returns (address) {
@@ -306,6 +311,12 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         );
 
         require(_integrations.rocketDepositPool != address(0), 'rocketDepositPool is 0x0');
+
+        _integrations.rocketDAOProtocolSettingsRewards = IRocketStorage(newProtocol.rocketStorage).getAddress(
+            RocketpoolEncoder.generateBytes32Identifier('rocketDAOProtocolSettingsRewards')
+        );
+
+        require(_integrations.rocketDAOProtocolSettingsRewards != address(0), 'rocketDAOProtocolSettingsRewards is 0x0');
 
         _enabledSanctions = true;
     }

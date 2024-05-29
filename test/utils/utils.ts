@@ -181,6 +181,8 @@ export async function deployMinipool(setupData: SetupData,  bondValue: BigNumber
     await setupData.protocol.superNode.connect(setupData.signers.hyperdriver).createMinipool(config,sig, {
         value: ethers.utils.parseEther("1")
     })
+
+    return config.expectedMinipoolAddress;
 }
 
 

@@ -19,6 +19,7 @@ import '../Interfaces/RocketPool/IRocketStorage.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/RocketPool/IRocketNodeManager.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
+import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
 
 contract OperatorDistributor is UpgradeableBase, Errors {
     event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
@@ -172,7 +173,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             console.log(_bond);
             revert LowLevelEthTransfer(success, data);
         }
-        console.log("finished provisionLiquiditiesForMinipoolCreation");
+        console.log('finished provisionLiquiditiesForMinipoolCreation');
     }
 
     /**
@@ -181,13 +182,13 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * divided by RPL staked). If the ratio is below a predefined target, it calculates the necessary RPL amount to
      * bring the stake ratio back to the target. Then, the function either stakes the required RPL or stakes
      * the remaining RPL balance if it's not enough.
-     * @param _NodeAccount The address of the node.
+     * @param _nodeAccount The address of the node.
      * @param _ethStaked The amount of ETH currently staked by the node operator.
      */
-    function rebalanceRplStake(address _NodeAccount, uint256 _ethStaked) public onlyProtocolOrAdmin {
+    function rebalanceRplStake(address _nodeAccount, uint256 _ethStaked) public onlyProtocolOrAdmin {
         console.log('rebalanceRplStake()');
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
-        uint256 rplStaked = rocketNodeStaking.getNodeRPLStake(_NodeAccount);
+        uint256 rplStaked = rocketNodeStaking.getNodeRPLStake(_nodeAccount);
 
         console.log('rebalanceRplStake.rplStaked', rplStaked);
 
@@ -206,18 +207,25 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             fundedRpl += stakeIncrease;
 
             console.log('rebalanceRplStake.stakeIncrease', stakeIncrease);
-            _performTopUp(_NodeAccount, stakeIncrease);
+            _performTopUp(_nodeAccount, stakeIncrease);
         }
 
         if (targetStake < rplStaked) {
-            uint256 excessRpl = rplStaked - targetStake;
-            console.log('rebalanceRplStake.excessRpl', excessRpl);
+            uint256 elapsed = block.timestamp -
+                IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStakedTime(_nodeAccount);
 
-            fundedRpl -= excessRpl;
-            FundRouter(_directory.getDepositPoolAddress()).unstakeRpl(_NodeAccount, excessRpl);
-
-            // Update the amount of RPL funded by the node
-            minipoolAmountFundedRpl[_NodeAccount] -= excessRpl;
+            if (
+                elapsed >=
+                IRocketDAOProtocolSettingsRewards(_directory.getRocketDAOProtocolSettingsRewardsAddress())
+                    .getRewardsClaimIntervalTime()
+            ) {
+                uint256 excessRpl = rplStaked - targetStake;
+                fundedRpl -= excessRpl;
+                console.log('rebalanceRplStake.excessRpl', excessRpl);
+                FundRouter(_directory.getDepositPoolAddress()).unstakeRpl(_nodeAccount, excessRpl);
+                // Update the amount of RPL funded by the node
+                minipoolAmountFundedRpl[_nodeAccount] -= excessRpl;
+            }
         }
     }
 

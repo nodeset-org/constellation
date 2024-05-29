@@ -67,8 +67,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     modifier onlySubNodeOperatorOrProtocol(address _minipool) {
         require(
             _directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender) ||
-                msg.sender == subNodeOperatorMinipool[_minipool],
-            'Can only be called by Protocol or NodeOperator!'
+                subNodeOperatorMinipool[msg.sender] != address(0),
+            'Can only be called by Protocol or SubNodeOperator!'
         );
         _;
     }
