@@ -22,6 +22,8 @@ interface IRocketNodeStaking {
     /// @param _nodeAddress The address of the node operator to query
     function getNodeRPLStake(address _nodeAddress) external view returns (uint256);
 
+    function getNodeRPLLocked(address _nodeAddress) external view returns (uint256);
+
     function withdrawRPL(address _nodeAddress, uint256 _amount) external;
 
     function getNodeRPLStakedTime(address _nodeAddress) external view returns (uint256);

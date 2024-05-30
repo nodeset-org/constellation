@@ -57,20 +57,20 @@ describe("Node Operator Onboarding", function () {
         expect(await protocol.superNode.subNodeOperatorMinipool(signers.hyperdriver.address)).not.equals(ethers.constants.AddressZero);
     });
 
-    // continue debugging staking ops
-    it.skip("sub node operator 'hyperdriver' can begin staking process", async () => {
+    // continue debugging staking ops, why would staking fail here?
+    it("sub node operator 'hyperdriver' decides to begin staking process", async () => {
         await setupData.rocketPool.rocketDepositPoolContract.deposit({
             value: ethers.utils.parseEther("32")
         })
         await setupData.rocketPool.rocketDepositPoolContract.assignDeposits();
-
+    
         await increaseEVMTime(60 * 60 * 24 * 7 * 32);
-
+    
         await protocol.superNode.connect(signers.hyperdriver).stake(minipoolAddress);
     })
-
+    
     it("eth whale supplies Nodeset deposit pool with eth and rpl", async function () {
-
+        
         // ethWhale gets shares of xrETH
         const initialBalance = await weth.balanceOf(protocol.depositPool.address);
         await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
@@ -86,9 +86,9 @@ describe("Node Operator Onboarding", function () {
         const actualRplInDP = (await protocol.vCRPL.totalAssets()).sub(intialBalanceRpl);
         expectNumberE18ToBeApproximately(actualRplInDP, expectedRplInDP, 0.05); // ooof, lets get this estimate down to 0.001%
     });
-
+    
     it("eth whale redeems one share to trigger pool rebalacings", async function () {
-
+        
         await protocol.oracle.setTotalYieldAccrued(ethers.utils.parseEther("3"));
         console.log("total supply of shares")
         console.log(await protocol.vCWETH.totalSupply())
@@ -102,7 +102,7 @@ describe("Node Operator Onboarding", function () {
         console.log(await protocol.wETH.balanceOf(protocol.depositPool.address));
         console.log(await protocol.wETH.balanceOf(protocol.operatorDistributor.address));
         console.log(await protocol.vCWETH.maxRedeem(signers.ethWhale.address));
-
+        
         const tx = await protocol.vCWETH.connect(signers.ethWhale).redeem(ethers.utils.parseEther("1"), signers.ethWhale.address, signers.ethWhale.address);
         const receipt = await tx.wait();
         const { events } = receipt;
@@ -117,26 +117,26 @@ describe("Node Operator Onboarding", function () {
         console.log(await protocol.vCWETH.totalYieldDistributed())
         expectNumberE18ToBeApproximately(await protocol.vCWETH.totalYieldDistributed(), ethers.utils.parseEther("0.7246"), 0.01);
     });
-
+    
     it("someone calls for yield distribution", async function () {
-
+        
         const xrETHBalancesBefore = [];
         const xRPLBalancesBefore = [];
-
+        
         const ETHbalancesBefore = [];
         const RPLbalancesBefore = [];
-
+        
         const allAddresses = getAllAddresses(signers, protocol, rocketPool);
-
+        
         for (let i = 0; i < allAddresses.length; i++) {
             xrETHBalancesBefore.push(allAddresses[i].name + " - " + await protocol.vCWETH.balanceOf(allAddresses[i].address));
             xRPLBalancesBefore.push(allAddresses[i].name + " - " + await protocol.vCRPL.balanceOf(allAddresses[i].address));
             ETHbalancesBefore.push(allAddresses[i].name + " - " + await ethers.provider.getBalance(allAddresses[i].address));
             RPLbalancesBefore.push(allAddresses[i].name + " - " + await rocketPool.rplContract.balanceOf(allAddresses[i].address));
         }
-
+        
         console.log("AA")
-
+        
         console.log("BB")
         
         await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
@@ -144,7 +144,7 @@ describe("Node Operator Onboarding", function () {
         const currentInterval = (await protocol.yieldDistributor.currentInterval()).sub(1);
         
         console.log(await protocol.yieldDistributor.getClaims())
-
+        
         const tx = await protocol.yieldDistributor.connect(signers.random).harvest(signers.hyperdriver.address, 0, currentInterval);
         const receipt = await tx.wait();
         const { events } = receipt;
@@ -156,24 +156,24 @@ describe("Node Operator Onboarding", function () {
                 }
             }
         }
-
+        
         console.log("deposit pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.depositPool.address)));
         console.log("deposit pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.depositPool.address)));
         console.log("operator distribution pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)));
         console.log("operator distribution pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)));
-
+        
         const xrETHBalancesAfter = [];
         const xRPLBalancesAfter = [];
         const ETHbalancesAfter = [];
         const RPLbalancesAfter = [];
-
+        
         for (let i = 0; i < allAddresses.length; i++) {
             xrETHBalancesAfter.push(allAddresses[i].name + " - " + await protocol.vCWETH.balanceOf(allAddresses[i].address));
             xRPLBalancesAfter.push(allAddresses[i].name + " - " + await protocol.vCRPL.balanceOf(allAddresses[i].address));
             ETHbalancesAfter.push(allAddresses[i].name + " - " + await ethers.provider.getBalance(allAddresses[i].address));
             RPLbalancesAfter.push(allAddresses[i].name + " - " + await rocketPool.rplContract.balanceOf(allAddresses[i].address));
         }
-
+        
         // print before - after balances if delta is not 0
         console.log("printing delta balances")
         for (let i = 0; i < allAddresses.length; i++) {
@@ -195,4 +195,15 @@ describe("Node Operator Onboarding", function () {
             }
         }
     });
+
+    it("sub node operator 'hyperdriver' decides to begin staking process again...", async () => {
+        await setupData.rocketPool.rocketDepositPoolContract.deposit({
+            value: ethers.utils.parseEther("32")
+        })
+        await setupData.rocketPool.rocketDepositPoolContract.assignDeposits();
+    
+        await increaseEVMTime(60 * 60 * 24 * 7 * 32);
+    
+        await expect(protocol.superNode.connect(signers.hyperdriver).stake(minipoolAddress)).to.be.revertedWith("The minipool can only begin staking while in prelaunch");
+    })
 });

@@ -189,6 +189,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('rebalanceRplStake()');
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
         uint256 rplStaked = rocketNodeStaking.getNodeRPLStake(_nodeAccount);
+        uint256 lockedStake = rocketNodeStaking.getNodeRPLLocked(_nodeAccount);
 
         console.log('rebalanceRplStake.rplStaked', rplStaked);
 
@@ -214,12 +215,15 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             uint256 elapsed = block.timestamp -
                 IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStakedTime(_nodeAccount);
 
+            // NOTE: what happens if rpl staked is 0 and locked stake is postive?
+            uint256 excessRpl = rplStaked - targetStake;
+            bool noShortfall = rplStaked - excessRpl - lockedStake >= rocketNodeStaking.getNodeMaximumRPLStake(_nodeAccount);
             if (
                 elapsed >=
                 IRocketDAOProtocolSettingsRewards(_directory.getRocketDAOProtocolSettingsRewardsAddress())
-                    .getRewardsClaimIntervalTime()
+                    .getRewardsClaimIntervalTime() && noShortfall
             ) {
-                uint256 excessRpl = rplStaked - targetStake;
+                // NOTE: to auditors: double check that all cases are covered such that withdrawRPL will not revert execution
                 fundedRpl -= excessRpl;
                 console.log('rebalanceRplStake.excessRpl', excessRpl);
                 FundRouter(_directory.getDepositPoolAddress()).unstakeRpl(_nodeAccount, excessRpl);
