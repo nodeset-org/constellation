@@ -165,7 +165,7 @@ describe("Validator Account Factory", function () {
         }
         const sig = await approveHasSignedExitMessageSig(setupData, badConfig.expectedMinipoolAddress, badConfig.salt)
 
-        await expect(protocol.NodeAccountFactory.connect(signers.hyperdriver).createNewNodeAccount(badConfig, nextBadAddress, sig, {
+        await expect(protocol.superNode.connect(signers.hyperdriver).createNewNodeAccount(badConfig, nextBadAddress, sig, {
             value: ethers.utils.parseEther("0")
         })).to.be.revertedWith("NodeAccount: must lock 1 ether");
     });

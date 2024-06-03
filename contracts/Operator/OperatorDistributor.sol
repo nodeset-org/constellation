@@ -182,10 +182,12 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * divided by RPL staked). If the ratio is below a predefined target, it calculates the necessary RPL amount to
      * bring the stake ratio back to the target. Then, the function either stakes the required RPL or stakes
      * the remaining RPL balance if it's not enough.
-     * @param _nodeAccount The address of the node.
      * @param _ethStaked The amount of ETH currently staked by the node operator.
      */
-    function rebalanceRplStake(address _nodeAccount, uint256 _ethStaked) public onlyProtocolOrAdmin {
+    function rebalanceRplStake(uint256 _ethStaked) public onlyProtocolOrAdmin {
+
+        address _nodeAccount = _directory.getSuperNodeAddress();
+
         console.log('rebalanceRplStake()');
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
         uint256 rplStaked = rocketNodeStaking.getNodeRPLStake(_nodeAccount);
@@ -229,11 +231,17 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 FundRouter(_directory.getDepositPoolAddress()).unstakeRpl(_nodeAccount, excessRpl);
                 // Update the amount of RPL funded by the node
                 minipoolAmountFundedRpl[_nodeAccount] -= excessRpl;
+            } else {
+                console.log('failed to rebalanceRplStake.excessRpl', excessRpl);
             }
+            console.log("excessRpl", excessRpl);
+            console.log("noShortfall", noShortfall);
         }
+        console.log("finished rebalanceRplStake.targetStake", targetStake);
+        console.log("finished rebalanceRplStake.rplStaked", rplStaked);
     }
 
-    function _performTopUp(address _NodeAccount, uint256 _requiredStake) internal {
+    function _performTopUp(address _superNode, uint256 _requiredStake) internal {
         uint256 currentRplBalance = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
         if (currentRplBalance >= _requiredStake) {
             if (_requiredStake == 0) {
@@ -242,14 +250,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             // stakeRPLOnBehalfOf
             // transfer RPL to deposit pool
             IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), _requiredStake);
-            FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_NodeAccount, _requiredStake);
+            FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_superNode, _requiredStake);
         } else {
             if (currentRplBalance == 0) {
                 return;
             }
             // stake what we have
             IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), currentRplBalance);
-            FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_NodeAccount, currentRplBalance);
+            FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_superNode, currentRplBalance);
         }
     }
 
@@ -341,7 +349,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     function _processNextMinipool() internal {
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
 
-        rebalanceRplStake(address(sna), sna.totalEthStaking());
+        rebalanceRplStake(sna.totalEthStaking());
 
         /**
          * @dev We are only calling distributeBalance with a true flag to prevent griefing vectors. This ensures we

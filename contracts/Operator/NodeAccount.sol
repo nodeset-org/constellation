@@ -145,7 +145,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         od.OnMinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator, _config.bondAmount);
-        od.rebalanceRplStake(address(this), od.nodeOperatorEthStaked(subNodeOperator));
+        od.rebalanceRplStake(totalEthStaking + (32 ether - _config.bondAmount));
 
         console.log('_createMinipool()');
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: _config.bondAmount}(
@@ -164,7 +164,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function stake(address _minipool) external onlySubNodeOperatorOrProtocol(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.stake(configs[_minipool].validatorSignature, configs[_minipool].depositDataRoot);
-        totalEthStaking += configs[_minipool].bondAmount;
+        totalEthStaking += (32 ether - configs[_minipool].bondAmount);
     }
 
     function close(address _minipool) external hasConfig(_minipool) {

@@ -280,27 +280,26 @@ export async function increaseEVMTime(seconds: number) {
     await ethers.provider.send('evm_mine', []);
 }
 
-export const registerNewValidator = async (setupData: SetupData, nodeOperators: SignerWithAddress[]) => {
-    const requiredEth = ethers.utils.parseEther("8").mul(nodeOperators.length);
+export const registerNewValidator = async (setupData: SetupData, subNodeOperators: SignerWithAddress[]) => {
+    const requiredEth = ethers.utils.parseEther("8").mul(subNodeOperators.length);
     if ((await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)).lt(requiredEth)) {
-        throw new Error(`Not enough eth in operatorDistributor contract to register ${nodeOperators.length} validators. Required ${ethers.utils.formatEther(requiredEth)} eth but only have ${ethers.utils.formatEther(await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address))} eth`);
+        throw new Error(`Not enough eth in operatorDistributor contract to register ${subNodeOperators.length} validators. Required ${ethers.utils.formatEther(requiredEth)} eth but only have ${ethers.utils.formatEther(await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address))} eth`);
     }
 
     const { protocol, signers } = setupData;
 
 
-    const NodeAccounts = []
-
-    for (let i = 0; i < nodeOperators.length; i++) {
-        console.log("setting up node operator %s of %s", i + 1, nodeOperators.length)
-        const nodeOperator = nodeOperators[i];
+    for (let i = 0; i < subNodeOperators.length; i++) {
+        console.log("setting up node operator %s of %s", i + 1, subNodeOperators.length)
+        const nodeOperator = subNodeOperators[i];
 
         const bond = ethers.utils.parseEther("8");
         const salt = i;
 
-        //expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(false);
-        await prepareOperatorDistributionContract(setupData, 2);
-        //expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(true);
+        if(!(await protocol.superNode.hasSufficentLiquidity(bond))) {
+            await prepareOperatorDistributionContract(setupData, 2);
+        }
+        expect(await protocol.superNode.hasSufficentLiquidity(bond)).equals(true);
 
         if (!(await protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address))) {
             await assertAddOperator(setupData, nodeOperator);
@@ -318,25 +317,23 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
             salt: salt,
             expectedMinipoolAddress: depositData.minipoolAddress
         }
-        const sig = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
-
-
+        
         await setupData.rocketPool.rocketDepositPoolContract.deposit({
             value: ethers.utils.parseEther("32")
         })
         await setupData.rocketPool.rocketDepositPoolContract.assignDeposits();
-
+        
+        
+        const sig = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
+        await protocol.superNode.connect(nodeOperator).createMinipool(config, sig, {value: ethers.utils.parseEther("1")});
+        
         // waits 32 days which could be a problem for other tests
         await increaseEVMTime(60 * 60 * 24 * 7 * 32);
 
         // enter stake mode
-        const NodeAccount = await ethers.getContractAt("NodeAccount", nextAddress);
-        await NodeAccount.connect(nodeOperator).stake(config.expectedMinipoolAddress);
+        await protocol.superNode.connect(nodeOperator).stake(config.expectedMinipoolAddress);
 
-        NodeAccounts.push(NodeAccount)
     }
-
-    return NodeAccounts
 }
 
 export const approveHasSignedExitMessageSig = async (setupData: SetupData, expectedMinipoolAddress: string, salt: number) => {
