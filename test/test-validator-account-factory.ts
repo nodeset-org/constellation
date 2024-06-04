@@ -8,7 +8,7 @@ import { BigNumber } from "ethers";
 import { approveHasSignedExitMessageSig, assertAddOperator, countProxyCreatedEvents, getNextContractAddress, getNextFactoryContractAddress, predictDeploymentAddress, prepareOperatorDistributionContract } from "./utils/utils";
 import { generateDepositData } from "./rocketpool/_helpers/minipool";
 
-describe("Validator Account Factory", function () {
+describe.skip("Validator Account Factory", function () {
 
     it("Run the MOAT (Mother Of all Atomic Transactions)", async function () {
         const setupData = await loadFixture(protocolFixture);

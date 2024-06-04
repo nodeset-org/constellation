@@ -3,7 +3,7 @@ import { ethers, upgrades } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber as BN } from "ethers";
-import { getMinipoolsInProtocol, getMockMinipoolsInProtocol, prepareOperatorDistributionContract, printEventDetails, registerNewValidator, upgradePriceFetcherToMock } from "./utils/utils";
+import { prepareOperatorDistributionContract, printEventDetails, registerNewValidator, upgradePriceFetcherToMock } from "./utils/utils";
 import { IMinipool, MockMinipool } from "../typechain-types";
 import { RocketDepositPool } from "./rocketpool/_utils/artifacts";
 
@@ -28,7 +28,7 @@ describe("Operator Distributor", function () {
 		const lastPrice = await upgradePriceFetcherToMock(signers, protocol, ethers.utils.parseEther("55"));
 		console.log("last price", lastPrice);
 
-		const initialRplStake = await rocketNodeStaking.getNodeRPLStake(NodeAccounts[0].address);
+		const initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
 		console.log("od.test.initial stake", initialRplStake)
 		const tx = await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		console.log("printing events")
@@ -36,7 +36,7 @@ describe("Operator Distributor", function () {
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
-		const finalRplStake = await rocketNodeStaking.getNodeRPLStake(NodeAccounts[0].address);
+		const finalRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
 		console.log("od.test.finalRplStake stake", finalRplStake)
 
 		expect(finalRplStake.sub(initialRplStake)).gt(ethers.BigNumber.from(0));

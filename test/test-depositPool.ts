@@ -15,8 +15,11 @@ describe(`FundRouter`, () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
 
-            await prepareOperatorDistributionContract(setupData, 1);
+            console.log("fundroutertest.AC")
+            await prepareOperatorDistributionContract(setupData, 2);
+            console.log("fundroutertest.A")
             await registerNewValidator(setupData, [signers.random]);
+            console.log("fundroutertest.AB")
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
             await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
@@ -33,7 +36,7 @@ describe(`FundRouter`, () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
 
-            await prepareOperatorDistributionContract(setupData, 1);
+            await prepareOperatorDistributionContract(setupData, 2);
             await registerNewValidator(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
@@ -51,7 +54,7 @@ describe(`FundRouter`, () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
 
-            await prepareOperatorDistributionContract(setupData, 1);
+            await prepareOperatorDistributionContract(setupData, 2);
             await registerNewValidator(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
@@ -71,7 +74,7 @@ describe(`FundRouter`, () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
 
-            await prepareOperatorDistributionContract(setupData, 1);
+            await prepareOperatorDistributionContract(setupData, 2);
             await registerNewValidator(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
@@ -99,7 +102,7 @@ describe(`FundRouter`, () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
 
-            await prepareOperatorDistributionContract(setupData, 1);
+            await prepareOperatorDistributionContract(setupData, 2);
             await registerNewValidator(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
@@ -127,7 +130,7 @@ describe(`FundRouter`, () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
 
-            await prepareOperatorDistributionContract(setupData, 1);
+            await prepareOperatorDistributionContract(setupData, 2);
             await registerNewValidator(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());

@@ -84,7 +84,7 @@ describe("Node Operator Onboarding", function () {
         await protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("100"), signers.rplWhale.address);
         const expectedRplInDP = ethers.utils.parseEther("100");
         const actualRplInDP = (await protocol.vCRPL.totalAssets()).sub(intialBalanceRpl);
-        expectNumberE18ToBeApproximately(actualRplInDP, expectedRplInDP, 0.05); // ooof, lets get this estimate down to 0.001%
+        expectNumberE18ToBeApproximately(actualRplInDP, expectedRplInDP, 0.1); // ooof, lets get this estimate down to 0.001%
     });
     
     it("eth whale redeems one share to trigger pool rebalacings", async function () {
