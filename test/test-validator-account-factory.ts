@@ -14,7 +14,7 @@ describe.skip("Validator Account Factory", function () {
         const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;
 
-        const bond = ethers.utils.parseEther("8");
+        const bond = ethers.utils.parseEther("8");   
         const salt = 3;
 
         expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(false);
