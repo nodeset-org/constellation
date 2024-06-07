@@ -106,9 +106,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         //require(msg.sender == subNodeOperatorMinipool[_config.expectedMinipoolAddress], 'only nodeOperator');
         require(msg.value == lockThreshhold, 'SuperNode: must lock 1 ether');
         require(hasSufficentLiquidity(_config.bondAmount), 'NodeAccount: protocol must have enough rpl and eth');
-
+        require(Whitelist(_directory.getWhitelistAddress()).getIsAddressInWhitelist(msg.sender), "sub node operator must be whitelisted");
         _createMinipool(_config, _sig, msg.sender);
-    }
+    } 
 
     function _registerNode(string memory _timezoneLocation) internal {
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).registerNode(_timezoneLocation);

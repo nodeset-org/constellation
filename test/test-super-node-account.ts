@@ -7,6 +7,39 @@ import { generateDepositData } from "./rocketpool/_helpers/minipool";
 
 describe("SuperNodeAccount", function () {
 
+    describe("Upgradability", async () => {
+        it("Admin can update contract", async function () {
+            const { protocol, signers } = await loadFixture(protocolFixture);
+    
+            const initialAddress = protocol.superNode.address;
+    
+            const initialImpl = await protocol.superNode.getImplementation();
+    
+            const initialSlotValues = [];
+    
+            for (let i = 0; i < 1000; i++) {
+                initialSlotValues.push(await ethers.provider.getStorageAt(initialAddress, i));
+            }
+    
+            const MockSuperNodeV2 = await ethers.getContractFactory("MockSuperNodeV2", signers.admin);
+    
+            const newSuperNode = await upgrades.upgradeProxy(protocol.superNode.address, MockSuperNodeV2, {
+                kind: 'uups',
+                unsafeAllow: ['constructor', 'state-variable-assignment', 'delegatecall', 'enum-definition', 'external-library-linking', 'missing-public-upgradeto', 'selfdestruct', 'state-variable-immutable', 'struct-definition']
+            });
+    
+            expect(newSuperNode.address).to.equal(initialAddress);
+    
+            expect(await newSuperNode.getImplementation()).to.not.equal(initialImpl);
+    
+            expect(await newSuperNode.testUpgrade()).to.equal(0);
+    
+            for (let i = 0; i < 1000; i++) {
+                expect(await ethers.provider.getStorageAt(initialAddress, i)).to.equal(initialSlotValues[i]);
+            }
+        });
+    })
+
     it("Run the MOAT (Mother Of all Atomic Transactions)", async function () {
         const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;
@@ -89,9 +122,7 @@ describe("SuperNodeAccount", function () {
         })).to.be.revertedWith("sig already used");
     });
 
-    // do we even need to whitelist them if the server signs a message saying they can create a minipool?
-    // TODO: unskip
-    it.skip("fails - not whitelisted", async function () {
+    it("fails - not whitelisted", async function () {
         const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;
 
@@ -119,7 +150,7 @@ describe("SuperNodeAccount", function () {
 
         await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config, sig, {
             value: ethers.utils.parseEther("1")
-        })).to.be.revertedWith("Whitelist: Provided address is not an allowed operator!");
+        })).to.be.revertedWith("sub node operator must be whitelisted");
     });
 
     it("fails - bad predicted address", async function () {
