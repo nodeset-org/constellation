@@ -45,13 +45,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     uint256 public requiredLEBStaked;
 
-    mapping(address => uint256) public minipoolIndexMap;
-    mapping(address => uint256) public minipoolAmountFundedEth;
-    mapping(address => uint256) public minipoolAmountFundedRpl;
-
-    mapping(address => address[]) public nodeOperatorOwnedMinipools;
-    mapping(address => uint256) public nodeOperatorEthStaked;
-
     constructor() initializer {}
 
     /**
@@ -117,42 +110,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         return IERC20(_directory.getRPLAddress()).balanceOf(address(this)) + fundedRpl;
     }
 
-    /**
-     * @notice Removes a minipool address from the tracked list when a node operator exits.
-     * @dev This function efficiently reorders the minipool addresses array and updates the index map.
-     * It then resets the funded amount of ETH and RPL tokens for the removed minipool.
-     * Should only be called by authorized protocol actors or admin.
-     * @param _address The address of the minipool to be removed.
-     *
-     * Emits a `MinipoolDestroyed` event upon successful removal.
-     */ function removeMinipoolAddress(address _address) public onlyProtocolOrAdmin {
-        uint index = minipoolIndexMap[_address] - 1;
-
-        delete minipoolIndexMap[_address];
-
-        // Set amount funded to 0 since it's being returned to DP
-        minipoolAmountFundedEth[_address] = 0;
-        minipoolAmountFundedRpl[_address] = 0;
-
-        emit MinipoolDestroyed(_address, IMinipool(_address).getNodeAddress());
-    }
-
-    /**
-     * @notice Removes a node operator and all associated minipools.
-     * @dev Iterates through all minipools owned by the node operator and removes them.
-     * This action cannot be reversed, so it should be executed with caution.
-     * Only authorized protocol actors or admin can call this function.
-     * @param _address The address of the node operator to be removed.
-     */
-    function removeNodeOperator(address _address) external onlyProtocolOrAdmin {
-        // remove all minipools owned by node operator
-        address[] memory minipools = nodeOperatorOwnedMinipools[_address];
-        for (uint i = 0; i < minipools.length; i++) {
-            removeMinipoolAddress(minipools[i]);
-        }
-        delete nodeOperatorOwnedMinipools[_address];
-    }
-
     function provisionLiquiditiesForMinipoolCreation(
         address _subNodeOperator,
         uint256 _bond
@@ -162,7 +119,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('provisionLiquiditiesForMinipoolCreation.post-RebalanceLiquidities');
         require(_bond == requiredLEBStaked, 'OperatorDistributor: Bad _bond amount, should be `requiredLEBStaked`');
         fundedEth += _bond;
-        nodeOperatorEthStaked[_subNodeOperator] += _bond;
 
         address superNode = _directory.getSuperNodeAddress();
 
@@ -185,7 +141,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @param _ethStaked The amount of ETH currently staked by the node operator.
      */
     function rebalanceRplStake(uint256 _ethStaked) public onlyProtocolOrAdmin {
-
         address _nodeAccount = _directory.getSuperNodeAddress();
 
         console.log('rebalanceRplStake()');
@@ -219,26 +174,26 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
             // NOTE: what happens if rpl staked is 0 and locked stake is postive?
             uint256 excessRpl = rplStaked - targetStake;
-            bool noShortfall = rplStaked - excessRpl - lockedStake >= rocketNodeStaking.getNodeMaximumRPLStake(_nodeAccount);
+            bool noShortfall = rplStaked - excessRpl - lockedStake >=
+                rocketNodeStaking.getNodeMaximumRPLStake(_nodeAccount);
             if (
                 elapsed >=
                 IRocketDAOProtocolSettingsRewards(_directory.getRocketDAOProtocolSettingsRewardsAddress())
-                    .getRewardsClaimIntervalTime() && noShortfall
+                    .getRewardsClaimIntervalTime() &&
+                noShortfall
             ) {
                 // NOTE: to auditors: double check that all cases are covered such that withdrawRPL will not revert execution
                 fundedRpl -= excessRpl;
                 console.log('rebalanceRplStake.excessRpl', excessRpl);
                 FundRouter(_directory.getDepositPoolAddress()).unstakeRpl(_nodeAccount, excessRpl);
-                // Update the amount of RPL funded by the node
-                minipoolAmountFundedRpl[_nodeAccount] -= excessRpl;
             } else {
                 console.log('failed to rebalanceRplStake.excessRpl', excessRpl);
             }
-            console.log("excessRpl", excessRpl);
-            console.log("noShortfall", noShortfall);
+            console.log('excessRpl', excessRpl);
+            console.log('noShortfall', noShortfall);
         }
-        console.log("finished rebalanceRplStake.targetStake", targetStake);
-        console.log("finished rebalanceRplStake.rplStaked", rplStaked);
+        console.log('finished rebalanceRplStake.targetStake', targetStake);
+        console.log('finished rebalanceRplStake.rplStaked', rplStaked);
     }
 
     function _performTopUp(address _superNode, uint256 _requiredStake) internal {
@@ -334,13 +289,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         Whitelist whitelist = Whitelist(getDirectory().getWhitelistAddress());
         whitelist.registerNewValidator(nodeAddress);
 
-        // new minipool owned by node operator
-        nodeOperatorOwnedMinipools[nodeAddress].push(newMinipoolAddress);
-
         emit MinipoolCreated(newMinipoolAddress, nodeAddress);
-
-        // updated amount funded eth
-        minipoolAmountFundedEth[newMinipoolAddress] = bond;
     }
 
     /**
@@ -357,9 +306,13 @@ contract OperatorDistributor is UpgradeableBase, Errors {
          * One example is that if we pass false to distributeBalance, it opens a scenario where operators are forced to
          * finalize due to having more than 8 ETH. This could result in slashings from griefing vectors.
          */
-        //if (totalBalance < 8 ether) {
-        //    minipool.distributeBalance(true);
-        //}
+        IMinipool minipool = sna.getNextMinipool();
+        if (address(minipool) != address(0)) {
+            uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
+            if (totalBalance < 8 ether) {
+                minipool.distributeBalance(true);
+            }
+        }
     }
 
     function setBondRequirments(uint256 _requiredLEBStaked) external onlyAdmin {
@@ -372,7 +325,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     function onNodeMinipoolDestroy(address _nodeOperator, uint256 _bond) external onlyProtocol {
         fundedEth -= _bond;
-        nodeOperatorEthStaked[_nodeOperator] -= _bond;
     }
 
     function transferWEthToVault(uint256 _amount) external returns (uint256) {

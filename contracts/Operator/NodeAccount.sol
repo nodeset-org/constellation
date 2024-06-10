@@ -8,7 +8,6 @@ import './NodeAccountFactory.sol';
 import './OperatorDistributor.sol';
 
 import '../Whitelist/Whitelist.sol';
-import '../Whitelist/Whitelist.sol';
 import '../UpgradeableBase.sol';
 
 import '../Interfaces/RocketPool/RocketTypes.sol';
@@ -19,6 +18,7 @@ import '../Interfaces/RocketPool/IRocketNetworkVoting.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolProposal.sol';
 import '../Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
 import '../Interfaces/RocketPool/IRocketStorage.sol';
+import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/Oracles/IXRETHOracle.sol';
 import '../Interfaces/IWETH.sol';
 
@@ -43,7 +43,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     mapping(address => ValidatorConfig) public configs;
     mapping(address => uint256) public lockedEth;
     mapping(address => uint256) public lockStarted;
-
     mapping(address => address) public subNodeOperatorMinipool;
 
     uint256 public totalEthLocked;
@@ -57,6 +56,11 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     uint256 public lockUpTime;
 
     bool lazyInit;
+
+    address[] public minipools;
+    mapping(address => uint256) public minipoolIndex;
+    mapping(address => address[]) public subNodeOperatorMinipools;
+    uint256 public currentMinipool;
 
     modifier lazyInitializer() {
         require(!lazyInit, 'already lazily initialized');
@@ -103,7 +107,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     function createMinipool(ValidatorConfig calldata _config, bytes memory _sig) public payable {
-        //require(msg.sender == subNodeOperatorMinipool[_config.expectedMinipoolAddress], 'only nodeOperator');
         require(msg.value == lockThreshhold, 'SuperNode: must lock 1 ether');
         require(hasSufficentLiquidity(_config.bondAmount), 'NodeAccount: protocol must have enough rpl and eth');
         require(Whitelist(_directory.getWhitelistAddress()).getIsAddressInWhitelist(msg.sender), "sub node operator must be whitelisted");
@@ -147,6 +150,11 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         od.OnMinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator, _config.bondAmount);
         od.rebalanceRplStake(totalEthStaking + (32 ether - _config.bondAmount));
 
+        minipoolIndex[_config.expectedMinipoolAddress] = minipools.length;
+        minipools.push(_config.expectedMinipoolAddress);
+
+        subNodeOperatorMinipools[subNodeOperator].push(_config.expectedMinipoolAddress);
+
         console.log('_createMinipool()');
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: _config.bondAmount}(
             _config.bondAmount,
@@ -159,6 +167,29 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         );
         IMinipool minipool = IMinipool(_config.expectedMinipoolAddress);
         console.log('_createMinipool.status', uint256(minipool.getStatus()));
+    }
+
+    function _removeMinipool(address _minipool) internal {
+        uint256 index = minipoolIndex[_minipool];
+        uint256 lastIndex = minipools.length - 1;
+        address lastMinipool = minipools[lastIndex];
+
+        minipools[index] = lastMinipool;
+        minipoolIndex[lastMinipool] = index;
+
+        minipools.pop();
+        delete minipoolIndex[_minipool];
+    }
+
+    function removeAllMinipools(address _subNodeOperator) external onlyProtocol {
+        address[] storage minipoolList = subNodeOperatorMinipools[_subNodeOperator];
+        for (uint256 i = minipoolList.length; i > 0; i--) {
+            address minipool = minipoolList[i - 1];
+            _removeMinipool(minipool);
+            minipoolList.pop();
+            delete subNodeOperatorMinipool[minipool];
+        }
+        delete subNodeOperatorMinipools[_subNodeOperator];
     }
 
     function stake(address _minipool) external onlySubNodeOperatorOrProtocol(_minipool) hasConfig(_minipool) {
@@ -177,6 +208,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             subNodeOperatorMinipool[_minipool],
             configs[_minipool].bondAmount
         );
+        _removeMinipool(_minipool);
 
         totalEthStaking -= configs[_minipool].bondAmount;
 
@@ -227,6 +259,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
                 subNodeOperatorMinipool[_minipool],
                 configs[_minipool].bondAmount
             );
+            _removeMinipool(_minipool);
         }
     }
 
@@ -311,5 +344,12 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     receive() external payable {
 
+    }
+
+    function getNextMinipool() external onlyProtocol returns(IMinipool) {
+        if(minipools.length == 0) {
+            return IMinipool(address(0));
+        }
+        return IMinipool(minipools[currentMinipool++ % minipools.length]);
     }
 }
