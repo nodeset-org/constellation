@@ -166,6 +166,7 @@ contract Whitelist is UpgradeableBase {
 
         SuperNodeAccount supeNode = SuperNodeAccount(_directory.getSuperNodeAddress());
         supeNode.removeAllMinipools(nodeOperator);
+        // todo: is this dangerous? do we lose any resouces doing this?
 
         YieldDistributor ydistributor = YieldDistributor(payable(getDirectory().getYieldDistributorAddress()));
 
