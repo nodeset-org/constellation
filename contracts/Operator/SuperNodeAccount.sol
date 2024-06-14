@@ -4,7 +4,6 @@ pragma solidity 0.8.17;
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
-import './NodeAccountFactory.sol';
 import './OperatorDistributor.sol';
 
 import '../Whitelist/Whitelist.sol';
@@ -26,6 +25,8 @@ import '../Utils/ProtocolMath.sol';
 import '../Utils/Constants.sol';
 import '../Utils/Errors.sol';
 
+import 'hardhat/console.sol';
+
 /// @custom:security-contact info@nodeset.io
 /// @notice distributes rewards in weth to node operators
 contract SuperNodeAccount is UpgradeableBase, Errors {
@@ -43,7 +44,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     mapping(address => ValidatorConfig) public configs;
     mapping(address => uint256) public lockedEth;
     mapping(address => uint256) public lockStarted;
-    mapping(address => address) public subNodeOperatorMinipool;
+
+    // keccak256(abi.encodePacked(subNodeOperator, _config.expectedMinipoolAddress))
+    mapping(bytes32 => bool) public subNodeOperatorHasMinipool;
 
     uint256 public totalEthLocked;
     uint256 public totalEthStaking;
@@ -68,10 +71,18 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         lazyInit = true;
     }
 
+    modifier onlySubNodeOperator(address _minipool) {
+        require(
+            subNodeOperatorHasMinipool[keccak256(abi.encodePacked(msg.sender, _minipool))],
+            'Can only be called by SubNodeOperator!'
+        );
+        _;
+    }
+
     modifier onlySubNodeOperatorOrProtocol(address _minipool) {
         require(
             _directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender) ||
-                subNodeOperatorMinipool[msg.sender] != address(0),
+                subNodeOperatorHasMinipool[keccak256(abi.encodePacked(msg.sender, _minipool))],
             'Can only be called by Protocol or SubNodeOperator!'
         );
         _;
@@ -79,7 +90,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     modifier onlyNodeOperatorOrAdmin(address _minipool) {
         require(
-            _directory.hasRole(Constants.ADMIN_ROLE, msg.sender) || msg.sender == subNodeOperatorMinipool[_minipool],
+            _directory.hasRole(Constants.ADMIN_ROLE, msg.sender) ||
+                subNodeOperatorHasMinipool[keccak256(abi.encodePacked(msg.sender, _minipool))],
             'Can only be called by Admin or NodeOperator!'
         );
         _;
@@ -109,9 +121,12 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function createMinipool(ValidatorConfig calldata _config, bytes memory _sig) public payable {
         require(msg.value == lockThreshhold, 'SuperNode: must lock 1 ether');
         require(hasSufficentLiquidity(_config.bondAmount), 'NodeAccount: protocol must have enough rpl and eth');
-        require(Whitelist(_directory.getWhitelistAddress()).getIsAddressInWhitelist(msg.sender), "sub node operator must be whitelisted");
+        require(
+            Whitelist(_directory.getWhitelistAddress()).getIsAddressInWhitelist(msg.sender),
+            'sub node operator must be whitelisted'
+        );
         _createMinipool(_config, _sig, msg.sender);
-    } 
+    }
 
     function _registerNode(string memory _timezoneLocation) internal {
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).registerNode(_timezoneLocation);
@@ -125,7 +140,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         );
         if (preSignedExitMessageCheck) {
             console.log('_createMinipool: message hash');
-            console.logBytes32(keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt, address(this))));
+            console.logBytes32(
+                keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt, address(this)))
+            );
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
                     keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt, address(this)))
@@ -138,7 +155,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             );
         }
 
-        subNodeOperatorMinipool[subNodeOperator] = _config.expectedMinipoolAddress;
+        subNodeOperatorHasMinipool[
+            keccak256(abi.encodePacked(subNodeOperator, _config.expectedMinipoolAddress))
+        ] = true;
 
         require(lockedEth[_config.expectedMinipoolAddress] == 0, 'minipool already initialized');
 
@@ -187,25 +206,26 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             address minipool = minipoolList[i - 1];
             _removeMinipool(minipool);
             minipoolList.pop();
-            delete subNodeOperatorMinipool[minipool];
+            delete subNodeOperatorHasMinipool[keccak256(abi.encodePacked(_subNodeOperator, minipool))];
         }
         delete subNodeOperatorMinipools[_subNodeOperator];
     }
 
-    function stake(address _minipool) external onlySubNodeOperatorOrProtocol(_minipool) hasConfig(_minipool) {
+    function stake(address _minipool) external onlyNodeOperatorOrAdmin(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.stake(configs[_minipool].validatorSignature, configs[_minipool].depositDataRoot);
+        // RP close call will revert unless you're in the right state, so this may waste your gas if you call at the wrong time!
         totalEthStaking += (32 ether - configs[_minipool].bondAmount);
     }
 
-    function close(address _minipool) external hasConfig(_minipool) {
+    function close(address _subNodeOperator, address _minipool) external hasConfig(_minipool) {
         if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
 
         IMinipool minipool = IMinipool(_minipool);
         OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(
-            subNodeOperatorMinipool[_minipool],
+            _subNodeOperator,
             configs[_minipool].bondAmount
         );
         _removeMinipool(_minipool);
@@ -215,7 +235,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         minipool.close();
     }
 
-    function unlockEth(address _minipool) external onlySubNodeOperatorOrProtocol(_minipool) hasConfig(_minipool) {
+    function unlockEth(address _minipool) external onlySubNodeOperator(_minipool) hasConfig(_minipool) {
         require(lockedEth[_minipool] >= 1 ether, 'Insufficient locked ETH');
         require(
             block.timestamp - lockStarted[_minipool] > lockUpTime ||
@@ -251,12 +271,16 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * open this function to node operators, they could inappropriately finalize and fully
      * withdraw a minipool, creating slashings on depositor capital.
      */
-    function distributeBalance(bool _rewardsOnly, address _minipool) external onlyAdmin hasConfig(_minipool) {
+    function distributeBalance(
+        bool _rewardsOnly,
+        address _subNodeOperator,
+        address _minipool
+    ) external onlyAdmin hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.distributeBalance(_rewardsOnly);
         if (minipool.getFinalised()) {
             OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(
-                subNodeOperatorMinipool[_minipool],
+                _subNodeOperator,
                 configs[_minipool].bondAmount
             );
             _removeMinipool(_minipool);
@@ -279,14 +303,14 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         );
     }
 
-    function delegateUpgrade(address _minipool) external onlySubNodeOperatorOrProtocol(_minipool) hasConfig(_minipool) {
+    function delegateUpgrade(address _minipool) external onlySubNodeOperator(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateUpgrade();
     }
 
     function delegateRollback(
         address _minipool
-    ) external onlySubNodeOperatorOrProtocol(_minipool) hasConfig(_minipool) {
+    ) external onlySubNodeOperator(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateRollback();
     }
@@ -294,7 +318,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function setUseLatestDelegate(
         bool _setting,
         address _minipool
-    ) external onlySubNodeOperatorOrProtocol(_minipool) hasConfig(_minipool) {
+    ) external onlySubNodeOperator(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.setUseLatestDelegate(_setting);
     }
@@ -317,7 +341,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev Only callable by the contract owner or authorized admin.
      * @param _newLockThreshold The new lock threshold value in wei.
      */
-    function setLockThreshold(uint256 _newLockThreshold) external {
+    function setLockThreshold(uint256 _newLockThreshold) external onlyAdmin {
         if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
@@ -329,7 +353,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev Only callable by the contract owner or authorized admin.
      * @param _newLockUpTime The new lock-up time in seconds.
      */
-    function setLockUpTime(uint256 _newLockUpTime) external {
+    function setLockUpTime(uint256 _newLockUpTime) external onlyAdmin {
         if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
@@ -342,12 +366,10 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequried && od.balance >= _bond;
     }
 
-    receive() external payable {
+    receive() external payable {}
 
-    }
-
-    function getNextMinipool() external onlyProtocol returns(IMinipool) {
-        if(minipools.length == 0) {
+    function getNextMinipool() external onlyProtocol returns (IMinipool) {
+        if (minipools.length == 0) {
             return IMinipool(address(0));
         }
         return IMinipool(minipools[currentMinipool++ % minipools.length]);

@@ -5,6 +5,7 @@ import "hardhat-contract-sizer";
 import "hardhat-gas-reporter";
 import '@nomiclabs/hardhat-truffle5';
 import 'solidity-docgen';
+import 'hardhat-contract-sizer';
 
 // task commands
 import './tasks/adminTasks'
@@ -112,6 +113,7 @@ const config: HardhatUserConfig = {
     runOnCompile: true,
     disambiguatePaths: false,
   },
+  
 };
 
 

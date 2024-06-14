@@ -231,11 +231,9 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.TIMELOCK_24_HOUR, Constants.ADMIN_ROLE);
 
-        // todo: clean up and rm factory role logic
-        _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.FACTORY_ROLE);
+        _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.ADMIN_ROLE);
 
         _grantRole(Constants.ADMIN_ROLE, admin);
-        _grantRole(Constants.FACTORY_ROLE, admin);
 
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.whitelist);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.wethVault);

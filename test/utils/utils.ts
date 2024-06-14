@@ -170,6 +170,7 @@ export async function deployMinipool(setupData: SetupData,  bondValue: BigNumber
         salt: salt,
         expectedMinipoolAddress: depositData.minipoolAddress
     }
+    console.log("fdasdfa;as")
 
     const sig = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
 
@@ -178,9 +179,11 @@ export async function deployMinipool(setupData: SetupData,  bondValue: BigNumber
     //    value: ethers.utils.parseEther("1")
     //})
 
+    console.log("aljsdf;as")
     await setupData.protocol.superNode.connect(setupData.signers.hyperdriver).createMinipool(config,sig, {
         value: ethers.utils.parseEther("1")
     })
+    console.log("aljsdf;as")
 
     return config.expectedMinipoolAddress;
 }

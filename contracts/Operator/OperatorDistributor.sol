@@ -8,8 +8,7 @@ import '../Whitelist/Whitelist.sol';
 import '../FundRouter.sol';
 import '../PriceFetcher.sol';
 import '../Tokens/WETHVault.sol';
-import './NodeAccountFactory.sol';
-import './NodeAccount.sol';
+import './SuperNodeAccount.sol';
 
 import '../Utils/Constants.sol';
 import '../Utils/Errors.sol';

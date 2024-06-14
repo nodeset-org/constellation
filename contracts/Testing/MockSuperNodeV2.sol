@@ -5,7 +5,7 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 
 import '../UpgradeableBase.sol';
-import '../Operator/NodeAccount.sol';
+import '../Operator/SuperNodeAccount.sol';
 
 /// @custom:security-contact info@nodeoperator.org
 /// @notice Controls operator access to the protocol.

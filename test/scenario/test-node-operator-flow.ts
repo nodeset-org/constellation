@@ -52,9 +52,10 @@ describe("Node Operator Onboarding", function () {
         await prepareOperatorDistributionContract(setupData, 1);
         expect(await protocol.superNode.hasSufficentLiquidity(bondValue)).equals(true);
 
-        expect(await protocol.superNode.subNodeOperatorMinipool(signers.hyperdriver.address)).equals(ethers.constants.AddressZero);
+        expect(await protocol.superNode.subNodeOperatorMinipools(signers.hyperdriver.address, 0)).equals(ethers.constants.AddressZero);
         minipoolAddress = await deployMinipool(setupData, bondValue);
-        expect(await protocol.superNode.subNodeOperatorMinipool(signers.hyperdriver.address)).not.equals(ethers.constants.AddressZero);
+        console.log("operator flow minipoolAddress", minipoolAddress);
+        expect(await protocol.superNode.subNodeOperatorMinipools(signers.hyperdriver.address, 0)).not.equals(ethers.constants.AddressZero);
     });
 
     // continue debugging staking ops, why would staking fail here?
