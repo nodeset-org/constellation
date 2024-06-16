@@ -452,13 +452,11 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
         to: setupData.protocol.operatorDistributor.address,
         value: requiredEth
     });
-
     // send eth to the rocketpool deposit contract (mint rETH to signers[0])
 
 
-    const rplRequried = await setupData.protocol.operatorDistributor.calculateRequiredRplTopUp(0, requiredEth);
+    const rplRequried = await setupData.protocol.operatorDistributor.calculateRplStakeShortfall(0, requiredEth);
     await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequried);
-
 }
 
 export async function getNextContractAddress(signer: SignerWithAddress, offset = 0) {

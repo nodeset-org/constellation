@@ -224,7 +224,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @param _ethStaked The amount of ETH currently staked by the node operator.
      * @return requiredStakeRpl The amount of RPL required to top up to the target stake ratio.
      */
-    function calculateRequiredRplTopUp(
+    function calculateRplStakeShortfall(
         uint256 _existingRplStake,
         uint256 _ethStaked
     ) public view returns (uint256 requiredStakeRpl) {

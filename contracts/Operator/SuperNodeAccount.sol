@@ -211,7 +211,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         delete subNodeOperatorMinipools[_subNodeOperator];
     }
 
-    function stake(address _minipool) external onlyNodeOperatorOrAdmin(_minipool) hasConfig(_minipool) {
+    function stake(address _minipool) external onlySubNodeOperator(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.stake(configs[_minipool].validatorSignature, configs[_minipool].depositDataRoot);
         // RP close call will revert unless you're in the right state, so this may waste your gas if you call at the wrong time!
@@ -249,6 +249,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         require(success, 'ETH transfer failed');
     }
 
+    // we don't even need this anymore
+/*
     function withdraw(uint256 _amount, address _minipool) external hasConfig(_minipool) {
         if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
@@ -262,7 +264,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             revert LowLevelEthTransfer(success, data);
         }
     }
-
+*/
     function _authorizeUpgrade(address _implementationAddress) internal view override only24HourTimelock {}
 
     /**
@@ -341,7 +343,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev Only callable by the contract owner or authorized admin.
      * @param _newLockThreshold The new lock threshold value in wei.
      */
-    function setLockThreshold(uint256 _newLockThreshold) external onlyAdmin {
+    function setLockAmount(uint256 _newLockThreshold) external onlyAdmin {
         if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
@@ -362,7 +364,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     function hasSufficentLiquidity(uint256 _bond) public view returns (bool) {
         address payable od = _directory.getOperatorDistributorAddress();
-        uint256 rplRequried = OperatorDistributor(od).calculateRequiredRplTopUp(0, _bond);
+        uint256 rplRequried = OperatorDistributor(od).calculateRplStakeShortfall(0, _bond);
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequried && od.balance >= _bond;
     }
 

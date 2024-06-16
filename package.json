@@ -1,5 +1,5 @@
 {
-  "name": "constellation",
+  "name": "@nodeset/contracts",
   "version": "0.0.1",
   "description": "Protocol for accessing NodeSet's Constellation Ethereum staking network",
   "scripts": {
@@ -14,7 +14,6 @@
     "stake",
     "rocket pool"
   ],
-  "private": "true",
   "author": "Theodore Clapp (mryamz), Mike Leach (Wander) <info@nodeset.io>",
   "devDependencies": {
     "@babel/polyfill": "^7.12.1",
