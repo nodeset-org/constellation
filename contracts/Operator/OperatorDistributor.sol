@@ -279,7 +279,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         _processNextMinipool();
     }
 
-    function OnMinipoolCreated(address newMinipoolAddress, address nodeAddress, uint256 bond) external {
+    function onMinipoolCreated(address newMinipoolAddress, address nodeAddress, uint256 bond) external {
         if (!_directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender)) {
             revert BadRole(Constants.CORE_PROTOCOL_ROLE, msg.sender);
         }
