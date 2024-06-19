@@ -476,4 +476,6 @@ export async function deployRocketPool() {
     const RocketUpgradeOneDotThree = artifacts.require('RocketUpgradeOneDotThree')
     const rocketUpgradeOneDotThree = await RocketUpgradeOneDotThree.deployed();
     await rocketUpgradeOneDotThree.execute({ from: accounts[0] });
+
+    return rs;
 };
