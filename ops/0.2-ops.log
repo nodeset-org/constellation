@@ -2683,7 +2683,7 @@ BigNumber { value: "0" }
 BigNumber { value: "0" }
 > await ethers.provider.getBalance(weth.address)
 BigNumber { value: "6641706464764123473" }
-> await operatorDistributor.calculateRequiredRplTopUp(0, 8)
+> await operatorDistributor.calculateRplStakeShortfall(0, 8)
 BigNumber { value: "272" }
 > await deployer.sendTransaction({to: ethers.utils.parseEther("6")});
 Uncaught:
@@ -2727,7 +2727,7 @@ Error: invalid ENS name (argument="name", value={"type":"BigNumber","hex":"0x534
 BigNumber { value: "8358293535235876527" }
 > await vaf.hasSufficentLiquidity(ethers.utils.parseEther("8"))
 false
-> await operatorDistributor.calculateRequiredRplTopUp(0, ethers.utils.parseEther("8"))
+> await operatorDistributor.calculateRplStakeShortfall(0, ethers.utils.parseEther("8"))
 BigNumber { value: "272679112000000000000" }
 > await rpl.balanceOf(operatorDistributor.address)
 BigNumber { value: "28571428571428571428" }

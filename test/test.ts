@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { FundRouter, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, NodeAccountFactory, RocketDepositPool, RocketNodeDeposit, RocketDAONodeTrusted, RocketTokenRETH, RocketClaimDAO, RocketRewardsPool, RocketDAONodeTrustedActions } from "../typechain-types";
+import { FundRouter, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, NodeAccountFactory, RocketDepositPool, RocketNodeDeposit, RocketDAONodeTrusted, RocketTokenRETH, RocketClaimDAO, RocketRewardsPool, RocketDAONodeTrustedActions, SuperNodeAccount } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
 import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketNodeManager, RocketNodeManagerNew, RocketNodeStaking, RocketNodeStakingNew, RocketStorage, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
@@ -15,7 +15,7 @@ import { upgradeExecuted } from "./rocketpool/_utils/upgrade";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ERC20 } from "../typechain-types/contracts/Testing/Rocketpool/contract/util";
 import { IERC20 } from "../typechain-types/oz-contracts-3-4-0/token/ERC20";
-import { fastDeployProtocol } from "../scripts/utils/deployment";
+import { deployProtocol, fastDeployProtocol } from "../scripts/utils/deployment";
 
 export const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
 
@@ -32,10 +32,10 @@ export type Protocol = {
 	vCRPL: RPLVault,
 	depositPool: FundRouter,
 	operatorDistributor: OperatorDistributor,
-	NodeAccountFactory: NodeAccountFactory,
 	yieldDistributor: YieldDistributor,
 	oracle: IXRETHOracle,
 	priceFetcher: Contract,
+	superNode: SuperNodeAccount,
 	wETH: IWETH,
 	sanctions: MockSanctions
 }
@@ -146,79 +146,9 @@ export async function getRocketPool(directory: Directory): Promise<RocketPool> {
 	return { rocketDaoNodeTrustedActions, rocketRewardsPool, rocketClaimDao, rocketTokenRETH, rocketDaoNodeTrusted, rplContract, rockStorageContract, rocketDepositPoolContract, rocketNodeManagerContract, rocketNodeStakingContract, rocketNodeDepositContract };
 }
 
-async function deployProtocol(signers: Signers): Promise<Protocol> {
-	const RocketStorageDeployment = await RocketStorage.deployed();
-	const rockStorageContract = (await ethers.getContractAt(
-		"RocketStorage",
-		RocketStorageDeployment.address
-	)) as IRocketStorage;
 
-	const RplToken = await RocketTokenRPL.deployed();
-	const rplContract = (await ethers.getContractAt(
-		"@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
-		RplToken.address
-	)) as ERC20;
 
-	upgrades.silenceWarnings();
-	// deploy weth
-	const WETH = await ethers.getContractFactory("WETH");
-	const wETH = await WETH.deploy();
-	await wETH.deployed();
-
-	// deploy mock sanctions
-	const Sanctions = await ethers.getContractFactory("MockSanctions");
-	const sanctions = await Sanctions.deploy();
-	await sanctions.deployed();
-
-	// deploy mock uniswap v3 pool
-	const UniswapV3Pool = await ethers.getContractFactory("MockUniswapV3Pool");
-	const uniswapV3Pool = await UniswapV3Pool.deploy();
-	await uniswapV3Pool.deployed();
-
-	const deployer = (await ethers.getSigners())[0];
-
-	const oracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
-
-	const { whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, nodeAccountFactory, yieldDistributor, priceFetcher, directory, adminTreasury } = await fastDeployProtocol(
-		signers.deployer,
-		signers.random5,
-		rockStorageContract.address,
-		wETH.address,
-		sanctions.address,
-		uniswapV3Pool.address,
-		oracle.address,
-		signers.admin.address,
-		false
-	)
-
-	// set adminServer to be ADMIN_SERVER_ROLE
-	const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
-	await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(adminRole), signers.adminServer.address);
-
-	// set timelock to be TIMELOCK_ROLE
-	const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_24_HOUR"));
-	await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRole), signers.admin.address);
-
-	// set protocolSigner to be PROTOCOL_ROLE
-	const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
-	await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
-
-	// set directory treasury to deployer to prevent tests from failing
-	expect(await directory.getTreasuryAddress()).to.equal(adminTreasury.address);
-	await directory.connect(signers.admin).setTreasury(deployer.address);
-
-	const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, NodeAccountFactory: nodeAccountFactory, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
-
-	// send all rpl from admin to rplWhale
-	const rplWhaleBalance = await rplContract.balanceOf(signers.deployer.address);
-	await rplContract.transfer(signers.rplWhale.address, rplWhaleBalance);
-
-	await priceFetcher.connect(signers.admin).useFallback();
-
-	return returnData;
-}
-
-async function createSigners(): Promise<Signers> {
+export async function createSigners(): Promise<Signers> {
 	const signersArray: SignerWithAddress[] = (await ethers.getSigners());
 	return {
 		deployer: signersArray[0],

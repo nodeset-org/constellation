@@ -5,6 +5,7 @@ import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 import '../UpgradeableBase.sol';
 import '../Operator/YieldDistributor.sol';
+import '../Operator/SuperNodeAccount.sol';
 import '../Utils/Constants.sol';
 
 /// @notice An operator which provides services to the network.
@@ -163,9 +164,9 @@ contract Whitelist is UpgradeableBase {
         delete nodeIndexMap[index];
         delete reverseNodeIndexMap[nodeOperator];
 
-        OperatorDistributor odistributor = OperatorDistributor(payable(getDirectory().getOperatorDistributorAddress()));
-
-        odistributor.removeNodeOperator(nodeOperator);
+        SuperNodeAccount superNode = SuperNodeAccount(_directory.getSuperNodeAddress());
+        superNode.stopTrackingOperatorMinipools(nodeOperator);
+        // todo: is this dangerous? do we lose any resouces doing this?
 
         YieldDistributor ydistributor = YieldDistributor(payable(getDirectory().getYieldDistributorAddress()));
 

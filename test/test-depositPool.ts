@@ -15,15 +15,18 @@ describe(`FundRouter`, () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
 
-            await prepareOperatorDistributionContract(setupData, 1);
-            const [validator] = await registerNewValidator(setupData, [signers.random]);
+            console.log("fundroutertest.AC")
+            await prepareOperatorDistributionContract(setupData, 2);
+            console.log("fundroutertest.A")
+            await registerNewValidator(setupData, [signers.random]);
+            console.log("fundroutertest.AB")
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
             await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
 
-            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
-            await protocol.depositPool.connect(signers.admin).stakeRPLFor(validator.address, amountStaked)
-            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
+            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await protocol.depositPool.connect(signers.admin).stakeRPLFor(protocol.superNode.address, amountStaked)
+            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(finalStake.sub(initialStake)).equals(amountStaked);
 
@@ -33,15 +36,15 @@ describe(`FundRouter`, () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
 
-            await prepareOperatorDistributionContract(setupData, 1);
-            const [validator] = await registerNewValidator(setupData, [signers.random]);
+            await prepareOperatorDistributionContract(setupData, 2);
+            await registerNewValidator(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
             await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
 
-            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
-            await protocol.depositPool.connect(signers.protocolSigner).stakeRPLFor(validator.address, amountStaked)
-            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
+            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await protocol.depositPool.connect(signers.protocolSigner).stakeRPLFor(protocol.superNode.address, amountStaked)
+            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(finalStake.sub(initialStake)).equals(amountStaked);
 
@@ -51,15 +54,15 @@ describe(`FundRouter`, () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
 
-            await prepareOperatorDistributionContract(setupData, 1);
-            const [validator] = await registerNewValidator(setupData, [signers.random]);
+            await prepareOperatorDistributionContract(setupData, 2);
+            await registerNewValidator(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
             await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
 
-            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
-            await expect(protocol.depositPool.connect(signers.deployer).stakeRPLFor(validator.address, amountStaked)).to.be.revertedWith("Can only be called by Protocol or Admin!")
-            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
+            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await expect(protocol.depositPool.connect(signers.deployer).stakeRPLFor(protocol.superNode.address, amountStaked)).to.be.revertedWith("Can only be called by Protocol or Admin!")
+            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(finalStake.sub(initialStake)).equals(0);
 
@@ -71,26 +74,26 @@ describe(`FundRouter`, () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
 
-            await prepareOperatorDistributionContract(setupData, 1);
-            const [validator] = await registerNewValidator(setupData, [signers.random]);
+            await prepareOperatorDistributionContract(setupData, 2);
+            await registerNewValidator(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
             await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
 
-            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
-            await protocol.depositPool.connect(signers.admin).stakeRPLFor(validator.address, amountStaked)
-            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
+            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await protocol.depositPool.connect(signers.admin).stakeRPLFor(protocol.superNode.address, amountStaked)
+            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(finalStake.sub(initialStake)).equals(amountStaked);
 
             await increaseEVMTime(60 * 60 * 24 * 7 * 32);
-            console.log("acoutal stake", await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address))
-            console.log("udner collat thresh old", await rp.rocketNodeStakingContract.getNodeMaximumRPLStake(validator.address))
+            console.log("acoutal stake", await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address))
+            console.log("udner collat thresh old", await rp.rocketNodeStakingContract.getNodeMaximumRPLStake(protocol.superNode.address))
 
             const amountUnstaked = ethers.utils.parseUnits("70", await rp.rplContract.decimals());
-            const initialStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
-            await protocol.depositPool.connect(signers.admin).unstakeRpl(validator.address, amountUnstaked)
-            const finalStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
+            const initialStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await protocol.depositPool.connect(signers.admin).unstakeRpl(protocol.superNode.address, amountUnstaked)
+            const finalStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(initialStake2.sub(finalStake2)).equals(amountUnstaked);
         })
@@ -99,26 +102,26 @@ describe(`FundRouter`, () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
 
-            await prepareOperatorDistributionContract(setupData, 1);
-            const [validator] = await registerNewValidator(setupData, [signers.random]);
+            await prepareOperatorDistributionContract(setupData, 2);
+            await registerNewValidator(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
             await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
 
-            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
-            await protocol.depositPool.connect(signers.protocolSigner).stakeRPLFor(validator.address, amountStaked)
-            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
+            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await protocol.depositPool.connect(signers.protocolSigner).stakeRPLFor(protocol.superNode.address, amountStaked)
+            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(finalStake.sub(initialStake)).equals(amountStaked);
 
             await increaseEVMTime(60 * 60 * 24 * 7 * 32);
-            console.log("acoutal stake", await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address))
-            console.log("udner collat thresh old", await rp.rocketNodeStakingContract.getNodeMaximumRPLStake(validator.address))
+            console.log("acoutal stake", await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address))
+            console.log("udner collat thresh old", await rp.rocketNodeStakingContract.getNodeMaximumRPLStake(protocol.superNode.address))
 
             const amountUnstaked = ethers.utils.parseUnits("70", await rp.rplContract.decimals());
-            const initialStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
-            await protocol.depositPool.connect(signers.protocolSigner).unstakeRpl(validator.address, amountUnstaked)
-            const finalStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
+            const initialStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await protocol.depositPool.connect(signers.protocolSigner).unstakeRpl(protocol.superNode.address, amountUnstaked)
+            const finalStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(initialStake2.sub(finalStake2)).equals(amountUnstaked);
         })
@@ -127,26 +130,26 @@ describe(`FundRouter`, () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
 
-            await prepareOperatorDistributionContract(setupData, 1);
-            const [validator] = await registerNewValidator(setupData, [signers.random]);
+            await prepareOperatorDistributionContract(setupData, 2);
+            await registerNewValidator(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
             await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
 
-            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
-            await protocol.depositPool.connect(signers.protocolSigner).stakeRPLFor(validator.address, amountStaked)
-            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
+            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await protocol.depositPool.connect(signers.protocolSigner).stakeRPLFor(protocol.superNode.address, amountStaked)
+            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(finalStake.sub(initialStake)).equals(amountStaked);
 
             await increaseEVMTime(60 * 60 * 24 * 7 * 32);
-            console.log("acoutal stake", await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address))
-            console.log("udner collat thresh old", await rp.rocketNodeStakingContract.getNodeMaximumRPLStake(validator.address))
+            console.log("acoutal stake", await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address))
+            console.log("udner collat thresh old", await rp.rocketNodeStakingContract.getNodeMaximumRPLStake(protocol.superNode.address))
 
             const amountUnstaked = ethers.utils.parseUnits("70", await rp.rplContract.decimals());
-            const initialStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
-            await expect(protocol.depositPool.unstakeRpl(validator.address, amountUnstaked)).to.be.revertedWith("Can only be called by Protocol or Admin!")
-            const finalStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(validator.address);
+            const initialStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await expect(protocol.depositPool.unstakeRpl(protocol.superNode.address, amountUnstaked)).to.be.revertedWith("Can only be called by Protocol or Admin!")
+            const finalStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(initialStake2.sub(finalStake2)).equals(0);
         })
@@ -163,39 +166,27 @@ describe(`FundRouter`, () => {
     
             // Set up the distribution contract and register new validators
             await prepareOperatorDistributionContract(setupData, 2);
-            const [validator0, validator1] = await registerNewValidator(setupData, [signers.random, signers.random2]);
+            await registerNewValidator(setupData, [signers.random, signers.random2]);
     
             // Rewards data setup
             const rewards = [
                 {
-                    address: validator0.address,
+                    address: protocol.superNode.address,
                     network: 0,
                     trustedNodeRPL: ethers.utils.parseEther("0"),
                     nodeRPL: ethers.utils.parseEther("1"),
-                    nodeETH: ethers.utils.parseEther("0")
-                },
-                {
-                    address: validator1.address,
-                    network: 0,
-                    trustedNodeRPL: ethers.utils.parseEther("0"),
-                    nodeRPL: ethers.utils.parseEther("2"),
                     nodeETH: ethers.utils.parseEther("0")
                 }
             ];
     
             // Generate the Merkle Tree and claims data
             let treeData = await parseRewardsMap(rewards);
-            let proof0 = (treeData.proof.claims as Claims)[`${validator0.address}`];
-            let proof1 = (treeData.proof.claims as Claims)[`${validator1.address}`];
+            let proof0 = (treeData.proof.claims as Claims)[`${protocol.superNode.address}`];
     
             // Extract proofs and amounts for each validator
             let amountsRPL0 = [proof0.amountRPL];
             let amountsETH0 = [proof0.amountETH];
             let proofs0 = [proof0.proof];
-    
-            let amountsRPL1 = [proof1.amountRPL];
-            let amountsETH1 = [proof1.amountETH];
-            let proofs1 = [proof1.proof];
     
             // Aggregate network rewards
             const trustedNodeRPL = [];
@@ -246,20 +237,13 @@ describe(`FundRouter`, () => {
     
             // Perform the Merkle Claim for each validator
             await protocol.depositPool.merkleClaim(
-                validator0.address,
+                protocol.superNode.address,
                 [0],
                 amountsRPL0,
                 amountsETH0,
                 proofs0
             );
     
-            await protocol.depositPool.merkleClaim(
-                validator1.address,
-                [0],
-                amountsRPL1,
-                amountsETH1,
-                proofs1
-            );
         });
     });
     

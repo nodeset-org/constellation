@@ -155,11 +155,10 @@ export const assertSingleTransferExists = async (
 
 
 
-export async function deployNodeAccount(setupData: SetupData,  bondValue: BigNumber) {
+export async function deployMinipool(setupData: SetupData,  bondValue: BigNumber) {
     const salt = 3;
 
-    const nextAddress = "0x3622082BD98490ddd32c9aaD1AdCdc472569e864";
-    const depositData = await generateDepositData(nextAddress, salt);
+    const depositData = await generateDepositData(setupData.protocol.superNode.address, salt);
 
     const config = {
         timezoneLocation: 'Australia/Brisbane',
@@ -171,18 +170,22 @@ export async function deployNodeAccount(setupData: SetupData,  bondValue: BigNum
         salt: salt,
         expectedMinipoolAddress: depositData.minipoolAddress
     }
+    console.log("fdasdfa;as")
 
     const sig = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
 
-    const proxyVAAddr = await setupData.protocol.NodeAccountFactory.connect(setupData.signers.hyperdriver).callStatic.createNewNodeAccount(config, nextAddress,sig, {
+    // can probz delete this line
+    //const proxyVAAddr = await setupData.protocol.superNode.connect(setupData.signers.hyperdriver).callStatic.createMinipool(config,sig, {
+    //    value: ethers.utils.parseEther("1")
+    //})
+
+    console.log("aljsdf;as")
+    await setupData.protocol.superNode.connect(setupData.signers.hyperdriver).createMinipool(config,sig, {
         value: ethers.utils.parseEther("1")
     })
+    console.log("aljsdf;as")
 
-    await setupData.protocol.NodeAccountFactory.connect(setupData.signers.hyperdriver).createNewNodeAccount(config, nextAddress,sig, {
-        value: ethers.utils.parseEther("1")
-    })
-
-    return proxyVAAddr;
+    return config.expectedMinipoolAddress;
 }
 
 
@@ -280,35 +283,32 @@ export async function increaseEVMTime(seconds: number) {
     await ethers.provider.send('evm_mine', []);
 }
 
-export const registerNewValidator = async (setupData: SetupData, nodeOperators: SignerWithAddress[]) => {
-    const requiredEth = ethers.utils.parseEther("8").mul(nodeOperators.length);
+export const registerNewValidator = async (setupData: SetupData, subNodeOperators: SignerWithAddress[]) => {
+    const requiredEth = ethers.utils.parseEther("8").mul(subNodeOperators.length);
     if ((await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)).lt(requiredEth)) {
-        throw new Error(`Not enough eth in operatorDistributor contract to register ${nodeOperators.length} validators. Required ${ethers.utils.formatEther(requiredEth)} eth but only have ${ethers.utils.formatEther(await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address))} eth`);
+        throw new Error(`Not enough eth in operatorDistributor contract to register ${subNodeOperators.length} validators. Required ${ethers.utils.formatEther(requiredEth)} eth but only have ${ethers.utils.formatEther(await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address))} eth`);
     }
 
     const { protocol, signers } = setupData;
 
 
-    const NodeAccounts = []
-
-    for (let i = 0; i < nodeOperators.length; i++) {
-        console.log("setting up node operator %s of %s", i + 1, nodeOperators.length)
-        const nodeOperator = nodeOperators[i];
+    for (let i = 0; i < subNodeOperators.length; i++) {
+        console.log("setting up node operator %s of %s", i + 1, subNodeOperators.length)
+        const nodeOperator = subNodeOperators[i];
 
         const bond = ethers.utils.parseEther("8");
         const salt = i;
 
-        //expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(false);
-        await prepareOperatorDistributionContract(setupData, 2);
-        //expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bond)).equals(true);
+        if(!(await protocol.superNode.hasSufficentLiquidity(bond))) {
+            await prepareOperatorDistributionContract(setupData, 2);
+        }
+        expect(await protocol.superNode.hasSufficentLiquidity(bond)).equals(true);
 
         if (!(await protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address))) {
             await assertAddOperator(setupData, nodeOperator);
         }
 
-        const deploymentCount = await countProxyCreatedEvents(setupData);
-        const nextAddress = await predictDeploymentAddress(protocol.NodeAccountFactory.address, deploymentCount + 1)
-        const depositData = await generateDepositData(nextAddress, salt);
+        const depositData = await generateDepositData(protocol.superNode.address, salt);
 
         const config = {
             timezoneLocation: 'Australia/Brisbane',
@@ -320,32 +320,23 @@ export const registerNewValidator = async (setupData: SetupData, nodeOperators: 
             salt: salt,
             expectedMinipoolAddress: depositData.minipoolAddress
         }
-        const sig = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
-
-        await protocol.NodeAccountFactory.connect(nodeOperator).createNewNodeAccount(config, nextAddress, sig, {
-            value: ethers.utils.parseEther("1")
-        })
-
-        expect(await protocol.directory.hasRole(ethers.utils.id("FACTORY_ROLE"), protocol.NodeAccountFactory.address)).equals(true)
-        expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), protocol.NodeAccountFactory.address)).equals(true)
-        expect(await protocol.directory.hasRole(ethers.utils.id("CORE_PROTOCOL_ROLE"), nextAddress)).equals(true)
-
+        
         await setupData.rocketPool.rocketDepositPoolContract.deposit({
             value: ethers.utils.parseEther("32")
         })
         await setupData.rocketPool.rocketDepositPoolContract.assignDeposits();
-
+        
+        
+        const sig = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
+        await protocol.superNode.connect(nodeOperator).createMinipool(config, sig, {value: ethers.utils.parseEther("1")});
+        
         // waits 32 days which could be a problem for other tests
         await increaseEVMTime(60 * 60 * 24 * 7 * 32);
 
         // enter stake mode
-        const NodeAccount = await ethers.getContractAt("NodeAccount", nextAddress);
-        await NodeAccount.connect(nodeOperator).stake(config.expectedMinipoolAddress);
+        await protocol.superNode.connect(nodeOperator).stake(config.expectedMinipoolAddress);
 
-        NodeAccounts.push(NodeAccount)
     }
-
-    return NodeAccounts
 }
 
 export const approveHasSignedExitMessageSig = async (setupData: SetupData, expectedMinipoolAddress: string, salt: number) => {
@@ -360,7 +351,7 @@ export const approveHasSignedExitMessageSig = async (setupData: SetupData, expec
     ], [
         expectedMinipoolAddress, 
         salt, 
-        setupData.protocol.NodeAccountFactory.address
+        setupData.protocol.superNode.address
     ]);
 
     const messageHash = ethers.utils.keccak256(packedData);
@@ -461,33 +452,11 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
         to: setupData.protocol.operatorDistributor.address,
         value: requiredEth
     });
-
     // send eth to the rocketpool deposit contract (mint rETH to signers[0])
 
 
-    const rplRequried = await setupData.protocol.operatorDistributor.calculateRequiredRplTopUp(0, requiredEth);
+    const rplRequried = await setupData.protocol.operatorDistributor.calculateRplStakeShortfall(0, requiredEth);
     await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequried);
-
-}
-
-export async function getMinipoolsInProtocol(setupData: SetupData): Promise<IMinipool[]> {
-    const minipoolAddresses = await setupData.protocol.operatorDistributor.getMinipoolAddresses();
-    const minipools: IMinipool[] = [];
-    for (let i = 0; i < minipoolAddresses.length; i++) {
-        const minipool = await ethers.getContractAt("IMinipool", minipoolAddresses[i]);
-        minipools.push(minipool);
-    }
-    return minipools;
-}
-
-export async function getMockMinipoolsInProtocol(setupData: SetupData): Promise<MockMinipool[]> {
-    const minipoolAddresses = await setupData.protocol.operatorDistributor.getMinipoolAddresses();
-    const minipools: MockMinipool[] = [];
-    for (let i = 0; i < minipoolAddresses.length; i++) {
-        const minipool = await ethers.getContractAt("MockMinipool", minipoolAddresses[i]);
-        minipools.push(minipool);
-    }
-    return minipools;
 }
 
 export async function getNextContractAddress(signer: SignerWithAddress, offset = 0) {

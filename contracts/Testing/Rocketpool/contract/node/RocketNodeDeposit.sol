@@ -355,6 +355,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
             getContractAddress('rocketNetworkSnapshots')
         );
         uint256 ethMatched = rocketNodeStaking.getNodeETHMatched(_nodeAddress) + _amount;
+        console.log("RocketNodeDeposit._increaseEthMatched.ethMatched", ethMatched);
         require(
             ethMatched <= rocketNodeStaking.getNodeETHMatchedLimit(_nodeAddress),
             'ETH matched after deposit exceeds limit based on node RPL stake'

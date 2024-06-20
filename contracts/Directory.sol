@@ -22,10 +22,10 @@ struct Protocol {
     address rplVault;
     address payable depositPool;
     address payable operatorDistributor;
-    address NodeAccountFactory;
     address payable yieldDistributor;
     address oracle;
     address priceFetcher;
+    address payable superNode;
     // external dependencies
     address rocketStorage;
     address payable weth;
@@ -45,6 +45,7 @@ struct RocketIntegrations {
     address rocketMerkleDistributorMainnet;
     address rocketNetworkVoting;
     address rocketDAOProtocolProposal;
+    address rocketDAOProtocolSettingsRewards;
 }
 
 /// @custom:security-contact info@nodeoperator.org
@@ -109,10 +110,6 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.operatorDistributor;
     }
 
-    function getNodeAccountFactoryAddress() public view returns (address) {
-        return _protocol.NodeAccountFactory;
-    }
-
     function getYieldDistributorAddress() public view returns (address payable) {
         return _protocol.yieldDistributor;
     }
@@ -135,6 +132,14 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     function getWETHAddress() public view returns (address payable) {
         return _protocol.weth;
+    }
+
+    function getSuperNodeAddress() public view returns(address payable) {
+        return _protocol.superNode;
+    }
+
+    function getRocketDAOProtocolSettingsRewardsAddress() public view returns(address) {
+        return _integrations.rocketDAOProtocolSettingsRewards;
     }
 
     function getRPLAddress() public view returns (address) {
@@ -225,13 +230,11 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         AccessControlUpgradeable.__AccessControl_init();
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.TIMELOCK_24_HOUR, Constants.ADMIN_ROLE);
-        _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.FACTORY_ROLE);
+
+        _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.ADMIN_ROLE);
 
         _grantRole(Constants.ADMIN_ROLE, admin);
-        _grantRole(Constants.FACTORY_ROLE, admin);
 
-        _grantRole(Constants.FACTORY_ROLE, newProtocol.NodeAccountFactory);
-        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.NodeAccountFactory);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.whitelist);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.wethVault);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.rplVault);
@@ -240,6 +243,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.yieldDistributor);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.oracle);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.priceFetcher);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.superNode);
 
         _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
@@ -305,6 +309,12 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         );
 
         require(_integrations.rocketDepositPool != address(0), 'rocketDepositPool is 0x0');
+
+        _integrations.rocketDAOProtocolSettingsRewards = IRocketStorage(newProtocol.rocketStorage).getAddress(
+            RocketpoolEncoder.generateBytes32Identifier('rocketDAOProtocolSettingsRewards')
+        );
+
+        require(_integrations.rocketDAOProtocolSettingsRewards != address(0), 'rocketDAOProtocolSettingsRewards is 0x0');
 
         _enabledSanctions = true;
     }

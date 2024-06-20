@@ -5,6 +5,7 @@ import "hardhat-contract-sizer";
 import "hardhat-gas-reporter";
 import '@nomiclabs/hardhat-truffle5';
 import 'solidity-docgen';
+import 'hardhat-contract-sizer';
 
 // task commands
 import './tasks/adminTasks'
@@ -89,6 +90,10 @@ const config: HardhatUserConfig = {
       gasPrice: 25000000000, // This is in wei (25 gwei)
     },
 
+    localhost: {
+      gasPrice: 25000000000
+    },
+
     goerli: {
       url: process.env.GOERLI_URL || "" as string,
       accounts: [process.env.DEPLOYER_PRIVATE_KEY || "" as string],
@@ -112,6 +117,7 @@ const config: HardhatUserConfig = {
     runOnCompile: true,
     disambiguatePaths: false,
   },
+  
 };
 
 

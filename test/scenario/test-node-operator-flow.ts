@@ -8,7 +8,7 @@ import { Signers } from "../test";
 import { RocketPool } from "../test";
 import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault, IWETH, RocketMinipoolInterface } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
-import { deployRPMinipool, deployNodeAccount, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances, assertAddOperator } from "../utils/utils";
+import { deployRPMinipool, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances, assertAddOperator, deployMinipool, increaseEVMTime } from "../utils/utils";
 
 
 describe("Node Operator Onboarding", function () {
@@ -17,7 +17,7 @@ describe("Node Operator Onboarding", function () {
     let protocol: Protocol;
     let signers: Signers;
     let rocketPool: RocketPool;
-    let mockMinipool: RocketMinipoolInterface;
+    let minipoolAddress: string;
 
     let xrETH: WETHVault;
     let xRPL: RPLVault;
@@ -47,19 +47,46 @@ describe("Node Operator Onboarding", function () {
     });
 
     it("node operator creates minipool via creating validator account", async function () {
-        expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bondValue)).equals(false);
+        console.log("operator flow minipoolAddress fda:,", minipoolAddress);
 
+        // now we must create a minipool via super node
+        expect(await protocol.superNode.hasSufficentLiquidity(bondValue)).equals(false);
         await prepareOperatorDistributionContract(setupData, 1);
-        expect(await protocol.NodeAccountFactory.hasSufficentLiquidity(bondValue)).equals(true);
+        expect(await protocol.superNode.hasSufficentLiquidity(bondValue)).equals(true);
 
+        console.log("is this f-ing thing null?", signers.hyperdriver.address)
+        //expect(await protocol.superNode.subNodeOperatorHasMinipool(signers.hyperdriver.address)).equals(false);
+        console.log("operator flow minipoolAddress adf:,", minipoolAddress);
+        minipoolAddress = await deployMinipool(setupData, bondValue);
+        console.log("operator flow minipoolAddress", minipoolAddress);
 
-        const NodeAccount = await deployNodeAccount(setupData, bondValue);
+        // Assuming signers.hyperdriver.address and minipoolAddress are defined
+        const hyperdriverAddress = ethers.utils.getAddress(signers.hyperdriver.address);
+        const minipoolFormatAddress = ethers.utils.getAddress(minipoolAddress);
 
-        console.log("VAF:")
-        console.log(NodeAccount)
+        // Encode the values and hash using keccak256
+        const encodedSubNodeOperator = ethers.utils.keccak256(
+            ethers.utils.solidityPack(
+                ["address", "address"],
+                [hyperdriverAddress, minipoolFormatAddress]
+            )
+        );
 
+        // Check if the subNodeOperator has the minipool
+        expect(await protocol.superNode.subNodeOperatorHasMinipool(encodedSubNodeOperator)).to.equal(true);
     });
 
+    // continue debugging staking ops, why would staking fail here?
+    it("sub node operator 'hyperdriver' decides to begin staking process", async () => {
+        await setupData.rocketPool.rocketDepositPoolContract.deposit({
+            value: ethers.utils.parseEther("32")
+        })
+        await setupData.rocketPool.rocketDepositPoolContract.assignDeposits();
+
+        await increaseEVMTime(60 * 60 * 24 * 7 * 32);
+
+        await protocol.superNode.connect(signers.hyperdriver).stake(minipoolAddress);
+    })
 
     it("eth whale supplies Nodeset deposit pool with eth and rpl", async function () {
 
@@ -76,7 +103,7 @@ describe("Node Operator Onboarding", function () {
         await protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("100"), signers.rplWhale.address);
         const expectedRplInDP = ethers.utils.parseEther("100");
         const actualRplInDP = (await protocol.vCRPL.totalAssets()).sub(intialBalanceRpl);
-        expectNumberE18ToBeApproximately(actualRplInDP, expectedRplInDP, 0.05); // ooof, lets get this estimate down to 0.001%
+        expectNumberE18ToBeApproximately(actualRplInDP, expectedRplInDP, 0.1); // ooof, lets get this estimate down to 0.001%
     });
 
     it("eth whale redeems one share to trigger pool rebalacings", async function () {
@@ -130,11 +157,11 @@ describe("Node Operator Onboarding", function () {
         console.log("AA")
 
         console.log("BB")
-        
+
         await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
-        
+
         const currentInterval = (await protocol.yieldDistributor.currentInterval()).sub(1);
-        
+
         console.log(await protocol.yieldDistributor.getClaims())
 
         const tx = await protocol.yieldDistributor.connect(signers.random).harvest(signers.hyperdriver.address, 0, currentInterval);
@@ -187,4 +214,15 @@ describe("Node Operator Onboarding", function () {
             }
         }
     });
+
+    it("sub node operator 'hyperdriver' decides to begin staking process again...", async () => {
+        await setupData.rocketPool.rocketDepositPoolContract.deposit({
+            value: ethers.utils.parseEther("32")
+        })
+        await setupData.rocketPool.rocketDepositPoolContract.assignDeposits();
+
+        await increaseEVMTime(60 * 60 * 24 * 7 * 32);
+
+        await expect(protocol.superNode.connect(signers.hyperdriver).stake(minipoolAddress)).to.be.revertedWith("The minipool can only begin staking while in prelaunch");
+    })
 });

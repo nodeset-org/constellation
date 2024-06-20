@@ -1,6 +1,6 @@
 {
-  "name": "constellation",
-  "version": "0.0.1",
+  "name": "@nodeset/contracts",
+  "version": "0.0.4",
   "description": "Protocol for accessing NodeSet's Constellation Ethereum staking network",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -14,8 +14,11 @@
     "stake",
     "rocket pool"
   ],
-  "author": "Mike Leach (Wander) <info@nodeset.io>",
-  "devDependencies": {
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "author": "Theodore Clapp (mryamz), Mike Leach (Wander) <info@nodeset.io>",
+  "dependencies": {
     "@babel/polyfill": "^7.12.1",
     "@babel/preset-env": "^7.20.2",
     "@babel/register": "^7.18.9",
@@ -35,6 +38,7 @@
     "ethereumjs-util": "^6.2.0",
     "glob": "^7.1.7",
     "hardhat": "^2.12.7",
+    "hardhat-contract-sizer": "^2.10.0",
     "hardhat-gas-reporter": "^1.0.9",
     "mocha": "^10.2.0",
     "pako": "^1.0.6",
@@ -42,9 +46,7 @@
     "prettier-plugin-solidity": "^1.3.1",
     "query-string": "^7.0.1",
     "solidity-docgen": "^0.6.0-beta.36",
-    "web3": "^1.2.8"
-  },
-  "dependencies": {
+    "web3": "^1.2.8",
     "@openzeppelin/contracts-upgradeable": "^4.8.0",
     "@openzeppelin/upgrades": "^2.8.0",
     "@uniswap/v3-core": "^1.0.1",
@@ -52,7 +54,6 @@
     "abdk-libraries-solidity": "^3.2.0",
     "dotenv": "^16.1.1",
     "find-config": "^1.0.0",
-    "hardhat-contract-sizer": "^2.10.0",
     "oz-contracts-3-4-0": "npm:@openzeppelin/contracts@^3.4.0",
     "oz-contracts-340": "npm:@openzeppelin/contracts@^3.4.0",
     "rlp": "^3.0.0",
