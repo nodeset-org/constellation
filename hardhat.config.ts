@@ -90,6 +90,10 @@ const config: HardhatUserConfig = {
       gasPrice: 25000000000, // This is in wei (25 gwei)
     },
 
+    localhost: {
+      gasPrice: 25000000000
+    },
+
     goerli: {
       url: process.env.GOERLI_URL || "" as string,
       accounts: [process.env.DEPLOYER_PRIVATE_KEY || "" as string],
