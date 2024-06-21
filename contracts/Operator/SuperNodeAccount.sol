@@ -256,7 +256,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         }
     }
 */
-    function _authorizeUpgrade(address _implementationAddress) internal view override only24HourTimelock {}
+    function _authorizeUpgrade(address _implementationAddress) internal view override onlyShortTimelock {}
 
     /**
      * @dev Restricting this function to admin is the only way we can technologically enforce

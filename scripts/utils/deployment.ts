@@ -246,7 +246,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
 	await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(adminRole), signers.adminServer.address);
 
 	// set timelock to be TIMELOCK_ROLE
-	const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_24_HOUR"));
+	const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
 	await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRole), signers.admin.address);
 
 	// set protocolSigner to be PROTOCOL_ROLE

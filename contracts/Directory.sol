@@ -229,7 +229,9 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
         AccessControlUpgradeable.__AccessControl_init();
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
-        _setRoleAdmin(Constants.TIMELOCK_24_HOUR, Constants.ADMIN_ROLE);
+        _setRoleAdmin(Constants.TIMELOCK_SHORT, Constants.ADMIN_ROLE);
+        _setRoleAdmin(Constants.TIMELOCK_MED, Constants.ADMIN_ROLE);
+        _setRoleAdmin(Constants.TIMELOCK_LONG, Constants.ADMIN_ROLE);
 
         _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.ADMIN_ROLE);
 
@@ -343,7 +345,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     /// @param newProtocol A Protocol struct containing updated addresses of protocol contracts.
     /// @dev This function allows an administrator to update all protocol contract addresses simultaneously.
     function setAll(Protocol memory newProtocol) public {
-        require(hasRole(Constants.TIMELOCK_24_HOUR, msg.sender), Constants.ADMIN_ONLY_ERROR);
+        require(hasRole(Constants.TIMELOCK_SHORT, msg.sender), Constants.ADMIN_ONLY_ERROR);
         _protocol = newProtocol;
     }
 

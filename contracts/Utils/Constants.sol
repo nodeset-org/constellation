@@ -6,7 +6,9 @@ library Constants {
     bytes32 internal constant ADMIN_ROLE = keccak256('ADMIN_ROLE');
     bytes32 internal constant ADMIN_SERVER_ROLE = keccak256('ADMIN_SERVER_ROLE');
     bytes32 internal constant CORE_PROTOCOL_ROLE = keccak256('CORE_PROTOCOL_ROLE');
-    bytes32 internal constant TIMELOCK_24_HOUR = keccak256('TIMELOCK_24_HOUR');
+    bytes32 internal constant TIMELOCK_SHORT = keccak256('TIMELOCK_SHORT');
+    bytes32 internal constant TIMELOCK_MED = keccak256('TIMELOCK_SHORT');
+    bytes32 internal constant TIMELOCK_LONG = keccak256('TIMELOCK_SHORT');
 
     // DIRECTORY
     string public constant CONTRACT_NOT_FOUND_ERROR = 'Directory: contract not found!';
