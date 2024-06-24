@@ -64,5 +64,5 @@ abstract contract UpgradeableBase is UUPSUpgradeable, ReentrancyGuard {
         return _getImplementation();
     }
 
-    function _authorizeUpgrade(address) internal virtual override onlyAdmin {}
+    function _authorizeUpgrade(address) internal virtual override onlyLongTimelock {}
 }

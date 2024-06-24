@@ -163,7 +163,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**ADMIN FUNCTIONS */
 
-    function setAdminFee(uint256 _adminFeeBasePoint) external onlyAdmin {
+    function setAdminFee(uint256 _adminFeeBasePoint) external onlyShortTimelock {
         require(_adminFeeBasePoint <= 1e5, 'Fee too high');
         adminFeeBasisPoint = _adminFeeBasePoint;
     }
@@ -175,7 +175,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * It's expressed in base points, where 1e5 represents 100%.
      * @param _wethCoverageRatio The new WETH coverage ratio to be set (in base points).
      */
-    function setWETHCoverageRatio(uint256 _wethCoverageRatio) external onlyAdmin {
+    function setWETHCoverageRatio(uint256 _wethCoverageRatio) external onlyShortTimelock {
         wethCoverageRatio = _wethCoverageRatio;
     }
 
@@ -186,7 +186,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * This could be useful to ensure the contract's health and stability.
      * @param _enforceWethCoverageRatio True if the WETH coverage ratio should be enforced, otherwise false.
      */
-    function setEnforceWethCoverageRatio(bool _enforceWethCoverageRatio) external onlyAdmin {
+    function setEnforceWethCoverageRatio(bool _enforceWethCoverageRatio) external onlyShortTimelock {
         enforceWethCoverageRatio = _enforceWethCoverageRatio;
     }
 
