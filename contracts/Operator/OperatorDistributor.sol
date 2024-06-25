@@ -20,6 +20,12 @@ import '../Interfaces/RocketPool/IRocketNodeManager.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
 
+/**
+ * @title OperatorDistributor
+ * @author Theodore Clapp, Mike Leach
+ * @dev Manages distribution and staking of ETH and RPL tokens for node operators in a decentralized network.
+ * Inherits from UpgradeableBase and Errors to use their functionalities for upgradeability and error handling.
+ */
 contract OperatorDistributor is UpgradeableBase, Errors {
     event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
     event MinipoolDestroyed(address indexed _minipoolAddress, address indexed _nodeAddress);
@@ -34,14 +40,18 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     // The total amount of Ether (ETH) funded or allocated by the contract.
     // This variable keeps track of the ETH resources managed within this contract,
+    // Total amount of Ether (ETH) funded or allocated by the contract.
     uint256 public fundedEth;
 
     // The total amount of Rocket Pool tokens (RPL) funded or allocated by the contract.
     // This field is used to track the RPL token balance managed by the contract,
+    // Total amount of Rocket Pool tokens (RPL) funded or allocated by the contract.
     uint256 public fundedRpl;
 
+    // Target ratio of ETH to RPL stake.
     uint256 public targetStakeRatio;
 
+    // Required amount of ETH staked for a minipool to be active.
     uint256 public requiredLEBStaked;
 
     constructor() initializer {}
@@ -54,15 +64,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      */
     function initialize(address _directory) public override initializer {
         super.initialize(_directory);
-        targetStakeRatio = 1.5e18; // 150%
-
         // defaulting these to 8eth to only allow LEB8 minipools
-        requiredLEBStaked = 8 ether;
+        targetStakeRatio = 1.5e18; // Set to 150% as a default ratio.
+        requiredLEBStaked = 8 ether; // Default to 8 ETH to align with specific minipool configurations.
     }
 
     /**
-     * @notice Receives incoming Ether and adds it to the queued balance.
-     * @dev This is the fallback function that is called when Ether is sent directly to the contract.
+     * @notice Fallback function to handle incoming Ether transactions.
+     * @dev Automatically routes incoming ETH to the FundRouter contract for distribution unless sent by the deposit pool directly.
      */
     receive() external payable {
         address payable dp = _directory.getDepositPoolAddress();
@@ -79,6 +88,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log(address(this).balance);
     }
 
+    /**
+     * @notice Rebalances liquidity by transferring all collected ETH and RPL tokens to the deposit pool.
+     * @dev Calls to external contracts for transferring balances and ensures successful execution of these calls.
+     */
     function _rebalanceLiquidity() internal nonReentrant {
         address payable dp = _directory.getDepositPoolAddress();
         (bool success, ) = dp.call{value: address(this).balance}('');
@@ -90,25 +103,27 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         FundRouter(dp).sendRplToDistributors();
     }
 
-    /// @notice Gets the total ETH value locked inside the protocol, including inside of validators, the OperatorDistributor,
-    /// and this contract.
-    /// @dev This function sums up the balance of this contract with the amount of funded ETH across all minipools.
-    /// Ensure that all sources of ETH (like the OperatorDistributor) are properly accounted for in the calculation.
-    /// @return The total amount of Ether locked inside the protocol.
+    /**
+     * @notice Returns the total ETH held by the contract, including both the balance of this contract and the funded ETH.
+     * @return uint256 Total amount of ETH under the management of the contract.
+     */
     function getTvlEth() public view returns (uint) {
         return address(this).balance + fundedEth;
     }
 
-    /// @notice Gets the total RPL value locked inside the protocol, including inside of validators, the OperatorDistributor,
-    /// and this contract.
-    /// @dev This function calculates the total RPL by summing up the balance of RPL tokens of this contract
-    /// with the amount of funded RPL across all minipools. It retrieves the RPL token address from the `_directory` contract.
-    /// Ensure that all sources of RPL (like the OperatorDistributor) are accurately accounted for.
-    /// @return The total amount of RPL tokens locked inside the protocol.
+    /**
+     * @notice Returns the total RPL held by the contract, including both the balance of this contract and the funded RPL.
+     * @return uint256 Total amount of RPL under the management of the contract.
+     */
     function getTvlRpl() public view returns (uint) {
         return IERC20(_directory.getRPLAddress()).balanceOf(address(this)) + fundedRpl;
     }
 
+    /**
+     * @notice Allocates the necessary liquidity for the creation of a new minipool.
+     * @param _subNodeOperator Address of the sub-node operator initiating the minipool.
+     * @param _bond The amount of ETH required to be staked for the minipool.
+     */
     function provisionLiquiditiesForMinipoolCreation(
         address _subNodeOperator,
         uint256 _bond
@@ -132,12 +147,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Tops up the node operator's RPL stake if it falls below the target stake ratio.
-     * @dev This function checks the current staking ratio of the node (calculated as ETH staked times its price in RPL
-     * divided by RPL staked). If the ratio is below a predefined target, it calculates the necessary RPL amount to
-     * bring the stake ratio back to the target. Then, the function either stakes the required RPL or stakes
-     * the remaining RPL balance if it's not enough.
-     * @param _ethStaked The amount of ETH currently staked by the node operator.
+     * @notice Adjusts the RPL stake of a node operator to maintain the target stake ratio.
+     * @dev Calculates required adjustments to the RPL stake based on the current ETH price and staking metrics.
+     * @param _ethStaked Amount of ETH currently staked by the node operator.
      */
     function rebalanceRplStake(uint256 _ethStaked) public onlyProtocolOrAdmin {
         address _nodeAccount = _directory.getSuperNodeAddress();
@@ -216,13 +228,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Calculates the amount of RPL needed to top up the node operator's stake to the target stake ratio.
-     * @dev This view function checks the current staking ratio of the node (calculated as ETH staked times its price in RPL
-     * divided by RPL staked). If the ratio is below a predefined target, it returns the necessary RPL amount to
-     * bring the stake ratio back to the target.
-     * @param _existingRplStake Prior crap staked
-     * @param _ethStaked The amount of ETH currently staked by the node operator.
-     * @return requiredStakeRpl The amount of RPL required to top up to the target stake ratio.
+     * @notice Calculates the additional RPL needed to maintain the target staking ratio.
+     * @param _existingRplStake Current amount of RPL staked by the node.
+     * @param _ethStaked Amount of ETH currently staked by the node.
+     * @return requiredStakeRpl Amount of additional RPL needed.
      */
     function calculateRplStakeShortfall(
         uint256 _existingRplStake,
@@ -244,13 +253,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Calculates the amount of RPL that can be withdrawn from the node operator's stake without falling below the target stake ratio.
-     * @dev This view function checks the current staking ratio of the node (calculated as ETH staked times its price in RPL
-     * divided by RPL staked). If the ratio is above a predefined target, it returns the maximum RPL amount that can be withdrawn
-     * while still maintaining at least the target stake ratio.
-     * @param _existingRplStake The amount of RPL currently staked by the node operator.
-     * @param _ethStaked The amount of ETH currently staked by the node operator.
-     * @return withdrawableStakeRpl The maximum amount of RPL that can be withdrawn while maintaining the target stake ratio.
+     * @notice Calculates the maximum RPL that can be withdrawn while maintaining the target staking ratio.
+     * @param _existingRplStake Current amount of RPL staked by the node.
+     * @param _ethStaked Amount of ETH currently staked by the node.
+     * @return withdrawableStakeRpl Maximum RPL that can be safely withdrawn.
      */
     function calculateRequiredRplTopDown(
         uint256 _existingRplStake,
@@ -269,16 +275,19 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Processes rewards for a predefined number of minipools. This function is meant to be called during
-     * the creation of new intervals. It serves to withdraw rewards from minipools and to top up the RPL stake.
-     * @dev The function first checks if there are any minipools to process. If there aren't, it emits a warning event
-     * and exits. Otherwise, it calls the internal function _processNextMinipool() for a certain number of times defined
-     * by numMinipoolsProcessedPerInterval.
+     * @notice Internal function to process the next minipool in line.
+     * Handles RPL top-up and balance distribution based on minipool's current state.
      */
     function processNextMinipool() external onlyProtocol {
         _processNextMinipool();
     }
 
+    /**
+     * @notice Handles the creation of a minipool, registers the node, and logs the event.
+     * @param newMinipoolAddress Address of the newly created minipool.
+     * @param nodeAddress Address of the node operator.
+     * @param bond Amount of ETH bonded for the minipool.
+     */
     function onMinipoolCreated(address newMinipoolAddress, address nodeAddress, uint256 bond) external {
         if (!_directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender)) {
             revert BadRole(Constants.CORE_PROTOCOL_ROLE, msg.sender);
@@ -314,18 +323,36 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         }
     }
 
+    /**
+     * @notice Sets the required ETH stake for activating a minipool.
+     * @param _requiredLEBStaked Amount of ETH required.
+     */
     function setBondRequirments(uint256 _requiredLEBStaked) external onlyAdmin {
         requiredLEBStaked = _requiredLEBStaked;
     }
 
+    /**
+     * @notice Sets the target ratio of ETH to RPL stake.
+     * @param _targetStakeRatio New target stake ratio.
+     */
     function setTargetStakeRatio(uint256 _targetStakeRatio) external onlyAdmin {
         targetStakeRatio = _targetStakeRatio;
     }
 
+    /**
+     * @notice Handles the destruction of a minipool by a node operator.
+     * @param _nodeOperator Address of the node operator.
+     * @param _bond Amount of ETH bonded that needs to be subtracted from the total funded ETH.
+     */
     function onNodeMinipoolDestroy(address _nodeOperator, uint256 _bond) external onlyProtocol {
         fundedEth -= _bond;
     }
 
+    /**
+     * @notice Transfers WETH to a specified vault, provided the contract has enough balance.
+     * @param _amount Amount of WETH to transfer.
+     * @return uint256 Amount of WETH transferred.
+     */
     function transferWEthToVault(uint256 _amount) external returns (uint256) {
         address vault = _directory.getWETHVaultAddress();
         require(msg.sender == vault, 'caller must be vault');
@@ -342,6 +369,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         }
     }
 
+    /**
+     * @notice Transfers RPL to a specified vault, provided the contract has enough balance.
+     * @param _amount Amount of RPL to transfer.
+     * @return uint256 Amount of RPL transferred.
+     */
     function transferRplToVault(uint256 _amount) external returns (uint256) {
         address vault = _directory.getRPLVaultAddress();
         require(msg.sender == vault, 'caller must be vault');
