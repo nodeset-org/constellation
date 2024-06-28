@@ -163,7 +163,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**ADMIN FUNCTIONS */
 
-    function setAdminFee(uint256 _adminFeeBasePoint) external onlyShortTimelock {
+    function setAdminFee(uint256 _adminFeeBasePoint) external onlyMediumTimelock {
         require(_adminFeeBasePoint <= 1e5, 'Fee too high');
         adminFeeBasisPoint = _adminFeeBasePoint;
     }
