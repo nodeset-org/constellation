@@ -41,8 +41,18 @@ abstract contract UpgradeableBase is UUPSUpgradeable, ReentrancyGuard {
         _;
     }
 
-    modifier only24HourTimelock() {
-        require(_directory.hasRole(Constants.TIMELOCK_24_HOUR, msg.sender), 'Can only be called by 24 hour timelock!');
+    modifier onlyShortTimelock() {
+        require(_directory.hasRole(Constants.TIMELOCK_SHORT, msg.sender), 'Can only be called by short timelock!');
+        _;
+    }
+
+    modifier onlyMediumTimelock() {
+        require(_directory.hasRole(Constants.TIMELOCK_MED, msg.sender), 'Can only be called by medium timelock!');
+        _;
+    }
+
+    modifier onlyLongTimelock() {
+        require(_directory.hasRole(Constants.TIMELOCK_LONG, msg.sender), 'Can only be called by long timelock!');
         _;
     }
 
@@ -54,5 +64,5 @@ abstract contract UpgradeableBase is UUPSUpgradeable, ReentrancyGuard {
         return _getImplementation();
     }
 
-    function _authorizeUpgrade(address) internal virtual override onlyAdmin {}
+    function _authorizeUpgrade(address) internal virtual override onlyLongTimelock {}
 }

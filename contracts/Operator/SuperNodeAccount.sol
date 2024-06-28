@@ -256,7 +256,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         }
     }
 */
-    function _authorizeUpgrade(address _implementationAddress) internal view override only24HourTimelock {}
 
     /**
      * @dev Restricting this function to admin is the only way we can technologically enforce
@@ -332,7 +331,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev Only callable by the contract owner or authorized admin.
      * @param _newLockThreshold The new lock threshold value in wei.
      */
-    function setLockAmount(uint256 _newLockThreshold) external onlyAdmin {
+    function setLockAmount(uint256 _newLockThreshold) external onlyShortTimelock {
         if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
@@ -344,7 +343,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev Only callable by the contract owner or authorized admin.
      * @param _newLockUpTime The new lock-up time in seconds.
      */
-    function setLockUpTime(uint256 _newLockUpTime) external onlyAdmin {
+    function setLockUpTime(uint256 _newLockUpTime) external onlyShortTimelock {
         if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }

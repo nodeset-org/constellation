@@ -1788,10 +1788,10 @@ modifier onlyProtocolOrAdmin()
 modifier onlyProtocol()
 ```
 
-### only24HourTimelock
+### onlyShortTimelock
 
 ```solidity
-modifier only24HourTimelock()
+modifier onlyShortTimelock()
 ```
 
 ### getDirectory
@@ -1832,10 +1832,10 @@ bytes32 ADMIN_SERVER_ROLE
 bytes32 CORE_PROTOCOL_ROLE
 ```
 
-### TIMELOCK_24_HOUR
+### TIMELOCK_SHORT
 
 ```solidity
-bytes32 TIMELOCK_24_HOUR
+bytes32 TIMELOCK_SHORT
 ```
 
 ### CONTRACT_NOT_FOUND_ERROR

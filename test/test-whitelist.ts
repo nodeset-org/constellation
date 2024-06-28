@@ -159,7 +159,7 @@ describe("Whitelist", function () {
         await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address, sig);
 
         await expect(protocol.whitelist.connect(signers.random).removeOperator(signers.random.address))
-            .to.be.revertedWith("Can only be called by 24 hour timelock!");
+            .to.be.revertedWith("Can only be called by short timelock!");
     });
 
     it("Sig cannot be reused to self add attack", async function () {
@@ -224,6 +224,6 @@ describe("Whitelist", function () {
             [signers.random.address, signers.random2.address],
             [sig1, sig2]);
         await expect(protocol.whitelist.connect(signers.random).removeOperators([signers.random.address, signers.random2.address]))
-            .to.be.revertedWith("Can only be called by 24 hour timelock!");
+            .to.be.revertedWith("Can only be called by short timelock!");
     });
 });

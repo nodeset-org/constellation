@@ -12,7 +12,7 @@ describe("Yield Distributor", function () {
       const { protocol, signers } = setupData;
 
       await expect(protocol.yieldDistributor.connect(signers.random).setMaxIntervalTime(1))
-        .to.be.revertedWith("Can only be called by admin address!");
+        .to.be.revertedWith("Can only be called by short timelock!");
     })
   });
 
