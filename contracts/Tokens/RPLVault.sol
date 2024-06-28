@@ -186,7 +186,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * This could be useful to ensure the contract's health and stability.
      * @param _enforceWethCoverageRatio True if the WETH coverage ratio should be enforced, otherwise false.
      */
-    function setEnforceWethCoverageRatio(bool _enforceWethCoverageRatio) external onlyShortTimelock {
+    function setEnforceWethCoverageRatio(bool _enforceWethCoverageRatio) external onlyMediumTimelock {
         enforceWethCoverageRatio = _enforceWethCoverageRatio;
     }
 
