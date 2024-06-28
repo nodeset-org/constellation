@@ -329,13 +329,22 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         require(success, 'ETH transfer failed');
     }
 
-    /**
-     * @notice Authorizes an upgrade to the contract's implementation.
-     * @dev Overrides the inherited _authorizeUpgrade method to add a custom timelock.
-     *      This ensures that all upgrades go through a mandatory delay for security reasons.
-     * @param _implementationAddress Address of the new contract implementation to which the proxy will point.
-     */
-    function _authorizeUpgrade(address _implementationAddress) internal view override only24HourTimelock {}
+    // we don't even need this anymore
+    /*
+    function withdraw(uint256 _amount, address _minipool) external hasConfig(_minipool) {
+        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
+            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
+        }
+        IMinipool minipool = IMinipool(_minipool);
+        require(minipool.getStatus() == MinipoolStatus.Dissolved, 'minipool must be dissolved');
+
+        (bool success, bytes memory data) = _directory.getDepositPoolAddress().call{value: _amount}('');
+        if (!success) {
+            console.log('LowLevelEthTransfer 3');
+            revert LowLevelEthTransfer(success, data);
+        }
+    }
+*/
 
     /**
      * @notice Distributes staking rewards or allows for finalizing the minipool based on the given parameter.
@@ -457,7 +466,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev Only callable by the contract owner or authorized admin.
      * @param _newLockThreshold The new lock threshold value in wei.
      */
-    function setLockAmount(uint256 _newLockThreshold) external onlyAdmin {
+    function setLockAmount(uint256 _newLockThreshold) external onlyShortTimelock {
         if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
@@ -469,7 +478,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev Only callable by the contract owner or authorized admin.
      * @param _newLockUpTime The new lock-up time in seconds.
      */
-    function setLockUpTime(uint256 _newLockUpTime) external onlyAdmin {
+    function setLockUpTime(uint256 _newLockUpTime) external onlyShortTimelock {
         if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }

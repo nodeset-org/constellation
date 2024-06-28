@@ -241,20 +241,20 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**ADMIN FUNCTIONS */
 
-    function setRplCoverageRatio(uint256 _rplCoverageRatio) external onlyAdmin {
+    function setRplCoverageRatio(uint256 _rplCoverageRatio) external onlyShortTimelock {
         rplCoverageRatio = _rplCoverageRatio;
     }
 
-    function setEnforceRplCoverageRatio(bool _enforceRplCoverage) external onlyAdmin {
+    function setEnforceRplCoverageRatio(bool _enforceRplCoverage) external onlyShortTimelock {
         enforceRplCoverageRatio = _enforceRplCoverage;
     }
 
-    function setAdminFee(uint256 _adminFeeBasePoint) external onlyAdmin {
+    function setAdminFee(uint256 _adminFeeBasePoint) external onlyMediumTimelock {
         require(_adminFeeBasePoint <= 1e5, 'Fee too high');
         adminFeeBasePoint = _adminFeeBasePoint;
     }
 
-    function setNodeOperatorFee(uint256 _nodeOperatorFeeBasePoint) external onlyAdmin {
+    function setNodeOperatorFee(uint256 _nodeOperatorFeeBasePoint) external onlyShortTimelock {
         require(_nodeOperatorFeeBasePoint <= 1e5, 'Fee too high');
         nodeOperatorFeeBasePoint = _nodeOperatorFeeBasePoint;
     }

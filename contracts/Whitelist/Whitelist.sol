@@ -180,7 +180,7 @@ contract Whitelist is UpgradeableBase {
     ///      It emits the 'OperatorRemoved' event to notify when an operator has been successfully removed.
     /// @param nodeOperator The address of the operator to be removed.
     /// @dev Throws no errors during execution.
-    function removeOperator(address nodeOperator) public only24HourTimelock {
+    function removeOperator(address nodeOperator) public onlyShortTimelock {
         _removeOperator(nodeOperator);
         emit OperatorRemoved(nodeOperator);
     }
@@ -205,7 +205,7 @@ contract Whitelist is UpgradeableBase {
     ///      It removes valid operators and emits the 'OperatorsRemoved' event.
     /// @param operators An array of addresses representing the operators to be removed.
     /// @dev Throws no errors during execution.
-    function removeOperators(address[] memory operators) public only24HourTimelock {
+    function removeOperators(address[] memory operators) public onlyShortTimelock {
         for (uint i = 0; i < operators.length; i++) {
             _removeOperator(operators[i]);
         }

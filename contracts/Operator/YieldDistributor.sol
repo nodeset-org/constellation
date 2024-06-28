@@ -219,7 +219,7 @@ contract YieldDistributor is UpgradeableBase {
      * @notice Updates the maximum duration for each rewards interval.
      * @param _maxIntervalLengthSeconds The new maximum duration (in seconds) for each interval.
      * @dev This function allows the admin to adjust the length of time between rewards intervals. Adjustments may be necessary based on changing network conditions or governance decisions.
-     */ function setMaxIntervalTime(uint256 _maxIntervalLengthSeconds) public onlyAdmin {
+     */ function setMaxIntervalTime(uint256 _maxIntervalLengthSeconds) public onlyShortTimelock {
         maxIntervalLengthSeconds = _maxIntervalLengthSeconds;
     }
 
@@ -228,7 +228,7 @@ contract YieldDistributor is UpgradeableBase {
      * @param treasury The address of the treasury to which the dust will be sent.
      * @dev This function can only be called by the contract's admin. It allows for the collection of small residual ETH balances (dust) that may have accumulated due to rounding errors or other minor discrepancies.
      */
-    function adminSweep(address treasury) public onlyAdmin {
+    function adminSweep(address treasury) public onlyMediumTimelock {
         uint256 amount = dustAccrued;
         dustAccrued = 0;
         (bool success, ) = treasury.call{value: amount}('');
@@ -241,7 +241,7 @@ contract YieldDistributor is UpgradeableBase {
      * @param _maxValidators The maximum number of validators to be considered in the reward calculation.
      * @dev This function can only be called by the contract's admin. Adjusting these parameters can change the reward distribution dynamics for validators.
      */
-    function setRewardIncentiveModel(uint256 _k, uint256 _maxValidators) public onlyAdmin {
+    function setRewardIncentiveModel(uint256 _k, uint256 _maxValidators) public onlyShortTimelock {
         k = _k;
         maxValidators = _maxValidators;
     }

@@ -50,7 +50,7 @@ async function main() {
     });
 
     // set timelock to be TIMELOCK_ROLE
-    const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_24_HOUR"));
+    const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
     await retryOperation(async () => {
         await directory.connect(admin).grantRole(ethers.utils.arrayify(timelockRole), deployer.address);
     });
