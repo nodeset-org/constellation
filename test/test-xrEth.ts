@@ -98,7 +98,7 @@ describe("xrETH", function () {
       const { protocol, signers } = await loadFixture(protocolFixture);
 
       const tvlCoverageRatio = ethers.utils.parseEther("0.1542069");
-      await expect(protocol.vCWETH.connect(signers.ethWhale).setRplCoverageRatio(tvlCoverageRatio)).to.be.revertedWith("Can only be called by admin address!");
+      await expect(protocol.vCWETH.connect(signers.ethWhale).setRplCoverageRatio(tvlCoverageRatio)).to.be.revertedWith("Can only be called by short timelock!");
     });
   });
 

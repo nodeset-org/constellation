@@ -7,7 +7,7 @@ contract MockRETHOracle is IXRETHOracle {
     
     uint private _yield = 0 ether;
 
-    function setTotalYieldAccrued(uint yield) public override {
+    function setTotalYieldAccrued(uint yield) public {
         _yield = yield;
     }
 
