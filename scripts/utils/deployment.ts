@@ -5,7 +5,7 @@ import { FunctionFragment } from 'ethers/lib/utils';
 import { getNextContractAddress } from "../../test/utils/utils";
 import { getInitializerData } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import readline from 'readline';
-import { AdminTreasury, Directory, FundRouter, IRocketStorage, IXRETHOracle, NodeAccountFactory, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, XRETHAdminOracle, YieldDistributor } from "../../typechain-types";
+import { AdminTreasury, Directory, FundRouter, IRocketStorage, IXRETHOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, XRETHAdminOracle, YieldDistributor } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Protocol, Signers } from "../../test/test";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";

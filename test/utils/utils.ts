@@ -172,7 +172,7 @@ export async function deployMinipool(setupData: SetupData,  bondValue: BigNumber
     }
     console.log("fdasdfa;as")
 
-    const sig = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
+    const {sig, timestamp} = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
 
     // can probz delete this line
     //const proxyVAAddr = await setupData.protocol.superNode.connect(setupData.signers.hyperdriver).callStatic.createMinipool(config,sig, {
@@ -180,7 +180,7 @@ export async function deployMinipool(setupData: SetupData,  bondValue: BigNumber
     //})
 
     console.log("aljsdf;as")
-    await setupData.protocol.superNode.connect(setupData.signers.hyperdriver).createMinipool(config,sig, {
+    await setupData.protocol.superNode.connect(setupData.signers.hyperdriver).createMinipool(config,timestamp, sig, {
         value: ethers.utils.parseEther("1")
     })
     console.log("aljsdf;as")
@@ -261,15 +261,6 @@ export async function printEventDetails(tx: ContractTransaction, contract: Contr
         }
     }
 }
-/**
-* Counts the `ProxyCreated` events emitted by the NodeAccountFactory contract.
-* @param provider The Ethereum provider.
-* @returns The number of `ProxyCreated` events.
-*/
-export async function countProxyCreatedEvents(setupData: SetupData): Promise<number> {
-    const events = await setupData.protocol.NodeAccountFactory.queryFilter(setupData.protocol.NodeAccountFactory.filters.ProxyCreated());
-    return events.length;
-}
 
 export async function predictDeploymentAddress(address: string, factoryNonceOffset: number): Promise<string> {
     return ethers.utils.getContractAddress({ from: address, nonce: factoryNonceOffset });
@@ -327,8 +318,8 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
         await setupData.rocketPool.rocketDepositPoolContract.assignDeposits();
         
         
-        const sig = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
-        await protocol.superNode.connect(nodeOperator).createMinipool(config, sig, {value: ethers.utils.parseEther("1")});
+        const {sig, timestamp} = await approveHasSignedExitMessageSig(setupData, '0x'+config.expectedMinipoolAddress, config.salt)
+        await protocol.superNode.connect(nodeOperator).createMinipool(config, timestamp, sig, {value: ethers.utils.parseEther("1")});
         
         // waits 32 days which could be a problem for other tests
         await increaseEVMTime(60 * 60 * 24 * 7 * 32);
@@ -343,50 +334,67 @@ export const approveHasSignedExitMessageSig = async (setupData: SetupData, expec
     const goodSigner = setupData.signers.adminServer;
     const role = await setupData.protocol.directory.hasRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE")), goodSigner.address)
     expect(role).equals(true);
+
+    const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
+    const network = await ethers.provider.getNetwork();
+    const chainId = network.chainId;
+
     const packedData = ethers.utils.solidityPack(
         [
         "address",
          "uint256", 
-         "address"
+         "uint256",
+         "address",
+         "uint256"
     ], [
         expectedMinipoolAddress, 
-        salt, 
-        setupData.protocol.superNode.address
+        salt,
+        timestamp, 
+        setupData.protocol.superNode.address,
+        chainId
     ]);
 
     const messageHash = ethers.utils.keccak256(packedData);
     const messageHashBytes = ethers.utils.arrayify(messageHash);
     const sig = await goodSigner.signMessage(messageHashBytes);
-    return sig;
+    return {sig, timestamp};
 }
 
 export const whitelistUserServerSig = async (setupData: SetupData, nodeOperator: SignerWithAddress) => {
+    const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
+    const network = await ethers.provider.getNetwork();
+    const chainId = network.chainId;
+    
     const goodSigner = setupData.signers.adminServer;
     const role = await setupData.protocol.directory.hasRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE")), goodSigner.address)
     expect(role).equals(true);
-    const packedData = ethers.utils.solidityPack(["address", "address"], [nodeOperator.address, setupData.protocol.whitelist.address]);
+    const packedData = ethers.utils.solidityPack(["address", "uint256", "address", "uint256"], [nodeOperator.address, timestamp, setupData.protocol.whitelist.address, chainId]);
     const messageHash = ethers.utils.keccak256(packedData);
     const messageHashBytes = ethers.utils.arrayify(messageHash);
     const sig = await goodSigner.signMessage(messageHashBytes);
-    return sig;
+    return {sig, timestamp};
 }
 
 export const assertAddOperator = async (setupData: SetupData, nodeOperator: SignerWithAddress) => {
-    const sig = await whitelistUserServerSig(setupData, nodeOperator);
+    const {sig, timestamp} = await whitelistUserServerSig(setupData, nodeOperator);
     expect(await setupData.protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address)).equals(false);
-    await setupData.protocol.whitelist.connect(setupData.signers.adminServer).addOperator(nodeOperator.address, sig);
+    await setupData.protocol.whitelist.connect(setupData.signers.adminServer).addOperator(nodeOperator.address, timestamp, sig);
     expect(await setupData.protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address)).equals(true);
 }
 
 export const badAutWhitelistUserServerSig = async (setupData: SetupData, nodeOperator: SignerWithAddress) => {
+    const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
+    const network = await ethers.provider.getNetwork();
+    const chainId = network.chainId;
+
     const badSigner = setupData.signers.random5;
     const role = await setupData.protocol.directory.hasRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE")), badSigner.address)
     expect(role).equals(false);
-    const packedData = ethers.utils.solidityPack(["address", "address"], [nodeOperator.address, setupData.protocol.whitelist.address]);
+    const packedData = ethers.utils.solidityPack(["address", "uint256", "address", "uint256"], [nodeOperator.address, timestamp, setupData.protocol.whitelist.address, chainId]);
     const messageHash = ethers.utils.keccak256(packedData);
     const messageHashBytes = ethers.utils.arrayify(messageHash);
     const sig = await badSigner.signMessage(messageHashBytes);
-    return sig;
+    return {sig, timestamp};
 }
 
 // Deprecated: Don't use

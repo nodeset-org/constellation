@@ -10,6 +10,8 @@ pragma solidity 0.8.17;
 // interface def here
 
 contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
+
+    uint256 internal _lastUpdatedTotalYieldAccrued;
     uint256 internal _totalYieldAccrued;
 
     constructor() initializer {}
@@ -24,10 +26,10 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
         return _totalYieldAccrued;
     }
 
-    function setTotalYieldAccrued(bytes calldata _sig, uint256 _newTotalYieldAccrued) external {
+    function setTotalYieldAccrued(bytes calldata _sig, uint256 _newTotalYieldAccrued, uint256 _sigTimeStamp) external {
         address recoveredAddress = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(
-                keccak256(abi.encodePacked(_newTotalYieldAccrued, address(this)))
+                keccak256(abi.encodePacked(_newTotalYieldAccrued, _sigTimeStamp, address(this), block.chainid))
             ),
             _sig
         );
@@ -35,6 +37,11 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
             _directory.hasRole(Constants.ADMIN_ORACLE_ROLE, recoveredAddress),
             'signer must have permission from admin oracle role'
         );
+        require(
+            _sigTimeStamp > _lastUpdatedTotalYieldAccrued,
+            'cannot update tya using old data'
+        );
         _totalYieldAccrued = _newTotalYieldAccrued;
+        _lastUpdatedTotalYieldAccrued = block.timestamp;
     }
 }

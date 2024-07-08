@@ -64,6 +64,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     // Variables for pre-signed exit message checks
     bool public adminServerCheck;
     mapping(bytes => bool) public sigsUsed;
+    uint256 public adminServerSigExpiry;
 
     // Lock threshold amount in wei
     uint256 public lockThreshhold;
@@ -124,6 +125,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         lockThreshhold = 1 ether;
         lockUpTime = 28 days;
         adminServerCheck = true;
+        adminServerSigExpiry = 1 days;
     }
 
     /**
@@ -166,7 +168,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      *        - expectedMinipoolAddress: Precomputed address expected to be generated for the new minipool.
      * @param _sig The signature provided for minipool creation, used for admin verification if pre-signed exit message checks are enabled.
      */
-    function createMinipool(ValidatorConfig calldata _config, bytes memory _sig) public payable {
+    function createMinipool(ValidatorConfig calldata _config, uint256 _sigGenesisTime, bytes memory _sig) public payable {
         require(msg.value == lockThreshhold, 'SuperNode: must lock 1 ether');
         require(hasSufficentLiquidity(_config.bondAmount), 'NodeAccount: protocol must have enough rpl and eth');
         address subNodeOperator = msg.sender;
@@ -180,13 +182,14 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             _config.bondAmount
         );
         if (adminServerCheck) {
+            require(block.timestamp - _sigGenesisTime < adminServerSigExpiry, "ass sig expired");
             console.log('_createMinipool: message hash');
             console.logBytes32(
-                keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt, address(this)))
+                keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt, address(this), block.chainid))
             );
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
-                    keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt, address(this)))
+                    keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt, _sigGenesisTime, address(this), block.chainid))
                 ),
                 _sig
             );
@@ -509,5 +512,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             return IMinipool(address(0));
         }
         return IMinipool(minipools[currentMinipool++ % minipools.length]);
+    }
+
+    function setAdminServerSigExpiry(uint256 _newExpiry) external onlyAdmin {
+        adminServerSigExpiry = _newExpiry;
     }
 }

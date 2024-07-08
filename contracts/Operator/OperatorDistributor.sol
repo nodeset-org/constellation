@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
-
 import '../UpgradeableBase.sol';
 import '../Whitelist/Whitelist.sol';
 import '../FundRouter.sol';
