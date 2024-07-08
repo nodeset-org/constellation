@@ -5,6 +5,8 @@ import '../UpgradeableBase.sol';
 
 pragma solidity 0.8.17;
 
+// interface def here
+
 contract XRETHOracle is IXRETHOracle, UpgradeableBase {
 
     address public oracleService; // is gonna be rated
@@ -18,5 +20,7 @@ contract XRETHOracle is IXRETHOracle, UpgradeableBase {
         oracleService = _oracleService;
     }
 
-    function getTotalYieldAccrued() external view override returns (uint) {}
+    function getTotalYieldAccrued() external view override returns (uint) {
+        // rated oracle itegration here
+    }
 }
