@@ -74,23 +74,6 @@ contract FundRouter is UpgradeableBase {
         IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, _amount);
     }
 
-    // Node operators can call this method to claim rewards for one or more reward intervals and specify an amount of RPL to stake at the same time
-    function merkleClaim(
-        address _nodeAddress,
-        uint256[] calldata _rewardIndex,
-        uint256[] calldata _amountRPL,
-        uint256[] calldata _amountETH,
-        bytes32[][] calldata _merkleProof
-    ) public {
-        IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
-            _nodeAddress,
-            _rewardIndex,
-            _amountRPL,
-            _amountETH,
-            _merkleProof
-        );
-    }
-
     function sendEthToDistributors() public onlyProtocolOrAdmin nonReentrant {
         console.log('sendEthToDistributors.A');
         // Convert entire WETH balance of this contract to ETH
