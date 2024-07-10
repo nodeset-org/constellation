@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from "./test";
-import { approveHasSignedExitMessageSig, assertAddOperator, countProxyCreatedEvents, predictDeploymentAddress, prepareOperatorDistributionContract } from "./utils/utils";
+import { approveHasSignedExitMessageSig, assertAddOperator, predictDeploymentAddress, prepareOperatorDistributionContract } from "./utils/utils";
 import { generateDepositData } from "./rocketpool/_helpers/minipool";
 
 describe("SuperNodeAccount", function () {
@@ -66,9 +66,9 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         };
 
-        const sig = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const {sig, timestamp} = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
 
-        await protocol.superNode.connect(signers.hyperdriver).createMinipool(config, sig, {
+        await protocol.superNode.connect(signers.hyperdriver).createMinipool(config, timestamp, sig, {
             value: ethers.utils.parseEther("1")
         });
 
@@ -111,13 +111,13 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         };
 
-        const sig = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const {sig, timestamp} = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
 
-        await protocol.superNode.connect(signers.hyperdriver).createMinipool(config, sig, {
+        await protocol.superNode.connect(signers.hyperdriver).createMinipool(config, timestamp, sig, {
             value: ethers.utils.parseEther("1")
         });
 
-        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config, sig, {
+        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config,timestamp, sig, {
             value: ethers.utils.parseEther("1")
         })).to.be.revertedWith("sig already used");
     });
@@ -146,9 +146,9 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         };
 
-        const sig = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const {sig, timestamp} = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
 
-        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config, sig, {
+        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config, timestamp, sig, {
             value: ethers.utils.parseEther("1")
         })).to.be.revertedWith("sub node operator must be whitelisted");
     });
@@ -191,11 +191,11 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: badDepositData.minipoolAddress
         };
 
-        const sig = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const {sig, timestamp} = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
 
         // this is not an intuitive fail message, but it is correct as it we sign invalid param data so it fails for bad sig
         // because the predicted address is incorrect. This may make increase future cli debugging times
-        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(badConfig, sig, {
+        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(badConfig, timestamp, sig, {
             value: ethers.utils.parseEther("1")
         })).to.be.revertedWith("signer must have permission from admin server role");
     });
@@ -226,9 +226,9 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         };
 
-        const sig = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const {sig, timestamp} = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
 
-        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config, sig, {
+        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config, timestamp, sig, {
             value: ethers.utils.parseEther("0")
         })).to.be.revertedWith("SuperNode: must lock 1 ether");
     });
@@ -253,9 +253,9 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         };
 
-        const sig = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const {sig, timestamp} = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
 
-        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config, sig, {
+        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config, timestamp, sig, {
             value: ethers.utils.parseEther("1")
         })).to.be.revertedWith("NodeAccount: protocol must have enough rpl and eth");
     });

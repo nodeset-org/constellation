@@ -2,12 +2,13 @@
 pragma solidity 0.8.17;
 
 import '../../Interfaces/Oracles/IXRETHOracle.sol';
+import '../../UpgradeableBase.sol';
 
-contract MockRETHOracle is IXRETHOracle {
+contract MockRETHOracle is IXRETHOracle,  UpgradeableBase{
     
     uint private _yield = 0 ether;
 
-    function setTotalYieldAccrued(uint yield) public override {
+    function setTotalYieldAccrued(uint yield) public {
         _yield = yield;
     }
 

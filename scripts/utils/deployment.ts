@@ -5,7 +5,7 @@ import { FunctionFragment } from 'ethers/lib/utils';
 import { getNextContractAddress } from "../../test/utils/utils";
 import { getInitializerData } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import readline from 'readline';
-import { AdminTreasury, Directory, FundRouter, IRocketStorage, IXRETHOracle, NodeAccountFactory, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, YieldDistributor } from "../../typechain-types";
+import { AdminTreasury, Directory, FundRouter, IRocketStorage, IXRETHOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, XRETHAdminOracle, YieldDistributor } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Protocol, Signers } from "../../test/test";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
@@ -55,7 +55,7 @@ export const generateBytes32Identifier = (identifier: string) => {
     return ethers.utils.solidityKeccak256(["string"], [`contract.address${identifier}`]);
 };
 
-export async function fastDeployProtocol(deployer: SignerWithAddress, directoryDeployer: SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, uniswapV3: string, oracle: string, admin: string, log: boolean) {
+export async function fastDeployProtocol(deployer: SignerWithAddress, directoryDeployer: SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, uniswapV3: string, admin: string, log: boolean) {
 
     const directoryAddress = await getNextContractAddress(directoryDeployer, 1)
 
@@ -69,6 +69,12 @@ export async function fastDeployProtocol(deployer: SignerWithAddress, directoryD
         const vCWETH = await upgrades.deployProxy(await ethers.getContractFactory("WETHVault", deployer), [directoryAddress, weth], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         if (log) console.log("vaulted constellation eth deployed to", vCWETH.address)
         return vCWETH;
+    });
+
+    const oracleProxy = await retryOperation(async () => {
+        const oracle = await upgrades.deployProxy(await ethers.getContractFactory("XRETHAdminOracle", deployer), [directoryAddress], { 'initializer': 'initializeAdminOracle', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        if (log) console.log("admin oracle deployed to", oracle.address)
+        return oracle;
     });
 
     const addressRplContract = await retryOperation(async () => {
@@ -124,7 +130,7 @@ export async function fastDeployProtocol(deployer: SignerWithAddress, directoryD
         return snap
     })
 
-    if(log) {
+    if (log) {
         console.log("verify directory input");
         console.log("whitelistProxy.address", whitelistProxy.address)
         console.log("vCWETHProxy.address", vCWETHProxy.address)
@@ -132,7 +138,7 @@ export async function fastDeployProtocol(deployer: SignerWithAddress, directoryD
         console.log("depositPoolProxy.address", depositPoolProxy.address)
         console.log("operatorDistributorProxy.address", operatorDistributorProxy.address)
         console.log("yieldDistributorProxy.address", yieldDistributorProxy.address)
-        console.log("oracle", oracle)
+        console.log("oracle", oracleProxy.address)
         console.log("priceFetcherProxy.address", priceFetcherProxy.address)
         console.log("snap.address", superNodeProxy.address)
         console.log("rocketStorage", rocketStorage)
@@ -151,7 +157,7 @@ export async function fastDeployProtocol(deployer: SignerWithAddress, directoryD
                     depositPoolProxy.address,
                     operatorDistributorProxy.address,
                     yieldDistributorProxy.address,
-                    oracle,
+                    oracleProxy.address,
                     priceFetcherProxy.address,
                     superNodeProxy.address,
                     rocketStorage,
@@ -168,8 +174,8 @@ export async function fastDeployProtocol(deployer: SignerWithAddress, directoryD
         return dir
     })
 
-    if(log) {
-        if(directoryAddress.toLocaleLowerCase() === directoryProxy.address.toLocaleLowerCase()) {
+    if (log) {
+        if (directoryAddress.toLocaleLowerCase() === directoryProxy.address.toLocaleLowerCase()) {
             console.log("directory matches predicted address", directoryAddress)
         } else {
             console.error("failed to deploy directory address to predicted address", directoryAddress, directoryProxy.address)
@@ -190,6 +196,7 @@ export async function fastDeployProtocol(deployer: SignerWithAddress, directoryD
         operatorDistributor: operatorDistributorProxy as OperatorDistributor,
         yieldDistributor: yieldDistributorProxy as YieldDistributor,
         priceFetcher: priceFetcherProxy as PriceFetcher,
+        oracle: oracleProxy as XRETHAdminOracle,
         superNode: superNodeProxy as SuperNodeAccount,
         adminTreasury: adminTreasuryProxy as AdminTreasury,
         directory: directoryProxy as Directory
@@ -197,73 +204,76 @@ export async function fastDeployProtocol(deployer: SignerWithAddress, directoryD
 }
 
 export async function deployProtocol(signers: Signers, log = false): Promise<Protocol> {
-	const RocketStorageDeployment = await RocketStorage.deployed();
-	const rockStorageContract = (await ethers.getContractAt(
-		"RocketStorage",
-		RocketStorageDeployment.address
-	)) as IRocketStorage;
+    const RocketStorageDeployment = await RocketStorage.deployed();
+    const rockStorageContract = (await ethers.getContractAt(
+        "RocketStorage",
+        RocketStorageDeployment.address
+    )) as IRocketStorage;
 
-	const RplToken = await RocketTokenRPL.deployed();
-	const rplContract = (await ethers.getContractAt(
-		"@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
-		RplToken.address
-	)) as ERC20;
+    const RplToken = await RocketTokenRPL.deployed();
+    const rplContract = (await ethers.getContractAt(
+        "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
+        RplToken.address
+    )) as ERC20;
 
-	upgrades.silenceWarnings();
-	// deploy weth
-	const WETH = await ethers.getContractFactory("WETH");
-	const wETH = await WETH.deploy();
-	await wETH.deployed();
+    upgrades.silenceWarnings();
+    // deploy weth
+    const WETH = await ethers.getContractFactory("WETH");
+    const wETH = await WETH.deploy();
+    await wETH.deployed();
 
-	// deploy mock sanctions
-	const Sanctions = await ethers.getContractFactory("MockSanctions");
-	const sanctions = await Sanctions.deploy();
-	await sanctions.deployed();
+    // deploy mock sanctions
+    const Sanctions = await ethers.getContractFactory("MockSanctions");
+    const sanctions = await Sanctions.deploy();
+    await sanctions.deployed();
 
-	// deploy mock uniswap v3 pool
-	const UniswapV3Pool = await ethers.getContractFactory("MockUniswapV3Pool");
-	const uniswapV3Pool = await UniswapV3Pool.deploy();
-	await uniswapV3Pool.deployed();
+    // deploy mock uniswap v3 pool
+    const UniswapV3Pool = await ethers.getContractFactory("MockUniswapV3Pool");
+    const uniswapV3Pool = await UniswapV3Pool.deploy();
+    await uniswapV3Pool.deployed();
 
-	const deployer = (await ethers.getSigners())[0];
+    const deployer = (await ethers.getSigners())[0];
 
-	const oracle = (await (await ethers.getContractFactory("MockRETHOracle")).deploy()) as IXRETHOracle;
+    const { whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, superNode, oracle, yieldDistributor, priceFetcher, directory, adminTreasury } = await fastDeployProtocol(
+        signers.deployer,
+        signers.random5,
+        rockStorageContract.address,
+        wETH.address,
+        sanctions.address,
+        uniswapV3Pool.address,
+        signers.admin.address,
+        log
+    )
 
-	const { whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, superNode, yieldDistributor, priceFetcher, directory, adminTreasury } = await fastDeployProtocol(
-		signers.deployer,
-		signers.random5,
-		rockStorageContract.address,
-		wETH.address,
-		sanctions.address,
-		uniswapV3Pool.address,
-		oracle.address,
-		signers.admin.address,
-		log
-	)
+    // set adminServer to be ADMIN_SERVER_ROLE
+    const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
+    await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(adminRole), signers.adminServer.address);
 
-	// set adminServer to be ADMIN_SERVER_ROLE
-	const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
-	await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(adminRole), signers.adminServer.address);
+    // set timelock to be TIMELOCK_ROLE
+    const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
+    await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRole), signers.admin.address);
 
-	// set timelock to be TIMELOCK_ROLE
-	const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
-	await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRole), signers.admin.address);
+    const timelockLongRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_LONG"));
+    await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockLongRole), signers.admin.address);
 
-	// set protocolSigner to be PROTOCOL_ROLE
-	const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
-	await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
+    const oracleAdminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ORACLE_ROLE"));
+    await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(oracleAdminRole), signers.admin.address);
 
-	// set directory treasury to deployer to prevent tests from failing
-	expect(await directory.getTreasuryAddress()).to.equal(adminTreasury.address);
-	await directory.connect(signers.admin).setTreasury(deployer.address);
+    // set protocolSigner to be PROTOCOL_ROLE
+    const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
+    await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
 
-	const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
+    // set directory treasury to deployer to prevent tests from failing
+    expect(await directory.getTreasuryAddress()).to.equal(adminTreasury.address);
+    await directory.connect(signers.admin).setTreasury(deployer.address);
 
-	// send all rpl from admin to rplWhale
-	const rplWhaleBalance = await rplContract.balanceOf(signers.deployer.address);
-	await rplContract.transfer(signers.rplWhale.address, rplWhaleBalance);
+    const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
 
-	await priceFetcher.connect(signers.admin).useFallback();
+    // send all rpl from admin to rplWhale
+    const rplWhaleBalance = await rplContract.balanceOf(signers.deployer.address);
+    await rplContract.transfer(signers.rplWhale.address, rplWhaleBalance);
 
-	return returnData;
+    await priceFetcher.connect(signers.admin).useFallback();
+
+    return returnData;
 }

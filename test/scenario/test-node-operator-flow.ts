@@ -108,7 +108,15 @@ describe("Node Operator Onboarding", function () {
 
     it("eth whale redeems one share to trigger pool rebalacings", async function () {
 
-        await protocol.oracle.setTotalYieldAccrued(ethers.utils.parseEther("3"));
+
+        const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
+        const network = await ethers.provider.getNetwork();
+        const chainId = network.chainId;
+        const newTotalYield = ethers.utils.parseEther("3");
+        const incorrectMessageHash = ethers.utils.solidityKeccak256(["uint256", "uint256", "address", "uint256"], [newTotalYield, timestamp, protocol.oracle.address, chainId]);
+        const signature = await signers.admin.signMessage(ethers.utils.arrayify(incorrectMessageHash));
+        await protocol.oracle.connect(signers.admin).setTotalYieldAccrued(signature, newTotalYield, timestamp)
+
         console.log("total supply of shares")
         console.log(await protocol.vCWETH.totalSupply())
         console.log(await protocol.vCWETH.maxRedeem(signers.ethWhale.address));

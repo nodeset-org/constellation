@@ -1,7 +1,7 @@
 import { task } from "hardhat/config";
 import { ethers } from "hardhat";
 
-task("usePreSignedExitMessageCheck", "Sets preSignedExitMessageCheck to true")
+task("useAdminServerCheck", "Sets preSignedExitMessageCheck to true")
   .addParam("address", "The address of the NodeAccountFactory contract")
   .setAction(async ({ address }, hre) => {
     const [deployer, admin] = await hre.ethers.getSigners();
@@ -9,7 +9,7 @@ task("usePreSignedExitMessageCheck", "Sets preSignedExitMessageCheck to true")
 
     console.log("Command is deprecated");
     //console.log("Setting preSignedExitMessageCheck to true...");
-    //const tx = await factoryContract.connect(admin).usePreSignedExitMessageCheck();
+    //const tx = await factoryContract.connect(admin).useAdminServerCheck();
     //await tx.wait();
 
     //console.log(`preSignedExitMessageCheck set to true successfully. Transaction Hash: ${tx.hash}`);

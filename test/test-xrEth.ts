@@ -56,10 +56,10 @@ describe("xrETH", function () {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
-    const sig = await whitelistUserServerSig(setupData, signers.ethWhale);
+    const {sig, timestamp} = await whitelistUserServerSig(setupData, signers.ethWhale);
 
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("100"));
-    await protocol.whitelist.connect(signers.admin).addOperator(signers.ethWhale.address, sig);
+    await protocol.whitelist.connect(signers.admin).addOperator(signers.ethWhale.address, timestamp, sig);
 
     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
@@ -98,7 +98,7 @@ describe("xrETH", function () {
       const { protocol, signers } = await loadFixture(protocolFixture);
 
       const tvlCoverageRatio = ethers.utils.parseEther("0.1542069");
-      await expect(protocol.vCWETH.connect(signers.ethWhale).setRplCoverageRatio(tvlCoverageRatio)).to.be.revertedWith("Can only be called by admin address!");
+      await expect(protocol.vCWETH.connect(signers.ethWhale).setRplCoverageRatio(tvlCoverageRatio)).to.be.revertedWith("Can only be called by short timelock!");
     });
   });
 

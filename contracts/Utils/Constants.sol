@@ -4,11 +4,12 @@ pragma solidity 0.8.17;
 library Constants {
     // ROLES
     bytes32 internal constant ADMIN_ROLE = keccak256('ADMIN_ROLE');
+    bytes32 internal constant ADMIN_ORACLE_ROLE = keccak256('ADMIN_ORACLE_ROLE');
     bytes32 internal constant ADMIN_SERVER_ROLE = keccak256('ADMIN_SERVER_ROLE');
     bytes32 internal constant CORE_PROTOCOL_ROLE = keccak256('CORE_PROTOCOL_ROLE');
     bytes32 internal constant TIMELOCK_SHORT = keccak256('TIMELOCK_SHORT');
-    bytes32 internal constant TIMELOCK_MED = keccak256('TIMELOCK_SHORT');
-    bytes32 internal constant TIMELOCK_LONG = keccak256('TIMELOCK_SHORT');
+    bytes32 internal constant TIMELOCK_MED = keccak256('TIMELOCK_MED');
+    bytes32 internal constant TIMELOCK_LONG = keccak256('TIMELOCK_LONG');
 
     // DIRECTORY
     string public constant CONTRACT_NOT_FOUND_ERROR = 'Directory: contract not found!';
