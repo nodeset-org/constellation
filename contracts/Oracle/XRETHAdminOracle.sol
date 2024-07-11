@@ -50,6 +50,8 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
         _totalYieldAccrued = _newTotalYieldAccrued;
         _lastUpdatedTotalYieldAccrued = block.timestamp;
         emit TotalYieldAccruedUpdated(_newTotalYieldAccrued);
+
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).resetOracleError();
     }
 
     function setTotalYieldAccrued(

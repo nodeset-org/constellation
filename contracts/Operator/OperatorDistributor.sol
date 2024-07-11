@@ -52,6 +52,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     // Required amount of ETH staked for a minipool to be active.
     uint256 public requiredLEBStaked;
 
+    // The amount the oracle has already included in its summation
+    uint256 public oracleError;
+
     constructor() initializer {}
 
     /**
@@ -119,11 +122,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     /**
      * @notice Allocates the necessary liquidity for the creation of a new minipool.
-     * @param _subNodeOperator Address of the sub-node operator initiating the minipool.
      * @param _bond The amount of ETH required to be staked for the minipool.
      */
     function provisionLiquiditiesForMinipoolCreation(
-        address _subNodeOperator,
         uint256 _bond
     ) external onlyProtocolOrAdmin {
         console.log('provisionLiquiditiesForMinipoolCreation.pre-RebalanceLiquidities');
@@ -316,7 +317,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         if (address(minipool) != address(0)) {
             uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
             if (totalBalance < 8 ether) {
+                // track incoming eth
+                uint256 initalBalance = _directory.getDepositPoolAddress().balance;
                 minipool.distributeBalance(true);
+                uint256 finalBalance = _directory.getDepositPoolAddress().balance;
+                oracleError += finalBalance = initalBalance;
             }
         }
     }
@@ -365,6 +370,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         } else {
             return 0;
         }
+    }
+
+    function resetOracleError() external onlyProtocol {
+        oracleError = 0;
     }
 
     /**

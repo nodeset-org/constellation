@@ -43,6 +43,8 @@ describe("Operator Distributor", function () {
 
 	});
 
+	// test distribute yield and show how it increases and adjusts for oracle error
+
 	it("Rewards distribution distributes correct amounts of ETH to all NOs", async function () {
 		// record all node balances
 		// capture pending rewards
