@@ -28,25 +28,21 @@ const getOperatorSetupIterator = (setupData: SetupData) => async (operator: NewO
   
     await protocol.depositPool.connect(admin).stakeRPLFor(protocol.superNode.address, amountToBeStaked);
     
-    const approveSignedExitResult = await approveHasSignedExitMessageSig(
-        setupData,
-        '0x' + operator.minipoolAddress,
-        operator.salt
-    );
+    
     
     await protocol.superNode
     .connect(operator.signer)
     .createMinipool({
         bondAmount: operator.bondValue,
         depositDataRoot: operator.depositDataRoot,
-        expectedMinipoolAddress: operator.minipoolAddress,
+        expectedMinipoolAddress: operator.expectedMinipoolAddress,
         salt: operator.salt,
         minimumNodeFee: operator.minimumNodeFee,
         timezoneLocation: operator.timezoneLocation,
         validatorPubkey: operator.depositData.pubkey,
         validatorSignature: operator.depositData.signature,
 
-    }, approveSignedExitResult.timestamp, approveSignedExitResult.sig, {
+    }, operator.exitMessageSignature.timestamp, operator.exitMessageSignature.sig, {
         value: ethers.utils.parseEther('1'),
     });
 };

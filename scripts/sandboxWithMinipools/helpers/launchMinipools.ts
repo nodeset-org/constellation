@@ -10,7 +10,7 @@ export const launchMinipools = async ([setupData, newOperators]: [SetupData, New
 const getMinipoolLaunchIterator = (setupData: SetupData) => async (operator: NewOperator) => {
 
     const { protocol } = setupData;
-
-    await protocol.superNode.connect(operator.signer).stake(operator.minipoolAddress);
+    
+    await protocol.superNode.connect(operator.signer).stake(operator.expectedMinipoolAddress);
 
 }
