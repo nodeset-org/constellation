@@ -14,3 +14,9 @@ task("useAdminServerCheck", "Sets preSignedExitMessageCheck to true")
 
     //console.log(`preSignedExitMessageCheck set to true successfully. Transaction Hash: ${tx.hash}`);
 });
+
+task("reset", "Resets the node to the initial state")
+  .setAction(async (_, hre) => {
+    await hre.network.provider.send("hardhat_reset");
+    console.log('reset to initial state');
+});
