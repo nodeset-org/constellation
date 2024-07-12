@@ -16,6 +16,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ERC20 } from "../typechain-types/contracts/Testing/Rocketpool/contract/util";
 import { IERC20 } from "../typechain-types/oz-contracts-3-4-0/token/ERC20";
 import { deployProtocol, fastDeployProtocol } from "../scripts/utils/deployment";
+import { BigNumber } from "ethers";
 
 export const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
 
@@ -23,6 +24,22 @@ export type SetupData = {
 	protocol: Protocol,
 	signers: Signers,
 	rocketPool: RocketPool,
+}
+
+export type NewOperator = {
+	signer: SignerWithAddress;
+	bondValue: BigNumber;
+	depositData: {
+        pubkey: Buffer;
+        withdrawalCredentials: Buffer;
+        amount: bigint;
+        signature: Buffer;
+    };
+    depositDataRoot: Uint8Array;
+    minipoolAddress: any;
+	salt: number;
+	minimumNodeFee: number;
+	timezoneLocation: string;
 }
 
 export type Protocol = {
