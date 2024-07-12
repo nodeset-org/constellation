@@ -1,7 +1,6 @@
 import { ethers, upgrades } from "hardhat";
 import fs from 'fs';
 import path from 'path';
-import { FunctionFragment } from 'ethers/lib/utils';
 import { getNextContractAddress } from "../../test/utils/utils";
 import { getInitializerData } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import readline from 'readline';

@@ -1,7 +1,6 @@
 import { ethers } from "hardhat";
 import fs from 'fs';
 import path from 'path';
-import { FunctionFragment } from 'ethers/lib/utils';
 
 async function main() {
 
