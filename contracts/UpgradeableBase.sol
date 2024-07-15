@@ -22,6 +22,11 @@ abstract contract UpgradeableBase is UUPSUpgradeable, ReentrancyGuard {
         _;
     }
 
+    modifier onlyTreasurer() {
+        require(_directory.hasRole(Constants.TREASURY_ROLE, msg.sender), 'Can only be called by treasurer address!');
+        _;
+    }
+
     modifier onlyDepositPool() {
         require(msg.sender == _directory.getDepositPoolAddress(), 'Can only be called by Deposit Pool!');
         _;

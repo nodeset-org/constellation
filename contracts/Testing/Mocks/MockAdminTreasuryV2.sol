@@ -2,9 +2,9 @@
 
 pragma solidity 0.8.17;
 
-import '../../AdminTreasury.sol';
+import '../../Treasury.sol';
 
-contract MockAdminTreasuryV2 is AdminTreasury {
+contract MockTreasuryV2 is Treasury {
 
     function test() public pure returns(uint256) {
         return 69;
