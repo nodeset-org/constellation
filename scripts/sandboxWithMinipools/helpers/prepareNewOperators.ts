@@ -42,13 +42,15 @@ const makeOperator = async (signerKey: keyof Signers, setupData: SetupData, salt
   const rocketMinipoolFactory = await RocketMinipoolFactory.deployed();
   let expectedMinipoolAddress = (await rocketMinipoolFactory.getExpectedAddress(superNode.address, salt)).substr(2);
 
-  console.log('expectedMinipoolAddress', expectedMinipoolAddress);
+  console.log('expectedMinipoolAddress: ', expectedMinipoolAddress);
 
   let withdrawalCredentials = '0x010000000000000000000000' + expectedMinipoolAddress;
 
   const pubkey = deriveKeyFromMaster(privateKeyArr, `m/12381/3600/${index}/0/0`);
 
   const validatorKey = deriveEth2ValidatorKeys(pubkey, 1);
+
+  console.log('minipool public key: ', Buffer.from(ethers.utils.zeroPad(pubkey, 48)));
 
   const depositMessage = Buffer.concat([
     Buffer.from(ethers.utils.zeroPad(pubkey, 48)),
