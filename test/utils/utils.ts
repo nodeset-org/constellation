@@ -290,10 +290,10 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
         const bond = ethers.utils.parseEther("8");
         const salt = i;
 
-        if(!(await protocol.superNode.hasSufficentLiquidity(bond))) {
+        if(!(await protocol.superNode.hasSufficientLiquidity(bond))) {
             await prepareOperatorDistributionContract(setupData, 2);
         }
-        expect(await protocol.superNode.hasSufficentLiquidity(bond)).equals(true);
+        expect(await protocol.superNode.hasSufficientLiquidity(bond)).equals(true);
 
         if (!(await protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address))) {
             await assertAddOperator(setupData, nodeOperator);
@@ -463,8 +463,8 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
     // send eth to the rocketpool deposit contract (mint rETH to signers[0])
 
 
-    const rplRequried = await setupData.protocol.operatorDistributor.calculateRplStakeShortfall(0, requiredEth);
-    await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequried);
+    const rplRequired = await setupData.protocol.operatorDistributor.calculateRplStakeShortfall(0, requiredEth);
+    await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequired);
 }
 
 export async function getNextContractAddress(signer: SignerWithAddress, offset = 0) {

@@ -512,7 +512,7 @@ Contract: NodeAccountFactory
 Function: createNewNodeAccount((string,uint256,uint256,bytes,bytes,bytes32,uint256,address),address) - Selector: 0x2c5a1b3e
 Function: getDirectory() - Selector: 0x76247776
 Function: getImplementation() - Selector: 0xaaf10f42
-Function: hasSufficentLiquidity(uint256) - Selector: 0xcac38298
+Function: hasSufficientLiquidity(uint256) - Selector: 0xcac38298
 Function: implementationAddress() - Selector: 0xb97a2319
 Function: initialize(address) - Selector: 0xc4d66de8
 Function: initializeWithImplementation(address,address) - Selector: 0x5d40a735

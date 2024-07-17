@@ -175,7 +175,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      */
     function createMinipool(ValidatorConfig calldata _config, uint256 _sigGenesisTime, bytes memory _sig) public payable {
         require(msg.value == lockThreshhold, 'SuperNode: must lock 1 ether');
-        require(hasSufficentLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
+        require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
         address subNodeOperator = msg.sender;
         require(
             Whitelist(_directory.getWhitelistAddress()).getIsAddressInWhitelist(subNodeOperator),
@@ -499,10 +499,10 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @param _bond The bond amount in wei for which liquidity needs to be checked.
      * @return bool Returns true if there is sufficient liquidity to cover the bond; false otherwise.
      */
-    function hasSufficentLiquidity(uint256 _bond) public view returns (bool) {
+    function hasSufficientLiquidity(uint256 _bond) public view returns (bool) {
         address payable od = _directory.getOperatorDistributorAddress();
-        uint256 rplRequried = OperatorDistributor(od).calculateRplStakeShortfall(0, _bond);
-        return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequried && od.balance >= _bond;
+        uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(0, _bond);
+        return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired && od.balance >= _bond;
     }
 
     receive() external payable {}

@@ -143,9 +143,9 @@ describe("SuperNodeAccount", function () {
         const bond = ethers.utils.parseEther("8");
         const salt = 3;
 
-        expect(await protocol.superNode.hasSufficentLiquidity(bond)).to.equal(false);
+        expect(await protocol.superNode.hasSufficientLiquidity(bond)).to.equal(false);
         await prepareOperatorDistributionContract(setupData, 2);
-        expect(await protocol.superNode.hasSufficentLiquidity(bond)).to.equal(true);
+        expect(await protocol.superNode.hasSufficientLiquidity(bond)).to.equal(true);
 
         await assertAddOperator(setupData, signers.hyperdriver);
 
@@ -188,9 +188,9 @@ describe("SuperNodeAccount", function () {
         const bond = ethers.utils.parseEther("8");
         const salt = 3;
 
-        expect(await protocol.superNode.hasSufficentLiquidity(bond)).to.equal(false);
+        expect(await protocol.superNode.hasSufficientLiquidity(bond)).to.equal(false);
         await prepareOperatorDistributionContract(setupData, 5);
-        expect(await protocol.superNode.hasSufficentLiquidity(bond)).to.equal(true);
+        expect(await protocol.superNode.hasSufficientLiquidity(bond)).to.equal(true);
 
         await assertAddOperator(setupData, signers.hyperdriver);
 
@@ -222,9 +222,9 @@ describe("SuperNodeAccount", function () {
         const bond = ethers.utils.parseEther("8");
         const salt = 3;
 
-        expect(await protocol.superNode.hasSufficentLiquidity(bond)).to.equal(false);
+        expect(await protocol.superNode.hasSufficientLiquidity(bond)).to.equal(false);
         await prepareOperatorDistributionContract(setupData, 1);
-        expect(await protocol.superNode.hasSufficentLiquidity(bond)).to.equal(true);
+        expect(await protocol.superNode.hasSufficientLiquidity(bond)).to.equal(true);
 
         const depositData = await generateDepositData(setupData.protocol.superNode.address, salt);
 
@@ -250,9 +250,9 @@ describe("SuperNodeAccount", function () {
         const bond = ethers.utils.parseEther("8");
         const salt = 3;
 
-        expect(await protocol.superNode.hasSufficentLiquidity(bond)).to.equal(false);
+        expect(await protocol.superNode.hasSufficientLiquidity(bond)).to.equal(false);
         await prepareOperatorDistributionContract(setupData, 2);
-        expect(await protocol.superNode.hasSufficentLiquidity(bond)).to.equal(true);
+        expect(await protocol.superNode.hasSufficientLiquidity(bond)).to.equal(true);
 
         await assertAddOperator(setupData, signers.hyperdriver);
 
@@ -294,9 +294,9 @@ describe("SuperNodeAccount", function () {
         const bond = ethers.utils.parseEther("8");
         const salt = 3;
 
-        expect(await protocol.superNode.hasSufficentLiquidity(bond)).to.equal(false);
+        expect(await protocol.superNode.hasSufficientLiquidity(bond)).to.equal(false);
         await prepareOperatorDistributionContract(setupData, 2);
-        expect(await protocol.superNode.hasSufficentLiquidity(bond)).to.equal(true);
+        expect(await protocol.superNode.hasSufficientLiquidity(bond)).to.equal(true);
 
         await assertAddOperator(setupData, signers.hyperdriver);
 

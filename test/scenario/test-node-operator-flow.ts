@@ -50,9 +50,9 @@ describe("Node Operator Onboarding", function () {
         console.log("operator flow minipoolAddress fda:,", minipoolAddress);
 
         // now we must create a minipool via super node
-        expect(await protocol.superNode.hasSufficentLiquidity(bondValue)).equals(false);
+        expect(await protocol.superNode.hasSufficientLiquidity(bondValue)).equals(false);
         await prepareOperatorDistributionContract(setupData, 1);
-        expect(await protocol.superNode.hasSufficentLiquidity(bondValue)).equals(true);
+        expect(await protocol.superNode.hasSufficientLiquidity(bondValue)).equals(true);
 
         console.log("is this f-ing thing null?", signers.hyperdriver.address)
         //expect(await protocol.superNode.subNodeOperatorHasMinipool(signers.hyperdriver.address)).equals(false);
