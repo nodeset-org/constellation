@@ -13,13 +13,20 @@ contract XRETHOracle is IXRETHOracle, UpgradeableBase {
 
     constructor() initializer {}
 
-    /// @dev Initializes the FundRouter contract with the specified directory address.
-    /// @param _directoryAddress The address of the directory contract.
+   /**
+     * @notice Initializes the Oracle service with the specified directory address.
+     * @param _directoryAddress The address of the directory contract.
+     * @param _oracleService The address of the oracle service.
+     */
     function initializeOracleService(address _directoryAddress, address _oracleService) public virtual initializer {
         super.initialize(_directoryAddress);
         oracleService = _oracleService;
     }
 
+    /**
+     * @notice Retrieves the total yield accrued from the oracle service.
+     * @return The total yield accrued.
+     */
     function getTotalYieldAccrued() external view override returns (uint) {
         // rated oracle itegration here
     }

@@ -124,9 +124,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @notice Allocates the necessary liquidity for the creation of a new minipool.
      * @param _bond The amount of ETH required to be staked for the minipool.
      */
-    function provisionLiquiditiesForMinipoolCreation(
-        uint256 _bond
-    ) external onlyProtocolOrAdmin {
+    function provisionLiquiditiesForMinipoolCreation(uint256 _bond) external onlyProtocolOrAdmin {
         console.log('provisionLiquiditiesForMinipoolCreation.pre-RebalanceLiquidities');
         _rebalanceLiquidity();
         console.log('provisionLiquiditiesForMinipoolCreation.post-RebalanceLiquidities');
@@ -335,8 +333,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Sets the target ratio of ETH to RPL stake.
-     * @param _targetStakeRatio New target stake ratio.
+     * @notice Sets the target ETH to RPL stake ratio.
+     * @dev Adjusts the target ratio used to maintain balance between ETH and RPL stakes.
+     * @param _targetStakeRatio The new target stake ratio to be set.
      */
     function setTargetStakeRatio(uint256 _targetStakeRatio) external onlyAdmin {
         targetStakeRatio = _targetStakeRatio;
@@ -372,6 +371,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         }
     }
 
+    /**
+     * @notice Resets the oracle error.
+     */
     function resetOracleError() external onlyProtocol {
         oracleError = 0;
     }

@@ -63,7 +63,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param assets The amount of assets being deposited.
      * @param shares The number of shares to be exchanged for the deposit.
      */ function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
-        require(caller == receiver, "caller must be receiver");
+        require(caller == receiver, 'caller must be receiver');
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
@@ -115,6 +115,13 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         FundRouter(_directory.getDepositPoolAddress()).sendRplToDistributors();
     }
 
+    /**
+     * @notice Calculates the current income from rewards.
+     * @dev This function computes the total value locked (TVL) across the vault, the deposit pool, and the operator distributor,
+     * subtracts the principal amount, and returns the difference as the current income from rewards.
+     * If the TVL is less than the principal, it returns 0.
+     * @return The current income from rewards.
+     */
     function currentIncomeFromRewards() public view returns (uint256) {
         unchecked {
             uint256 tvl = super.totalAssets() +
@@ -128,6 +135,11 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         }
     }
 
+    /**
+     * @notice Calculates the current admin income from rewards.
+     * @dev This function calculates the admin's share of the current income from rewards based on the admin fee basis points.
+     * @return The current admin income from rewards.
+     */
     function currentAdminIncomeFromRewards() public view returns (uint256) {
         return currentIncomeFromRewards().mulDiv(adminFeeBasisPoint, 1e5);
     }
@@ -163,6 +175,13 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**ADMIN FUNCTIONS */
 
+    /**
+     * @notice Sets the admin fee basis points.
+     * @dev This function allows the admin to update the fee basis points that the admin will receive from the rewards.
+     * The admin fee must be less than or equal to 100% (1e5 basis points).
+     * @param _adminFeeBasePoint The new admin fee in basis points.
+     * @custom:requires This function can only be called by an address with the Medium Timelock role.
+     */
     function setAdminFee(uint256 _adminFeeBasePoint) external onlyMediumTimelock {
         require(_adminFeeBasePoint <= 1e5, 'Fee too high');
         adminFeeBasisPoint = _adminFeeBasePoint;
@@ -210,10 +229,24 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         emit AdminFeeClaimed(feeAmount);
     }
 
+    /**
+     * @notice Transfers a specified amount of the vault's asset to a given address.
+     * @dev This function allows the protocol to transfer a specified amount of the vault's asset to the provided address.
+     * It ensures that the transfer is executed safely and handles cases where the vault's balance is insufficient.
+     * @param _to The address to transfer the assets to.
+     * @param _amount The amount of assets to transfer.
+     */
     function doTransferOut(address _to, uint256 _amount) external onlyProtocol {
         _doTransferOut(_to, _amount);
     }
 
+    /**
+     * @notice Internal function to transfer assets out of the vault.
+     * @dev This function handles the actual transfer of assets from the vault to a specified address.
+     * It checks the vault's balance and manages shortfalls by requesting additional assets from the Operator Distributor if necessary.
+     * @param _to The address to transfer the assets to.
+     * @param _amount The amount of assets to transfer.
+     */
     function _doTransferOut(address _to, uint256 _amount) internal {
         IERC20 asset = IERC20(asset());
         uint256 balance = asset.balanceOf(address(this));
@@ -229,7 +262,15 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         }
     }
 
-    /// Claims entire admin fee
+    /**
+     * @notice Internal function to claim the admin fees.
+     * @dev This function calculates the current admin income from rewards, determines the fee amount based on the income
+     * that hasn't been claimed yet, and transfers this fee out to the treasury. It then updates the `lastIncomeClaimed`
+     * to the latest claimed amount. This function is used within deposit and withdrawal operations to periodically claim the admin fee.
+     * It ensures the admin receives their due income from the vault's rewards.
+     *
+     * Emits an `AdminFeeClaimed` event with the amount of the fee claimed.
+     */ 
     function claimAdminFee() public onlyAdmin {
         _claimAdminFee();
     }

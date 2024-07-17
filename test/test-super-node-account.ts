@@ -6,7 +6,6 @@ import { approveHasSignedExitMessageSig, assertAddOperator, predictDeploymentAdd
 import { generateDepositData } from "./rocketpool/_helpers/minipool";
 
 describe("SuperNodeAccount", function () {
-
     describe("SuperNodeAccount Admin Setters", function () {
         it("Admin can set lock threshold", async function () {
             const { protocol, signers } = await loadFixture(protocolFixture);

@@ -16,6 +16,10 @@ struct MerkleProofParams {
     bytes32[][] merkleProof;
 }
 
+/**
+ * @title XRETHAdminOracle
+ * @notice An admin oracle to manage and update the total yield accrued.
+ */
 contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
 
     event TotalYieldAccruedUpdated(uint256 _amount);
@@ -25,16 +29,28 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
 
     constructor() initializer {}
 
-    /// @dev Initializes the FundRouter contract with the specified directory address.
-    /// @param _directoryAddress The address of the directory contract.
+  /**
+     * @notice Initializes the Admin Oracle service with the specified directory address.
+     * @param _directoryAddress The address of the directory contract.
+     */
     function initializeAdminOracle(address _directoryAddress) public virtual initializer {
         super.initialize(_directoryAddress);
     }
 
+    /**
+     * @notice Retrieves the total yield accrued.
+     * @return The total yield accrued.
+     */
     function getTotalYieldAccrued() external view override returns (uint) {
         return _totalYieldAccrued;
     }
 
+    /**
+     * @notice Internal function to set the total yield accrued.
+     * @param _sig The signature.
+     * @param _newTotalYieldAccrued The new total yield accrued.
+     * @param _sigTimeStamp The timestamp of the signature.
+     */
     function _setTotalYieldAccrued(bytes calldata _sig, uint256 _newTotalYieldAccrued, uint256 _sigTimeStamp) internal {
         address recoveredAddress = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(
@@ -54,6 +70,12 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
         OperatorDistributor(_directory.getOperatorDistributorAddress()).resetOracleError();
     }
 
+    /**
+     * @notice Sets the total yield accrued.
+     * @param _sig The signature.
+     * @param _newTotalYieldAccrued The new total yield accrued.
+     * @param _sigTimeStamp The timestamp of the signature.
+     */
     function setTotalYieldAccrued(
         bytes calldata _sig,
         uint256 _newTotalYieldAccrued,
@@ -62,6 +84,13 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
         _setTotalYieldAccrued(_sig, _newTotalYieldAccrued, _sigTimeStamp);
     }
 
+    /**
+     * @notice Sets the total yield accrued and claims rewards using a Merkle proof.
+     * @param _merkleProofParams The Merkle proof parameters.
+     * @param _sig The signature.
+     * @param _newTotalYieldAccrued The new total yield accrued.
+     * @param _sigTimeStamp The timestamp of the signature.
+     */
     function setTotalYieldAccruedAndClaim(
         MerkleProofParams calldata _merkleProofParams,
         bytes calldata _sig,

@@ -134,11 +134,11 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.weth;
     }
 
-    function getSuperNodeAddress() public view returns(address payable) {
+    function getSuperNodeAddress() public view returns (address payable) {
         return _protocol.superNode;
     }
 
-    function getRocketDAOProtocolSettingsRewardsAddress() public view returns(address) {
+    function getRocketDAOProtocolSettingsRewardsAddress() public view returns (address) {
         return _integrations.rocketDAOProtocolSettingsRewards;
     }
 
@@ -179,12 +179,21 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     }
 
     function getRocketPoolAddressByTag(string calldata _tag) public view returns (address) {
-        return IRocketStorage(_protocol.rocketStorage).getAddress(
-            RocketpoolEncoder.generateBytes32Identifier(_tag)
-        );
+        return IRocketStorage(_protocol.rocketStorage).getAddress(RocketpoolEncoder.generateBytes32Identifier(_tag));
     }
 
-    function initialize(Protocol memory newProtocol, address treasury, address treasurer, address admin) public initializer {
+    /// @notice Initializes the Directory contract with the given protocol addresses, treasury, treasurer, and admin.
+    /// @param newProtocol A Protocol struct containing updated addresses of protocol contracts.
+    /// @param treasury The address of the treasury contract.
+    /// @param treasurer The address of the treasurer.
+    /// @param admin The address of the admin.
+    /// @dev This function sets up the initial protocol contract addresses and grants roles to the admin and treasurer.
+    function initialize(
+        Protocol memory newProtocol,
+        address treasury,
+        address treasurer,
+        address admin
+    ) public initializer {
         // require(msg.sender != admin, Constants.INITIALIZATION_ERROR);
         require(
             _protocol.whitelist == address(0) && newProtocol.whitelist != address(0),
@@ -318,26 +327,35 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
             RocketpoolEncoder.generateBytes32Identifier('rocketDAOProtocolSettingsRewards')
         );
 
-        require(_integrations.rocketDAOProtocolSettingsRewards != address(0), 'rocketDAOProtocolSettingsRewards is 0x0');
+        require(
+            _integrations.rocketDAOProtocolSettingsRewards != address(0),
+            'rocketDAOProtocolSettingsRewards is 0x0'
+        );
 
         _enabledSanctions = true;
     }
 
+    /// @notice Sets the treasury address.
+    /// @param newTreasury The new treasury address.
     function setTreasury(address newTreasury) public {
         require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
         _treasury = newTreasury;
     }
 
+    /// @notice Disables sanctions enforcement.
     function disableSanctions() public {
         require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
         _enabledSanctions = false;
     }
 
+    /// @notice Enables sanctions enforcement.
     function enableSanctions() public {
         require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
         _enabledSanctions = true;
     }
 
+    /// @notice Sets the oracle contract address.
+    /// @param newOracle The new oracle contract address.
     function setOracle(address newOracle) public {
         require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
         _protocol.oracle = newOracle;
@@ -351,12 +369,19 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _protocol = newProtocol;
     }
 
+    /// @notice Checks if a single account is sanctioned.
+    /// @param _account The account to check.
+    /// @return bool indicating if the account is sanctioned.
     function isSanctioned(address _account) public returns (bool) {
         address[] memory accounts = new address[](1);
         accounts[0] = _account;
         return _checkSanctions(accounts);
     }
 
+    /// @notice Checks if two accounts are sanctioned.
+    /// @param _account1 The first account to check.
+    /// @param _account2 The second account to check.
+    /// @return bool indicating if the accounts are sanctioned.
     function isSanctioned(address _account1, address _account2) public returns (bool) {
         address[] memory accounts = new address[](2);
         accounts[0] = _account1;
@@ -364,10 +389,16 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _checkSanctions(accounts);
     }
 
+    /// @notice Checks if multiple accounts are sanctioned.
+    /// @param _accounts The array of accounts to check.
+    /// @return bool indicating if any of the accounts are sanctioned.
     function isSanctioned(address[] memory _accounts) public returns (bool) {
         return _checkSanctions(_accounts);
     }
 
+    /// @notice Internal function to check if any accounts are sanctioned.
+    /// @param _accounts The array of accounts to check.
+    /// @return bool indicating if any of the accounts are sanctioned.
     function _checkSanctions(address[] memory _accounts) internal returns (bool) {
         if (!_enabledSanctions) {
             emit SanctionsDisabled();
