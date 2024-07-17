@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 library Constants {
     // ROLES
     bytes32 internal constant ADMIN_ROLE = keccak256('ADMIN_ROLE');
+    bytes32 internal constant TREASURY_ROLE = keccak256('TREASURY_ROLE');
     bytes32 internal constant ADMIN_ORACLE_ROLE = keccak256('ADMIN_ORACLE_ROLE');
     bytes32 internal constant ADMIN_SERVER_ROLE = keccak256('ADMIN_SERVER_ROLE');
     bytes32 internal constant CORE_PROTOCOL_ROLE = keccak256('CORE_PROTOCOL_ROLE');
