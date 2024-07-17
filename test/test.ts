@@ -16,29 +16,43 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ERC20 } from "../typechain-types/contracts/Testing/Rocketpool/contract/util";
 import { IERC20 } from "../typechain-types/oz-contracts-3-4-0/token/ERC20";
 import { deployProtocol, fastDeployProtocol } from "../scripts/utils/deployment";
+import { BigNumber } from 'ethers';
+import { DepositData } from "@chainsafe/lodestar-types";
 
-export const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits("1.5768", 7) }; // ~6 months in seconds
+export const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits('1.5768', 7) }; // ~6 months in seconds
 
 export type SetupData = {
-	protocol: Protocol,
-	signers: Signers,
-	rocketPool: RocketPool,
-}
+  protocol: Protocol;
+  signers: Signers;
+  rocketPool: RocketPool;
+};
+
+export type NewOperator = {
+  signer: SignerWithAddress;
+  bondValue: BigNumber;
+  depositData: DepositData;
+  depositDataRoot: Uint8Array;
+  expectedMinipoolAddress: any;
+  salt: number;
+  minimumNodeFee: number;
+  timezoneLocation: string;
+  exitMessageSignature: any;
+};
 
 export type Protocol = {
-	directory: Directory,
-	whitelist: Contract,
-	vCWETH: WETHVault,
-	vCRPL: RPLVault,
-	depositPool: FundRouter,
-	operatorDistributor: OperatorDistributor,
-	yieldDistributor: YieldDistributor,
-	oracle: XRETHAdminOracle,
-	priceFetcher: Contract,
-	superNode: SuperNodeAccount,
-	wETH: IWETH,
-	sanctions: MockSanctions
-}
+  directory: Directory;
+  whitelist: Contract;
+  vCWETH: WETHVault;
+  vCRPL: RPLVault;
+  depositPool: FundRouter;
+  operatorDistributor: OperatorDistributor;
+  yieldDistributor: YieldDistributor;
+  oracle: XRETHAdminOracle;
+  priceFetcher: Contract;
+  superNode: SuperNodeAccount;
+  wETH: IWETH;
+  sanctions: MockSanctions;
+};
 
 export type Signers = {
 	deployer: SignerWithAddress,
@@ -59,95 +73,103 @@ export type Signers = {
 }
 
 export type RocketPool = {
-	rplContract: ERC20, //RocketTokenRPLInterface
-	rockStorageContract: IRocketStorage,
-	rocketNodeManagerContract: RocketNodeManagerInterface,
-	rocketNodeStakingContract: IRocketNodeStaking,
-	rocketNodeDepositContract: RocketNodeDepositInterface,
-	rocketDepositPoolContract: RocketDepositPool,
-	rocketDaoNodeTrusted: RocketDAONodeTrusted,
-	rocketTokenRETH: RocketTokenRETH,
-	rocketClaimDao: RocketClaimDAO,
-	rocketRewardsPool: RocketRewardsPool,
-	rocketDaoNodeTrustedActions: RocketDAONodeTrustedActions
-}
+  rplContract: ERC20; //RocketTokenRPLInterface
+  rockStorageContract: IRocketStorage;
+  rocketNodeManagerContract: RocketNodeManagerInterface;
+  rocketNodeStakingContract: IRocketNodeStaking;
+  rocketNodeDepositContract: RocketNodeDepositInterface;
+  rocketDepositPoolContract: RocketDepositPool;
+  rocketDaoNodeTrusted: RocketDAONodeTrusted;
+  rocketTokenRETH: RocketTokenRETH;
+  rocketClaimDao: RocketClaimDAO;
+  rocketRewardsPool: RocketRewardsPool;
+  rocketDaoNodeTrustedActions: RocketDAONodeTrustedActions;
+};
 
 export function getAllAddresses(Signers: Signers, Protocol: Protocol, RocketPool: RocketPool) {
-	const allAddresses = [];
-	for (const [key, value] of Object.entries(Signers)) {
-		allAddresses.push({ name: key, address: value.address });
-	}
-	for (const [key, value] of Object.entries(Protocol)) {
-		allAddresses.push({ name: key, address: value.address });
-	}
-	for (const [key, value] of Object.entries(RocketPool)) {
-		allAddresses.push({ name: key, address: value.address });
-	}
-	return allAddresses;
+  const allAddresses = [];
+  for (const [key, value] of Object.entries(Signers)) {
+    allAddresses.push({ name: key, address: value.address });
+  }
+  for (const [key, value] of Object.entries(Protocol)) {
+    allAddresses.push({ name: key, address: value.address });
+  }
+  for (const [key, value] of Object.entries(RocketPool)) {
+    allAddresses.push({ name: key, address: value.address });
+  }
+  return allAddresses;
 }
 
 export async function getRocketPool(directory: Directory): Promise<RocketPool> {
+  const rplContract = (await ethers.getContractAt(
+    '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
+    await directory.getRPLAddress()
+  )) as ERC20;
 
-	const rplContract = (await ethers.getContractAt(
-		"@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
-		await directory.getRPLAddress()
-	)) as ERC20;
+  const rockStorageContract = (await ethers.getContractAt(
+    'RocketStorage',
+    await directory.getRocketStorageAddress()
+  )) as IRocketStorage;
 
-	const rockStorageContract = (await ethers.getContractAt(
-		"RocketStorage",
-		await directory.getRocketStorageAddress()
-	)) as IRocketStorage;
+  const rocketNodeManagerContract = (await ethers.getContractAt(
+    'RocketNodeManagerInterface',
+    await directory.getRocketNodeManagerAddress()
+  )) as RocketNodeManagerInterface;
 
-	const rocketNodeManagerContract = await ethers.getContractAt(
-		"RocketNodeManagerInterface",
-		await directory.getRocketNodeManagerAddress()
-	) as RocketNodeManagerInterface;
+  const rocketNodeStakingContract = (await ethers.getContractAt(
+    'IRocketNodeStaking',
+    await directory.getRocketNodeStakingAddress()
+  )) as IRocketNodeStaking;
 
-	const rocketNodeStakingContract = await ethers.getContractAt(
-		"IRocketNodeStaking",
-		await directory.getRocketNodeStakingAddress()
-	) as IRocketNodeStaking;
+  const rocketNodeDepositContract = (await ethers.getContractAt(
+    'RocketNodeDepositInterface',
+    await directory.getRocketNodeDepositAddress()
+  )) as RocketNodeDepositInterface;
 
-	const rocketNodeDepositContract = await ethers.getContractAt(
-		"RocketNodeDepositInterface",
-		await directory.getRocketNodeDepositAddress()
-	) as RocketNodeDepositInterface;
+  const rocketDepositPoolContract = (await ethers.getContractAt(
+    'RocketDepositPool',
+    await directory.getRocketDepositPoolAddress()
+  )) as RocketDepositPool;
 
-	const rocketDepositPoolContract = await ethers.getContractAt(
-		"RocketDepositPool",
-		await directory.getRocketDepositPoolAddress()
-	) as RocketDepositPool;
+  const rocketDaoNodeTrusted = (await ethers.getContractAt(
+    'RocketDAONodeTrusted',
+    await directory.getRocketPoolAddressByTag('rocketDAONodeTrusted')
+  )) as RocketDAONodeTrusted;
 
-	const rocketDaoNodeTrusted = await ethers.getContractAt(
-		"RocketDAONodeTrusted",
-		await directory.getRocketPoolAddressByTag("rocketDAONodeTrusted")
-	) as RocketDAONodeTrusted;
+  const rocketTokenRETH = (await ethers.getContractAt(
+    'RocketTokenRETH',
+    await directory.getRocketPoolAddressByTag('rocketTokenRETH')
+  )) as RocketTokenRETH;
 
-	const rocketTokenRETH = await ethers.getContractAt(
-		"RocketTokenRETH",
-		await directory.getRocketPoolAddressByTag("rocketTokenRETH")
-	) as RocketTokenRETH;
+  const rocketClaimDao = (await ethers.getContractAt(
+    'RocketClaimDAO',
+    await directory.getRocketPoolAddressByTag('rocketClaimDAO')
+  )) as RocketClaimDAO;
 
-	const rocketClaimDao = await ethers.getContractAt(
-		"RocketClaimDAO",
-		await directory.getRocketPoolAddressByTag("rocketClaimDAO")
-	) as RocketClaimDAO;
+  const rocketRewardsPool = (await ethers.getContractAt(
+    'RocketRewardsPool',
+    await directory.getRocketPoolAddressByTag('rocketRewardsPool')
+  )) as RocketRewardsPool;
 
-	const rocketRewardsPool = await ethers.getContractAt(
-		"RocketRewardsPool",
-		await directory.getRocketPoolAddressByTag("rocketRewardsPool")
-	) as RocketRewardsPool;
+  const rocketDaoNodeTrustedActions = (await ethers.getContractAt(
+    'RocketDAONodeTrustedActions',
+    await directory.getRocketPoolAddressByTag('rocketDAONodeTrustedActions')
+  )) as RocketDAONodeTrustedActions;
 
-	const rocketDaoNodeTrustedActions = await ethers.getContractAt(
-		"RocketDAONodeTrustedActions",
-		await directory.getRocketPoolAddressByTag("rocketDAONodeTrustedActions")
-	) as RocketDAONodeTrustedActions;
-
-
-	return { rocketDaoNodeTrustedActions, rocketRewardsPool, rocketClaimDao, rocketTokenRETH, rocketDaoNodeTrusted, rplContract, rockStorageContract, rocketDepositPoolContract, rocketNodeManagerContract, rocketNodeStakingContract, rocketNodeDepositContract };
+  return {
+    rocketDaoNodeTrustedActions,
+    rocketRewardsPool,
+    rocketClaimDao,
+    rocketTokenRETH,
+    rocketDaoNodeTrusted,
+    rplContract,
+    rockStorageContract,
+    rocketDepositPoolContract,
+    rocketNodeManagerContract,
+    rocketNodeStakingContract,
+    rocketNodeDepositContract,
+  };
 }
-
-
 
 export async function createSigners(): Promise<Signers> {
 	const signersArray: SignerWithAddress[] = (await ethers.getSigners());
@@ -171,12 +193,12 @@ export async function createSigners(): Promise<Signers> {
 }
 
 export async function protocolFixture(): Promise<SetupData> {
-	await loadFixture(deployRocketPool);
-	await loadFixture(setDefaultParameters);
+  await loadFixture(deployRocketPool);
+  await loadFixture(setDefaultParameters);
 
-	const signers = await createSigners();
-	const deployedProtocol = await deployProtocol(signers);
-	const rocketPool = await getRocketPool(deployedProtocol.directory);
+  const signers = await createSigners();
+  const deployedProtocol = await deployProtocol(signers);
+  const rocketPool = await getRocketPool(deployedProtocol.directory);
 
-	return { protocol: deployedProtocol, signers, rocketPool };
+  return { protocol: deployedProtocol, signers, rocketPool };
 }
