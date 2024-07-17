@@ -1,4 +1,3 @@
-import { getSignerPrivateKey } from '../../test/test';
 import { setupSandbox } from '../utils/setup_sandbox';
 import { fillDepositPoolAndAssignDeposits } from './helpers/fillRocketPoolDepositPool';
 import { launchMinipools } from './helpers/launchMinipools';
@@ -20,3 +19,4 @@ setupSandbox()
     console.error(error);
     process.exit(1);
   });
+

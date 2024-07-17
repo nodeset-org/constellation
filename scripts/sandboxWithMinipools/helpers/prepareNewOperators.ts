@@ -50,11 +50,12 @@ const makeOperator = async (signerKey: keyof Signers, setupData: SetupData, salt
 
   const validatorKey = deriveEth2ValidatorKeys(pubkey, 1);
 
-  console.log('minipool public key: ', Buffer.from(ethers.utils.zeroPad(pubkey, 48)));
+  console.log('minipool public key: ', ethers.utils.zeroPad(pubkey, 48));
+  console.log('withdrawal credentials: ', withdrawalCredentials.substring(2));
 
   const depositMessage = Buffer.concat([
     Buffer.from(ethers.utils.zeroPad(pubkey, 48)),
-    Buffer.from(withdrawalCredentials.substr(2), 'hex'),
+    Buffer.from(withdrawalCredentials.substring(2), 'hex'),
     ethers.utils.zeroPad(ethers.utils.arrayify(ethers.BigNumber.from(amount)), 8),
   ]);
 
