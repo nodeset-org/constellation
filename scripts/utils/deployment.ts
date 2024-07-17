@@ -4,7 +4,7 @@ import path from 'path';
 import { getNextContractAddress } from "../../test/utils/utils";
 import { getInitializerData } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import readline from 'readline';
-import { AdminTreasury, Directory, FundRouter, IRocketStorage, IXRETHOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, XRETHAdminOracle, YieldDistributor } from "../../typechain-types";
+import { Treasury, Directory, FundRouter, IRocketStorage, IXRETHOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, XRETHAdminOracle, YieldDistributor } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Protocol, Signers } from "../../test/test";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
@@ -54,7 +54,7 @@ export const generateBytes32Identifier = (identifier: string) => {
     return ethers.utils.solidityKeccak256(["string"], [`contract.address${identifier}`]);
 };
 
-export async function fastDeployProtocol(deployer: SignerWithAddress, directoryDeployer: SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, uniswapV3: string, admin: string, log: boolean) {
+export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer: SignerWithAddress, directoryDeployer: SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, uniswapV3: string, admin: string, log: boolean) {
 
     const directoryAddress = await getNextContractAddress(directoryDeployer, 1)
 
@@ -117,8 +117,8 @@ export async function fastDeployProtocol(deployer: SignerWithAddress, directoryD
         return pf
     })
 
-    const adminTreasuryProxy = await retryOperation(async function () {
-        const at = await upgrades.deployProxy(await ethers.getContractFactory("AdminTreasury", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+    const treasuryProxy = await retryOperation(async function () {
+        const at = await upgrades.deployProxy(await ethers.getContractFactory("Treasury", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
         if (log) console.log("admin treasury deployed to", at.address)
         return at
     })
@@ -164,7 +164,8 @@ export async function fastDeployProtocol(deployer: SignerWithAddress, directoryD
                     uniswapV3,
                     sanctions,
                 ],
-                adminTreasuryProxy.address,
+                treasuryProxy.address,
+                treasurer.address,
                 admin,
             ], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 
@@ -197,7 +198,7 @@ export async function fastDeployProtocol(deployer: SignerWithAddress, directoryD
         priceFetcher: priceFetcherProxy as PriceFetcher,
         oracle: oracleProxy as XRETHAdminOracle,
         superNode: superNodeProxy as SuperNodeAccount,
-        adminTreasury: adminTreasuryProxy as AdminTreasury,
+        treasury: treasuryProxy as Treasury,
         directory: directoryProxy as Directory
     }
 }
@@ -233,7 +234,8 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
 
     const deployer = (await ethers.getSigners())[0];
 
-    const { whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, superNode, oracle, yieldDistributor, priceFetcher, directory, adminTreasury } = await fastDeployProtocol(
+    const { whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury } = await fastDeployProtocol(
+        signers.treasurer,
         signers.deployer,
         signers.random5,
         rockStorageContract.address,
@@ -263,7 +265,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
 
     // set directory treasury to deployer to prevent tests from failing
-    expect(await directory.getTreasuryAddress()).to.equal(adminTreasury.address);
+    expect(await directory.getTreasuryAddress()).to.equal(treasury.address);
     await directory.connect(signers.admin).setTreasury(deployer.address);
 
     const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };

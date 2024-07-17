@@ -50,13 +50,15 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
         _totalYieldAccrued = _newTotalYieldAccrued;
         _lastUpdatedTotalYieldAccrued = block.timestamp;
         emit TotalYieldAccruedUpdated(_newTotalYieldAccrued);
+
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).resetOracleError();
     }
 
     function setTotalYieldAccrued(
         bytes calldata _sig,
         uint256 _newTotalYieldAccrued,
         uint256 _sigTimeStamp
-    ) external onlyAdmin {
+    ) external {
         _setTotalYieldAccrued(_sig, _newTotalYieldAccrued, _sigTimeStamp);
     }
 
@@ -65,7 +67,7 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
         bytes calldata _sig,
         uint256 _newTotalYieldAccrued,
         uint256 _sigTimeStamp
-    ) external onlyAdmin {
+    ) external {
         _setTotalYieldAccrued(_sig, _newTotalYieldAccrued, _sigTimeStamp);
         SuperNodeAccount(_directory.getSuperNodeAddress()).merkleClaim(
             _merkleProofParams.nodeAddress,

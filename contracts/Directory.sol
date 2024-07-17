@@ -184,7 +184,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         );
     }
 
-    function initialize(Protocol memory newProtocol, address treasury, address admin) public initializer {
+    function initialize(Protocol memory newProtocol, address treasury, address treasurer, address admin) public initializer {
         // require(msg.sender != admin, Constants.INITIALIZATION_ERROR);
         require(
             _protocol.whitelist == address(0) && newProtocol.whitelist != address(0),
@@ -234,8 +234,10 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _setRoleAdmin(Constants.TIMELOCK_LONG, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.ADMIN_ORACLE_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.ADMIN_ROLE);
+        _setRoleAdmin(Constants.TREASURY_ROLE, Constants.TREASURY_ROLE);
 
         _grantRole(Constants.ADMIN_ROLE, admin);
+        _grantRole(Constants.TREASURY_ROLE, treasurer);
 
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.whitelist);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.wethVault);

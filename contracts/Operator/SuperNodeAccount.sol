@@ -27,6 +27,8 @@ import '../Utils/Errors.sol';
 
 import 'hardhat/console.sol';
 
+// WE NOW ASSUME WE ONLY SUPPORT STAKING WITH LEB8s
+
 /**
  * @title SuperNodeAccount
  * @author Theodore Clapp, Mike Leach
@@ -35,9 +37,6 @@ import 'hardhat/console.sol';
 contract SuperNodeAccount is UpgradeableBase, Errors {
     /// @notice Configuration for a validator
     struct ValidatorConfig {
-        string timezoneLocation;
-        uint256 bondAmount;
-        uint256 minimumNodeFee;
         bytes validatorPubkey;
         bytes validatorSignature;
         bytes32 depositDataRoot;
@@ -81,6 +80,10 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     mapping(address => address[]) public subNodeOperatorMinipools;
     // Index for the current minipool being processed
     uint256 public currentMinipool;
+
+    // admin settings
+    uint256 public bond;
+    uint256 public minimumNodeFee;
 
     /// @notice Modifier to ensure a function can only be called once for lazy initialization
     modifier lazyInitializer() {
@@ -126,6 +129,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         lockUpTime = 28 days;
         adminServerCheck = true;
         adminServerSigExpiry = 1 days;
+        minimumNodeFee = 14e16;
+        bond = 8 ether;
     }
 
     /**
@@ -170,7 +175,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      */
     function createMinipool(ValidatorConfig calldata _config, uint256 _sigGenesisTime, bytes memory _sig) public payable {
         require(msg.value == lockThreshhold, 'SuperNode: must lock 1 ether');
-        require(hasSufficentLiquidity(_config.bondAmount), 'NodeAccount: protocol must have enough rpl and eth');
+        require(hasSufficentLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
         address subNodeOperator = msg.sender;
         require(
             Whitelist(_directory.getWhitelistAddress()).getIsAddressInWhitelist(subNodeOperator),
@@ -178,8 +183,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         );
         _validateSigUsed(_sig);
         OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(
-            subNodeOperator,
-            _config.bondAmount
+            bond
         );
         if (adminServerCheck) {
             require(block.timestamp - _sigGenesisTime < adminServerSigExpiry, "ass sig expired");
@@ -213,15 +217,15 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         minipools.push(_config.expectedMinipoolAddress);
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        od.onMinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator, _config.bondAmount);
-        od.rebalanceRplStake(totalEthStaking + (32 ether - _config.bondAmount));
+        od.onMinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator, bond);
+        od.rebalanceRplStake(totalEthStaking + (32 ether - bond));
 
         subNodeOperatorMinipools[subNodeOperator].push(_config.expectedMinipoolAddress);
 
         console.log('_createMinipool()');
-        IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: _config.bondAmount}(
-            _config.bondAmount,
-            _config.minimumNodeFee,
+        IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: bond}(
+            bond,
+            minimumNodeFee,
             _config.validatorPubkey,
             _config.validatorSignature,
             _config.depositDataRoot,
@@ -285,7 +289,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         IMinipool minipool = IMinipool(_minipool);
         minipool.stake(configs[_minipool].validatorSignature, configs[_minipool].depositDataRoot);
         // RP close call will revert unless you're in the right state, so this may waste your gas if you call at the wrong time!
-        totalEthStaking += (32 ether - configs[_minipool].bondAmount);
+        totalEthStaking += (32 ether - bond);
     }
 
     /**
@@ -303,11 +307,11 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         IMinipool minipool = IMinipool(_minipool);
         OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(
             _subNodeOperator,
-            configs[_minipool].bondAmount
+            bond
         );
         _stopTrackingMinipool(_minipool);
 
-        totalEthStaking -= configs[_minipool].bondAmount;
+        totalEthStaking -= bond;
 
         minipool.close();
     }
@@ -371,7 +375,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         if (minipool.getFinalised()) {
             OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(
                 _subNodeOperator,
-                configs[_minipool].bondAmount
+                bond
             );
             _stopTrackingMinipool(_minipool);
         }
@@ -516,5 +520,13 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     function setAdminServerSigExpiry(uint256 _newExpiry) external onlyAdmin {
         adminServerSigExpiry = _newExpiry;
+    }
+
+    function setBond(uint256 _newBond) external onlyAdmin {
+        bond = _newBond;
+    }
+
+    function setMiniumNodeFee(uint256 _newMinimumNodeFee) external onlyAdmin {
+        minimumNodeFee = _newMinimumNodeFee;
     }
 }

@@ -166,7 +166,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     function getDistributableYield() public view returns (uint256) {
-        uint256 totalUnrealizedAccrual = getOracle().getTotalYieldAccrued();
+        uint256 totalUnrealizedAccrual = getOracle().getTotalYieldAccrued() - OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleError();
         return totalUnrealizedAccrual - totalYieldDistributed;
     }
 
