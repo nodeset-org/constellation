@@ -321,7 +321,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 uint256 initalBalance = _directory.getDepositPoolAddress().balance;
                 minipool.distributeBalance(true);
                 uint256 finalBalance = _directory.getDepositPoolAddress().balance;
-                oracleError += finalBalance = initalBalance;
+                oracleError += finalBalance - initalBalance;
             }
         }
     }

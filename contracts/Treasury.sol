@@ -6,7 +6,7 @@ import './UpgradeableBase.sol';
 import './Utils/Constants.sol';
 
 /// @title Treasury Contract
-/// @notice A contract that allows an treasuerer to manage and execute transfers of ETH and ERC20 tokens.
+/// @notice A contract that allows the treasuerer to manage and execute transfers of ETH and ERC20 tokens.
 /// @dev Inherits from UpgradeableBase to allow for future upgrades.
 contract Treasury is UpgradeableBase {
     event ClaimedToken(address indexed _token, address indexed _to, uint256 indexed _amount);
@@ -81,7 +81,7 @@ contract Treasury is UpgradeableBase {
     }
 
     /// @notice Batch executes multiple calls to contracts with provided data and ETH.
-    /// @dev Useful for performing multiple treasuereristrative tasks in one transaction.
+    /// @dev Useful for performing multiple treasuerer tasks in one transaction.
     /// @param _targets An array of contract addresses to execute the calls on.
     /// @param _functionData An array of calldata to send for the calls.
     /// @param _values msg.value per target
