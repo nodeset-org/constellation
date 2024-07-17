@@ -371,6 +371,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         }
     }
 
+    function resetOracleError() external onlyProtocol {
+        oracleError = 0;
+    }
+
     /**
      * @notice Resets the oracle error.
      */
