@@ -17,8 +17,7 @@ export const printBalances = async (accounts: string[], opts: any = {}) => {
   const { names = [] } = opts;
   for (let i = 0; i < accounts.length; i++) {
     console.log(
-      `Balance: ${ethers.utils.formatEther(await ethers.provider.getBalance(accounts[i]))} at ${
-        names.length > 0 ? names[i] : accounts[i]
+      `Balance: ${ethers.utils.formatEther(await ethers.provider.getBalance(accounts[i]))} at ${names.length > 0 ? names[i] : accounts[i]
       }`
     );
   }
@@ -29,8 +28,7 @@ export const printTokenBalances = async (accounts: string[], token: string, opts
   const weth = await ethers.getContractAt('IWETH', token);
   for (let i = 0; i < accounts.length; i++) {
     console.log(
-      `Token Balance: ${ethers.utils.formatEther(await weth.balanceOf(accounts[i]))} at ${
-        names.length > 0 ? names[i] : accounts[i]
+      `Token Balance: ${ethers.utils.formatEther(await weth.balanceOf(accounts[i]))} at ${names.length > 0 ? names[i] : accounts[i]
       }`
     );
   }
@@ -296,8 +294,7 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
   const requiredEth = ethers.utils.parseEther('8').mul(subNodeOperators.length);
   if ((await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)).lt(requiredEth)) {
     throw new Error(
-      `Not enough eth in operatorDistributor contract to register ${
-        subNodeOperators.length
+      `Not enough eth in operatorDistributor contract to register ${subNodeOperators.length
       } validators. Required ${ethers.utils.formatEther(requiredEth)} eth but only have ${ethers.utils.formatEther(
         await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)
       )} eth`
@@ -349,10 +346,16 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
       .connect(nodeOperator)
       .createMinipool(config, timestamp, sig, { value: ethers.utils.parseEther('1') });
 
-        if(!(await protocol.superNode.hasSufficientLiquidity(bond))) {
-            await prepareOperatorDistributionContract(setupData, 2);
-        }
-        expect(await protocol.superNode.hasSufficientLiquidity(bond)).equals(true);
+    if (!(await protocol.superNode.hasSufficientLiquidity(bond))) {
+      await prepareOperatorDistributionContract(setupData, 2);
+    }
+    expect(await protocol.superNode.hasSufficientLiquidity(bond)).equals(true);
+
+    // Simulate the passage of a day
+    const oneDayInSeconds = 24 * 60 * 60;
+    const nextBlockTimestamp = (await ethers.provider.getBlock('latest')).timestamp + oneDayInSeconds;
+    await ethers.provider.send('evm_setNextBlockTimestamp', [nextBlockTimestamp]);
+    await ethers.provider.send('evm_mine', []); // Mine a block to apply the new timestamp
 
     // enter stake mode
     await protocol.superNode.connect(nodeOperator).stake(config.expectedMinipoolAddress);
@@ -443,8 +446,7 @@ export const registerNewValidatorDeprecated = async (setupData: SetupData, nodeO
   const requiredEth = ethers.utils.parseEther('8').mul(nodeOperators.length);
   if ((await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)).lt(requiredEth)) {
     throw new Error(
-      `Not enough eth in operatorDistributor contract to register ${
-        nodeOperators.length
+      `Not enough eth in operatorDistributor contract to register ${nodeOperators.length
       } validators. Required ${ethers.utils.formatEther(requiredEth)} eth but only have ${ethers.utils.formatEther(
         await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)
       )} eth`
@@ -512,8 +514,8 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   // send eth to the rocketpool deposit contract (mint rETH to signers[0])
 
 
-    const rplRequired = await setupData.protocol.operatorDistributor.calculateRplStakeShortfall(0, requiredEth);
-    await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequired);
+  const rplRequired = await setupData.protocol.operatorDistributor.calculateRplStakeShortfall(0, requiredEth);
+  await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequired);
 }
 
 export async function getNextContractAddress(signer: SignerWithAddress, offset = 0) {

@@ -9,9 +9,8 @@ contract MockRocketNodeManager is IRocketNodeManager {
     mapping(address => bool) public smoothingPoolRegistrationStates;
     mapping(address => address) public nodeOperatorsToMinipools;
 
-    function setSmoothingPoolRegistrationState(bool _state) public override returns (bool) {
+    function setSmoothingPoolRegistrationState(bool _state) public override {
         smoothingPoolRegistrationStates[nodeOperatorsToMinipools[msg.sender]] = _state;
-        return _state;
     }
 
     function getSmoothingPoolRegistrationState(address _nodeAddress) public view override returns (bool) {
