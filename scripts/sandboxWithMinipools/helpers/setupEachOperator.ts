@@ -33,24 +33,29 @@ const getOperatorSetupIterator = (setupData: SetupData) => async (operator: NewO
     
     console.log('transferred and staked RPL', amountToBeStaked);
 
-    return protocol.superNode
+    const res = await protocol.superNode
     .connect(operator.signer)
     .createMinipool({
-        bondAmount: operator.bondValue,
         depositDataRoot: operator.depositDataRoot,
         expectedMinipoolAddress: operator.expectedMinipoolAddress,
         salt: operator.salt,
-        minimumNodeFee: operator.minimumNodeFee,
-        timezoneLocation: operator.timezoneLocation,
         validatorPubkey: operator.depositData.pubkey,
         validatorSignature: operator.depositData.signature,
 
     }, operator.exitMessageSignature.timestamp, operator.exitMessageSignature.sig, {
         value: ethers.utils.parseEther('1'),
-    }).then(
+        gasLimit: 2184148*5 // TODO: figure out why this is needed. Was hitting gas limit here
+    },
+  ).then(
       (res) => {
         console.log('Finished setting up operator: ', operator.signer.address);
         return res;
       }
     );
+
+    const a = await res.wait();
+
+    console.log('gas used to create minipool', a.gasUsed.toString())
+
+    return res;
 };

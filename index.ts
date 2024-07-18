@@ -272,235 +272,6 @@ export const addressSetStorageInterfaceAbi = [
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// AdminTreasury
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export const adminTreasuryAbi = [
-  { type: 'constructor', inputs: [], stateMutability: 'nonpayable' },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'previousAdmin',
-        internalType: 'address',
-        type: 'address',
-        indexed: false,
-      },
-      {
-        name: 'newAdmin',
-        internalType: 'address',
-        type: 'address',
-        indexed: false,
-      },
-    ],
-    name: 'AdminChanged',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'beacon',
-        internalType: 'address',
-        type: 'address',
-        indexed: true,
-      },
-    ],
-    name: 'BeaconUpgraded',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: '_to', internalType: 'address', type: 'address', indexed: true },
-      {
-        name: '_amount',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: true,
-      },
-    ],
-    name: 'ClaimedEth',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: '_token',
-        internalType: 'address',
-        type: 'address',
-        indexed: true,
-      },
-      { name: '_to', internalType: 'address', type: 'address', indexed: true },
-      {
-        name: '_amount',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: true,
-      },
-    ],
-    name: 'ClaimedToken',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: '_target',
-        internalType: 'address',
-        type: 'address',
-        indexed: true,
-      },
-      {
-        name: '_functionData',
-        internalType: 'bytes',
-        type: 'bytes',
-        indexed: true,
-      },
-    ],
-    name: 'Executed',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: 'version', internalType: 'uint8', type: 'uint8', indexed: false },
-    ],
-    name: 'Initialized',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'implementation',
-        internalType: 'address',
-        type: 'address',
-        indexed: true,
-      },
-    ],
-    name: 'Upgraded',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_to', internalType: 'address payable', type: 'address' }],
-    name: 'claimEth',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_to', internalType: 'address payable', type: 'address' },
-      { name: '_amount', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'claimEth',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_tokenAddress', internalType: 'address', type: 'address' },
-      { name: '_to', internalType: 'address', type: 'address' },
-      { name: '_amount', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'claimToken',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_tokenAddress', internalType: 'address', type: 'address' },
-      { name: '_to', internalType: 'address', type: 'address' },
-    ],
-    name: 'claimToken',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_target', internalType: 'address payable', type: 'address' },
-      { name: '_functionData', internalType: 'bytes', type: 'bytes' },
-    ],
-    name: 'execute',
-    outputs: [],
-    stateMutability: 'payable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      {
-        name: '_targets',
-        internalType: 'address payable[]',
-        type: 'address[]',
-      },
-      { name: '_functionData', internalType: 'bytes[]', type: 'bytes[]' },
-      { name: '_values', internalType: 'uint256[]', type: 'uint256[]' },
-    ],
-    name: 'executeAll',
-    outputs: [],
-    stateMutability: 'payable',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getDirectory',
-    outputs: [
-      { name: '', internalType: 'contract Directory', type: 'address' },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getImplementation',
-    outputs: [{ name: '', internalType: 'address', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_directoryAddress', internalType: 'address', type: 'address' },
-    ],
-    name: 'initialize',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'proxiableUUID',
-    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: 'newImplementation', internalType: 'address', type: 'address' },
-    ],
-    name: 'upgradeTo',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: 'newImplementation', internalType: 'address', type: 'address' },
-      { name: 'data', internalType: 'bytes', type: 'bytes' },
-    ],
-    name: 'upgradeToAndCall',
-    outputs: [],
-    stateMutability: 'payable',
-  },
-  { type: 'receive', stateMutability: 'payable' },
-] as const
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Constants
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1069,6 +840,7 @@ export const directoryAbi = [
         ],
       },
       { name: 'treasury', internalType: 'address', type: 'address' },
+      { name: 'treasurer', internalType: 'address', type: 'address' },
       { name: 'admin', internalType: 'address', type: 'address' },
     ],
     name: 'initialize',
@@ -2861,241 +2633,6 @@ export const ixrethOracleAbi = [
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// MockAdminTreasuryV2
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export const mockAdminTreasuryV2Abi = [
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'previousAdmin',
-        internalType: 'address',
-        type: 'address',
-        indexed: false,
-      },
-      {
-        name: 'newAdmin',
-        internalType: 'address',
-        type: 'address',
-        indexed: false,
-      },
-    ],
-    name: 'AdminChanged',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'beacon',
-        internalType: 'address',
-        type: 'address',
-        indexed: true,
-      },
-    ],
-    name: 'BeaconUpgraded',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: '_to', internalType: 'address', type: 'address', indexed: true },
-      {
-        name: '_amount',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: true,
-      },
-    ],
-    name: 'ClaimedEth',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: '_token',
-        internalType: 'address',
-        type: 'address',
-        indexed: true,
-      },
-      { name: '_to', internalType: 'address', type: 'address', indexed: true },
-      {
-        name: '_amount',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: true,
-      },
-    ],
-    name: 'ClaimedToken',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: '_target',
-        internalType: 'address',
-        type: 'address',
-        indexed: true,
-      },
-      {
-        name: '_functionData',
-        internalType: 'bytes',
-        type: 'bytes',
-        indexed: true,
-      },
-    ],
-    name: 'Executed',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: 'version', internalType: 'uint8', type: 'uint8', indexed: false },
-    ],
-    name: 'Initialized',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'implementation',
-        internalType: 'address',
-        type: 'address',
-        indexed: true,
-      },
-    ],
-    name: 'Upgraded',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_to', internalType: 'address payable', type: 'address' }],
-    name: 'claimEth',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_to', internalType: 'address payable', type: 'address' },
-      { name: '_amount', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'claimEth',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_tokenAddress', internalType: 'address', type: 'address' },
-      { name: '_to', internalType: 'address', type: 'address' },
-      { name: '_amount', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'claimToken',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_tokenAddress', internalType: 'address', type: 'address' },
-      { name: '_to', internalType: 'address', type: 'address' },
-    ],
-    name: 'claimToken',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_target', internalType: 'address payable', type: 'address' },
-      { name: '_functionData', internalType: 'bytes', type: 'bytes' },
-    ],
-    name: 'execute',
-    outputs: [],
-    stateMutability: 'payable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      {
-        name: '_targets',
-        internalType: 'address payable[]',
-        type: 'address[]',
-      },
-      { name: '_functionData', internalType: 'bytes[]', type: 'bytes[]' },
-      { name: '_values', internalType: 'uint256[]', type: 'uint256[]' },
-    ],
-    name: 'executeAll',
-    outputs: [],
-    stateMutability: 'payable',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getDirectory',
-    outputs: [
-      { name: '', internalType: 'contract Directory', type: 'address' },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getImplementation',
-    outputs: [{ name: '', internalType: 'address', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_directoryAddress', internalType: 'address', type: 'address' },
-    ],
-    name: 'initialize',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'proxiableUUID',
-    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'test',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'pure',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: 'newImplementation', internalType: 'address', type: 'address' },
-    ],
-    name: 'upgradeTo',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: 'newImplementation', internalType: 'address', type: 'address' },
-      { name: 'data', internalType: 'bytes', type: 'bytes' },
-    ],
-    name: 'upgradeToAndCall',
-    outputs: [],
-    stateMutability: 'payable',
-  },
-  { type: 'receive', stateMutability: 'payable' },
-] as const
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // MockERC20
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -3777,6 +3314,13 @@ export const mockNodeAccountV2Abi = [
   },
   {
     type: 'function',
+    inputs: [],
+    name: 'bond',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [
       { name: '_subNodeOperator', internalType: 'address', type: 'address' },
       { name: '_minipool', internalType: 'address', type: 'address' },
@@ -3790,9 +3334,6 @@ export const mockNodeAccountV2Abi = [
     inputs: [{ name: '', internalType: 'address', type: 'address' }],
     name: 'configs',
     outputs: [
-      { name: 'timezoneLocation', internalType: 'string', type: 'string' },
-      { name: 'bondAmount', internalType: 'uint256', type: 'uint256' },
-      { name: 'minimumNodeFee', internalType: 'uint256', type: 'uint256' },
       { name: 'validatorPubkey', internalType: 'bytes', type: 'bytes' },
       { name: 'validatorSignature', internalType: 'bytes', type: 'bytes' },
       { name: 'depositDataRoot', internalType: 'bytes32', type: 'bytes32' },
@@ -3813,9 +3354,6 @@ export const mockNodeAccountV2Abi = [
         internalType: 'struct SuperNodeAccount.ValidatorConfig',
         type: 'tuple',
         components: [
-          { name: 'timezoneLocation', internalType: 'string', type: 'string' },
-          { name: 'bondAmount', internalType: 'uint256', type: 'uint256' },
-          { name: 'minimumNodeFee', internalType: 'uint256', type: 'uint256' },
           { name: 'validatorPubkey', internalType: 'bytes', type: 'bytes' },
           { name: 'validatorSignature', internalType: 'bytes', type: 'bytes' },
           { name: 'depositDataRoot', internalType: 'bytes32', type: 'bytes32' },
@@ -3966,6 +3504,13 @@ export const mockNodeAccountV2Abi = [
   },
   {
     type: 'function',
+    inputs: [],
+    name: 'minimumNodeFee',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [{ name: '', internalType: 'address', type: 'address' }],
     name: 'minipoolIndex',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
@@ -3994,6 +3539,13 @@ export const mockNodeAccountV2Abi = [
   },
   {
     type: 'function',
+    inputs: [{ name: '_newBond', internalType: 'uint256', type: 'uint256' }],
+    name: 'setBond',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     inputs: [
       { name: '_newLockThreshold', internalType: 'uint256', type: 'uint256' },
     ],
@@ -4007,6 +3559,15 @@ export const mockNodeAccountV2Abi = [
       { name: '_newLockUpTime', internalType: 'uint256', type: 'uint256' },
     ],
     name: 'setLockUpTime',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_newMinimumNodeFee', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'setMiniumNodeFee',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -4743,6 +4304,13 @@ export const mockSuperNodeV2Abi = [
   },
   {
     type: 'function',
+    inputs: [],
+    name: 'bond',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [
       { name: '_subNodeOperator', internalType: 'address', type: 'address' },
       { name: '_minipool', internalType: 'address', type: 'address' },
@@ -4756,9 +4324,6 @@ export const mockSuperNodeV2Abi = [
     inputs: [{ name: '', internalType: 'address', type: 'address' }],
     name: 'configs',
     outputs: [
-      { name: 'timezoneLocation', internalType: 'string', type: 'string' },
-      { name: 'bondAmount', internalType: 'uint256', type: 'uint256' },
-      { name: 'minimumNodeFee', internalType: 'uint256', type: 'uint256' },
       { name: 'validatorPubkey', internalType: 'bytes', type: 'bytes' },
       { name: 'validatorSignature', internalType: 'bytes', type: 'bytes' },
       { name: 'depositDataRoot', internalType: 'bytes32', type: 'bytes32' },
@@ -4779,9 +4344,6 @@ export const mockSuperNodeV2Abi = [
         internalType: 'struct SuperNodeAccount.ValidatorConfig',
         type: 'tuple',
         components: [
-          { name: 'timezoneLocation', internalType: 'string', type: 'string' },
-          { name: 'bondAmount', internalType: 'uint256', type: 'uint256' },
-          { name: 'minimumNodeFee', internalType: 'uint256', type: 'uint256' },
           { name: 'validatorPubkey', internalType: 'bytes', type: 'bytes' },
           { name: 'validatorSignature', internalType: 'bytes', type: 'bytes' },
           { name: 'depositDataRoot', internalType: 'bytes32', type: 'bytes32' },
@@ -4932,6 +4494,13 @@ export const mockSuperNodeV2Abi = [
   },
   {
     type: 'function',
+    inputs: [],
+    name: 'minimumNodeFee',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [{ name: '', internalType: 'address', type: 'address' }],
     name: 'minipoolIndex',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
@@ -4960,6 +4529,13 @@ export const mockSuperNodeV2Abi = [
   },
   {
     type: 'function',
+    inputs: [{ name: '_newBond', internalType: 'uint256', type: 'uint256' }],
+    name: 'setBond',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     inputs: [
       { name: '_newLockThreshold', internalType: 'uint256', type: 'uint256' },
     ],
@@ -4973,6 +4549,15 @@ export const mockSuperNodeV2Abi = [
       { name: '_newLockUpTime', internalType: 'uint256', type: 'uint256' },
     ],
     name: 'setLockUpTime',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_newMinimumNodeFee', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'setMiniumNodeFee',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -5102,6 +4687,241 @@ export const mockTargetAlphaAbi = [
     outputs: [],
     stateMutability: 'payable',
   },
+] as const
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// MockTreasuryV2
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export const mockTreasuryV2Abi = [
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: 'previousAdmin',
+        internalType: 'address',
+        type: 'address',
+        indexed: false,
+      },
+      {
+        name: 'newAdmin',
+        internalType: 'address',
+        type: 'address',
+        indexed: false,
+      },
+    ],
+    name: 'AdminChanged',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: 'beacon',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+    ],
+    name: 'BeaconUpgraded',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: '_to', internalType: 'address', type: 'address', indexed: true },
+      {
+        name: '_amount',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: true,
+      },
+    ],
+    name: 'ClaimedEth',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: '_token',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+      { name: '_to', internalType: 'address', type: 'address', indexed: true },
+      {
+        name: '_amount',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: true,
+      },
+    ],
+    name: 'ClaimedToken',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: '_target',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+      {
+        name: '_functionData',
+        internalType: 'bytes',
+        type: 'bytes',
+        indexed: true,
+      },
+    ],
+    name: 'Executed',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'version', internalType: 'uint8', type: 'uint8', indexed: false },
+    ],
+    name: 'Initialized',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: 'implementation',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+    ],
+    name: 'Upgraded',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_to', internalType: 'address payable', type: 'address' }],
+    name: 'claimEth',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_to', internalType: 'address payable', type: 'address' },
+      { name: '_amount', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'claimEth',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_tokenAddress', internalType: 'address', type: 'address' },
+      { name: '_to', internalType: 'address', type: 'address' },
+      { name: '_amount', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'claimToken',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_tokenAddress', internalType: 'address', type: 'address' },
+      { name: '_to', internalType: 'address', type: 'address' },
+    ],
+    name: 'claimToken',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_target', internalType: 'address payable', type: 'address' },
+      { name: '_functionData', internalType: 'bytes', type: 'bytes' },
+    ],
+    name: 'execute',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      {
+        name: '_targets',
+        internalType: 'address payable[]',
+        type: 'address[]',
+      },
+      { name: '_functionData', internalType: 'bytes[]', type: 'bytes[]' },
+      { name: '_values', internalType: 'uint256[]', type: 'uint256[]' },
+    ],
+    name: 'executeAll',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getDirectory',
+    outputs: [
+      { name: '', internalType: 'contract Directory', type: 'address' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getImplementation',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_directoryAddress', internalType: 'address', type: 'address' },
+    ],
+    name: 'initialize',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'proxiableUUID',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'test',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'pure',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'newImplementation', internalType: 'address', type: 'address' },
+    ],
+    name: 'upgradeTo',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'newImplementation', internalType: 'address', type: 'address' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' },
+    ],
+    name: 'upgradeToAndCall',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  { type: 'receive', stateMutability: 'payable' },
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -5435,16 +5255,20 @@ export const operatorDistributorAbi = [
   {
     type: 'function',
     inputs: [],
+    name: 'oracleError',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
     name: 'processNextMinipool',
     outputs: [],
     stateMutability: 'nonpayable',
   },
   {
     type: 'function',
-    inputs: [
-      { name: '_subNodeOperator', internalType: 'address', type: 'address' },
-      { name: '_bond', internalType: 'uint256', type: 'uint256' },
-    ],
+    inputs: [{ name: '_bond', internalType: 'uint256', type: 'uint256' }],
     name: 'provisionLiquiditiesForMinipoolCreation',
     outputs: [],
     stateMutability: 'nonpayable',
@@ -5469,6 +5293,13 @@ export const operatorDistributorAbi = [
     name: 'requiredLEBStaked',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'resetOracleError',
+    outputs: [],
+    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
@@ -28838,6 +28669,13 @@ export const superNodeAccountAbi = [
   },
   {
     type: 'function',
+    inputs: [],
+    name: 'bond',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [
       { name: '_subNodeOperator', internalType: 'address', type: 'address' },
       { name: '_minipool', internalType: 'address', type: 'address' },
@@ -28851,9 +28689,6 @@ export const superNodeAccountAbi = [
     inputs: [{ name: '', internalType: 'address', type: 'address' }],
     name: 'configs',
     outputs: [
-      { name: 'timezoneLocation', internalType: 'string', type: 'string' },
-      { name: 'bondAmount', internalType: 'uint256', type: 'uint256' },
-      { name: 'minimumNodeFee', internalType: 'uint256', type: 'uint256' },
       { name: 'validatorPubkey', internalType: 'bytes', type: 'bytes' },
       { name: 'validatorSignature', internalType: 'bytes', type: 'bytes' },
       { name: 'depositDataRoot', internalType: 'bytes32', type: 'bytes32' },
@@ -28874,9 +28709,6 @@ export const superNodeAccountAbi = [
         internalType: 'struct SuperNodeAccount.ValidatorConfig',
         type: 'tuple',
         components: [
-          { name: 'timezoneLocation', internalType: 'string', type: 'string' },
-          { name: 'bondAmount', internalType: 'uint256', type: 'uint256' },
-          { name: 'minimumNodeFee', internalType: 'uint256', type: 'uint256' },
           { name: 'validatorPubkey', internalType: 'bytes', type: 'bytes' },
           { name: 'validatorSignature', internalType: 'bytes', type: 'bytes' },
           { name: 'depositDataRoot', internalType: 'bytes32', type: 'bytes32' },
@@ -29027,6 +28859,13 @@ export const superNodeAccountAbi = [
   },
   {
     type: 'function',
+    inputs: [],
+    name: 'minimumNodeFee',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [{ name: '', internalType: 'address', type: 'address' }],
     name: 'minipoolIndex',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
@@ -29055,6 +28894,13 @@ export const superNodeAccountAbi = [
   },
   {
     type: 'function',
+    inputs: [{ name: '_newBond', internalType: 'uint256', type: 'uint256' }],
+    name: 'setBond',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     inputs: [
       { name: '_newLockThreshold', internalType: 'uint256', type: 'uint256' },
     ],
@@ -29068,6 +28914,15 @@ export const superNodeAccountAbi = [
       { name: '_newLockUpTime', internalType: 'uint256', type: 'uint256' },
     ],
     name: 'setLockUpTime',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_newMinimumNodeFee', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'setMiniumNodeFee',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -29167,6 +29022,235 @@ export const superNodeAccountAbi = [
     name: 'useAdminServerCheck',
     outputs: [],
     stateMutability: 'nonpayable',
+  },
+  { type: 'receive', stateMutability: 'payable' },
+] as const
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Treasury
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export const treasuryAbi = [
+  { type: 'constructor', inputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: 'previousAdmin',
+        internalType: 'address',
+        type: 'address',
+        indexed: false,
+      },
+      {
+        name: 'newAdmin',
+        internalType: 'address',
+        type: 'address',
+        indexed: false,
+      },
+    ],
+    name: 'AdminChanged',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: 'beacon',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+    ],
+    name: 'BeaconUpgraded',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: '_to', internalType: 'address', type: 'address', indexed: true },
+      {
+        name: '_amount',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: true,
+      },
+    ],
+    name: 'ClaimedEth',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: '_token',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+      { name: '_to', internalType: 'address', type: 'address', indexed: true },
+      {
+        name: '_amount',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: true,
+      },
+    ],
+    name: 'ClaimedToken',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: '_target',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+      {
+        name: '_functionData',
+        internalType: 'bytes',
+        type: 'bytes',
+        indexed: true,
+      },
+    ],
+    name: 'Executed',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'version', internalType: 'uint8', type: 'uint8', indexed: false },
+    ],
+    name: 'Initialized',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: 'implementation',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+    ],
+    name: 'Upgraded',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_to', internalType: 'address payable', type: 'address' }],
+    name: 'claimEth',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_to', internalType: 'address payable', type: 'address' },
+      { name: '_amount', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'claimEth',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_tokenAddress', internalType: 'address', type: 'address' },
+      { name: '_to', internalType: 'address', type: 'address' },
+      { name: '_amount', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'claimToken',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_tokenAddress', internalType: 'address', type: 'address' },
+      { name: '_to', internalType: 'address', type: 'address' },
+    ],
+    name: 'claimToken',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_target', internalType: 'address payable', type: 'address' },
+      { name: '_functionData', internalType: 'bytes', type: 'bytes' },
+    ],
+    name: 'execute',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      {
+        name: '_targets',
+        internalType: 'address payable[]',
+        type: 'address[]',
+      },
+      { name: '_functionData', internalType: 'bytes[]', type: 'bytes[]' },
+      { name: '_values', internalType: 'uint256[]', type: 'uint256[]' },
+    ],
+    name: 'executeAll',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getDirectory',
+    outputs: [
+      { name: '', internalType: 'contract Directory', type: 'address' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getImplementation',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_directoryAddress', internalType: 'address', type: 'address' },
+    ],
+    name: 'initialize',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'proxiableUUID',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'newImplementation', internalType: 'address', type: 'address' },
+    ],
+    name: 'upgradeTo',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'newImplementation', internalType: 'address', type: 'address' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' },
+    ],
+    name: 'upgradeToAndCall',
+    outputs: [],
+    stateMutability: 'payable',
   },
   { type: 'receive', stateMutability: 'payable' },
 ] as const

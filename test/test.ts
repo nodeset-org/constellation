@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers, upgrades } from "hardhat";
+import { config, ethers, upgrades } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
@@ -190,6 +190,65 @@ export async function createSigners(): Promise<Signers> {
 		rplWhale: signersArray[12],
 		treasurer: signersArray[13]
 	};
+}
+
+export function getSignerPrivateKey(signer: keyof Signers) {
+  const { accounts } = config.networks.hardhat;
+
+  if (Array.isArray(accounts)) {
+    throw new Error('Not using default hardhat accounts');
+  }
+
+  console.log(accounts.path);
+
+  const HDNode = ethers.utils.HDNode.fromMnemonic(accounts.mnemonic, accounts.passphrase);
+
+  let index = 0;
+
+  switch (signer) {
+    case 'admin':
+      index = 13;
+      break;
+    case 'random':
+      index = 1;
+      break;
+    case 'operator':
+      index = 2;
+      break;
+    case 'random2':
+      index = 3;
+      break;
+    case 'random3':
+      index = 4;
+      break;
+    case 'random4':
+      index = 5;
+      break;
+    case 'random5':
+      index = 6;
+      break;
+    case 'hyperdriver':
+      index = 7;
+      break;
+    case 'ethWhale':
+      index = 8;
+      break;
+    case 'adminServer':
+      index = 9;
+      break;
+    case 'timelock24hour':
+      index = 10;
+      break;
+    case 'protocolSigner':
+      index = 11;
+      break;
+    case 'rplWhale':
+      index = 12;
+      break;
+    default:
+      throw new Error(`Signer ${signer} not found`);
+  }
+  return HDNode.derivePath(`m/44'/60'/0'/0/${index}`).privateKey;
 }
 
 export async function protocolFixture(): Promise<SetupData> {

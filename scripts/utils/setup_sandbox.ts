@@ -8,7 +8,7 @@ import { createSigners, Protocol } from '../../test/test';
 export type SandboxDeployments = Protocol;
 
 export const setupSandbox = async () => {
-  const [deployer, admin] = await ethers.getSigners();
+  const { deployer, admin } = await createSigners(); 
 
   const rocketStorage = await deployRocketPool();
   await setDefaultParameters();
@@ -40,7 +40,7 @@ export const setupSandbox = async () => {
   });
   console.log('sanctions address', sanctions.address);
 
-  const { directory } = await fastDeployProtocol(
+  const protocol = await fastDeployProtocol(
     admin,
     deployer,
     admin,
@@ -51,6 +51,8 @@ export const setupSandbox = async () => {
     admin.address,
     true
   );
+
+  const { directory } = protocol;
 
   // set adminServer to be ADMIN_SERVER_ROLE
   const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('ADMIN_SERVER_ROLE'));
@@ -91,4 +93,7 @@ export const setupSandbox = async () => {
     await directory.connect(admin).grantRole(ethers.utils.arrayify(protocolRole), deployer.address);
   });
   console.log('protocol role set');
+
+  return {...protocol, wETH, sanctions };
+
 };
