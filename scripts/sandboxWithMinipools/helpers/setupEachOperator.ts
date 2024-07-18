@@ -55,7 +55,5 @@ const getOperatorSetupIterator = (setupData: SetupData) => async (operator: NewO
 
     const a = await res.wait();
 
-    console.log('gas used to create minipool', a.gasUsed.toString())
-
     return res;
 };
