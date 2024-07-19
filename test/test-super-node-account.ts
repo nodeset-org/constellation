@@ -261,7 +261,7 @@ describe("SuperNodeAccount", function () {
 
         const {sig, timestamp} = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
 
-        await protocol.superNode.connect(signers.hyperdriver).createMinipool(config, timestamp, sig, {
+        await protocol.superNode.connect(signers.hyperdriver).createMinipool(config.validatorPubkey, config.validatorSignature, config.depositDataRoot, config.salt, config.expectedMinipoolAddress, timestamp, sig, {
             value: ethers.utils.parseEther("1")
         });
 
@@ -303,11 +303,11 @@ describe("SuperNodeAccount", function () {
 
         const {sig, timestamp} = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
 
-        await protocol.superNode.connect(signers.hyperdriver).createMinipool(config, timestamp, sig, {
+        await protocol.superNode.connect(signers.hyperdriver).createMinipool(config.validatorPubkey, config.validatorSignature, config.depositDataRoot, config.salt, config.expectedMinipoolAddress, timestamp, sig, {
             value: ethers.utils.parseEther("1")
         });
 
-        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config,timestamp, sig, {
+        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config.validatorPubkey, config.validatorSignature, config.depositDataRoot, config.salt, config.expectedMinipoolAddress,timestamp, sig, {
             value: ethers.utils.parseEther("1")
         })).to.be.revertedWith("sig already used");
     });
@@ -335,7 +335,7 @@ describe("SuperNodeAccount", function () {
 
         const {sig, timestamp} = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
 
-        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config, timestamp, sig, {
+        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config.validatorPubkey, config.validatorSignature, config.depositDataRoot, config.salt, config.expectedMinipoolAddress, timestamp, sig, {
             value: ethers.utils.parseEther("1")
         })).to.be.revertedWith("sub node operator must be whitelisted");
     });
@@ -379,7 +379,7 @@ describe("SuperNodeAccount", function () {
 
         // this is not an intuitive fail message, but it is correct as it we sign invalid param data so it fails for bad sig
         // because the predicted address is incorrect. This may make increase future cli debugging times
-        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(badConfig, timestamp, sig, {
+        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(badConfig.validatorPubkey, badConfig.validatorSignature, badConfig.depositDataRoot, badConfig.salt, badConfig.expectedMinipoolAddress, timestamp, sig, {
             value: ethers.utils.parseEther("1")
         })).to.be.revertedWith("signer must have permission from admin server role");
     });
@@ -409,7 +409,7 @@ describe("SuperNodeAccount", function () {
 
         const {sig, timestamp} = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
 
-        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config, timestamp, sig, {
+        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config.validatorPubkey, config.validatorSignature, config.depositDataRoot, config.salt, config.expectedMinipoolAddress, timestamp, sig, {
             value: ethers.utils.parseEther("0")
         })).to.be.revertedWith("SuperNode: must lock 1 ether");
     });
@@ -433,7 +433,7 @@ describe("SuperNodeAccount", function () {
 
         const {sig, timestamp} = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
 
-        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config, timestamp, sig, {
+        await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config.validatorPubkey, config.validatorSignature, config.depositDataRoot, config.salt, config.expectedMinipoolAddress, timestamp, sig, {
             value: ethers.utils.parseEther("1")
         })).to.be.revertedWith("NodeAccount: protocol must have enough rpl and eth");
     });

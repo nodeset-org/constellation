@@ -9,6 +9,7 @@ import { RocketPool } from "../test";
 import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault, IWETH, RocketMinipoolInterface } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
 import { deployRPMinipool, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances, assertAddOperator, deployMinipool, increaseEVMTime } from "../utils/utils";
+import { generateDepositDataForStake } from "../rocketpool/_helpers/minipool";
 
 
 describe("Node Operator Onboarding", function () {
@@ -85,7 +86,9 @@ describe("Node Operator Onboarding", function () {
 
         await increaseEVMTime(60 * 60 * 24 * 7 * 32);
 
-        await protocol.superNode.connect(signers.hyperdriver).stake(minipoolAddress);
+        const depositDataStake = await generateDepositDataForStake(minipoolAddress);
+
+        await protocol.superNode.connect(signers.hyperdriver).stake(depositDataStake.depositData.signature, depositDataStake.depositDataRoot, minipoolAddress);
     })
 
     it("eth whale supplies Nodeset deposit pool with eth and rpl", async function () {
@@ -230,7 +233,7 @@ describe("Node Operator Onboarding", function () {
         await setupData.rocketPool.rocketDepositPoolContract.assignDeposits();
 
         await increaseEVMTime(60 * 60 * 24 * 7 * 32);
-
-        await expect(protocol.superNode.connect(signers.hyperdriver).stake(minipoolAddress)).to.be.revertedWith("The minipool can only begin staking while in prelaunch");
+        const depositDataStake = await generateDepositDataForStake(minipoolAddress);
+        await expect(protocol.superNode.connect(signers.hyperdriver).stake(depositDataStake.depositData.signature, depositDataStake.depositDataRoot, minipoolAddress)).to.be.revertedWith("The minipool can only begin staking while in prelaunch");
     })
 });

@@ -191,9 +191,8 @@ export async function deployMinipool(setupData: SetupData, bondValue: BigNumber)
   //})
 
   console.log('aljsdf;as');
-  await setupData.protocol.superNode.connect(setupData.signers.hyperdriver).createMinipool(config, timestamp, sig, {
-    value: ethers.utils.parseEther('1'),
-  });
+  await setupData.protocol.superNode.connect(setupData.signers.hyperdriver).createMinipool(config.validatorPubkey, config.validatorSignature, config.depositDataRoot, config.salt, config.expectedMinipoolAddress, timestamp, sig, { value: ethers.utils.parseEther('1') });
+
   console.log('aljsdf;as');
 
   return config.expectedMinipoolAddress;
