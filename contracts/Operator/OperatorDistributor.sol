@@ -277,7 +277,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @notice Internal function to process the next minipool in line.
      * Handles RPL top-up and balance distribution based on minipool's current state.
      */
-    function processNextMinipool() external onlyProtocol {
+    function processNextMinipool() external {
         _processNextMinipool();
     }
 
