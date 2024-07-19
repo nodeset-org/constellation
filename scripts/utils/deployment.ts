@@ -54,7 +54,7 @@ export const generateBytes32Identifier = (identifier: string) => {
     return ethers.utils.solidityKeccak256(["string"], [`contract.address${identifier}`]);
 };
 
-export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer: SignerWithAddress, directoryDeployer: SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, uniswapV3: string, admin: string, log: boolean) {
+export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer: SignerWithAddress, directoryDeployer: SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, admin: string, log: boolean) {
 
     const directoryAddress = await getNextContractAddress(directoryDeployer, 1)
 
@@ -142,7 +142,6 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
         console.log("snap.address", superNodeProxy.address)
         console.log("rocketStorage", rocketStorage)
         console.log("weth", weth)
-        console.log("uniswapV3", uniswapV3)
         console.log("sanctions", sanctions)
     }
 
@@ -161,7 +160,6 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
                     superNodeProxy.address,
                     rocketStorage,
                     weth,
-                    uniswapV3,
                     sanctions,
                 ],
                 treasuryProxy.address,
@@ -227,11 +225,6 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     const sanctions = await Sanctions.deploy();
     await sanctions.deployed();
 
-    // deploy mock uniswap v3 pool
-    const UniswapV3Pool = await ethers.getContractFactory("MockUniswapV3Pool");
-    const uniswapV3Pool = await UniswapV3Pool.deploy();
-    await uniswapV3Pool.deployed();
-
     const deployer = (await ethers.getSigners())[0];
 
     const { whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury } = await fastDeployProtocol(
@@ -241,7 +234,6 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
         rockStorageContract.address,
         wETH.address,
         sanctions.address,
-        uniswapV3Pool.address,
         signers.admin.address,
         log
     )
@@ -273,8 +265,6 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     // send all rpl from admin to rplWhale
     const rplWhaleBalance = await rplContract.balanceOf(signers.deployer.address);
     await rplContract.transfer(signers.rplWhale.address, rplWhaleBalance);
-
-    await priceFetcher.connect(signers.admin).useFallback();
 
     return returnData;
 }

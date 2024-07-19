@@ -130,6 +130,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
 
         _claimFees();
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
     }
 
     /**
@@ -186,6 +187,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         _claimFees();
 
         console.log('ABC5');
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
+
     }
 
     /**

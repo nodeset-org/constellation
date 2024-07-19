@@ -29,7 +29,6 @@ struct Protocol {
     // external dependencies
     address rocketStorage;
     address payable weth;
-    address uniswapV3Pool;
     address sanctions;
 }
 
@@ -150,10 +149,6 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _treasury;
     }
 
-    function getUniswapV3PoolAddress() public view returns (address) {
-        return _protocol.uniswapV3Pool;
-    }
-
     function getRocketNetworkPenalties() public view returns (IRocketNetworkPenalties) {
         return IRocketNetworkPenalties(_integrations.rocketNetworkPenalties);
     }
@@ -226,10 +221,6 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
             Constants.INITIALIZATION_ERROR
         );
         require(_protocol.weth == address(0) && newProtocol.weth != address(0), Constants.INITIALIZATION_ERROR);
-        require(
-            _protocol.uniswapV3Pool == address(0) && newProtocol.uniswapV3Pool != address(0),
-            Constants.INITIALIZATION_ERROR
-        );
         require(_treasury == address(0) && treasury != address(0), Constants.INITIALIZATION_ERROR);
         require(
             _protocol.sanctions == address(0) && newProtocol.sanctions != address(0),

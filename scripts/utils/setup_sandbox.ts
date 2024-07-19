@@ -30,7 +30,7 @@ export const setupSandbox = async () => {
     const contract = await UniswapV3Pool.deploy();
     await contract.deployed();
     return contract;
-  });
+});
 
   const sanctions = await retryOperation(async () => {
     const Sanctions = await ethers.getContractFactory('MockSanctions');

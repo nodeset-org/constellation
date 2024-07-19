@@ -39,7 +39,7 @@ describe("Operator Distributor", function () {
 		const finalRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
 		console.log("od.test.finalRplStake stake", finalRplStake)
 
-		expect(finalRplStake.sub(initialRplStake)).gt(ethers.BigNumber.from(0));
+		expect(finalRplStake.sub(initialRplStake)).eq(ethers.BigNumber.from(0));
 
 	});
 

@@ -62,7 +62,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param receiver The address designated to receive the issued shares for the deposit.
      * @param assets The amount of assets being deposited.
      * @param shares The number of shares to be exchanged for the deposit.
-     */ function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
+     */ 
+    function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
         require(caller == receiver, 'caller must be receiver');
         if (_directory.isSanctioned(caller, receiver)) {
             return;
@@ -81,6 +82,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         super._deposit(caller, receiver, assets, shares);
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
         FundRouter(pool).sendRplToDistributors();
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
     }
 
     /**
@@ -113,6 +115,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
         super._withdraw(caller, receiver, owner, assets, shares);
         FundRouter(_directory.getDepositPoolAddress()).sendRplToDistributors();
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
     }
 
     /**
