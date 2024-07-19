@@ -35,17 +35,6 @@ import 'hardhat/console.sol';
  * @dev Abstracts all created minipools under a single address / minipool owner
  */
 contract SuperNodeAccount is UpgradeableBase, Errors {
-    /// @notice Configuration for a validator
-    struct ValidatorConfig {
-        bytes validatorPubkey;
-        bytes validatorSignature;
-        bytes32 depositDataRoot;
-        uint256 salt;
-        address expectedMinipoolAddress;
-    }
-
-    // Mapping of node operator address to their validator configuration
-    mapping(address => ValidatorConfig) public configs;
     // Mapping of minipool address to the amount of ETH locked
     mapping(address => uint256) public lockedEth;
     // Mapping of minipool address to the timestamp when locking started
@@ -163,7 +152,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      *
      *      It's crucial that this function is called with correct and validated parameters to ensure the integrity of the node and minipool registration process.
      *
-     * @param _config A `ValidatorConfig` struct containing:
+     * @notice _config A `ValidatorConfig` struct containing:
      *        - timezoneLocation: String representation of the validator's timezone.
      *        - bondAmount: The amount of ETH to be bonded.
      *        - minimumNodeFee: Minimum fee for the node operations.
@@ -174,7 +163,15 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      *        - expectedMinipoolAddress: Precomputed address expected to be generated for the new minipool.
      * @param _sig The signature provided for minipool creation, used for admin verification if pre-signed exit message checks are enabled.
      */
-    function createMinipool(ValidatorConfig calldata _config, uint256 _sigGenesisTime, bytes memory _sig) public payable {
+    function createMinipool(
+        bytes calldata _validatorPubkey,
+        bytes calldata _validatorSignature,
+        bytes32 _depositDataRoot,
+        uint256 _salt,
+        address _expectedMinipoolAddress,
+        uint256 _sigGenesisTime,
+        bytes memory _sig
+    ) public payable {
         require(msg.value == lockThreshhold, 'SuperNode: must lock 1 ether');
         require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
         address subNodeOperator = msg.sender;
@@ -183,19 +180,18 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             'sub node operator must be whitelisted'
         );
         _validateSigUsed(_sig);
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(
-            bond
-        );
-        configs[_config.expectedMinipoolAddress] = _config;
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(bond);
         if (adminServerCheck) {
-            require(block.timestamp - _sigGenesisTime < adminServerSigExpiry, "ass sig expired");
+            require(block.timestamp - _sigGenesisTime < adminServerSigExpiry, 'ass sig expired');
             console.log('_createMinipool: message hash');
             console.logBytes32(
-                keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt, address(this), block.chainid))
+                keccak256(abi.encodePacked(_expectedMinipoolAddress, _salt, address(this), block.chainid))
             );
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
-                    keccak256(abi.encodePacked(_config.expectedMinipoolAddress, _config.salt, _sigGenesisTime, address(this), block.chainid))
+                    keccak256(
+                        abi.encodePacked(_expectedMinipoolAddress, _salt, _sigGenesisTime, address(this), block.chainid)
+                    )
                 ),
                 _sig
             );
@@ -205,36 +201,34 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             );
         }
 
-        subNodeOperatorHasMinipool[
-            keccak256(abi.encodePacked(subNodeOperator, _config.expectedMinipoolAddress))
-        ] = true;
+        subNodeOperatorHasMinipool[keccak256(abi.encodePacked(subNodeOperator, _expectedMinipoolAddress))] = true;
 
-        require(lockedEth[_config.expectedMinipoolAddress] == 0, 'minipool already initialized');
+        require(lockedEth[_expectedMinipoolAddress] == 0, 'minipool already initialized');
 
-        lockedEth[_config.expectedMinipoolAddress] = msg.value;
+        lockedEth[_expectedMinipoolAddress] = msg.value;
         totalEthLocked += msg.value;
-        lockStarted[_config.expectedMinipoolAddress] = block.timestamp;
+        lockStarted[_expectedMinipoolAddress] = block.timestamp;
 
-        minipoolIndex[_config.expectedMinipoolAddress] = minipools.length;
-        minipools.push(_config.expectedMinipoolAddress);
+        minipoolIndex[_expectedMinipoolAddress] = minipools.length;
+        minipools.push(_expectedMinipoolAddress);
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        od.onMinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator, bond);
+        od.onMinipoolCreated(_expectedMinipoolAddress, subNodeOperator, bond);
         od.rebalanceRplStake(totalEthStaking + (32 ether - bond));
 
-        subNodeOperatorMinipools[subNodeOperator].push(_config.expectedMinipoolAddress);
+        subNodeOperatorMinipools[subNodeOperator].push(_expectedMinipoolAddress);
 
         console.log('_createMinipool()');
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: bond}(
             bond,
             minimumNodeFee,
-            _config.validatorPubkey,
-            _config.validatorSignature,
-            _config.depositDataRoot,
-            _config.salt,
-            _config.expectedMinipoolAddress
+            _validatorPubkey,
+            _validatorSignature,
+            _depositDataRoot,
+            _salt,
+            _expectedMinipoolAddress
         );
-        IMinipool minipool = IMinipool(_config.expectedMinipoolAddress);
+        IMinipool minipool = IMinipool(_expectedMinipoolAddress);
         console.log('_createMinipool.status', uint256(minipool.getStatus()));
     }
 
@@ -287,9 +281,13 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      *      This function can only be called by the sub-node operator of the minipool and when the minipool is properly configured.
      * @param _minipool The address of the minipool to initiate staking.
      */
-    function stake(address _minipool) external onlySubNodeOperator(_minipool) hasConfig(_minipool) {
+    function stake(
+        bytes calldata _validatorSignature,
+        bytes32 _depositDataRoot,
+        address _minipool
+    ) external onlySubNodeOperator(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
-        minipool.stake(configs[_minipool].validatorSignature, configs[_minipool].depositDataRoot);
+        minipool.stake(_validatorSignature, _depositDataRoot);
         // RP close call will revert unless you're in the right state, so this may waste your gas if you call at the wrong time!
         totalEthStaking += (32 ether - bond);
     }
@@ -307,10 +305,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         }
 
         IMinipool minipool = IMinipool(_minipool);
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(
-            _subNodeOperator,
-            bond
-        );
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(_subNodeOperator, bond);
         _stopTrackingMinipool(_minipool);
 
         totalEthStaking -= bond;
@@ -328,7 +323,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         require(lockedEth[_minipool] >= 1 ether, 'Insufficient locked ETH');
         require(
             block.timestamp - lockStarted[_minipool] > lockUpTime ||
-                IMinipool(configs[_minipool].expectedMinipoolAddress).getStatus() == MinipoolStatus.Staking,
+                IMinipool(_minipool).getStatus() == MinipoolStatus.Staking,
             'Lock conditions not met'
         );
 
@@ -445,7 +440,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     /**
      * @notice Validates if a signature has already been used to prevent replay attacks.
-     * @dev This function checks against a mapping to ensure that each signature is used only once, 
+     * @dev This function checks against a mapping to ensure that each signature is used only once,
      *      adding an additional layer of security by preventing the reuse of signatures in unauthorized transactions.
      * @param _sig The signature to validate.
      */

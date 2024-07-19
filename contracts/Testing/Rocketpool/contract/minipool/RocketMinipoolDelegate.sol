@@ -374,12 +374,12 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         bytes memory validatorPubkey = rocketMinipoolManager.getMinipoolPubkey(address(this));
         console.log("RocketMinipoolDelegate.validatorPubkey");
         // Send staking deposit to casper (commented out for hardhat)
-        //casperDeposit.deposit{value: depositAmount}(
-        //    validatorPubkey,
-        //    rocketMinipoolManager.getMinipoolWithdrawalCredentials(address(this)),
-        //    _validatorSignature,
-        //    _depositDataRoot
-        //);
+        casperDeposit.deposit{value: depositAmount}(
+            validatorPubkey,
+            rocketMinipoolManager.getMinipoolWithdrawalCredentials(address(this)),
+            _validatorSignature,
+            _depositDataRoot
+        );
         console.log("RocketMinipoolDelegate.casperDeposit.deposit");
         // Increment node's number of staking minipools
         rocketMinipoolManager.incrementNodeStakingMinipoolCount(nodeAddress);
@@ -469,6 +469,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         rocketMinipoolManager.setMinipoolPubkey(_validatorPubkey);
         // Get withdrawal credentials
         bytes memory withdrawalCredentials = rocketMinipoolManager.getMinipoolWithdrawalCredentials(address(this));
+        console.log("RocketminipoolDelegate.withdrawalCredentials");
+        console.logBytes(withdrawalCredentials);
         // Send staking deposit to casper
         casperDeposit.deposit{value: preLaunchValue}(
             _validatorPubkey,
@@ -476,6 +478,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             _validatorSignature,
             _depositDataRoot
         );
+        console.log("RocketminipoolDelegate.caslperDeposit");
         // Emit event
         emit MinipoolPrestaked(
             _validatorPubkey,
