@@ -47,7 +47,6 @@ export const setupSandbox = async () => {
     rocketStorage.address,
     wETH.address,
     sanctions.address,
-    uniswapV3Pool.address,
     admin.address,
     true
   );
