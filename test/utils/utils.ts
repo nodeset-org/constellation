@@ -5,7 +5,7 @@ import { Protocol, SetupData, Signers } from '../test';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { RocketPool } from '../test';
 import { IMinipool, MockMinipool } from '../../typechain-types';
-import { createMinipool, generateDepositData, getMinipoolMinimumRPLStake } from '../rocketpool/_helpers/minipool';
+import { createMinipool, generateDepositData, generateDepositDataForStake, getMinipoolMinimumRPLStake } from '../rocketpool/_helpers/minipool';
 import { nodeStakeRPL, registerNode } from '../rocketpool/_helpers/node';
 import { mintRPL } from '../rocketpool/_helpers/tokens';
 import { userDeposit } from '../rocketpool/_helpers/deposit';
@@ -344,7 +344,7 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
     );
     await protocol.superNode
       .connect(nodeOperator)
-      .createMinipool(config, timestamp, sig, { value: ethers.utils.parseEther('1') });
+      .createMinipool(config.validatorPubkey, config.validatorSignature, config.depositDataRoot, config.salt, config.expectedMinipoolAddress, timestamp, sig, { value: ethers.utils.parseEther('1') });
 
     if (!(await protocol.superNode.hasSufficientLiquidity(bond))) {
       await prepareOperatorDistributionContract(setupData, 2);
@@ -358,7 +358,10 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
     await ethers.provider.send('evm_mine', []); // Mine a block to apply the new timestamp
 
     // enter stake mode
-    await protocol.superNode.connect(nodeOperator).stake(config.expectedMinipoolAddress);
+    const depositDataStake = await generateDepositDataForStake(depositData.depositData.withdrawalCredentials);
+    console.log("trying.....", depositDataStake.depositData.signature);
+    await protocol.superNode.connect(nodeOperator).stake(depositDataStake.depositData.signature, depositDataStake.depositDataRoot, config.expectedMinipoolAddress);
+    console.log("finsihed...", depositDataStake.depositData.signature)
   }
 };
 

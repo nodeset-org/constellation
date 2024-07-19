@@ -100,6 +100,24 @@ export async function generateDepositData(sender, salt) {
     return { depositData, depositDataRoot, minipoolAddress };
 }
 
+export async function generateDepositDataForStake(withdrawalCredentials) {
+
+    // Get validator deposit data
+    let depositData = {
+        pubkey: getValidatorPubkey(),
+        withdrawalCredentials: withdrawalCredentials,
+        amount: BigInt(31000000000), // gwei
+        signature: getValidatorSignature(),
+    };
+
+    // Calculate the deposit data root - this might involve hashing the deposit data
+    // depending on your implementation specifics.
+    let depositDataRoot = getDepositDataRoot(depositData);
+
+    // Return the deposit data and its root
+    return { depositData, depositDataRoot };
+}
+
 
 export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt = null) {
     // Load contracts

@@ -372,8 +372,9 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(address(this).balance >= depositAmount, 'Insufficient balance to begin staking');
         // Retrieve validator pubkey from storage
         bytes memory validatorPubkey = rocketMinipoolManager.getMinipoolPubkey(address(this));
-        console.log("RocketMinipoolDelegate.validatorPubkey");
+        console.log("RocketMinipoolDelegate.validatorPubkey, sig:");
         // Send staking deposit to casper (commented out for hardhat)
+        console.logBytes(_validatorSignature);
         casperDeposit.deposit{value: depositAmount}(
             validatorPubkey,
             rocketMinipoolManager.getMinipoolWithdrawalCredentials(address(this)),

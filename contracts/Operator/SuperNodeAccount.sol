@@ -230,6 +230,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         );
         IMinipool minipool = IMinipool(_expectedMinipoolAddress);
         console.log('_createMinipool.status', uint256(minipool.getStatus()));
+        console.log("finished creating minipool without revert from deposit to casper");
     }
 
     /**
