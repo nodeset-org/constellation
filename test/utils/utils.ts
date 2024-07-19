@@ -358,7 +358,7 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
     await ethers.provider.send('evm_mine', []); // Mine a block to apply the new timestamp
 
     // enter stake mode
-    const depositDataStake = await generateDepositDataForStake(depositData.depositData.withdrawalCredentials);
+    const depositDataStake = await generateDepositDataForStake(config.expectedMinipoolAddress);
     console.log("trying.....", depositDataStake.depositData.signature);
     await protocol.superNode.connect(nodeOperator).stake(depositDataStake.depositData.signature, depositDataStake.depositDataRoot, config.expectedMinipoolAddress);
     console.log("finsihed...", depositDataStake.depositData.signature)

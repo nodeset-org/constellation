@@ -100,12 +100,21 @@ export async function generateDepositData(sender, salt) {
     return { depositData, depositDataRoot, minipoolAddress };
 }
 
-export async function generateDepositDataForStake(withdrawalCredentials) {
+export async function generateDepositDataForStake(minipoolAddress) {
+
+    // Get contracts
+    const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+
+    // Get minipool validator pubkey
+    const validatorPubkey = await rocketMinipoolManager.getMinipoolPubkey(minipoolAddress);
+
+    // Get minipool withdrawal credentials
+    let withdrawalCredentials = await rocketMinipoolManager.getMinipoolWithdrawalCredentials.call(minipoolAddress);
 
     // Get validator deposit data
-    let depositData = {
-        pubkey: getValidatorPubkey(),
-        withdrawalCredentials: withdrawalCredentials,
+    const depositData = {
+        pubkey: Buffer.from(validatorPubkey.substr(2), 'hex'),
+        withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
         amount: BigInt(31000000000), // gwei
         signature: getValidatorSignature(),
     };
