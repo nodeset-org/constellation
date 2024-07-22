@@ -243,7 +243,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         if (stakeRatio < targetStakeRatio) {
 
             // do we _ethStaked / ethPriceInRpl * targetStakeRatio ???
-            uint256 minuend = ((_ethStaked * ethPriceInRpl) / targetStakeRatio);
+            uint256 minuend = ((_ethStaked * ethPriceInRpl) * targetStakeRatio);
             requiredStakeRpl = minuend < _existingRplStake ? 0 : minuend - _existingRplStake;
         } else {
             requiredStakeRpl = 0;
