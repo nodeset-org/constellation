@@ -103,7 +103,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             return;
         }
 
-        require(enforceRplCoverageRatio || tvlRatioEthRpl() >= rplCoverageRatio, 'insufficient RPL coverage');
+        require(enforceRplCoverageRatio && tvlRatioEthRpl() >= rplCoverageRatio, 'insufficient RPL coverage');
         super._deposit(caller, receiver, assets, shares);
 
         address payable pool = _directory.getDepositPoolAddress();
@@ -127,7 +127,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
 
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
-        
+
         FundRouter(pool).sendEthToDistributors();
 
         _claimFees();
