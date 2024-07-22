@@ -1,10 +1,15 @@
+teddy2@teddy0s-MacBook-Pro constellation % npx hardhat run ./scripts/dev_setup.ts --network holesky
+npm warn invalid config access="private" set in /Users/teddy2/.npmrc
+npm warn invalid config Must be one of: null, restricted, public
 
 > @nodeset/contracts@0.0.4 npx
-> hardhat run ./scripts/sandbox.ts --network holesky
+> hardhat run ./scripts/dev_setup.ts --network holesky
+
+WARNING: You are currently using Node.js v21.4.0, which is not supported by Hardhat. This can lead to unexpected behavior. See https://hardhat.org/nodejs-versions
 
 
-
-Compiled 11 Solidity files successfully (evm target: london).
+(node:20122) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
  ·-----------------------------------------|--------------------------------|--------------------------------·
  |  Solc version: 0.8.18                   ·  Optimizer enabled: true       ·  Runs: 200                     │
  ··········································|································|·································
@@ -286,9 +291,153 @@ Compiled 11 Solidity files successfully (evm target: london).
  ··········································|································|·································
  |  XRETHOracle                            ·                 3.576 (0.000)  ·                 4.244 (0.000)  │
  ··········································|································|·································
- |  YieldDistributor                       ·               13.760 (+0.064)  ·               14.147 (+0.064)  │
+ |  YieldDistributor                       ·                13.760 (0.000)  ·                14.147 (0.000)  │
  ·-----------------------------------------|--------------------------------|--------------------------------·
-Using network: holesky
-Deploying from: 0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374
+(node:20130) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Warning: All subsequent Upgrades warnings will be silenced.
 
+    Make sure you have manually checked all uses of unsafe flags.
 
+weth address 0xB370f2Ca1Efe1383CFB9BEDAAb3F42BdBEF8Da43
+sanctions address 0xe2d4059345F9687abC3e0a04D06823090703c0Dc
+whitelist deployed to 0xA6a6bF10b666340964aAb49e41A36E2011e7Fff2
+vaulted constellation eth deployed to 0x02B9d4C1f928175e5928E304f7107cB85Ac7cBeB
+admin oracle deployed to 0x2Ff268D04CFefae4AeEbb468CFc5483877B651E2
+vaulted constellation rpl deployed to 0xF0F98294914b7350691612C139Fd5Ce89b4db9c6
+Fund Router (Deposit Pool) deployed to 0xDdc64D933B2C6981C43825Aa6d5bB33172F12Ecd
+operator distributor deployed to 0x51403c13275D24CC21369F5F8d4fE2B0d8788249
+yield distributor deployed to 0x10b793C0d507d3624a5D26320c5fC757205518B2
+price fetcher deployed to 0xA91f6f268738c5Bcd060AA58B70BfB6E6EE2105c
+admin treasury deployed to 0x9Bca3A57226ac466884D1dFd18875D1704A25196
+super node deployed to 0x6a126E2aF4F9adE9176339BB59FC77d1192b5101
+verify directory input
+whitelistProxy.address 0xA6a6bF10b666340964aAb49e41A36E2011e7Fff2
+vCWETHProxy.address 0x02B9d4C1f928175e5928E304f7107cB85Ac7cBeB
+vCRPLProxy.address 0xF0F98294914b7350691612C139Fd5Ce89b4db9c6
+depositPoolProxy.address 0xDdc64D933B2C6981C43825Aa6d5bB33172F12Ecd
+operatorDistributorProxy.address 0x51403c13275D24CC21369F5F8d4fE2B0d8788249
+yieldDistributorProxy.address 0x10b793C0d507d3624a5D26320c5fC757205518B2
+oracle 0x2Ff268D04CFefae4AeEbb468CFc5483877B651E2
+priceFetcherProxy.address 0xA91f6f268738c5Bcd060AA58B70BfB6E6EE2105c
+snap.address 0x6a126E2aF4F9adE9176339BB59FC77d1192b5101
+rocketStorage 0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1
+weth 0xB370f2Ca1Efe1383CFB9BEDAAb3F42BdBEF8Da43
+sanctions 0xe2d4059345F9687abC3e0a04D06823090703c0Dc
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+directory deployed to 0x36E299cbdE0D63290DD3Be3C5364683284C4e38D
+directory matches predicted address 0x36e299cbde0d63290dd3be3c5364683284c4e38d
+trying to lazyInitialize superNodeProxy...
+Error: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (reason="execution reverted", method="estimateGas", transaction={"from":"0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374","to":"0x6a126E2aF4F9adE9176339BB59FC77d1192b5101","data":"0xd51f1fea","accessList":null}, error={"name":"ProviderError","_stack":"ProviderError: execution reverted\n    at HttpProvider.request (/Users/teddy2/Documents/GitHub/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async EthersProviderWrapper.send (/Users/teddy2/Documents/GitHub/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":-32000,"_isProviderError":true}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.7.2)
+    at Logger.makeError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:269:28)
+    at Logger.throwError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at checkError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:78:20)
+    at EthersProviderWrapper.<anonymous> (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
+    at step (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
+    at Object.throw (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:29:53)
+    at rejected (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:21:65)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  reason: 'execution reverted',
+  code: 'UNPREDICTABLE_GAS_LIMIT',
+  method: 'estimateGas',
+  transaction: {
+    from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+    to: '0x6a126E2aF4F9adE9176339BB59FC77d1192b5101',
+    data: '0xd51f1fea',
+    accessList: null
+  },
+  error: ProviderError: execution reverted
+      at HttpProvider.request (/Users/teddy2/Documents/GitHub/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
+      at processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async EthersProviderWrapper.send (/Users/teddy2/Documents/GitHub/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)
+}
+Retrying operation, attempts remaining: 3...
+trying to lazyInitialize superNodeProxy...
+Error: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (reason="execution reverted", method="estimateGas", transaction={"from":"0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374","to":"0x6a126E2aF4F9adE9176339BB59FC77d1192b5101","data":"0xd51f1fea","accessList":null}, error={"name":"ProviderError","_stack":"ProviderError: execution reverted\n    at HttpProvider.request (/Users/teddy2/Documents/GitHub/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async EthersProviderWrapper.send (/Users/teddy2/Documents/GitHub/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":-32000,"_isProviderError":true}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.7.2)
+    at Logger.makeError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:269:28)
+    at Logger.throwError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at checkError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:78:20)
+    at EthersProviderWrapper.<anonymous> (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
+    at step (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
+    at Object.throw (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:29:53)
+    at rejected (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:21:65)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  reason: 'execution reverted',
+  code: 'UNPREDICTABLE_GAS_LIMIT',
+  method: 'estimateGas',
+  transaction: {
+    from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+    to: '0x6a126E2aF4F9adE9176339BB59FC77d1192b5101',
+    data: '0xd51f1fea',
+    accessList: null
+  },
+  error: ProviderError: execution reverted
+      at HttpProvider.request (/Users/teddy2/Documents/GitHub/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
+      at processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async EthersProviderWrapper.send (/Users/teddy2/Documents/GitHub/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)
+}
+Retrying operation, attempts remaining: 2...
+trying to lazyInitialize superNodeProxy...
+Error: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (reason="execution reverted", method="estimateGas", transaction={"from":"0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374","to":"0x6a126E2aF4F9adE9176339BB59FC77d1192b5101","data":"0xd51f1fea","accessList":null}, error={"name":"ProviderError","_stack":"ProviderError: execution reverted\n    at HttpProvider.request (/Users/teddy2/Documents/GitHub/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async EthersProviderWrapper.send (/Users/teddy2/Documents/GitHub/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":-32000,"_isProviderError":true}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.7.2)
+    at Logger.makeError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:269:28)
+    at Logger.throwError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at checkError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:78:20)
+    at EthersProviderWrapper.<anonymous> (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
+    at step (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
+    at Object.throw (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:29:53)
+    at rejected (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:21:65)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  reason: 'execution reverted',
+  code: 'UNPREDICTABLE_GAS_LIMIT',
+  method: 'estimateGas',
+  transaction: {
+    from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+    to: '0x6a126E2aF4F9adE9176339BB59FC77d1192b5101',
+    data: '0xd51f1fea',
+    accessList: null
+  },
+  error: ProviderError: execution reverted
+      at HttpProvider.request (/Users/teddy2/Documents/GitHub/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
+      at processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async EthersProviderWrapper.send (/Users/teddy2/Documents/GitHub/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)
+}
+Retrying operation, attempts remaining: 1...
+trying to lazyInitialize superNodeProxy...
+Error: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (reason="execution reverted", method="estimateGas", transaction={"from":"0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374","to":"0x6a126E2aF4F9adE9176339BB59FC77d1192b5101","data":"0xd51f1fea","accessList":null}, error={"name":"ProviderError","_stack":"ProviderError: execution reverted\n    at HttpProvider.request (/Users/teddy2/Documents/GitHub/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async EthersProviderWrapper.send (/Users/teddy2/Documents/GitHub/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":-32000,"_isProviderError":true}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.7.2)
+    at Logger.makeError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:269:28)
+    at Logger.throwError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at checkError (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:78:20)
+    at EthersProviderWrapper.<anonymous> (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
+    at step (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
+    at Object.throw (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:29:53)
+    at rejected (/Users/teddy2/Documents/GitHub/constellation/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:21:65)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  reason: 'execution reverted',
+  code: 'UNPREDICTABLE_GAS_LIMIT',
+  method: 'estimateGas',
+  transaction: {
+    from: '0x7621940f6068C024Fb3a3eeE2810D5Ad76CEa374',
+    to: '0x6a126E2aF4F9adE9176339BB59FC77d1192b5101',
+    data: '0xd51f1fea',
+    accessList: null
+  },
+  error: ProviderError: execution reverted
+      at HttpProvider.request (/Users/teddy2/Documents/GitHub/constellation/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
+      at processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async EthersProviderWrapper.send (/Users/teddy2/Documents/GitHub/constellation/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)
+}
+Operation failed. Do you want to retry? (y/n): y
+Extended retry, attempts remaining: 3...
+trying to lazyInitialize superNodeProxy...
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+timelock short role set
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+timelock med role set
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+timelock long role set
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+protocol role set
+teddy2@teddy0s-MacBook-Pro constellation % 
