@@ -45,8 +45,8 @@ contract YieldDistributor is UpgradeableBase {
     uint256 public currentIntervalGenesisTime;
     uint256 public maxIntervalLengthSeconds; // NOs will have to wait at most this long for their payday
 
-    uint256 k; // steepness of the curve
-    uint256 maxValidators; // max number of validators used to normalize x axis
+    uint256 public k; // steepness of the curve
+    uint256 public maxValidators; // max number of validators used to normalize x axis
 
     /**
      * @notice Initializes the contract with the specified directory address and sets the initial configurations.
