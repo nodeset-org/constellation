@@ -125,9 +125,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         principal += assets;
 
-        FundRouter(pool).sendEthToDistributors();
 
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
+        
+        FundRouter(pool).sendEthToDistributors();
 
         _claimFees();
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
