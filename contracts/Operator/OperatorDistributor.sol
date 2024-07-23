@@ -165,7 +165,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('rebalanceRplStake.stakeRatio', stakeRatio);
         console.log('rebalanceRplStake.targetStakeRatio', targetStakeRatio);
 
-        uint256 targetStake = ((_ethStaked * ethPriceInRpl) / targetStakeRatio);
+        uint256 targetStake = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
 
         if (targetStake > rplStaked) {
             // stake more
@@ -241,9 +241,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('price', ethPriceInRpl);
         uint256 stakeRatio = _existingRplStake == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / _existingRplStake;
         if (stakeRatio < targetStakeRatio) {
-
             // do we _ethStaked / ethPriceInRpl * targetStakeRatio ???
-            uint256 minuend = ((_ethStaked * ethPriceInRpl) * targetStakeRatio);
+            uint256 minuend = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
+            console.log("calculateRplStakeShortfall.minuend", minuend);
             requiredStakeRpl = minuend < _existingRplStake ? 0 : minuend - _existingRplStake;
         } else {
             requiredStakeRpl = 0;
@@ -265,7 +265,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         uint256 stakeRatio = _existingRplStake == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / _existingRplStake;
         if (stakeRatio > targetStakeRatio) {
-            uint256 maxRplStake = (_ethStaked * ethPriceInRpl) / targetStakeRatio;
+            uint256 maxRplStake = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
             withdrawableStakeRpl = _existingRplStake > maxRplStake ? _existingRplStake - maxRplStake : 0;
         } else {
             withdrawableStakeRpl = 0;

@@ -230,7 +230,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         );
         IMinipool minipool = IMinipool(_expectedMinipoolAddress);
         console.log('_createMinipool.status', uint256(minipool.getStatus()));
-        console.log("finished creating minipool without revert from deposit to casper");
+        console.log('finished creating minipool without revert from deposit to casper');
     }
 
     /**
@@ -498,7 +498,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      */
     function hasSufficientLiquidity(uint256 _bond) public view returns (bool) {
         address payable od = _directory.getOperatorDistributorAddress();
-        uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(0, _bond);
+        IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
+        uint256 rplStaking = rocketNodeStaking.getNodeRPLStake(address(this));
+        uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(rplStaking, totalEthStaking + _bond);
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired && od.balance >= _bond;
     }
 
