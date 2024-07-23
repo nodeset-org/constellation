@@ -48,7 +48,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
         collateralizationRatioBasePoint = 0.02e5;
         wethCoverageRatio = 1.75e5;
-        enforceWethCoverageRatio = true;
+        enforceWethCoverageRatio = false;
         adminFeeBasisPoint = 0.01e5;
     }
 
@@ -71,7 +71,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
         require(
-            enforceWethCoverageRatio && vweth.tvlRatioEthRpl() >= wethCoverageRatio,
+            !enforceWethCoverageRatio || vweth.tvlRatioEthRpl() < wethCoverageRatio,
             'insufficient weth coverage ratio'
         );
 

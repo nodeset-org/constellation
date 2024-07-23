@@ -81,7 +81,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         ethPerSlashReward = 0.001 ether;
 
-        enforceRplCoverageRatio = true;
+        enforceRplCoverageRatio = false;
     }
 
     /**
@@ -103,7 +103,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             return;
         }
 
-        require(enforceRplCoverageRatio && tvlRatioEthRpl() >= rplCoverageRatio, 'insufficient RPL coverage');
+        require(!enforceRplCoverageRatio || tvlRatioEthRpl() < rplCoverageRatio, 'insufficient RPL coverage');
         super._deposit(caller, receiver, assets, shares);
 
         address payable pool = _directory.getDepositPoolAddress();

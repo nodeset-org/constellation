@@ -98,7 +98,7 @@ describe("Node Operator Onboarding", function () {
         await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
         await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
         await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
-        const expectedAmountInDP = ethers.utils.parseEther("100");
+        const expectedAmountInDP = ethers.utils.parseEther("0"); // should be zero bc funds always get swept and rebalanced during deposit
         const actualAmountInDP = (await weth.balanceOf(protocol.depositPool.address)).sub(initialBalance);
         expectNumberE18ToBeApproximately(actualAmountInDP, expectedAmountInDP, 0.05);
         const intialBalanceRpl = await protocol.vCRPL.totalAssets();
