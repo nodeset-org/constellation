@@ -486,7 +486,7 @@ Function: provisionLiquiditiesForMinipoolCreation(address,address,uint256) - Sel
 Function: proxiableUUID() - Selector: 0x52d1902d
 Function: removeMinipoolAddress(address) - Selector: 0xd68c8969
 Function: removeNodeOperator(address) - Selector: 0xc05665dd
-Function: setBondRequirments(uint256,uint256) - Selector: 0x2b9f9d07
+Function: setBondRequirements(uint256,uint256) - Selector: 0x2b9f9d07
 Function: setNumMinipoolsProcessedPerInterval(uint256) - Selector: 0xe7b776e8
 Function: targetStakeRatio() - Selector: 0x1e9706fb
 Function: upgradeTo(address) - Selector: 0x3659cfe6

@@ -1,0 +1,39 @@
+weth address 0xA684C001345C8De770F2B22c0a65d7E9C4FEd2D4
+sanctions address 0x3441d4F44b3598A910406d1BB1142fCC9Ef4783a
+whitelist deployed to 0xEEb27A0E92619a69Ec0Fd744aA0e4258c399c863
+vaulted constellation eth deployed to 0xe5cF0eBd4eE8F3c3b74e30f45e9E0cC0762a3B64
+admin oracle deployed to 0x897E30e635873194A8F79789301BB1d2369d13F9
+vaulted constellation rpl deployed to 0xd9983ce5ac45e23F3097624C3A2574b1764e33Ea
+Fund Router (Deposit Pool) deployed to 0x6663805e537E03f8e9FE2dbe889d62e0cdD03439
+operator distributor deployed to 0xC94296a4C6072411ECa63c59378Dbc348C5dAaFb
+yield distributor deployed to 0xcF35868D9D842810f1B7B07F360E265EF18BAf86
+price fetcher deployed to 0x22ed783C9eEA33f9eF4f9954d5C8bed4e95841FF
+admin treasury deployed to 0x9A58d2Bc282b9b5765D3Cea29d7B0C71eCcAFd1D
+super node deployed to 0x4301016702994dac35e95F76825a45923F80da87
+verify directory input
+whitelistProxy.address 0xEEb27A0E92619a69Ec0Fd744aA0e4258c399c863
+vCWETHProxy.address 0xe5cF0eBd4eE8F3c3b74e30f45e9E0cC0762a3B64
+vCRPLProxy.address 0xd9983ce5ac45e23F3097624C3A2574b1764e33Ea
+depositPoolProxy.address 0x6663805e537E03f8e9FE2dbe889d62e0cdD03439
+operatorDistributorProxy.address 0xC94296a4C6072411ECa63c59378Dbc348C5dAaFb
+yieldDistributorProxy.address 0xcF35868D9D842810f1B7B07F360E265EF18BAf86
+oracle 0x897E30e635873194A8F79789301BB1d2369d13F9
+priceFetcherProxy.address 0x22ed783C9eEA33f9eF4f9954d5C8bed4e95841FF
+snap.address 0x4301016702994dac35e95F76825a45923F80da87
+rocketStorage 0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1
+weth 0xA684C001345C8De770F2B22c0a65d7E9C4FEd2D4
+sanctions 0x3441d4F44b3598A910406d1BB1142fCC9Ef4783a
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+directory deployed to 0x301e4D812DB3F13dB9045e932285F25E57EF65D3
+directory matches predicted address 0x301e4d812db3f13db9045e932285f25e57ef65d3
+trying to lazyInitialize superNodeProxy...
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+timelock short role set
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+timelock med role set
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+timelock long role set
+Duplicate definition of SanctionViolation (SanctionViolation(address,address), SanctionViolation(address))
+protocol role set

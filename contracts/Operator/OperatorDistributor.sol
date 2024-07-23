@@ -330,7 +330,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @notice Sets the required ETH stake for activating a minipool.
      * @param _requiredLEBStaked Amount of ETH required.
      */
-    function setBondRequirments(uint256 _requiredLEBStaked) external onlyAdmin {
+    function setBondRequirements(uint256 _requiredLEBStaked) external onlyAdmin {
         requiredLEBStaked = _requiredLEBStaked;
     }
 

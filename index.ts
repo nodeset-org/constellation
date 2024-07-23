@@ -5257,7 +5257,7 @@ export const operatorDistributorAbi = [
     inputs: [
       { name: '_requiredLEBStaked', internalType: 'uint256', type: 'uint256' },
     ],
-    name: 'setBondRequirments',
+    name: 'setBondRequirements',
     outputs: [],
     stateMutability: 'nonpayable',
   },
