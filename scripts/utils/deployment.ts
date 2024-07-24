@@ -54,9 +54,9 @@ export const generateBytes32Identifier = (identifier: string) => {
     return ethers.utils.solidityKeccak256(["string"], [`contract.address${identifier}`]);
 };
 
-export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer: SignerWithAddress, directoryDeployer: SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, admin: string, log: boolean) {
+export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer: SignerWithAddress, directoryDeployer: SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, admin: string, log: boolean, defaultOffset = 1) {
 
-    const directoryAddress = await getNextContractAddress(directoryDeployer, 1)
+    const directoryAddress = await getNextContractAddress(directoryDeployer, defaultOffset)
 
     const whitelistProxy = await retryOperation(async () => {
         const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist", deployer), [directoryAddress], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });

@@ -182,7 +182,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         _validateSigUsed(_sig);
         OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(bond);
         if (adminServerCheck) {
-            require(block.timestamp - _sigGenesisTime < adminServerSigExpiry, 'ass sig expired');
+            require(block.timestamp - _sigGenesisTime < adminServerSigExpiry, 'ass expired');
             console.log('_createMinipool: message hash');
             console.logBytes32(
                 keccak256(abi.encodePacked(_expectedMinipoolAddress, _salt, address(this), block.chainid))

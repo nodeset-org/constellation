@@ -92,7 +92,6 @@ describe("Node Operator Onboarding", function () {
     })
 
     it("eth whale supplies Nodeset deposit pool with eth and rpl", async function () {
-
         // ethWhale gets shares of xrETH
         const initialBalance = await weth.balanceOf(protocol.depositPool.address);
         await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
