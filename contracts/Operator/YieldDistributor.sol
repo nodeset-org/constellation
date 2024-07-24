@@ -29,7 +29,11 @@ struct Claim {
 }
 
 /// @custom:security-contact info@nodeset.io
-/// @notice distributes rewards in weth to node operators
+/**
+ * @title SuperNodeAccount
+ * @author Theodore Clapp
+ * @dev Let's Sub Node Operators collect their share of rewards
+ */
 contract YieldDistributor is UpgradeableBase {
     event RewardDistributed(Reward);
     event WarningAlreadyClaimed(address operator, uint256 interval);
@@ -282,7 +286,7 @@ contract YieldDistributor is UpgradeableBase {
      */
 
     /**
-     * @notice Fallback function to receive ETH and convert it to WETH (Wrapped ETH).
+     * @notice Fallback function to receive ETH and convert it to WETH (Wrapped ETH). This is also used to trigger new intervals after enough time has elapsed
      * @dev When ETH is sent to this contract, it is automatically wrapped into WETH and the corresponding amount is processed.
      */
     receive() external payable {

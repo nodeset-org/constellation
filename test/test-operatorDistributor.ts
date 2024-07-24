@@ -51,4 +51,56 @@ describe("Operator Distributor", function () {
 		// distribute rewards
 		// verify rewards were distributed correctly
 	});
+
+	// test target stake ratio logic
+	it("success - target stake ratio may be set above 100%", async function () {
+		// load fixture
+		const setupData = await loadFixture(protocolFixture);
+		const { protocol, signers, rocketPool } = setupData;
+		const {admin} = signers;
+		const { operatorDistributor } = protocol;
+		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
+
+
+		await operatorDistributor.connect(admin).setTargetStakeRatio(ethers.utils.parseEther("1.0001"));
+
+		const initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
+		expect(initialRplStake).equals(0)
+		await prepareOperatorDistributionContract(setupData, 2);
+		await registerNewValidator(setupData, [signers.random]);
+		console.log("p=rpl stake after depo", await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address));
+
+		const price = await protocol.priceFetcher.getPrice();
+		const expectedStake = ethers.utils.parseEther("8").mul(price); 
+		console.log("p=exepcted stake", expectedStake)
+
+	});
+
+	it.only("success - target stake ratio may be set equal 100%", async function () {
+		// load fixture
+		const setupData = await loadFixture(protocolFixture);
+		const { protocol, signers, rocketPool } = setupData;
+		const {admin} = signers;
+		const { operatorDistributor } = protocol;
+		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
+
+
+		await operatorDistributor.connect(admin).setTargetStakeRatio(ethers.utils.parseEther(".9"));
+
+		const initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
+		expect(initialRplStake).equals(0)
+		await prepareOperatorDistributionContract(setupData, 2);
+		await registerNewValidator(setupData, [signers.random]);
+		console.log("p=rpl stake after depo", await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address));
+
+		const price = await protocol.priceFetcher.getPrice();
+		const expectedStake = ethers.utils.parseEther("8").mul(price); 
+		console.log("p=exepcted stake", expectedStake)
+
+		// it's failing but that's because rocketpool is default to 100% collat
+		// getSettingUint('node.per.minipool.stake.minimum');
+		// to test values smaller stake ratio's we need to set this uint setting in rocket pool
+		// TODO: integrate with RocketDAOProtocolSettingsNode.setSettingUint
+
+	});
 });

@@ -180,7 +180,7 @@ contract Whitelist is UpgradeableBase {
 
         SuperNodeAccount superNode = SuperNodeAccount(_directory.getSuperNodeAddress());
         superNode.stopTrackingOperatorMinipools(nodeOperator);
-        // todo: is this dangerous? do we lose any resouces doing this?
+        // todo: audit: is this dangerous? do we lose any resouces doing this?
 
         YieldDistributor ydistributor = YieldDistributor(payable(getDirectory().getYieldDistributorAddress()));
 

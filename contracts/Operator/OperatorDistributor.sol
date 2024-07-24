@@ -241,7 +241,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('price', ethPriceInRpl);
         uint256 stakeRatio = _existingRplStake == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / _existingRplStake;
         if (stakeRatio < targetStakeRatio) {
-            // do we _ethStaked / ethPriceInRpl * targetStakeRatio ???
             uint256 minuend = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
             console.log("calculateRplStakeShortfall.minuend", minuend);
             requiredStakeRpl = minuend < _existingRplStake ? 0 : minuend - _existingRplStake;
