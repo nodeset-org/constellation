@@ -4,6 +4,8 @@ pragma solidity >0.5.0 <0.9.0;
 import '../../../RocketBase.sol';
 import '../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsInterface.sol';
 
+import "hardhat/console.sol";
+
 // Settings in RP which the DAO will have full control over
 // This settings contract enables storage using setting paths with namespaces, rather than explicit set methods
 abstract contract RocketDAOProtocolSettings is RocketBase, RocketDAOProtocolSettingsInterface {
@@ -34,6 +36,8 @@ abstract contract RocketDAOProtocolSettings is RocketBase, RocketDAOProtocolSett
 
     // A general method to return any setting given the setting path is correct, only accepts uints
     function getSettingUint(string memory _settingPath) public view override returns (uint256) {
+        console.log("gettingUtintValue...");
+        console.logBytes32(keccak256(abi.encodePacked(settingNameSpace, _settingPath)));
         return getUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)));
     }
 

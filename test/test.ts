@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { FundRouter, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, RocketDepositPool, RocketNodeDeposit, RocketDAONodeTrusted, RocketTokenRETH, RocketClaimDAO, RocketRewardsPool, RocketDAONodeTrustedActions, SuperNodeAccount, XRETHAdminOracle } from "../typechain-types";
+import { FundRouter, WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketDAOProtocolSettingsNetworkInterface, IXRETHOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, RocketDepositPool, RocketNodeDeposit, RocketDAONodeTrusted, RocketTokenRETH, RocketClaimDAO, RocketRewardsPool, RocketDAONodeTrustedActions, SuperNodeAccount, XRETHAdminOracle, RocketStorage } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
 import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketNodeManager, RocketNodeManagerNew, RocketNodeStaking, RocketNodeStakingNew, RocketStorage, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
@@ -74,7 +74,7 @@ export type Signers = {
 
 export type RocketPool = {
   rplContract: ERC20; //RocketTokenRPLInterface
-  rockStorageContract: IRocketStorage;
+  rockStorageContract: RocketStorage;
   rocketNodeManagerContract: RocketNodeManagerInterface;
   rocketNodeStakingContract: IRocketNodeStaking;
   rocketNodeDepositContract: RocketNodeDepositInterface;
@@ -109,7 +109,7 @@ export async function getRocketPool(directory: Directory): Promise<RocketPool> {
   const rockStorageContract = (await ethers.getContractAt(
     'RocketStorage',
     await directory.getRocketStorageAddress()
-  )) as IRocketStorage;
+  )) as RocketStorage;
 
   const rocketNodeManagerContract = (await ethers.getContractAt(
     'RocketNodeManagerInterface',

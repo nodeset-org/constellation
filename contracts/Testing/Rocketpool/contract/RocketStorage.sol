@@ -195,7 +195,7 @@ contract RocketStorage is RocketStorageInterface {
     }
 
     /// @param _key The key for the record
-    function setUint(bytes32 _key, uint _value) external override onlyLatestRocketNetworkContract {
+    function setUint(bytes32 _key, uint _value) external override {
         uintStorage[_key] = _value;
     }
 
