@@ -39,6 +39,7 @@ struct RocketIntegrations {
     address rocketNodeDeposit;
     address rocketNodeManager;
     address rocketNodeStaking;
+    address rocketMinipoolManager;
     address rplToken;
     address rocketDepositPool;
     address rocketMerkleDistributorMainnet;
@@ -123,6 +124,10 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     function getRocketNodeStakingAddress() public view returns (address) {
         return _integrations.rocketNodeStaking;
+    }
+
+    function getRocketMinipoolManagerAddress() public view returns (address) {
+        return _integrations.rocketMinipoolManager;
     }
 
     function getPriceFetcherAddress() public view returns (address) {
@@ -290,6 +295,12 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         );
 
         require(_integrations.rocketNodeStaking != address(0), 'rocketNodeStaking is 0x0');
+
+        _integrations.rocketMinipoolManager = IRocketStorage(newProtocol.rocketStorage).getAddress(
+            RocketpoolEncoder.generateBytes32Identifier('rocketMinipoolManager')
+        );
+
+        require(_integrations.rocketMinipoolManager != address(0), 'rocketMinipoolManager is 0x0');
 
         _integrations.rocketNetworkPrices = IRocketStorage(newProtocol.rocketStorage).getAddress(
             RocketpoolEncoder.generateBytes32Identifier('rocketNetworkPrices')

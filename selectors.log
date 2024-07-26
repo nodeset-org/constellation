@@ -516,7 +516,7 @@ Function: hasSufficientLiquidity(uint256) - Selector: 0xcac38298
 Function: implementationAddress() - Selector: 0xb97a2319
 Function: initialize(address) - Selector: 0xc4d66de8
 Function: initializeWithImplementation(address,address) - Selector: 0x5d40a735
-Function: lockThreshhold() - Selector: 0xf70bcfdb
+Function: lockThreshold() - Selector: 0xf70bcfdb
 Function: proxiableUUID() - Selector: 0x52d1902d
 Function: upgradeTo(address) - Selector: 0x3659cfe6
 Function: upgradeToAndCall(address,bytes) - Selector: 0x4f1ef286
