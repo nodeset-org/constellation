@@ -336,7 +336,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @param _minipool Address of the minipool from which ETH will be unlocked.
      */
     function unlockEth(address _minipool) external onlySubNodeOperator(_minipool) hasConfig(_minipool) {
-        require(lockedEth[_minipool] >= 0, 'Insufficient locked ETH');
+        require(lockedEth[_minipool] > 0, 'Insufficient locked ETH');
         require(
             block.timestamp - lockStarted[_minipool] > lockUpTime ||
                 IMinipool(_minipool).getStatus() == MinipoolStatus.Staking,
