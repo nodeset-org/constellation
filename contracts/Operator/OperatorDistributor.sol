@@ -161,8 +161,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
         console.log('rebalanceRplStake.ethPriceInRpl', ethPriceInRpl);
 
-        uint256 stakeRatio = rplStaked == 0 ? 1e18 : ((_ethStaked * ethPriceInRpl * 1e18) / rplStaked) / 1e18;
-        console.log('rebalanceRplStake.stakeRatio', stakeRatio);
         console.log('rebalanceRplStake.targetStakeRatio', targetStakeRatio);
 
         uint256 targetStake = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
@@ -206,6 +204,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     function _performTopUp(address _superNode, uint256 _requiredStake) internal {
         uint256 currentRplBalance = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
+        console.log("_performTopUp.currentRplBalance", currentRplBalance);
         if (currentRplBalance >= _requiredStake) {
             if (_requiredStake == 0) {
                 return;
