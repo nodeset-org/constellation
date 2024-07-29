@@ -95,7 +95,7 @@ contract YieldDistributor is UpgradeableBase {
 
         // if elapsed time since last interval is greater than maxIntervalLengthSeconds, start a new interval
         if (block.timestamp - currentIntervalGenesisTime > maxIntervalLengthSeconds) {
-            if(voidClaim) {
+            if(voidClaim) { /// @dev void claim means there is no admin claim
                 _finalizeIntervalVoidClaim();
             } else {
                 finalizeInterval();

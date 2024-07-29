@@ -27,7 +27,7 @@ contract XRETHOracle is IXRETHOracle, UpgradeableBase {
      * @notice Retrieves the total yield accrued from the oracle service.
      * @return The total yield accrued.
      */
-    function getTotalYieldAccrued() external view override returns (uint) {
+    function getTotalYieldAccrued() external view override returns (int256) {
         // rated oracle itegration here
     }
 }

@@ -6,13 +6,13 @@ import '../../UpgradeableBase.sol';
 
 contract MockRETHOracle is IXRETHOracle,  UpgradeableBase{
     
-    uint private _yield = 0 ether;
+    int256 private _yield = 0 ether;
 
-    function setTotalYieldAccrued(uint yield) public {
+    function setTotalYieldAccrued(int256 yield) public {
         _yield = yield;
     }
 
-    function getTotalYieldAccrued() public view override returns (uint) {
+    function getTotalYieldAccrued() public view override returns (int256) {
         return _yield;
     }
 }
