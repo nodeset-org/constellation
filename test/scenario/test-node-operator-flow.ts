@@ -115,7 +115,7 @@ describe("Node Operator Onboarding", function () {
         const network = await ethers.provider.getNetwork();
         const chainId = network.chainId;
         const newTotalYield = ethers.utils.parseEther("3");
-        const incorrectMessageHash = ethers.utils.solidityKeccak256(["uint256", "uint256", "address", "uint256"], [newTotalYield, timestamp, protocol.oracle.address, chainId]);
+        const incorrectMessageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "address", "uint256"], [newTotalYield, timestamp, protocol.oracle.address, chainId]);
         const signature = await signers.admin.signMessage(ethers.utils.arrayify(incorrectMessageHash));
         await protocol.oracle.connect(signers.admin).setTotalYieldAccrued(signature, newTotalYield, timestamp)
 

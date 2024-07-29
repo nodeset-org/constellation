@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from "./test";
-import { approveHasSignedExitMessageSig, assertAddOperator, predictDeploymentAddress, prepareOperatorDistributionContract } from "./utils/utils";
+import { approveHasSignedExitMessageSig, assertAddOperator, predictDeploymentAddress, prepareOperatorDistributionContract, whitelistUserServerSig } from "./utils/utils";
 import { generateDepositData } from "./rocketpool/_helpers/minipool";
 
 describe("SuperNodeAccount", function () {
@@ -309,7 +309,7 @@ describe("SuperNodeAccount", function () {
 
         await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config.validatorPubkey, config.validatorSignature, config.depositDataRoot, config.salt, config.expectedMinipoolAddress, timestamp, sig, {
             value: ethers.utils.parseEther("1")
-        })).to.be.revertedWith("sig already used");
+        })).to.be.revertedWith("minipool already initialized");
     });
 
     it("fails - not whitelisted", async function () {
@@ -411,7 +411,7 @@ describe("SuperNodeAccount", function () {
 
         await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config.validatorPubkey, config.validatorSignature, config.depositDataRoot, config.salt, config.expectedMinipoolAddress, timestamp, sig, {
             value: ethers.utils.parseEther("0")
-        })).to.be.revertedWith("SuperNode: must lock 1 ether");
+        })).to.be.revertedWith("SuperNode: must set the message value to lockThreshold");
     });
 
     it("fails - no liquidity for given bond", async function () {
@@ -432,6 +432,10 @@ describe("SuperNodeAccount", function () {
         };
 
         const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+
+        const {sig: sig2, timestamp: timestamp2} = await whitelistUserServerSig(setupData, signers.hyperdriver);
+
+        await protocol.whitelist.connect(signers.admin).addOperator(signers.hyperdriver.address, timestamp2, sig2)
 
         await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool(config.validatorPubkey, config.validatorSignature, config.depositDataRoot, config.salt, config.expectedMinipoolAddress, timestamp, sig, {
             value: ethers.utils.parseEther("1")

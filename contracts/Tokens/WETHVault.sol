@@ -125,7 +125,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         principal += assets;
 
-
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
 
         FundRouter(pool).sendEthToDistributors();
@@ -189,18 +188,25 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         console.log('ABC5');
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
-
     }
 
     /**
      * @notice Retrieves the total yield available for distribution.
      * @dev This function calculates the yield that can be distributed by subtracting the total yield already distributed from the total yield accrued as reported by the Oracle.
-     * @return The total yield available for distribution.
+     * @return distributableYield The total yield available for distribution.
      */
-    function getDistributableYield() public view returns (uint256) {
-        uint256 totalUnrealizedAccrual = getOracle().getTotalYieldAccrued() -
-            OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleError();
-        return totalUnrealizedAccrual - totalYieldDistributed;
+    function getDistributableYield() public view returns (uint256 distributableYield, bool signed) {
+        int256 totalUnrealizedAccrual = getOracle().getTotalYieldAccrued() -
+            int256(OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleError());
+
+        int256 diff = totalUnrealizedAccrual - int(totalYieldDistributed);
+        if (diff >= 0) {
+            signed = false;
+            distributableYield = uint256(diff);
+        } else {
+            signed = true;
+            distributableYield = uint256(-diff);
+        }
     }
 
     /**
@@ -225,7 +231,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             console.log('getDirectory()');
             console.log('getDirectory().getOperatorDistributorAddress()');
             OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
-            uint256 tvl = super.totalAssets() + getDistributableYield() + dp.getTvlEth() + od.getTvlEth();
+
+            (uint256 distributableYield, bool signed) = getDistributableYield();
+
+            uint256 tvl = uint256(
+                int(super.totalAssets() + dp.getTvlEth() + od.getTvlEth()) +
+                    (signed ? -int(distributableYield) : int(distributableYield))
+            );
 
             if (tvl < principal) {
                 return 0;
@@ -247,9 +259,15 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 currentIncome = currentIncomeFromRewards();
         uint256 currentAdminIncome = currentIncome.mulDiv(adminFeeBasePoint, 1e5);
         uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFeeBasePoint, 1e5);
+        (uint256 distributableYield, bool signed) = getDistributableYield();
+
         return
-            (super.totalAssets() + getDistributableYield() + dp.getTvlEth() + od.getTvlEth()) -
-            (currentAdminIncome + currentNodeOperatorIncome);
+            (
+                uint256(
+                    int(super.totalAssets() + dp.getTvlEth() + od.getTvlEth()) +
+                        (signed ? -int(distributableYield) : int(distributableYield))
+                )
+            ) - (currentAdminIncome + currentNodeOperatorIncome);
     }
 
     /**

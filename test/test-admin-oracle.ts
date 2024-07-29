@@ -68,7 +68,7 @@ describe("XRETHAdminOracle", function () {
             const chainId = network.chainId;
 
             const newTotalYield = ethers.utils.parseEther("100");
-            const messageHash = ethers.utils.solidityKeccak256(["uint256", "uint256", "address", "uint256"], [newTotalYield, timestamp, oracle.address, chainId]);
+            const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "address", "uint256"], [newTotalYield, timestamp, oracle.address, chainId]);
             const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
 
 

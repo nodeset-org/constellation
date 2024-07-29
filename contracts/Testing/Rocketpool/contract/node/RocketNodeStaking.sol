@@ -15,6 +15,7 @@ import '../../interface/util/AddressSetStorageInterface.sol';
 import '../../interface/network/RocketNetworkSnapshotsInterface.sol';
 import '../network/RocketNetworkSnapshots.sol';
 import '../../interface/node/RocketNodeManagerInterface.sol';
+import "hardhat/console.sol";
 
 /// @notice Handles node deposits and minipool creation
 contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
@@ -277,6 +278,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         );
         // Calculate & return limit
         uint256 minimumStakePercent = rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake();
+        console.log("RocketNodeStaking.getNodeETHMatchedLimit.minimumStakePercent", minimumStakePercent);
         return (getNodeRPLStake(_nodeAddress) * rocketNetworkPrices.getRPLPrice()) / minimumStakePercent;
     }
 

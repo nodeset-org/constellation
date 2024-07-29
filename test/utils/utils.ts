@@ -23,6 +23,13 @@ export const printBalances = async (accounts: string[], opts: any = {}) => {
   }
 };
 
+
+export function computeKeccak256FromBytes32(bytes32String: string): string {
+  // Computing the keccak256 hash directly from the Bytes32 string
+  const hash = ethers.utils.keccak256(bytes32String);
+  return hash;
+}
+
 export const printTokenBalances = async (accounts: string[], token: string, opts: any = {}) => {
   const { names = [] } = opts;
   const weth = await ethers.getContractAt('IWETH', token);

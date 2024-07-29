@@ -22,9 +22,9 @@ struct MerkleProofParams {
  */
 contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
 
-    event TotalYieldAccruedUpdated(uint256 _amount);
+    event TotalYieldAccruedUpdated(int256 _amount);
 
-    uint256 internal _totalYieldAccrued;
+    int256 internal _totalYieldAccrued;
     uint256 internal _lastUpdatedTotalYieldAccrued;
 
     constructor() initializer {}
@@ -41,7 +41,7 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
      * @notice Retrieves the total yield accrued.
      * @return The total yield accrued.
      */
-    function getTotalYieldAccrued() external view override returns (uint) {
+    function getTotalYieldAccrued() external view override returns (int256) {
         return _totalYieldAccrued;
     }
 
@@ -51,7 +51,7 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
      * @param _newTotalYieldAccrued The new total yield accrued.
      * @param _sigTimeStamp The timestamp of the signature.
      */
-    function _setTotalYieldAccrued(bytes calldata _sig, uint256 _newTotalYieldAccrued, uint256 _sigTimeStamp) internal {
+    function _setTotalYieldAccrued(bytes calldata _sig, int256 _newTotalYieldAccrued, uint256 _sigTimeStamp) internal {
         address recoveredAddress = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(
                 keccak256(abi.encodePacked(_newTotalYieldAccrued, _sigTimeStamp, address(this), block.chainid))
@@ -78,7 +78,7 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
      */
     function setTotalYieldAccrued(
         bytes calldata _sig,
-        uint256 _newTotalYieldAccrued,
+        int256 _newTotalYieldAccrued,
         uint256 _sigTimeStamp
     ) external {
         _setTotalYieldAccrued(_sig, _newTotalYieldAccrued, _sigTimeStamp);
@@ -94,7 +94,7 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
     function setTotalYieldAccruedAndClaim(
         MerkleProofParams calldata _merkleProofParams,
         bytes calldata _sig,
-        uint256 _newTotalYieldAccrued,
+        int256 _newTotalYieldAccrued,
         uint256 _sigTimeStamp
     ) external {
         _setTotalYieldAccrued(_sig, _newTotalYieldAccrued, _sigTimeStamp);
