@@ -488,9 +488,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @param _newLockThreshold The new lock threshold value in wei.
      */
     function setLockAmount(uint256 _newLockThreshold) external onlyShortTimelock {
-        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
-            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
-        }
         lockThreshold = _newLockThreshold;
     }
 
@@ -500,9 +497,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @param _newLockUpTime The new lock-up time in seconds.
      */
     function setLockUpTime(uint256 _newLockUpTime) external onlyShortTimelock {
-        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
-            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
-        }
         lockUpTime = _newLockUpTime;
     }
 
