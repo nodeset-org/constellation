@@ -28,6 +28,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
     event MinipoolDestroyed(address indexed _minipoolAddress, address indexed _nodeAddress);
     event WarningNoMiniPoolsToHarvest();
+
     event WarningMinipoolNotStaking(
         address indexed _minipoolAddress,
         MinipoolStatus indexed _status,
@@ -168,10 +169,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         if (targetStake > rplStaked) {
             // stake more
             uint256 stakeIncrease = targetStake - rplStaked;
-            fundedRpl += stakeIncrease;
-
             console.log('rebalanceRplStake.stakeIncrease', stakeIncrease);
-            _performTopUp(_nodeAccount, stakeIncrease);
+            uint256 actualStakeIncrease = _performTopUp(_nodeAccount, stakeIncrease);
+            console.log('rebalanceRplStake.actualStakeIncrease', stakeIncrease);
+            fundedRpl += actualStakeIncrease;
         }
 
         if (targetStake < rplStaked) {
@@ -202,24 +203,28 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('finished rebalanceRplStake.rplStaked', rplStaked);
     }
 
-    function _performTopUp(address _superNode, uint256 _requiredStake) internal {
+    function _performTopUp(address _superNode, uint256 _requiredStake) internal returns (uint256) {
         uint256 currentRplBalance = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
-        console.log("_performTopUp.currentRplBalance", currentRplBalance);
+        console.log('_performTopUp.currentRplBalance', currentRplBalance);
         if (currentRplBalance >= _requiredStake) {
             if (_requiredStake == 0) {
-                return;
+                return 0;
             }
             // stakeRPLOnBehalfOf
             // transfer RPL to deposit pool
             IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), _requiredStake);
             FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_superNode, _requiredStake);
+            console.log('_performTopUp._requiredStake', _requiredStake);
+            return _requiredStake;
         } else {
             if (currentRplBalance == 0) {
-                return;
+                return 0;
             }
             // stake what we have
             IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), currentRplBalance);
             FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_superNode, currentRplBalance);
+            console.log('_performTopUp.currentRplBalance', currentRplBalance);
+            return currentRplBalance;
         }
     }
 
@@ -241,7 +246,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 stakeRatio = _existingRplStake == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / _existingRplStake;
         if (stakeRatio < targetStakeRatio) {
             uint256 minuend = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
-            console.log("calculateRplStakeShortfall.minuend", minuend);
+            console.log('calculateRplStakeShortfall.minuend', minuend);
             requiredStakeRpl = minuend < _existingRplStake ? 0 : minuend - _existingRplStake;
         } else {
             requiredStakeRpl = 0;
