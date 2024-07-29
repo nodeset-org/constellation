@@ -76,7 +76,7 @@ describe("Operator Distributor", function () {
 
 	});
 
-	it.only("success - target stake ratio may be set equal 100%", async function () {
+	it("success - target stake ratio may be set equal 100%", async function () {
 		// load fixture
 		const setupData = await loadFixture(protocolFixture);
 		const { protocol, signers, rocketPool } = setupData;
