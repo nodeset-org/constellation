@@ -29,8 +29,6 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public principal; // Total principal amount (sum of all deposits)
     uint256 public lastIncomeClaimed; // Tracks the amount of income already claimed by the admin
 
-    uint256 public collateralizationRatioBasePoint; // collateralization ratio
-
     uint256 public wethCoverageRatio; // weth coverage ratio
 
     constructor() initializer {}
@@ -46,7 +44,6 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(rplToken));
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
-        collateralizationRatioBasePoint = 0.02e5;
         wethCoverageRatio = 1.75e5;
         enforceWethCoverageRatio = false;
         adminFeeBasisPoint = 0.01e5;
@@ -157,23 +154,6 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
                 FundRouter(_directory.getDepositPoolAddress()).getTvlRpl() +
                 OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl()) -
             currentAdminIncomeFromRewards();
-    }
-
-    /**
-     * @notice Calculates the required collateral to ensure the contract remains sufficiently collateralized.
-     * @dev This function compares the current balance of assets in the contract with the desired collateralization ratio.
-     * If the required collateral based on the desired ratio is greater than the current balance, the function returns
-     * the amount of collateral needed to achieve the desired ratio. Otherwise, it returns 0, indicating no additional collateral
-     * is needed. The desired collateralization ratio is defined by `collateralizationRatioBasePoint`.
-     * @return The amount of asset required to maintain the desired collateralization ratio, or 0 if no additional collateral is needed.
-     */
-    function getRequiredCollateral() public view returns (uint256) {
-        uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
-        uint256 fullBalance = totalAssets();
-
-        uint256 requiredBalance = collateralizationRatioBasePoint.mulDiv(fullBalance, 1e5, Math.Rounding.Up);
-
-        return requiredBalance > currentBalance ? requiredBalance : 0;
     }
 
     /**ADMIN FUNCTIONS */
