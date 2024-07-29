@@ -17,7 +17,7 @@ describe("xRPL", function () {
 
     expect(name).equals("Constellation RPL");
     expect(symbol).equals("xRPL");
-    expect(await protocol.vCRPL.collateralizationRatioBasePoint()).equals(ethers.utils.parseUnits("0.02", 5))
+    expect(await protocol.vCRPL.liquidityReserveRatio()).equals(ethers.utils.parseUnits("0.02", 5))
     expect(await protocol.vCRPL.wethCoverageRatio()).equals(ethers.utils.parseUnits("1.75", 5))
     expect(await protocol.vCRPL.enforceWethCoverageRatio()).equals(false)
     expect(await protocol.vCRPL.adminFeeBasisPoint()).equals(ethers.utils.parseUnits("0.01", 5))

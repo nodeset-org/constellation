@@ -42,7 +42,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     string constant SYMBOL = 'xrETH';
 
     bool public enforceRplCoverageRatio;
-    uint256 public collateralizationRatioBasePoint;
+    uint256 public liquidityReserveRatio;
     uint256 public rplCoverageRatio;
     uint256 public totalYieldDistributed;
     uint256 public adminFeeBasePoint; // Admin fee in basis points
@@ -74,7 +74,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(weth));
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
-        collateralizationRatioBasePoint = 0.1e5; // 10% of TVL
+        liquidityReserveRatio = 0.1e5; // 10% of TVL
         rplCoverageRatio = 0.15e18;
         adminFeeBasePoint = 0.01e5;
         nodeOperatorFeeBasePoint = 0.01e5;
@@ -298,7 +298,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns (uint256) {
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 fullBalance = totalAssets() + deposit;
-        uint256 requiredBalance = collateralizationRatioBasePoint.mulDiv(fullBalance, 1e5, Math.Rounding.Up);
+        uint256 requiredBalance = liquidityReserveRatio.mulDiv(fullBalance, 1e5, Math.Rounding.Up);
         return requiredBalance > currentBalance ? requiredBalance : 0;
     }
 
@@ -482,12 +482,12 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @notice Sets the collateralization ratio basis points.
      * @dev This function allows the admin to update the collateralization ratio which determines the level of collateral required.
      * The collateralization ratio must be a reasonable percentage, typically expressed in basis points (1e5 basis points = 100%).
-     * @param _collateralizationRatio The new collateralization ratio in basis points.
+     * @param _liquidityReserveRatio The new collateralization ratio in basis points.
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
-    function setCollateralizationRatio(uint256 _collateralizationRatio) external onlyShortTimelock {
-        require(_collateralizationRatio > 0, 'WETHVault: Collateralization ratio must be positive');
-        require(_collateralizationRatio <= 1e5, 'WETHVault: Collateralization ratio must be less than or equal to 100%');
-        collateralizationRatioBasePoint = _collateralizationRatio;
+    function setLiquidityReserveRatio(uint256 _liquidityReserveRatio) external onlyShortTimelock {
+        require(_liquidityReserveRatio >= 0, 'WETHVault: Collateralization ratio must be positive');
+        require(_liquidityReserveRatio <= 1e5, 'WETHVault: Collateralization ratio must be less than or equal to 100%');
+        liquidityReserveRatio = _liquidityReserveRatio;
     }
 }
