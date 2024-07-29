@@ -62,7 +62,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param receiver The address designated to receive the issued shares for the deposit.
      * @param assets The amount of assets being deposited.
      * @param shares The number of shares to be exchanged for the deposit.
-     */ 
+     */
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
         require(caller == receiver, 'caller must be receiver');
         if (_directory.isSanctioned(caller, receiver)) {
@@ -273,8 +273,21 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * It ensures the admin receives their due income from the vault's rewards.
      *
      * Emits an `AdminFeeClaimed` event with the amount of the fee claimed.
-     */ 
+     */
     function claimAdminFee() public onlyAdmin {
         _claimAdminFee();
+    }
+
+    /**
+     * @notice Sets the collateralization ratio basis points.
+     * @dev This function allows the admin to update the collateralization ratio which determines the level of collateral required for sufficent liquidity.
+     * The collateralization ratio must be a reasonable percentage, typically expressed in basis points (1e5 basis points = 100%).
+     * @param _collateralizationRatio The new collateralization ratio in basis points.
+     * @custom:requires This function can only be called by an address with the Medium Timelock role.
+     */
+    function setCollateralizationRatio(uint256 _collateralizationRatio) external onlyMediumTimelock {
+        require(_collateralizationRatio > 0, 'Collateralization ratio must be positive');
+        require(_collateralizationRatio <= 1e5, 'Collateralization ratio must be less than or equal to 100%');
+        collateralizationRatioBasePoint = _collateralizationRatio;
     }
 }
