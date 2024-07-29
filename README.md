@@ -41,7 +41,7 @@ This repository contains Solidity smart contracts for Constellation, a second la
    - Holds references to all protocol contracts and manages role mechanisms.
 
 10. **FundRouter.sol**
-    - Manages deposits and distributes them to vaults and distributors.
+    - Manages protocol asset routing between vaults and other distributors.
 
 11. **WETHVault.sol**
     - An ERC4626 vault for WETH tokens, managing deposits, withdrawals, and rewards distribution.
