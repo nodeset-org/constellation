@@ -14,7 +14,7 @@ We use the [Hardhat](https://github.com/NomicFoundation/hardhat)
 - `npx hardhat test` runs the test suite. Mocha Test Explorer extension for VSCode is recommended for a better UX while developing.
 
 # A brief overview...
-This repository contains Solidity smart contracts for a decentralized finance (DeFi) protocol namly Constellation. The protocol involves the creation and management of node operators, minipools, and token vaults, with integrated staking and reward distribution mechanisms. The key contracts include:
+This repository contains Solidity smart contracts for Constellation, a second layer liquid staking protocol built on top of Rocket Pool. The protocol involves the creation and management of node operators, minipools, and token vaults, with integrated staking and reward distribution mechanisms. The key contracts include:
 
 1. **PriceFetcher.sol**
    - Fetches and provides the price of ETH denominated in RPL using Uniswap V3 and a fallback mechanism to an oracle.
