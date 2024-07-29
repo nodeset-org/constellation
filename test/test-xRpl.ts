@@ -4,195 +4,165 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-
-export async function mint_xRpl(setupData: SetupData, from: SignerWithAddress, amount: BigNumber) {
-  const { protocol, rocketPool: rp } = setupData;
-  
-  await expect(rp.rplContract.connect(from).approve(protocol.xRPL.address, amount))
-    .to.emit(rp.rplContract, "Approval")
-    .withArgs(from.address, protocol.xRPL.address, amount);
-  
-  return protocol.xRPL.connect(from).mint(from.address, amount);
-}
+import { assertAddOperator, assertMultipleTransfers, assertSingleTransferExists } from "./utils/utils";
 
 describe("xRPL", function () {
 
-  describe("Mints", function () {
+  it("success - test initial values", async () => {
+    const setupData = await loadFixture(protocolFixture);
+    const { protocol, signers, rocketPool } = setupData;
 
-    it("Revert mint below minimum amount", async function () {
-      const setupData = await loadFixture(protocolFixture);
+    const name = await protocol.vCRPL.name()
+    const symbol = await protocol.vCRPL.symbol();
 
-      let amount = (await setupData.protocol.xrETH.getMinimumStakeAmount()).sub(BigNumber.from(1));
+    expect(name).equals("Constellation RPL");
+    expect(symbol).equals("xRPL");
+    expect(await protocol.vCRPL.collateralizationRatioBasePoint()).equals(ethers.utils.parseUnits("0.02", 5))
+    expect(await protocol.vCRPL.wethCoverageRatio()).equals(ethers.utils.parseUnits("1.75", 5))
+    expect(await protocol.vCRPL.enforceWethCoverageRatio()).equals(false)
+    expect(await protocol.vCRPL.adminFeeBasisPoint()).equals(ethers.utils.parseUnits("0.01", 5))
 
-      await expect(mint_xRpl(setupData, setupData.signers.rplWhale, amount))
-        .to.be.revertedWith(await setupData.protocol.xRPL.getMinimumStakeError());
-    });
+  })
 
-    it("Revert mint if sender doesn't send enough RPL", async function () {
-      const setupData = await loadFixture(protocolFixture);
-      const { protocol, signers } = setupData;
+  it("fail - tries to deposit as 'bad actor' involved in AML or other flavors of bad", async () => {
+    const setupData = await loadFixture(protocolFixture);
+    const { protocol, signers, rocketPool } = setupData;
 
-      let amount = await protocol.xRPL.getMinimumStakeAmount();
+    await protocol.sanctions.addBlacklist(signers.random.address);
+    await protocol.directory.connect(signers.admin).enableSanctions();
+    expect(await protocol.sanctions.isSanctioned(signers.random.address)).equals(true);
 
-      await expect(mint_xRpl(setupData, signers.random, amount))
-        .to.be.revertedWith("ERC20: transfer amount exceeds balance");
-    });
+    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, ethers.utils.parseEther("100"));
+    await assertAddOperator(setupData, signers.random);
 
-    it("Mints >= minimum succeed", async function () {
-      const setupData = await loadFixture(protocolFixture);
-      const { protocol, signers } = setupData;
+    await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
 
-      let amount = await protocol.xRPL.getMinimumStakeAmount();
+    const tx = await protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("100"), signers.random.address);
+    const receipt = await tx.wait();
+    const { events } = receipt;
+    if (events) {
+      for (let i = 0; i < events.length; i++) {
+        expect(events[i].event).not.equals(null)
+        if (events[i].event?.includes("SanctionViolation")) {
+          expect(events[i].event?.includes("SanctionViolation")).equals(true)
+        }
+      }
+    }
 
-      const tx = mint_xRpl(setupData, signers.rplWhale, amount);
-      await expect(tx).to.emit(protocol.xRPL, "Transfer")
-        .withArgs("0x0000000000000000000000000000000000000000", signers.rplWhale.address, amount);
-      await expect(tx).to.changeTokenBalance(
-          protocol.xRPL,
-          signers.rplWhale.address,
-          amount
-        );
-    });
-  });
+    const expectedRplInDP = ethers.utils.parseEther("0");
+    const actualRplInDP = await rocketPool.rplContract.balanceOf(protocol.depositPool.address);
+    expect(expectedRplInDP).equals(actualRplInDP)
 
-  describe("Transfers", function () {
+  })
 
-    it("Holder can send token", async function () {
-      const setupData = await loadFixture(protocolFixture)
-      const { protocol, signers, rocketPool: rp} = setupData;
-  
-      let amount = ethers.utils.parseEther("100");
-      await expect(mint_xRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
-  
-      const tx = protocol.xRPL.connect(signers.rplWhale).transfer(signers.random.address, amount);
-      await expect(tx).to.changeTokenBalances(protocol.xRPL, [signers.rplWhale, signers.random], [amount.mul(-1), amount]);
-      await expect(tx).to.emit(protocol.xRPL, "Transfer").withArgs(signers.rplWhale.address, signers.random.address, amount);
-    });
+  it("success - tries to deposit as 'good actor' not involved in AML or bad activities", async () => {
+    const setupData = await loadFixture(protocolFixture);
+    const { protocol, signers, rocketPool } = setupData;
 
-    it("Unapproved address cannot send token on behalf of other address", async function () {
-      const setupData = await loadFixture(protocolFixture)
-      const { protocol, signers, rocketPool: rp} = setupData;
-  
-      let amount = ethers.utils.parseEther("100");
-      await expect(mint_xRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
-  
-      await expect(protocol.xRPL.connect(signers.random).transferFrom(signers.rplWhale.address, signers.random.address, amount))
-        .to.be.revertedWith("ERC20: insufficient allowance");
-    });
+    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, ethers.utils.parseEther("100"));
+    await assertAddOperator(setupData, signers.random);
 
-    it("Approved address can send token on behalf of other address", async function () {
-      const setupData = await loadFixture(protocolFixture)
-      const { protocol, signers, rocketPool: rp} = setupData;
-  
-      let amount = ethers.utils.parseEther("100");
-      await expect(mint_xRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
-  
-      protocol.xRPL.connect(signers.rplWhale).approve(signers.random.address, amount);
-  
-      const tx = protocol.xRPL.connect(signers.random).transferFrom(signers.rplWhale.address, signers.random.address, amount);
-      await expect(tx).to.changeTokenBalances(protocol.xRPL, [signers.rplWhale, signers.random], [amount.mul(-1), amount])
-      await expect(tx).to.emit(protocol.xRPL, "Transfer").withArgs(signers.rplWhale.address, signers.random.address, amount);
-    });
-  });
- 
-  describe("Burns", function () {
+    await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
+    await protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("100"), signers.random.address);
 
-    it("Revert if burn amount exceeds balance", async function () {
-      const setupData = await loadFixture(protocolFixture);
-      const { protocol, signers } = setupData;
+    const expectedRplInSystem = ethers.utils.parseEther("100");
+    const actualRplInSystem = await protocol.vCRPL.totalAssets();
+    expect(expectedRplInSystem).equals(actualRplInSystem)
+  })
 
-      let amount = ethers.utils.parseEther("100");
-      await expect(mint_xRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
+  it("success - tries to deposit 100 rpl then withdraws 100 rpl immediately", async () => {
+    const setupData = await loadFixture(protocolFixture);
+    const { protocol, signers, rocketPool } = setupData;
 
-      await expect(protocol.xRPL.connect(signers.rplWhale).burn(amount.add(1)))
-        .to.be.revertedWith("ERC20: burn amount exceeds balance");
-    });
+    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, ethers.utils.parseEther("1000000"));
+    await assertAddOperator(setupData, signers.random);
 
-    it("Burn reverts if the DepositPool lacks enough RPL", async function () {
-      const setupData = await loadFixture(protocolFixture)
-      const { protocol, signers, rocketPool: rp} = setupData;
-
-      let amount = ethers.utils.parseEther("100");
-      await expect(mint_xRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
-
-      await expect(protocol.xRPL.connect(signers.rplWhale).burn(amount))
-        .to.be.revertedWith(await protocol.depositPool.NOT_ENOUGH_RPL_ERROR());
-    });
+    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random2.address, ethers.utils.parseEther("100"));
+    await assertAddOperator(setupData, signers.random2);
     
-    it("Burn gives equivalent amount of RPL when redemption value is 1", async function () {
-      const setupData = await loadFixture(protocolFixture)
-      const { protocol, signers, rocketPool: rp} = setupData;
+    await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("1000000"));
+    await protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("1000000"), signers.random.address);
 
-      let mintAmount = ethers.utils.parseEther("100");
-      await expect(mint_xRpl(setupData, signers.rplWhale, mintAmount)).to.not.be.reverted;
+    const expectedRplInSystem = ethers.utils.parseEther("1000000");
+    const actualRplInSystem = await protocol.vCRPL.totalAssets();
+    expect(expectedRplInSystem).equals(actualRplInSystem)
 
-      let burnAmount = (await protocol.depositPool.getMaxRplBalance()).sub(1);
+    console.log("currentIncome", await protocol.vCRPL.currentIncomeFromRewards());
+    console.log("currentAdminIncome", await protocol.vCRPL.currentAdminIncomeFromRewards());
 
-      const tx = protocol.xRPL.connect(signers.rplWhale).burn(burnAmount);
-      await expect(tx).to.changeTokenBalance(protocol.xRPL, signers.rplWhale, burnAmount.mul(-1));
-      await expect(tx).to.changeTokenBalance(rp.rplContract, signers.rplWhale, burnAmount);
-      await expect(tx).to.emit(protocol.xRPL, "Transfer")
-        .withArgs(signers.rplWhale.address, "0x0000000000000000000000000000000000000000", burnAmount);
-    });
+    await rocketPool.rplContract.connect(signers.random2).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
+    console.log(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address));
+    await protocol.vCRPL.connect(signers.random2).deposit(ethers.utils.parseEther("100"), signers.random2.address);
 
-    it("Unapproved address cannot burn on behalf of other address", async function () {
-      const setupData = await loadFixture(protocolFixture)
-      const { protocol, signers, rocketPool: rp} = setupData;
-  
-      let amount = ethers.utils.parseEther("100");
-      await expect(mint_xRpl(setupData, signers.rplWhale, amount)).to.not.be.reverted;
-  
-      await expect(protocol.xrETH.connect(signers.random).burnFrom(signers.rplWhale.address, amount))
-        .to.be.revertedWith("ERC20: insufficient allowance");
-    });
+    const tx = await protocol.vCRPL.connect(signers.random2).redeem(ethers.utils.parseEther("100"), signers.random2.address, signers.random2.address);
+    await assertMultipleTransfers(tx, [
+      {
+        from: protocol.vCRPL.address, to: signers.random2.address, value: ethers.utils.parseEther("100")
+      },
+    ])
+  })
 
-    it("Approved address can burn on behalf of other address", async function () {
-      const setupData = await loadFixture(protocolFixture)
-      const { protocol, signers, rocketPool: rp} = setupData;
-  
-      let mintAmount = ethers.utils.parseEther("100");
-      await expect(mint_xRpl(setupData, signers.rplWhale, mintAmount)).to.not.be.reverted;
-  
-      let burnAmount = (await protocol.depositPool.getMaxRplBalance()).sub(1);
-      protocol.xRPL.connect(signers.rplWhale).approve(signers.random.address, burnAmount);    
-  
-      const tx = protocol.xRPL.connect(signers.random).burnFrom(signers.rplWhale.address, burnAmount);
-      await expect(tx).to.changeTokenBalance(protocol.xRPL, signers.rplWhale, burnAmount.mul(-1))
-      await expect(tx).to.changeTokenBalance(rp.rplContract, signers.rplWhale, burnAmount)
-      await expect(tx).to.emit(protocol.xRPL, "Transfer")
-        .withArgs(signers.rplWhale.address, "0x0000000000000000000000000000000000000000", burnAmount);
-    });
-  }); 
-  
-  it.skip("Redemption value updates after yield is distributed", async function () {
-    const setupData = await loadFixture(protocolFixture)
-    const { protocol, signers, rocketPool: rp} = setupData;
+  it("success - a random makes deposit, DP gets 10 rpl, random gets correct amount and so does admin, admin fails to withdraw again, DP gets 69 rpl, admin claims 1%", async () => {
+    const setupData = await loadFixture(protocolFixture);
+    const { protocol, signers, rocketPool } = setupData;
 
-    let mintAmount = ethers.utils.parseEther("100");
-    await mint_xRpl(setupData, signers.rplWhale, mintAmount);
+    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, ethers.utils.parseEther("100"));
+    await assertAddOperator(setupData, signers.random);
 
-    const redemptionValueBefore = await protocol.xRPL.getRedemptionValuePerToken();
+    await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
+    await protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("100"), signers.random.address);
+
+    const expectedRplInSystem = ethers.utils.parseEther("100");
+    const actualRplInSystem = await protocol.vCRPL.totalAssets();
+    expect(expectedRplInSystem).equals(actualRplInSystem)
+
+    expect(await protocol.vCRPL.currentIncomeFromRewards()).equals(0);
+    expect(await protocol.vCRPL.currentAdminIncomeFromRewards()).equals(0);
+
+    // incoming funds to DP
+    await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, ethers.utils.parseEther("10"));
+
+    expect(await protocol.vCRPL.currentIncomeFromRewards()).equals(ethers.utils.parseEther("10"));
+    expect(await protocol.vCRPL.currentAdminIncomeFromRewards()).equals(ethers.utils.parseEther(".1"));
+
+    expect(await protocol.vCRPL.principal()).equals(ethers.utils.parseEther("100"));
+    // random should be able to withdraw shares worth 10% more, aka, withdraw will trade one share for 1.1 - 1% admin fee RPL
+    // admin should be allowed to take 1% of the 10 RPL that landed
+    await protocol.vCRPL.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("1"));
+    const tx = await protocol.vCRPL.connect(signers.random).redeem(ethers.utils.parseEther("1"), signers.random.address, signers.random.address);
+    await assertMultipleTransfers(tx, [
+      {
+        from: protocol.vCRPL.address, to: signers.random.address, value: BigNumber.from("1098999999999999999")
+      },
+      {
+        from: protocol.vCRPL.address, to: await protocol.directory.getTreasuryAddress(), value: ethers.utils.parseEther("0.1")
+      },
+    ])
+
+    expect(await protocol.vCRPL.principal()).equals(BigNumber.from("98901000000000000001"));
     
-    // simulate yield from validator
-    rp.rplContract.connect(signers.rplWhale)
-      .transfer(protocol.yieldDistributor.address, ethers.utils.parseEther("1"));
+    // admin should claim 0 dollars after recieveing the goods
+    await assertSingleTransferExists(
+      await protocol.vCRPL.connect(signers.admin).claimAdminFee(),
+      protocol.vCRPL.address,
+      await protocol.directory.getTreasuryAddress(),
+      ethers.utils.parseEther("0")
+    )
 
-    const redemptionValueAfter = await protocol.xRPL.getRedemptionValuePerToken();
-    
-    await protocol.yieldDistributor.distributeRewards()
+    await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, ethers.utils.parseEther("69"));
 
-    // check that redemption value has increased
-    expect(redemptionValueAfter).to.be.gt(redemptionValueBefore);
+    await assertSingleTransferExists(
+      await protocol.vCRPL.connect(signers.admin).claimAdminFee(),
+      protocol.vCRPL.address,
+      await protocol.directory.getTreasuryAddress(),
+      ethers.utils.parseEther("0.69")
+    )
 
-    // TODO: create a TestMockOracle for this test.
-  });
-
-  it.skip("Mint gives appropriate redemption value after yield", async function () {
-    expect.fail();
-  });
-
-  it.skip("Burn gives appropriate redemption value after yield", async function () {
-    expect.fail();
-  });
-
+    await assertSingleTransferExists(
+      await protocol.vCRPL.connect(signers.admin).claimAdminFee(),
+      protocol.vCRPL.address,
+      await protocol.directory.getTreasuryAddress(),
+      ethers.utils.parseEther("0")
+    )
+  })
 });

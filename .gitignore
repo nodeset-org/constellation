@@ -6,6 +6,10 @@ typechain-types
 tsconfig.tsbuildinfo
 .vscode
 coverage/*
+bin
+*.swp
+
+.DS_Store
 
 #Hardhat files
 cache

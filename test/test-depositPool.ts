@@ -1,258 +1,253 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers, network, web3 } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber as BN } from "ethers";
+import { assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract, registerNewValidator } from "./utils/utils";
+import { parseRewardsMap } from "./utils/merkleClaim";
+import { submitRewards } from "./rocketpool/rewards/scenario-submit-rewards";
 
-export async function depositEth(setupData: SetupData, from: SignerWithAddress, amount: BN) {
-	const { protocol } = setupData;	
-	let dpBalance = await ethers.provider.getBalance(protocol.depositPool.address);
-	let tvl = await protocol.depositPool.getTvlEth();
-	
-	let maxBalancePortion = BN.from(await protocol.depositPool.getMaxEthBalancePortion());
-	let maxBalancePortionDecimals = await protocol.depositPool.MAX_BALANCE_PORTION_DECIMALS();
-	let maxBalanceAfterDeposit = tvl.add(amount).mul(maxBalancePortion).div(BN.from(10).pow(maxBalancePortionDecimals));
-	
-	let dpBalanceChange, distributorBalanceChange;
-	let isBalanceOverMax = (dpBalance.add(amount) > maxBalanceAfterDeposit);
-	dpBalanceChange = isBalanceOverMax ? maxBalanceAfterDeposit.sub(dpBalance) : amount	
-	let leftover = dpBalance.add(amount).sub(maxBalanceAfterDeposit);
-	distributorBalanceChange = isBalanceOverMax ? leftover : 0;
+describe(`FundRouter`, () => {
 
-	console.log("\t\tDepositing " + ethers.utils.formatEther(amount) + " ether"
-		+ " ether...\n\t\t\tTVL at start: ", ethers.utils.formatEther(tvl) + " ether"
-		+ "\n\t\t\tDP balance at start: " + ethers.utils.formatEther(dpBalance) + " ether"
-		+ "\n\t\t\tmaxEthBalanceAfterDeposit: " + ethers.utils.formatEther(maxBalanceAfterDeposit)
-		+ "\n\t\t\tNew DP balance should be " + ethers.utils.formatEther(dpBalanceChange)
-		+ " ether + currentBalance = " + ethers.utils.formatEther(dpBalance.add(dpBalanceChange)) + " ether");
+    describe('stakeRPLFor', () => {
+        it("success - admin stakes rpl for random node", async () => {
+            const setupData = await loadFixture(protocolFixture);
+            const { protocol, signers, rocketPool: rp } = setupData;
 
-	const tx = from.sendTransaction({ to: protocol.depositPool.address, value: amount, gasLimit: 1000000 });
-	await expect(tx)
-		.to.changeEtherBalances(
-			[from, protocol.depositPool.address, protocol.operatorDistributor.address],
-			[amount.mul(-1), dpBalanceChange, distributorBalanceChange]
-		)
-	await expect(tx).to.emit(protocol.depositPool, "TotalValueUpdated").withArgs(tvl, tvl.add(amount));
+            console.log("fundroutertest.AC")
+            await prepareOperatorDistributionContract(setupData, 2);
+            console.log("fundroutertest.A")
+            await registerNewValidator(setupData, [signers.random]);
+            console.log("fundroutertest.AB")
 
-	expect(maxBalanceAfterDeposit).to.equal(await protocol.depositPool.getMaxEthBalance());
-	
-	let currTvl = await protocol.depositPool.getTvlEth();
+            const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
+            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
 
-	console.log("TVL after deposit: ", ethers.utils.formatEther(currTvl.toString()) + " ether");
-	console.log("DP balance after deposit: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.depositPool.address)));
-	expect(!currTvl.eq(0));
-	expect(tvl.lt(currTvl));
-	expect(currTvl.eq(await ethers.provider.getBalance(protocol.depositPool.address)));
-	expect(currTvl.eq(amount));
-}
+            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await protocol.depositPool.connect(signers.admin).stakeRPLFor(protocol.superNode.address, amountStaked)
+            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
-export async function depositRpl(setupData: SetupData, from: SignerWithAddress, amount: BN) {
-	const { protocol } = setupData;	
-	let dpBalance = await ethers.provider.getBalance(protocol.depositPool.address);
-	let tvl = await protocol.depositPool.getTvlRpl();
-	
-	let maxBalancePortion = BN.from(await protocol.depositPool.getMaxRplBalancePortion());
-	let maxBalancePortionDecimals = await protocol.depositPool.MAX_BALANCE_PORTION_DECIMALS();
-	let maxBalanceAfterDeposit = tvl.add(amount).mul(maxBalancePortion).div(BN.from(10).pow(maxBalancePortionDecimals));
-	
-	let dpBalanceChange, distributorBalanceChange;
-	let isBalanceOverMax = (dpBalance.add(amount) > maxBalanceAfterDeposit);
-	dpBalanceChange = isBalanceOverMax ? maxBalanceAfterDeposit.sub(dpBalance) : amount	
-	let leftover = dpBalance.add(amount).sub(maxBalanceAfterDeposit);
-	distributorBalanceChange = isBalanceOverMax ? leftover : 0;
+            expect(finalStake.sub(initialStake)).equals(amountStaked);
 
-	let currAccountBalance = await setupData.rocketPool.rplContract.balanceOf(from.address);
+        })
 
-	console.log("\t\tDepositing " + ethers.utils.formatEther(amount) + " RPL"
-		+ "...\n\t\t\tFrom address balance at start: " + ethers.utils.formatEther(currAccountBalance) + " RPL"
-		+ "\n\t\t\tTVL at start: ", ethers.utils.formatEther(tvl) + " RPL"
-		+ "\n\t\t\tDP balance at start: " + ethers.utils.formatEther(dpBalance) + " RPL"
-		+ "\n\t\t\tmaxRplBalanceAfterDeposit: " + ethers.utils.formatEther(maxBalanceAfterDeposit)
-		+ "\n\t\t\tNew DP balance should be " + ethers.utils.formatEther(dpBalanceChange)
-		+ " RPL + currentBalance = " + ethers.utils.formatEther(dpBalance.add(dpBalanceChange)) + " RPL");
+        it("success - protocol stakes rpl for random node", async () => {
+            const setupData = await loadFixture(protocolFixture);
+            const { protocol, signers, rocketPool: rp } = setupData;
 
-	const rp = setupData.rocketPool;
-	
-	await expect(rp.rplContract.connect(from).approve(protocol.xRPL.address, amount))
-			.to.emit(rp.rplContract, "Approval")
-			.withArgs(from.address, protocol.xRPL.address, amount);
+            await prepareOperatorDistributionContract(setupData, 2);
+            await registerNewValidator(setupData, [signers.random]);
 
-	const tx = await protocol.xRPL.connect(from).mint(from.address, amount);
-	await expect(tx)
-		.to.changeTokenBalance(
-			protocol.xRPL,
-			from,
-			amount
-		);
-	await expect(tx).to.changeTokenBalances(
-			rp.rplContract,
-			[from, protocol.depositPool, protocol.operatorDistributor],
-			[amount.mul(-1), dpBalanceChange, distributorBalanceChange]
-		);
-	await expect(tx)
-		.to.emit(protocol.depositPool, "TotalValueUpdated").withArgs(tvl, tvl.add(amount));
-	
-	let max = await protocol.depositPool.getMaxRplBalance();
-	
-	await expect(maxBalanceAfterDeposit).to.equal(await protocol.depositPool.getMaxRplBalance());
-	
-	let currTvl = await protocol.depositPool.getTvlRpl();
+            const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
+            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
 
-	console.log("TVL after deposit: ", ethers.utils.formatEther(currTvl.toString()) + " RPL");
-	console.log("DP balance after deposit: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.depositPool.address)));
-	expect(!currTvl.eq(0));
-	expect(tvl.lt(currTvl));
-	expect(currTvl.eq(await ethers.provider.getBalance(protocol.depositPool.address)));
-	expect(currTvl.eq(tvl.add(amount)));
-}
+            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await protocol.depositPool.connect(signers.protocolSigner).stakeRPLFor(protocol.superNode.address, amountStaked)
+            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
-describe("DepositPool", function () {
+            expect(finalStake.sub(initialStake)).equals(amountStaked);
 
-	describe("Getters and Setters", function () {
-		it("Random address can get maxEthBalance and maxEthBalancePortion", async function () {
-			const setupData = await loadFixture(protocolFixture);
-			let maxBalance = await setupData.protocol.depositPool.getMaxEthBalance();
-			console.log("maxBalance is " + maxBalance);
-			
-		});
-		it("Random address cannot set maxEthBalancePortion and maxRplBalancePortion", async function () {
-			const setupData = await loadFixture(protocolFixture);
-			const { protocol, signers } = setupData;
+        })
 
-			await expect(protocol.depositPool.connect(signers.random).setMaxEthBalancePortion(1000))
-				.to.be.revertedWith(await protocol.depositPool.ADMIN_ONLY_ERROR());
-			
-			await expect(protocol.depositPool.connect(signers.random).setMaxRplBalancePortion(1000))
-				.to.be.revertedWith(await protocol.depositPool.ADMIN_ONLY_ERROR());
-		});
+        it("fail - non-admin/protocol stakes rpl for random node", async () => {
+            const setupData = await loadFixture(protocolFixture);
+            const { protocol, signers, rocketPool: rp } = setupData;
 
-		it("Admin cannot set maxEthBalancePortion or maxRplBalancePortion to out of range value", async function () {
-			const setupData = await loadFixture(protocolFixture);
-			const { protocol, signers } = setupData;
+            await prepareOperatorDistributionContract(setupData, 2);
+            await registerNewValidator(setupData, [signers.random]);
 
-			let maxEthBalancePortion = await protocol.depositPool.connect(signers.random).getMaxEthBalancePortion();
-			let maxRplBalancePortion = await protocol.depositPool.connect(signers.random).getMaxEthBalancePortion();
-			
-			expect(await protocol.depositPool.setMaxEthBalancePortion(maxEthBalancePortion + 1))
-				.to.be.revertedWith(await protocol.depositPool.MAX_BALANCE_PORTION_OUT_OF_RANGE_ERROR());
-		
-			expect(await protocol.depositPool.setMaxRplBalancePortion(maxRplBalancePortion + 1))
-				.to.be.revertedWith(await protocol.depositPool.MAX_BALANCE_PORTION_OUT_OF_RANGE_ERROR());
-		});
+            const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
+            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
 
-		it("Admin address can set maxEthBalancePortion and maxRplBalancePortion", async function () {
-			const setupData = await loadFixture(protocolFixture);
-			const { protocol, signers } = setupData;
+            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await expect(protocol.depositPool.connect(signers.deployer).stakeRPLFor(protocol.superNode.address, amountStaked)).to.be.revertedWith("Can only be called by Protocol or Admin!")
+            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
-			let maxEthBalancePortion = await protocol.depositPool.connect(signers.random).getMaxEthBalancePortion();
-			let maxRplBalancePortion = await protocol.depositPool.connect(signers.random).getMaxEthBalancePortion();
-			
-			const maxEthTx = protocol.depositPool.setMaxEthBalancePortion(1000);
-			await expect(maxEthTx).to.emit(protocol.depositPool, "NewMaxEthBalancePortion").withArgs(maxEthBalancePortion, 1000);
-			await expect(maxEthTx).to.not.be.revertedWith(await protocol.directory.ADMIN_ONLY_ERROR());
-		
-			const maxRplTx = protocol.depositPool.setMaxRplBalancePortion(1000);
-			await expect(maxRplTx).to.emit(protocol.depositPool, "NewMaxRplBalancePortion").withArgs(maxRplBalancePortion, 1000);
-			await expect(maxRplTx).to.not.be.revertedWith(await protocol.directory.ADMIN_ONLY_ERROR());
-		});
-		
-	});
-	
-	describe("ETH", function () {
-		it("State adjusts correctly on ETH deposit from xrETH", async function () {
-			const setupData = await loadFixture(protocolFixture);
+            expect(finalStake.sub(initialStake)).equals(0);
 
-			await depositEth(setupData, setupData.signers.random, BN.from(ethers.utils.parseEther("100")));
-		});
+        })
+    })
 
-		it("ETH TVL adjusts on withdrawal", async function () {
-			const { protocol, signers } = await loadFixture(protocolFixture);
+    describe('unstakeRpl', () => {
+        it("success - admin unstakes rpl for random node", async () => {
+            const setupData = await loadFixture(protocolFixture);
+            const { protocol, signers, rocketPool: rp } = setupData;
 
-			let mintAmount = ethers.utils.parseEther("100");
-			await signers.random.sendTransaction({ to: protocol.xrETH.address, value: mintAmount, gasLimit: 1000000 });
-		
-			const readTvl = async () => { return await protocol.depositPool.getTvlEth() };
-			let startTvl = await readTvl();
+            await prepareOperatorDistributionContract(setupData, 2);
+            await registerNewValidator(setupData, [signers.random]);
 
-			let burnAmount = (await protocol.depositPool.getMaxEthBalance()).sub(1);
-			await protocol.xrETH.connect(signers.random).burn(burnAmount);
+            const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
+            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
 
-			let finalTvl = await readTvl();
+            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await protocol.depositPool.connect(signers.admin).stakeRPLFor(protocol.superNode.address, amountStaked)
+            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
-			expect(BN.from(finalTvl) === BN.from(startTvl).sub(burnAmount));
-		});
+            expect(finalStake.sub(initialStake)).equals(amountStaked);
 
-		it("Only ETH token address can send ETH from DP", async function () {
-			const setupData = await loadFixture(protocolFixture);
-			const { protocol, signers } = setupData;
-			await depositEth(setupData, setupData.signers.random, ethers.utils.parseEther("1"));
+            await increaseEVMTime(60 * 60 * 24 * 7 * 32);
+            console.log("acoutal stake", await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address))
+            console.log("udner collat thresh old", await rp.rocketNodeStakingContract.getNodeMaximumRPLStake(protocol.superNode.address))
 
-			// random address
-			await expect(protocol.depositPool.connect(signers.random)
-				.sendEth(signers.random.address, await protocol.depositPool.signer.getBalance()))
-				.to.be.revertedWith(await protocol.depositPool.ONLY_ETH_TOKEN_ERROR());
-		
-			// admin address
-			await expect(protocol.depositPool
-				.sendEth(signers.random.address, await protocol.depositPool.signer.getBalance()))
-				.to.be.revertedWith(await protocol.depositPool.ONLY_ETH_TOKEN_ERROR());
-		});
+            const amountUnstaked = ethers.utils.parseUnits("70", await rp.rplContract.decimals());
+            const initialStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await protocol.depositPool.connect(signers.admin).unstakeRpl(protocol.superNode.address, amountUnstaked)
+            const finalStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
-	});
+            expect(initialStake2.sub(finalStake2)).equals(amountUnstaked);
+        })
 
-	describe("RPL", function () {
-		it("State adjusts correctly on RPL deposit from xRPL", async function () {
-			const setupData = await loadFixture(protocolFixture);
+        it("success - protocol unstakes rpl for random node", async () => {
+            const setupData = await loadFixture(protocolFixture);
+            const { protocol, signers, rocketPool: rp } = setupData;
 
-			const rp = setupData.rocketPool;
+            await prepareOperatorDistributionContract(setupData, 2);
+            await registerNewValidator(setupData, [signers.random]);
 
-			// seed random address with rpl
-			rp.rplContract.connect(setupData.signers.rplWhale)
-				.transfer(setupData.signers.random.address, ethers.utils.parseEther("100"));
+            const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
+            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
 
-			await depositRpl(setupData, setupData.signers.random, ethers.utils.parseEther("100"));
-		});
+            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await protocol.depositPool.connect(signers.protocolSigner).stakeRPLFor(protocol.superNode.address, amountStaked)
+            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
-		it("Only RPL token address can send RPL from DP externally", async function () {
-			const setupData = await loadFixture(protocolFixture);
-			const { protocol, signers } = setupData;
+            expect(finalStake.sub(initialStake)).equals(amountStaked);
 
-			const rp = setupData.rocketPool;
-			// seed random address with rpl
-			rp.rplContract.connect(signers.rplWhale)
-				.transfer(setupData.signers.random.address, ethers.utils.parseEther("1000"));
+            await increaseEVMTime(60 * 60 * 24 * 7 * 32);
+            console.log("acoutal stake", await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address))
+            console.log("udner collat thresh old", await rp.rocketNodeStakingContract.getNodeMaximumRPLStake(protocol.superNode.address))
 
-			await depositRpl(setupData, signers.random, ethers.utils.parseEther("1"));
+            const amountUnstaked = ethers.utils.parseUnits("70", await rp.rplContract.decimals());
+            const initialStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await protocol.depositPool.connect(signers.protocolSigner).unstakeRpl(protocol.superNode.address, amountUnstaked)
+            const finalStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
-			// random address
-			await expect(protocol.depositPool.connect(signers.random)
-				.sendRpl(signers.random.address, await protocol.depositPool.signer.getBalance()))
-				.to.be.revertedWith(await protocol.depositPool.ONLY_RPL_TOKEN_ERROR());
-		
-			// admin address
-			await expect(protocol.depositPool
-				.sendRpl(signers.random.address, await protocol.depositPool.signer.getBalance()))
-				.to.be.revertedWith(await protocol.depositPool.ONLY_RPL_TOKEN_ERROR());
-		});
+            expect(initialStake2.sub(finalStake2)).equals(amountUnstaked);
+        })
 
-		it("RPL TVL adjusts on withdrawal", async function () {
-			const { protocol, signers, rocketPool: rp } = await loadFixture(protocolFixture);
+        it("fail - non-admin/protocol unstakes rpl for random node", async () => {
+            const setupData = await loadFixture(protocolFixture);
+            const { protocol, signers, rocketPool: rp } = setupData;
 
-			let mintAmount = ethers.utils.parseEther("100");
-			await rp.rplContract.connect(signers.rplWhale).approve(protocol.xRPL.address, mintAmount);
-			await protocol.xRPL.mint(signers.rplWhale.address, mintAmount);
-		
-			const readTvl = async () => { return await protocol.depositPool.getTvlRpl() };
-			let startTvl = await readTvl();
+            await prepareOperatorDistributionContract(setupData, 2);
+            await registerNewValidator(setupData, [signers.random]);
 
-			let burnAmount = (await protocol.depositPool.getMaxRplBalance()).sub(1);
-			protocol.xRPL.connect(signers.random).burn(burnAmount);
+            const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
+            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
 
-			let finalTvl = await readTvl();
+            const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await protocol.depositPool.connect(signers.protocolSigner).stakeRPLFor(protocol.superNode.address, amountStaked)
+            const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
-			expect(BN.from(finalTvl) === BN.from(startTvl).sub(burnAmount));
-		});
+            expect(finalStake.sub(initialStake)).equals(amountStaked);
 
-	});
+            await increaseEVMTime(60 * 60 * 24 * 7 * 32);
+            console.log("acoutal stake", await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address))
+            console.log("udner collat thresh old", await rp.rocketNodeStakingContract.getNodeMaximumRPLStake(protocol.superNode.address))
+
+            const amountUnstaked = ethers.utils.parseUnits("70", await rp.rplContract.decimals());
+            const initialStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+            await expect(protocol.depositPool.unstakeRpl(protocol.superNode.address, amountUnstaked)).to.be.revertedWith("Can only be called by Protocol or Admin!")
+            const finalStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
+
+            expect(initialStake2.sub(finalStake2)).equals(0);
+        })
+    })
+
+    describe("merkleClaim", () => {
+        interface Claims {
+            [address: string]: any;
+        }
+    
+        it.skip("run proof", async () => {
+            const setupData = await loadFixture(protocolFixture);
+            const { protocol, signers, rocketPool: rp } = setupData;
+    
+            // Set up the distribution contract and register new validators
+            await prepareOperatorDistributionContract(setupData, 2);
+            await registerNewValidator(setupData, [signers.random, signers.random2]);
+    
+            // Rewards data setup
+            const rewards = [
+                {
+                    address: protocol.superNode.address,
+                    network: 0,
+                    trustedNodeRPL: ethers.utils.parseEther("0"),
+                    nodeRPL: ethers.utils.parseEther("1"),
+                    nodeETH: ethers.utils.parseEther("0")
+                }
+            ];
+    
+            // Generate the Merkle Tree and claims data
+            let treeData = await parseRewardsMap(rewards);
+            let proof0 = (treeData.proof.claims as Claims)[`${protocol.superNode.address}`];
+    
+            // Extract proofs and amounts for each validator
+            let amountsRPL0 = [proof0.amountRPL];
+            let amountsETH0 = [proof0.amountETH];
+            let proofs0 = [proof0.proof];
+    
+            // Aggregate network rewards
+            const trustedNodeRPL = [];
+            const nodeRPL = [];
+            const nodeETH = [];
+    
+            let maxNetwork = rewards.reduce((a, b) => Math.max(a, b.network), 0);
+    
+            for (let i = 0; i <= maxNetwork; i++) {
+                trustedNodeRPL[i] = ethers.BigNumber.from('0');
+                nodeRPL[i] = ethers.BigNumber.from('0');
+                nodeETH[i] = ethers.BigNumber.from('0');
+            }
+    
+            for (let i = 0; i < rewards.length; i++) {
+                trustedNodeRPL[rewards[i].network] = trustedNodeRPL[rewards[i].network].add(rewards[i].trustedNodeRPL);
+                nodeRPL[rewards[i].network] = nodeRPL[rewards[i].network].add(rewards[i].nodeRPL);
+                nodeETH[rewards[i].network] = nodeETH[rewards[i].network].add(rewards[i].nodeETH);
+            }
+    
+            // Convert to string for web3 compatibility
+            for (let i = 0; i <= maxNetwork; i++) {
+                trustedNodeRPL[i] = trustedNodeRPL[i].toString();
+                nodeRPL[i] = nodeRPL[i].toString();
+                nodeETH[i] = nodeETH[i].toString();
+            }
+    
+            // Prepare submission object
+            const submission = {
+                rewardIndex: 0,
+                executionBlock: '0',
+                consensusBlock: '0',
+                merkleRoot: treeData.proof.merkleRoot,
+                merkleTreeCID: '0',
+                intervalsPassed: '1',
+                treasuryRPL: '0',
+                trustedNodeRPL: trustedNodeRPL,
+                nodeRPL: nodeRPL,
+                nodeETH: nodeETH,
+                userETH: '0'
+            };
+    
+            // Add deployer as a trusted node before submitting the snapshot
+            await rp.rocketDaoNodeTrustedActions.memberQuickAdd(signers.deployer.address);
+    
+            // Submit the rewards snapshot
+            await rp.rocketRewardsPool.submitRewardSnapshot(submission);
+    
+            // Perform the Merkle Claim for each validator
+            await protocol.depositPool.merkleClaim(
+                protocol.superNode.address,
+                [0],
+                amountsRPL0,
+                amountsETH0,
+                proofs0
+            );
+    
+        });
+    });
+    
+    
+        
 });
+
