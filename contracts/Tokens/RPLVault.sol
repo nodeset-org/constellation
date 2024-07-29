@@ -23,7 +23,6 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     bool public enforceWethCoverageRatio;
 
-    address public admin;
     uint256 public adminFeeBasisPoint;
 
     uint256 public principal; // Total principal amount (sum of all deposits)
