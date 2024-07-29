@@ -3434,7 +3434,7 @@ export const mockNodeAccountV2Abi = [
   {
     type: 'function',
     inputs: [],
-    name: 'lockThreshhold',
+    name: 'lockThreshold',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
@@ -3534,7 +3534,7 @@ export const mockNodeAccountV2Abi = [
     inputs: [
       { name: '_newMinimumNodeFee', internalType: 'uint256', type: 'uint256' },
     ],
-    name: 'setMiniumNodeFee',
+    name: 'setMinimumNodeFee',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -4404,7 +4404,7 @@ export const mockSuperNodeV2Abi = [
   {
     type: 'function',
     inputs: [],
-    name: 'lockThreshhold',
+    name: 'lockThreshold',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
@@ -4504,7 +4504,7 @@ export const mockSuperNodeV2Abi = [
     inputs: [
       { name: '_newMinimumNodeFee', internalType: 'uint256', type: 'uint256' },
     ],
-    name: 'setMiniumNodeFee',
+    name: 'setMinimumNodeFee',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -28714,7 +28714,7 @@ export const superNodeAccountAbi = [
   {
     type: 'function',
     inputs: [],
-    name: 'lockThreshhold',
+    name: 'lockThreshold',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
@@ -28814,7 +28814,7 @@ export const superNodeAccountAbi = [
     inputs: [
       { name: '_newMinimumNodeFee', internalType: 'uint256', type: 'uint256' },
     ],
-    name: 'setMiniumNodeFee',
+    name: 'setMinimumNodeFee',
     outputs: [],
     stateMutability: 'nonpayable',
   },

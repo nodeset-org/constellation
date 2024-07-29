@@ -6,7 +6,7 @@ task("viewSuperNodeAccount", "Displays all public variables of the SuperNodeAcco
     const superNode = await hre.ethers.getContractAt("SuperNodeAccount", address);
 
     console.log("SuperNodeAccount")
-    
+
     // Retrieving and printing public variables
     // const lockedEth = await superNode.lockedEth();
     // console.log("Locked ETH:", lockedEth.toString());
@@ -32,8 +32,8 @@ task("viewSuperNodeAccount", "Displays all public variables of the SuperNodeAcco
     const adminServerSigExpiry = await superNode.adminServerSigExpiry();
     console.log("Admin Server Sig Expiry:", adminServerSigExpiry.toString());
 
-    const lockThreshhold = await superNode.lockThreshhold();
-    console.log("Lock Threshold:", lockThreshhold.toString());
+    const lockThreshold = await superNode.lockThreshold();
+    console.log("Lock Threshold:", lockThreshold.toString());
 
     const lockUpTime = await superNode.lockUpTime();
     console.log("Lock-Up Time:", lockUpTime.toString());

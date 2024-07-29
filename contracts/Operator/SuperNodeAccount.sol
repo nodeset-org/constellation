@@ -13,6 +13,7 @@ import '../Interfaces/RocketPool/RocketTypes.sol';
 import '../Interfaces/RocketPool/IRocketNodeDeposit.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketNodeManager.sol';
+import '../Interfaces/RocketPool/IRocketMinipoolManager.sol';
 import '../Interfaces/RocketPool/IRocketNetworkVoting.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolProposal.sol';
 import '../Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
@@ -55,7 +56,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     uint256 public adminServerSigExpiry;
 
     // Lock threshold amount in wei
-    uint256 public lockThreshhold;
+    uint256 public lockThreshold;
     // Lock-up time in seconds
     uint256 public lockUpTime;
 
@@ -114,7 +115,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function initialize(address _directory) public override initializer {
         super.initialize(_directory);
 
-        lockThreshhold = 1 ether;
+        lockThreshold = 1 ether;
         lockUpTime = 28 days;
         adminServerCheck = true;
         adminServerSigExpiry = 1 days;
@@ -139,7 +140,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      *         It requires that the calling node operator is whitelisted and that the signature provided for the minipool creation is valid.
      *         It also checks for sufficient liquidity (both RPL and ETH) before proceeding with the creation.
      * @dev The function involves multiple steps:
-     *      1. Validates that the transaction contains the exact amount of ETH specified in the `lockThreshhold`.
+     *      1. Validates that the transaction contains the exact amount of ETH specified in the `lockThreshold`.
      *      2. Checks if there is sufficient liquidity available for the required bond amount in both RPL and ETH.
      *      3. Validates that the sender (sub-node operator) is whitelisted.
      *      4. Ensures the signature provided has not been used before and marks it as used.
@@ -172,17 +173,24 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         uint256 _sigGenesisTime,
         bytes memory _sig
     ) public payable {
-        require(msg.value == lockThreshhold, 'SuperNode: must lock 1 ether');
-        require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
+        require(msg.value == lockThreshold, 'SuperNode: must set the message value to lockThreshold');
+        require(
+            IRocketMinipoolManager(_directory.getRocketMinipoolManagerAddress()).getMinipoolExists(
+                _expectedMinipoolAddress
+            ) == false,
+            'minipool already initialized'
+        );
         address subNodeOperator = msg.sender;
         require(
             Whitelist(_directory.getWhitelistAddress()).getIsAddressInWhitelist(subNodeOperator),
             'sub node operator must be whitelisted'
         );
+        require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
+
         _validateSigUsed(_sig);
         OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(bond);
         if (adminServerCheck) {
-            require(block.timestamp - _sigGenesisTime < adminServerSigExpiry, 'ass expired');
+            require(block.timestamp - _sigGenesisTime < adminServerSigExpiry, 'as sig expired');
             console.log('_createMinipool: message hash');
             console.logBytes32(
                 keccak256(abi.encodePacked(_expectedMinipoolAddress, _salt, address(this), block.chainid))
@@ -202,8 +210,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         }
 
         subNodeOperatorHasMinipool[keccak256(abi.encodePacked(subNodeOperator, _expectedMinipoolAddress))] = true;
-
-        require(lockedEth[_expectedMinipoolAddress] == 0, 'minipool already initialized');
 
         lockedEth[_expectedMinipoolAddress] = msg.value;
         totalEthLocked += msg.value;
@@ -291,6 +297,15 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         minipool.stake(_validatorSignature, _depositDataRoot);
         // RP close call will revert unless you're in the right state, so this may waste your gas if you call at the wrong time!
         totalEthStaking += (32 ether - bond);
+
+        // Refund the locked ETH
+        uint256 lockupBalance = lockedEth[_minipool];
+        if (lockupBalance >= 0) {
+            lockedEth[_minipool] = 0;
+            totalEthLocked -= lockupBalance;
+            (bool success, ) = msg.sender.call{value: lockupBalance}('');
+            require(success, 'ETH transfer failed');
+        }
     }
 
     /**
@@ -321,16 +336,17 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @param _minipool Address of the minipool from which ETH will be unlocked.
      */
     function unlockEth(address _minipool) external onlySubNodeOperator(_minipool) hasConfig(_minipool) {
-        require(lockedEth[_minipool] >= 1 ether, 'Insufficient locked ETH');
+        require(lockedEth[_minipool] > 0, 'Insufficient locked ETH');
         require(
             block.timestamp - lockStarted[_minipool] > lockUpTime ||
                 IMinipool(_minipool).getStatus() == MinipoolStatus.Staking,
             'Lock conditions not met'
         );
 
-        lockedEth[_minipool] -= 1 ether;
-        totalEthLocked -= 1 ether;
-        (bool success, ) = msg.sender.call{value: 1 ether}('');
+        uint256 lockupBalance = lockedEth[_minipool];
+        lockedEth[_minipool] = 0;
+        totalEthLocked -= lockupBalance;
+        (bool success, ) = msg.sender.call{value: lockupBalance}('');
         require(success, 'ETH transfer failed');
     }
 
@@ -475,7 +491,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
             revert BadRole(Constants.ADMIN_ROLE, msg.sender);
         }
-        lockThreshhold = _newLockThreshold;
+        lockThreshold = _newLockThreshold;
     }
 
     /**
@@ -526,7 +542,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         bond = _newBond;
     }
 
-    function setMiniumNodeFee(uint256 _newMinimumNodeFee) external onlyAdmin {
+    function setMinimumNodeFee(uint256 _newMinimumNodeFee) external onlyAdmin {
         minimumNodeFee = _newMinimumNodeFee;
     }
 }
