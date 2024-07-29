@@ -477,4 +477,17 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function totalEthLost() public view returns (uint256) {
         return totalCounts * (1 ether / averagePenaltyBond());
     }
+
+    /**
+     * @notice Sets the collateralization ratio basis points.
+     * @dev This function allows the admin to update the collateralization ratio which determines the level of collateral required.
+     * The collateralization ratio must be a reasonable percentage, typically expressed in basis points (1e5 basis points = 100%).
+     * @param _collateralizationRatio The new collateralization ratio in basis points.
+     * @custom:requires This function can only be called by an address with the Medium Timelock role.
+     */
+    function setCollateralizationRatio(uint256 _collateralizationRatio) external onlyShortTimelock {
+        require(_collateralizationRatio > 0, 'WETHVault: Collateralization ratio must be positive');
+        require(_collateralizationRatio <= 1e5, 'WETHVault: Collateralization ratio must be less than or equal to 100%');
+        collateralizationRatioBasePoint = _collateralizationRatio;
+    }
 }

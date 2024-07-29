@@ -285,9 +285,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _collateralizationRatio The new collateralization ratio in basis points.
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
-    function setCollateralizationRatio(uint256 _collateralizationRatio) external onlyMediumTimelock {
-        require(_collateralizationRatio > 0, 'Collateralization ratio must be positive');
-        require(_collateralizationRatio <= 1e5, 'Collateralization ratio must be less than or equal to 100%');
+    function setCollateralizationRatio(uint256 _collateralizationRatio) external onlyShortTimelock {
+        require(_collateralizationRatio > 0, 'RPLVault: Collateralization ratio must be positive');
+        require(_collateralizationRatio <= 1e5, 'RPLVault: Collateralization ratio must be less than or equal to 100%');
         collateralizationRatioBasePoint = _collateralizationRatio;
     }
 }
