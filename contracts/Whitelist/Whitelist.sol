@@ -17,8 +17,11 @@ struct Operator {
 }
 
 /// @custom:security-contact info@nodeoperator.org
-/// @notice Controls operator access to the protocol.
 /// Only modifiable by admin. Upgradeable and intended to be replaced by a ZK-ID check when possible.
+/**
+ * @title Whitelist
+ * @notice Controls operator access to the protocol. Only modifiable by permission of the admin.
+ */
 contract Whitelist is UpgradeableBase {
     event OperatorAdded(Operator);
     event OperatorsAdded(address[] operators);
@@ -40,8 +43,10 @@ contract Whitelist is UpgradeableBase {
 
     uint256 public whitelistSigExpiry;
 
-    /// @notice Initializes the Whitelist contract with a directory address.
-    /// @param directoryAddress The address of the directory contract.
+    /**
+     * @notice Initializes the Whitelist contract with a directory address.
+     * @param directoryAddress The address of the directory contract.
+     */
     function initializeWhitelist(address directoryAddress) public initializer {
         super.initialize(directoryAddress);
 
@@ -175,7 +180,7 @@ contract Whitelist is UpgradeableBase {
 
         SuperNodeAccount superNode = SuperNodeAccount(_directory.getSuperNodeAddress());
         superNode.stopTrackingOperatorMinipools(nodeOperator);
-        // todo: is this dangerous? do we lose any resouces doing this?
+        // todo: audit: is this dangerous? do we lose any resouces doing this?
 
         YieldDistributor ydistributor = YieldDistributor(payable(getDirectory().getYieldDistributorAddress()));
 

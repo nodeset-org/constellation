@@ -26,14 +26,6 @@ async function main() {
     });
     console.log("weth address", wETH.address)
 
-    // deploy mock uniswap v3 pool
-    const uniswapV3Pool = await retryOperation(async () => {
-        const UniswapV3Pool = await ethers.getContractFactory("MockUniswapV3Pool");
-        const contract = await UniswapV3Pool.deploy();
-        await contract.deployed();
-        return contract;
-    });
-
     const sanctions = await retryOperation(async () => {
         const Sanctions = await ethers.getContractFactory("MockSanctions");
         const contract = await Sanctions.deploy();
@@ -42,7 +34,7 @@ async function main() {
     });
     console.log("sanctions address", sanctions.address);
 
-    const { directory } = await fastDeployProtocol(admin, deployer, admin, rocketStorage.address, wETH.address, sanctions.address, uniswapV3Pool.address, admin.address, true);
+    const { directory } = await fastDeployProtocol(admin, deployer, admin, rocketStorage.address, wETH.address, sanctions.address, admin.address, true, 0);
 
     // set adminServer to be ADMIN_SERVER_ROLE
     const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));

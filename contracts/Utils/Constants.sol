@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
+/**
+ * @title Constants
+ * @notice Defines various constants used throughout the protocol.
+ */
 library Constants {
     // ROLES
     bytes32 internal constant ADMIN_ROLE = keccak256('ADMIN_ROLE');

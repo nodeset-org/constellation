@@ -3,7 +3,7 @@ import { ethers, upgrades } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber as BN } from "ethers";
-import { prepareOperatorDistributionContract, printEventDetails, registerNewValidator, upgradePriceFetcherToMock } from "./utils/utils";
+import { computeKeccak256, computeKeccak256FromBytes32, prepareOperatorDistributionContract, printEventDetails, registerNewValidator, upgradePriceFetcherToMock } from "./utils/utils";
 import { IMinipool, MockMinipool } from "../typechain-types";
 import { RocketDepositPool } from "./rocketpool/_utils/artifacts";
 
@@ -39,7 +39,7 @@ describe("Operator Distributor", function () {
 		const finalRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
 		console.log("od.test.finalRplStake stake", finalRplStake)
 
-		expect(finalRplStake.sub(initialRplStake)).gt(ethers.BigNumber.from(0));
+		expect(finalRplStake.sub(initialRplStake)).eq(ethers.BigNumber.from(0));
 
 	});
 
@@ -50,5 +50,52 @@ describe("Operator Distributor", function () {
 		// capture pending rewards
 		// distribute rewards
 		// verify rewards were distributed correctly
+	});
+
+	// test target stake ratio logic
+	it("success - target stake ratio may be set above 100%", async function () {
+		// load fixture
+		const setupData = await loadFixture(protocolFixture);
+		const { protocol, signers, rocketPool } = setupData;
+		const { admin } = signers;
+		const { operatorDistributor } = protocol;
+		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
+
+
+		await operatorDistributor.connect(admin).setTargetStakeRatio(ethers.utils.parseEther("1.0001"));
+
+		const initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
+		expect(initialRplStake).equals(0)
+		await prepareOperatorDistributionContract(setupData, 2);
+		await registerNewValidator(setupData, [signers.random]);
+
+		const price = await protocol.priceFetcher.getPrice();
+		const expectedStake = ethers.utils.parseEther("8").mul(price);
+		console.log("exepcted stake", expectedStake)
+
+	});
+
+	it.skip("success - target stake ratio may be set equal 100%", async function () {
+		// load fixture
+		const setupData = await loadFixture(protocolFixture);
+		const { protocol, signers, rocketPool } = setupData;
+		const { admin } = signers;
+		const { operatorDistributor } = protocol;
+		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
+
+		// getSettingUint('node.per.minipool.stake.minimum');
+		await rocketPool.rockStorageContract.setUint("0x2667306bf1c3fdbd6985406babb7b6f4af682212c96c7461d13f2c6e46339fe5", ethers.utils.parseEther(".3"));
+
+		await operatorDistributor.connect(admin).setTargetStakeRatio(ethers.utils.parseEther(".5"));
+
+		let initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
+		expect(initialRplStake).equals(0)
+		await prepareOperatorDistributionContract(setupData, 2);
+		await registerNewValidator(setupData, [signers.random]);
+		console.log("p=rpl stake after depo", await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address));
+
+		let price = await protocol.priceFetcher.getPrice();
+		let expectedStake = ethers.utils.parseEther("8").mul(price);
+		console.log("p=exepcted stake", expectedStake)
 	});
 });

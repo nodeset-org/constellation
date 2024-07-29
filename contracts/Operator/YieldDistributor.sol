@@ -29,7 +29,11 @@ struct Claim {
 }
 
 /// @custom:security-contact info@nodeset.io
-/// @notice distributes rewards in weth to node operators
+/**
+ * @title SuperNodeAccount
+ * @author Theodore Clapp
+ * @dev Let's Sub Node Operators collect their share of rewards
+ */
 contract YieldDistributor is UpgradeableBase {
     event RewardDistributed(Reward);
     event WarningAlreadyClaimed(address operator, uint256 interval);
@@ -45,8 +49,8 @@ contract YieldDistributor is UpgradeableBase {
     uint256 public currentIntervalGenesisTime;
     uint256 public maxIntervalLengthSeconds; // NOs will have to wait at most this long for their payday
 
-    uint256 k; // steepness of the curve
-    uint256 maxValidators; // max number of validators used to normalize x axis
+    uint256 public k; // steepness of the curve
+    uint256 public maxValidators; // max number of validators used to normalize x axis
 
     /**
      * @notice Initializes the contract with the specified directory address and sets the initial configurations.
@@ -91,7 +95,7 @@ contract YieldDistributor is UpgradeableBase {
 
         // if elapsed time since last interval is greater than maxIntervalLengthSeconds, start a new interval
         if (block.timestamp - currentIntervalGenesisTime > maxIntervalLengthSeconds) {
-            if(voidClaim) {
+            if(voidClaim) { /// @dev void claim means there is no admin claim
                 _finalizeIntervalVoidClaim();
             } else {
                 finalizeInterval();
@@ -282,7 +286,7 @@ contract YieldDistributor is UpgradeableBase {
      */
 
     /**
-     * @notice Fallback function to receive ETH and convert it to WETH (Wrapped ETH).
+     * @notice Fallback function to receive ETH and convert it to WETH (Wrapped ETH). This is also used to trigger new intervals after enough time has elapsed
      * @dev When ETH is sent to this contract, it is automatically wrapped into WETH and the corresponding amount is processed.
      */
     receive() external payable {

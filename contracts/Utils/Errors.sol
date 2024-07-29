@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
+/**
+ * @title Errors
+ * @notice Defines custom error types for various conditions.
+ */
 contract Errors {
     error NotAContract(address addr);
     error BadBondAmount(uint256 expectedBondAmount, uint256 actualBondAmount);

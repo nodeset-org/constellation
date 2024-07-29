@@ -5,7 +5,7 @@ import { Protocol, SetupData, Signers } from '../test';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { RocketPool } from '../test';
 import { IMinipool, MockMinipool } from '../../typechain-types';
-import { createMinipool, generateDepositData, getMinipoolMinimumRPLStake } from '../rocketpool/_helpers/minipool';
+import { createMinipool, generateDepositData, generateDepositDataForStake, getMinipoolMinimumRPLStake } from '../rocketpool/_helpers/minipool';
 import { nodeStakeRPL, registerNode } from '../rocketpool/_helpers/node';
 import { mintRPL } from '../rocketpool/_helpers/tokens';
 import { userDeposit } from '../rocketpool/_helpers/deposit';
@@ -17,20 +17,25 @@ export const printBalances = async (accounts: string[], opts: any = {}) => {
   const { names = [] } = opts;
   for (let i = 0; i < accounts.length; i++) {
     console.log(
-      `Balance: ${ethers.utils.formatEther(await ethers.provider.getBalance(accounts[i]))} at ${
-        names.length > 0 ? names[i] : accounts[i]
+      `Balance: ${ethers.utils.formatEther(await ethers.provider.getBalance(accounts[i]))} at ${names.length > 0 ? names[i] : accounts[i]
       }`
     );
   }
 };
+
+
+export function computeKeccak256FromBytes32(bytes32String: string): string {
+  // Computing the keccak256 hash directly from the Bytes32 string
+  const hash = ethers.utils.keccak256(bytes32String);
+  return hash;
+}
 
 export const printTokenBalances = async (accounts: string[], token: string, opts: any = {}) => {
   const { names = [] } = opts;
   const weth = await ethers.getContractAt('IWETH', token);
   for (let i = 0; i < accounts.length; i++) {
     console.log(
-      `Token Balance: ${ethers.utils.formatEther(await weth.balanceOf(accounts[i]))} at ${
-        names.length > 0 ? names[i] : accounts[i]
+      `Token Balance: ${ethers.utils.formatEther(await weth.balanceOf(accounts[i]))} at ${names.length > 0 ? names[i] : accounts[i]
       }`
     );
   }
@@ -193,9 +198,8 @@ export async function deployMinipool(setupData: SetupData, bondValue: BigNumber)
   //})
 
   console.log('aljsdf;as');
-  await setupData.protocol.superNode.connect(setupData.signers.hyperdriver).createMinipool(config, timestamp, sig, {
-    value: ethers.utils.parseEther('1'),
-  });
+  await setupData.protocol.superNode.connect(setupData.signers.hyperdriver).createMinipool(config.validatorPubkey, config.validatorSignature, config.depositDataRoot, config.salt, config.expectedMinipoolAddress, timestamp, sig, { value: ethers.utils.parseEther('1') });
+
   console.log('aljsdf;as');
 
   return config.expectedMinipoolAddress;
@@ -296,8 +300,7 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
   const requiredEth = ethers.utils.parseEther('8').mul(subNodeOperators.length);
   if ((await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)).lt(requiredEth)) {
     throw new Error(
-      `Not enough eth in operatorDistributor contract to register ${
-        subNodeOperators.length
+      `Not enough eth in operatorDistributor contract to register ${subNodeOperators.length
       } validators. Required ${ethers.utils.formatEther(requiredEth)} eth but only have ${ethers.utils.formatEther(
         await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)
       )} eth`
@@ -313,10 +316,10 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
     const bond = ethers.utils.parseEther('8');
     const salt = i;
 
-    if (!(await protocol.superNode.hasSufficentLiquidity(bond))) {
+    if (!(await protocol.superNode.hasSufficientLiquidity(bond))) {
       await prepareOperatorDistributionContract(setupData, 2);
     }
-    expect(await protocol.superNode.hasSufficentLiquidity(bond)).equals(true);
+    expect(await protocol.superNode.hasSufficientLiquidity(bond)).equals(true);
 
     if (!(await protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address))) {
       await assertAddOperator(setupData, nodeOperator);
@@ -347,13 +350,24 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
     );
     await protocol.superNode
       .connect(nodeOperator)
-      .createMinipool(config, timestamp, sig, { value: ethers.utils.parseEther('1') });
+      .createMinipool(config.validatorPubkey, config.validatorSignature, config.depositDataRoot, config.salt, config.expectedMinipoolAddress, timestamp, sig, { value: ethers.utils.parseEther('1') });
 
-    // waits 32 days which could be a problem for other tests
-    await increaseEVMTime(60 * 60 * 24 * 7 * 32);
+    if (!(await protocol.superNode.hasSufficientLiquidity(bond))) {
+      await prepareOperatorDistributionContract(setupData, 2);
+    }
+    expect(await protocol.superNode.hasSufficientLiquidity(bond)).equals(true);
+
+    // Simulate the passage of a day
+    const oneDayInSeconds = 24 * 60 * 60;
+    const nextBlockTimestamp = (await ethers.provider.getBlock('latest')).timestamp + oneDayInSeconds;
+    await ethers.provider.send('evm_setNextBlockTimestamp', [nextBlockTimestamp]);
+    await ethers.provider.send('evm_mine', []); // Mine a block to apply the new timestamp
 
     // enter stake mode
-    await protocol.superNode.connect(nodeOperator).stake(config.expectedMinipoolAddress);
+    const depositDataStake = await generateDepositDataForStake(config.expectedMinipoolAddress);
+    console.log("trying.....", depositDataStake.depositData.signature);
+    await protocol.superNode.connect(nodeOperator).stake(depositDataStake.depositData.signature, depositDataStake.depositDataRoot, config.expectedMinipoolAddress);
+    console.log("finsihed...", depositDataStake.depositData.signature)
   }
 };
 
@@ -441,8 +455,7 @@ export const registerNewValidatorDeprecated = async (setupData: SetupData, nodeO
   const requiredEth = ethers.utils.parseEther('8').mul(nodeOperators.length);
   if ((await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)).lt(requiredEth)) {
     throw new Error(
-      `Not enough eth in operatorDistributor contract to register ${
-        nodeOperators.length
+      `Not enough eth in operatorDistributor contract to register ${nodeOperators.length
       } validators. Required ${ethers.utils.formatEther(requiredEth)} eth but only have ${ethers.utils.formatEther(
         await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)
       )} eth`
@@ -509,10 +522,9 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   });
   // send eth to the rocketpool deposit contract (mint rETH to signers[0])
 
-  const rplRequried = await setupData.protocol.operatorDistributor.calculateRplStakeShortfall(0, requiredEth);
-  await setupData.rocketPool.rplContract
-    .connect(setupData.signers.rplWhale)
-    .transfer(setupData.protocol.operatorDistributor.address, rplRequried);
+
+  const rplRequired = await setupData.protocol.operatorDistributor.calculateRplStakeShortfall(0, requiredEth);
+  await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequired);
 }
 
 export async function getNextContractAddress(signer: SignerWithAddress, offset = 0) {

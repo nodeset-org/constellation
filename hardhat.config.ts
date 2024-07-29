@@ -9,6 +9,8 @@ import 'hardhat-contract-sizer';
 
 // task commands
 import './tasks/adminTasks'
+import './tasks/viewOperatorDistributorTasks'
+import './tasks/viewSuperNodeAccountTasks'
 
 // init dotenv
 import dotenv from "dotenv";

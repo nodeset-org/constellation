@@ -124,9 +124,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @notice Allocates the necessary liquidity for the creation of a new minipool.
      * @param _bond The amount of ETH required to be staked for the minipool.
      */
-    function provisionLiquiditiesForMinipoolCreation(
-        uint256 _bond
-    ) external onlyProtocolOrAdmin {
+    function provisionLiquiditiesForMinipoolCreation(uint256 _bond) external onlyProtocolOrAdmin {
         console.log('provisionLiquiditiesForMinipoolCreation.pre-RebalanceLiquidities');
         _rebalanceLiquidity();
         console.log('provisionLiquiditiesForMinipoolCreation.post-RebalanceLiquidities');
@@ -167,7 +165,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('rebalanceRplStake.stakeRatio', stakeRatio);
         console.log('rebalanceRplStake.targetStakeRatio', targetStakeRatio);
 
-        uint256 targetStake = ((_ethStaked * ethPriceInRpl) / targetStakeRatio);
+        uint256 targetStake = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
 
         if (targetStake > rplStaked) {
             // stake more
@@ -243,7 +241,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('price', ethPriceInRpl);
         uint256 stakeRatio = _existingRplStake == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / _existingRplStake;
         if (stakeRatio < targetStakeRatio) {
-            uint256 minuend = ((_ethStaked * ethPriceInRpl) / targetStakeRatio);
+            uint256 minuend = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
+            console.log("calculateRplStakeShortfall.minuend", minuend);
             requiredStakeRpl = minuend < _existingRplStake ? 0 : minuend - _existingRplStake;
         } else {
             requiredStakeRpl = 0;
@@ -265,7 +264,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         uint256 stakeRatio = _existingRplStake == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / _existingRplStake;
         if (stakeRatio > targetStakeRatio) {
-            uint256 maxRplStake = (_ethStaked * ethPriceInRpl) / targetStakeRatio;
+            uint256 maxRplStake = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
             withdrawableStakeRpl = _existingRplStake > maxRplStake ? _existingRplStake - maxRplStake : 0;
         } else {
             withdrawableStakeRpl = 0;
@@ -277,7 +276,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @notice Internal function to process the next minipool in line.
      * Handles RPL top-up and balance distribution based on minipool's current state.
      */
-    function processNextMinipool() external onlyProtocol {
+    function processNextMinipool() external {
         _processNextMinipool();
     }
 
@@ -330,13 +329,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @notice Sets the required ETH stake for activating a minipool.
      * @param _requiredLEBStaked Amount of ETH required.
      */
-    function setBondRequirments(uint256 _requiredLEBStaked) external onlyAdmin {
+    function setBondRequirements(uint256 _requiredLEBStaked) external onlyAdmin {
         requiredLEBStaked = _requiredLEBStaked;
     }
 
     /**
-     * @notice Sets the target ratio of ETH to RPL stake.
-     * @param _targetStakeRatio New target stake ratio.
+     * @notice Sets the target ETH to RPL stake ratio.
+     * @dev Adjusts the target ratio used to maintain balance between ETH and RPL stakes.
+     * @param _targetStakeRatio The new target stake ratio to be set.
      */
     function setTargetStakeRatio(uint256 _targetStakeRatio) external onlyAdmin {
         targetStakeRatio = _targetStakeRatio;
@@ -372,6 +372,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         }
     }
 
+    /**
+     * @notice Resets the oracle error.
+     */
     function resetOracleError() external onlyProtocol {
         oracleError = 0;
     }

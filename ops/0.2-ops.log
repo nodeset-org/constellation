@@ -2602,10 +2602,10 @@ BigNumber { value: "1000900275677400770750" }
   chainId: 17000,
   wait: [Function (anonymous)]
 }
-> await vaf.hasSufficentLiquidity(ethers.utils.parseEth("8"))
+> await vaf.hasSufficientLiquidity(ethers.utils.parseEth("8"))
 Uncaught TypeError: ethers.utils.parseEth is not a function
     at REPL751:1:78
-> await vaf.hasSufficentLiquidity(ethers.utils.parseEther("8"))
+> await vaf.hasSufficientLiquidity(ethers.utils.parseEther("8"))
 false
 > let depositPool = await ethers.getContractAt("FundRouter", "0xdeFD1eCceC757Ec205509d72C50946699e4d1Bec")
 undefined
@@ -2725,7 +2725,7 @@ Error: invalid ENS name (argument="name", value={"type":"BigNumber","hex":"0x534
 }
 > > await ethers.provider.getBalance(operatorDistributor.address)
 BigNumber { value: "8358293535235876527" }
-> await vaf.hasSufficentLiquidity(ethers.utils.parseEther("8"))
+> await vaf.hasSufficientLiquidity(ethers.utils.parseEther("8"))
 false
 > await operatorDistributor.calculateRplStakeShortfall(0, ethers.utils.parseEther("8"))
 BigNumber { value: "272679112000000000000" }
@@ -2758,7 +2758,7 @@ BigNumber { value: "66666666666666666667" }
   chainId: 17000,
   wait: [Function (anonymous)]
 }
-> > await vaf.hasSufficentLiquidity(ethers.utils.parseEther("8"))
+> > await vaf.hasSufficientLiquidity(ethers.utils.parseEther("8"))
 true
 > whitelist
 Uncaught ReferenceError: whitelist is not defined
@@ -2812,7 +2812,7 @@ Error: cannot estimate gas; transaction may fail or may require manual gas limit
   wait: [Function (anonymous)]
 }
 > 
-> await vaf.hasSufficentLiquidity(ethers.utils.parseEther("8"))
+> await vaf.hasSufficientLiquidity(ethers.utils.parseEther("8"))
 true
 > whitelist
 Uncaught ReferenceError: whitelist is not defined

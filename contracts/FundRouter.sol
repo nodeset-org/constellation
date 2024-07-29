@@ -21,9 +21,7 @@ import './Utils/Constants.sol';
 contract FundRouter is UpgradeableBase {
     using Math for uint256;
 
-
-    constructor() initializer {
-    }
+    constructor() initializer {}
 
     /// @dev Initializes the FundRouter contract with the specified directory address.
     /// @param directoryAddress The address of the directory contract.
@@ -74,6 +72,8 @@ contract FundRouter is UpgradeableBase {
         IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, _amount);
     }
 
+    /// @notice Distributes ETH to the vault and operator distributor.
+    /// @dev This function converts the WETH balance to ETH, sends the required capital to the vault, and the surplus ETH to the operator distributor.
     function sendEthToDistributors() public onlyProtocolOrAdmin nonReentrant {
         console.log('sendEthToDistributors.A');
         // Convert entire WETH balance of this contract to ETH
@@ -123,6 +123,8 @@ contract FundRouter is UpgradeableBase {
         console.log('sendEthToDistributors.I');
     }
 
+    /// @notice Distributes RPL to the vault and operator distributor.
+    /// @dev This function transfers the required RPL capital to the vault and any surplus RPL to the operator distributor.
     function sendRplToDistributors() public onlyProtocolOrAdmin nonReentrant {
         console.log('sendRplToDistributors.A');
 
