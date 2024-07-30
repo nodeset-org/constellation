@@ -22,7 +22,7 @@ contract PriceFetcher is UpgradeableBase {
 
     /**
      * @notice Returns the price of RPL ODAO
-     * @return The price of RPL.
+     * @return The price of RPL/ETH (number of RPL you'd receive for 1 ETH).
      */
     function getPrice() public view returns (uint256) {
         console.log('getPriceFromODAO');
