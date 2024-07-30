@@ -257,8 +257,8 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
 
     // set directory treasury to deployer to prevent tests from failing
-    expect(await directory.getTreasuryAddress()).to.equal(treasury.address);
-    await directory.connect(signers.admin).setTreasury(deployer.address);
+    // expect(await directory.getTreasuryAddress()).to.equal(treasury.address);
+    // await directory.connect(signers.admin).setTreasury(deployer.address);
 
     const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
 

@@ -102,7 +102,7 @@ describe("xrETH", function () {
     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("10") });
     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("10"));
     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("10"), signers.ethWhale.address);
-
+    expect(await protocol.vCWETH.principal()).equals(ethers.utils.parseEther("100"));
     expect(await protocol.vCWETH.totalAssets()).equals(ethers.utils.parseEther("100"))
 
     // increase oracle value
@@ -119,25 +119,42 @@ describe("xrETH", function () {
     // expect 100 eth in income reported per oracle
     const oracleValue = ethers.utils.parseEther("100");
     expect(await protocol.vCWETH.currentIncomeFromRewards()).equals(oracleValue);
+    expect(await protocol.vCWETH.principal()).equals(ethers.utils.parseEther("100"));
+    const currentAdminIncome0 = oracleValue.mul(await protocol.vCWETH.treasuryFee()).div(ethers.utils.parseUnits("1", 5));
+    const currentNodeOperatorIncome0 = oracleValue.mul(await protocol.vCWETH.nodeOperatorFee()).div(ethers.utils.parseUnits("1", 5));
+    const expectedTotalAssets0 = oracleValue.add(oracleValue).sub(currentAdminIncome0.add(currentNodeOperatorIncome0));
+    expect(await protocol.vCWETH.totalAssets()).equals(expectedTotalAssets0)
 
+    
     // redeem 1% of shares for eth but we should expect a ~98% gain from the additional 100 eth reported from oracle
     shares = (await protocol.vCWETH.balanceOf(signers.ethWhale.address)).div(100)
     console.log("preview redeem", await protocol.vCWETH.previewRedeem(shares));
-    console.log("preview redeem", await protocol.wETH.balanceOf(protocol.vCWETH.address));
     await protocol.vCWETH.connect(signers.ethWhale).redeem(shares, signers.ethWhale.address, signers.ethWhale.address);
+    
+    // check treasury and yieldDistributor
+    const treasuryAddress = await protocol.directory.getTreasuryAddress();
+    expect(await protocol.wETH.balanceOf(treasuryAddress)).equals(currentAdminIncome0);
+    expect(await protocol.wETH.balanceOf(protocol.yieldDistributor.address)).equals(currentNodeOperatorIncome0);
 
-    const expectedPrincipal = ethers.BigNumber.from("99000000000000000001");
+
+    const expectedPrincipal = ethers.BigNumber.from("99000000000000000001"); // because we claim before
     expect(await protocol.vCWETH.principal()).equals(expectedPrincipal);
-
 
     const currentIncomeFromRewards = await protocol.vCWETH.currentIncomeFromRewards();
     const currentAdminIncome = currentIncomeFromRewards.mul(await protocol.vCWETH.treasuryFee()).div(ethers.utils.parseUnits("1", 5));
-    const currentNodeOperatorIncome = currentIncomeFromRewards.mul(await protocol.vCWETH.nodeOperatorFeeBasePoint()).div(ethers.utils.parseUnits("1", 5));
+    const currentNodeOperatorIncome = currentIncomeFromRewards.mul(await protocol.vCWETH.nodeOperatorFee()).div(ethers.utils.parseUnits("1", 5));
 
     const expectedTotalAssets = expectedPrincipal.add(oracleValue).sub(currentAdminIncome.add(currentNodeOperatorIncome));
+    console.log("preview redeem", await protocol.vCWETH.previewRedeem(shares));
+    console.log("expectedTotalAssets", expectedTotalAssets);
+    console.log("ActualTotalAssets", await protocol.vCWETH.totalAssets());
+    console.log("currentIncome", currentIncomeFromRewards);
+    console.log("distributableYield", await protocol.vCWETH.getDistributableYield());
+    console.log("OD TVL", await protocol.operatorDistributor.getTvlEth());
+    console.log("DP TVL", await protocol.depositPool.getTvlEth());
 
     // todo test totalAssets
-    //expect(await protocol.vCWETH.totalAssets()).equals(expectedTotalAssets);
+    expect(await protocol.vCWETH.totalAssets()).equals(expectedTotalAssets);
 
   })
 
