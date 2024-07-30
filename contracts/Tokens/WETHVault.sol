@@ -341,13 +341,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Sets the admin fee in basis points.
-     * @dev This function allows the admin to update the admin fee, which is calculated in basis points. The fee must not exceed 100%.
-     * @param _adminFeeBasePoint The new admin fee in basis points.
+     * @notice Sets the treasury fee in basis points.
+     * @dev This function allows the admin to update the treasury fee, which is calculated in basis points. The fee must not exceed 100%.
+     * @param _treasuryFee The new treasury fee in basis points.
      */
-    function setAdminFee(uint256 _adminFeeBasePoint) external onlyMediumTimelock {
-        require(_adminFeeBasePoint <= 1e5, 'Fee too high');
-        treasuryFee = _adminFeeBasePoint;
+    function setTreasuryFee(uint256 _treasuryFee) external onlyMediumTimelock {
+        require(_treasuryFee <= 1e5, 'Fee too high');
+        treasuryFee = _treasuryFee;
     }
 
     /**
