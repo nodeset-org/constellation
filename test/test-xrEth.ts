@@ -126,8 +126,8 @@ describe("xrETH", function () {
     console.log("preview redeem", await protocol.vCWETH.previewRedeem(shares));
     console.log("preview redeem", await protocol.wETH.balanceOf(protocol.vCWETH.address));
     await protocol.vCWETH.connect(signers.ethWhale).redeem(shares, signers.ethWhale.address, signers.ethWhale.address);
+    expect(await protocol.vCWETH.totalYieldDistributed()).equals(ethers.utils.parseEther("1"));
     expect(await protocol.vCWETH.principal()).equals(ethers.utils.parseEther("99"));
-    expect(await protocol.vCWETH.totalYieldDistributed()).equals(0);
     expect(await protocol.vCWETH.totalAssets()).equals(ethers.utils.parseEther("99"))
 
 
