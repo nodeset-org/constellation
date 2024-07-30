@@ -51,7 +51,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public principal; // Total principal amount (sum of all deposits)
     uint256 public lastAdminIncomeClaimed; // Tracks the amount of income already claimed by the admin
     uint256 public lastNodeOperatorIncomeClaimed; // Tracks the amount of income already claimed by the Node Operator
-    uint256 public ethPerSlashReward; // Tracks how much a user gets for reporting a slasher
+    uint256 public ethPerSlashReward; // Tracks how much a user gets for reporting a slasher (in wei)
 
     uint256 public totalCounts;
     uint256 public totalPenaltyBond;
@@ -358,6 +358,16 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function setNodeOperatorFee(uint256 _nodeOperatorFeeBasePoint) external onlyShortTimelock {
         require(_nodeOperatorFeeBasePoint <= 1e5, 'Fee too high');
         nodeOperatorFeeBasePoint = _nodeOperatorFeeBasePoint;
+    }
+
+    /**
+     * @notice Sets the reward for reporting a slashed minipool.
+     * @dev This function allows the admin to update the reward for reporting a slashed minipool. The reward must not exceed 0.1 ether.
+     * @param _ethPerSlashReward The new reward for reporting a slashed minipool in wei.
+     */
+    function setEthPerSlashReward(uint256 _ethPerSlashReward) external onlyShortTimelock {
+        require(_ethPerSlashReward <= 0.1 ether, 'Reward too high');
+        ethPerSlashReward = _ethPerSlashReward;
     }
 
     /**
