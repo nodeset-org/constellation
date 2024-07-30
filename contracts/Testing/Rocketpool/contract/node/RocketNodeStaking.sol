@@ -279,6 +279,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Calculate & return limit
         uint256 minimumStakePercent = rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake();
         console.log("RocketNodeStaking.getNodeETHMatchedLimit.minimumStakePercent", minimumStakePercent);
+        console.log("RocketNodeStaking.getNodeETHMatchedLimit.getNodeRPLStake(_nodeAddress)", getNodeRPLStake(_nodeAddress));
         return (getNodeRPLStake(_nodeAddress) * rocketNetworkPrices.getRPLPrice()) / minimumStakePercent;
     }
 

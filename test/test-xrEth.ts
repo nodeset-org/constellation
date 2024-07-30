@@ -18,10 +18,10 @@ describe("xrETH", function () {
 
     expect(name).equals("Constellation ETH");
     expect(symbol).equals("xrETH");
-    expect(await protocol.vCWETH.collateralizationRatioBasePoint()).equals(ethers.utils.parseUnits("0.1", 5))
+    expect(await protocol.vCWETH.liquidityReserveRatio()).equals(ethers.utils.parseUnits("0.1", 5))
     expect(await protocol.vCWETH.rplCoverageRatio()).equals(ethers.utils.parseUnits(".15", 18))
     expect(await protocol.vCWETH.enforceRplCoverageRatio()).equals(false)
-    expect(await protocol.vCWETH.adminFeeBasePoint()).equals(ethers.utils.parseUnits("0.01", 5))
+    expect(await protocol.vCWETH.treasuryFee()).equals(ethers.utils.parseUnits("0.01", 5))
     expect(await protocol.vCWETH.nodeOperatorFeeBasePoint()).equals(ethers.utils.parseUnits("0.01", 5))
   })
 

@@ -17,10 +17,10 @@ describe("xRPL", function () {
 
     expect(name).equals("Constellation RPL");
     expect(symbol).equals("xRPL");
-    expect(await protocol.vCRPL.collateralizationRatioBasePoint()).equals(ethers.utils.parseUnits("0.02", 5))
+    expect(await protocol.vCRPL.liquidityReserveRatio()).equals(ethers.utils.parseUnits("0.02", 5))
     expect(await protocol.vCRPL.wethCoverageRatio()).equals(ethers.utils.parseUnits("1.75", 5))
     expect(await protocol.vCRPL.enforceWethCoverageRatio()).equals(false)
-    expect(await protocol.vCRPL.adminFeeBasisPoint()).equals(ethers.utils.parseUnits("0.01", 5))
+    expect(await protocol.vCRPL.treasuryFee()).equals(ethers.utils.parseUnits("0.01", 5))
 
   })
 
@@ -88,7 +88,7 @@ describe("xRPL", function () {
     expect(expectedRplInSystem).equals(actualRplInSystem)
 
     console.log("currentIncome", await protocol.vCRPL.currentIncomeFromRewards());
-    console.log("currentAdminIncome", await protocol.vCRPL.currentAdminIncomeFromRewards());
+    console.log("currentAdminIncome", await protocol.vCRPL.currentTreasuryIncomeFromRewards());
 
     await rocketPool.rplContract.connect(signers.random2).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
     console.log(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address));
@@ -117,13 +117,13 @@ describe("xRPL", function () {
     expect(expectedRplInSystem).equals(actualRplInSystem)
 
     expect(await protocol.vCRPL.currentIncomeFromRewards()).equals(0);
-    expect(await protocol.vCRPL.currentAdminIncomeFromRewards()).equals(0);
+    expect(await protocol.vCRPL.currentTreasuryIncomeFromRewards()).equals(0);
 
     // incoming funds to DP
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, ethers.utils.parseEther("10"));
 
     expect(await protocol.vCRPL.currentIncomeFromRewards()).equals(ethers.utils.parseEther("10"));
-    expect(await protocol.vCRPL.currentAdminIncomeFromRewards()).equals(ethers.utils.parseEther(".1"));
+    expect(await protocol.vCRPL.currentTreasuryIncomeFromRewards()).equals(ethers.utils.parseEther(".1"));
 
     expect(await protocol.vCRPL.principal()).equals(ethers.utils.parseEther("100"));
     // random should be able to withdraw shares worth 10% more, aka, withdraw will trade one share for 1.1 - 1% admin fee RPL
@@ -143,7 +143,7 @@ describe("xRPL", function () {
     
     // admin should claim 0 dollars after recieveing the goods
     await assertSingleTransferExists(
-      await protocol.vCRPL.connect(signers.admin).claimAdminFee(),
+      await protocol.vCRPL.connect(signers.admin).claimTreasuryFee(),
       protocol.vCRPL.address,
       await protocol.directory.getTreasuryAddress(),
       ethers.utils.parseEther("0")
@@ -152,14 +152,14 @@ describe("xRPL", function () {
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, ethers.utils.parseEther("69"));
 
     await assertSingleTransferExists(
-      await protocol.vCRPL.connect(signers.admin).claimAdminFee(),
+      await protocol.vCRPL.connect(signers.admin).claimTreasuryFee(),
       protocol.vCRPL.address,
       await protocol.directory.getTreasuryAddress(),
       ethers.utils.parseEther("0.69")
     )
 
     await assertSingleTransferExists(
-      await protocol.vCRPL.connect(signers.admin).claimAdminFee(),
+      await protocol.vCRPL.connect(signers.admin).claimTreasuryFee(),
       protocol.vCRPL.address,
       await protocol.directory.getTreasuryAddress(),
       ethers.utils.parseEther("0")

@@ -350,23 +350,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         require(success, 'ETH transfer failed');
     }
 
-    // we don't even need this anymore
-    /*
-    function withdraw(uint256 _amount, address _minipool) external hasConfig(_minipool) {
-        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
-            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
-        }
-        IMinipool minipool = IMinipool(_minipool);
-        require(minipool.getStatus() == MinipoolStatus.Dissolved, 'minipool must be dissolved');
-
-        (bool success, bytes memory data) = _directory.getDepositPoolAddress().call{value: _amount}('');
-        if (!success) {
-            console.log('LowLevelEthTransfer 3');
-            revert LowLevelEthTransfer(success, data);
-        }
-    }
-*/
-
     /**
      * @notice Distributes staking rewards or allows for finalizing the minipool based on the given parameter.
      * @dev Admins can call this function to either distribute rewards only or to finalize and close a minipool.

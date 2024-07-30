@@ -19,7 +19,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     event NewCapitalGain(uint256 amount, address indexed winner);
     event NewCapitalLoss(uint256 amount, address indexed loser);
 
-    event AdminFeeClaimed(uint256 amount);
+    event TreasuryFeeClaimed(uint256 amount);
     event NodeOperatorFeeClaimed(uint256 amount);
 
     struct Position {
@@ -42,10 +42,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     string constant SYMBOL = 'xrETH';
 
     bool public enforceRplCoverageRatio;
-    uint256 public collateralizationRatioBasePoint;
+    uint256 public liquidityReserveRatio;
     uint256 public rplCoverageRatio;
     uint256 public totalYieldDistributed;
-    uint256 public adminFeeBasePoint; // Admin fee in basis points
+    uint256 public treasuryFee; // Treasury fee in basis points
     uint256 public nodeOperatorFeeBasePoint;
 
     uint256 public principal; // Total principal amount (sum of all deposits)
@@ -74,9 +74,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(weth));
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
-        collateralizationRatioBasePoint = 0.1e5; // 10% of TVL
+        liquidityReserveRatio = 0.1e5; // 10% of TVL
         rplCoverageRatio = 0.15e18;
-        adminFeeBasePoint = 0.01e5;
+        treasuryFee = 0.01e5;
         nodeOperatorFeeBasePoint = 0.01e5;
 
         ethPerSlashReward = 0.001 ether;
@@ -257,7 +257,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         FundRouter dp = FundRouter(getDirectory().getDepositPoolAddress());
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         uint256 currentIncome = currentIncomeFromRewards();
-        uint256 currentAdminIncome = currentIncome.mulDiv(adminFeeBasePoint, 1e5);
+        uint256 currentAdminIncome = currentIncome.mulDiv(treasuryFee, 1e5);
         uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFeeBasePoint, 1e5);
         (uint256 distributableYield, bool signed) = getDistributableYield();
 
@@ -298,7 +298,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns (uint256) {
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 fullBalance = totalAssets() + deposit;
-        uint256 requiredBalance = collateralizationRatioBasePoint.mulDiv(fullBalance, 1e5, Math.Rounding.Up);
+        uint256 requiredBalance = liquidityReserveRatio.mulDiv(fullBalance, 1e5, Math.Rounding.Up);
         return requiredBalance > currentBalance ? requiredBalance : 0;
     }
 
@@ -341,13 +341,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Sets the admin fee in basis points.
-     * @dev This function allows the admin to update the admin fee, which is calculated in basis points. The fee must not exceed 100%.
-     * @param _adminFeeBasePoint The new admin fee in basis points.
+     * @notice Sets the treasury fee in basis points.
+     * @dev This function allows the admin to update the treasury fee, which is calculated in basis points. The fee must not exceed 100%.
+     * @param _treasuryFee The new treasury fee in basis points.
      */
-    function setAdminFee(uint256 _adminFeeBasePoint) external onlyMediumTimelock {
-        require(_adminFeeBasePoint <= 1e5, 'Fee too high');
-        adminFeeBasePoint = _adminFeeBasePoint;
+    function setTreasuryFee(uint256 _treasuryFee) external onlyMediumTimelock {
+        require(_treasuryFee <= 1e5, 'Fee too high');
+        treasuryFee = _treasuryFee;
     }
 
     /**
@@ -375,7 +375,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function _claimFees() internal returns (uint256 wethTransferOut) {
         uint256 currentIncome = currentIncomeFromRewards();
-        uint256 currentAdminIncome = currentIncome.mulDiv(adminFeeBasePoint, 1e5);
+        uint256 currentAdminIncome = currentIncome.mulDiv(treasuryFee, 1e5);
         uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFeeBasePoint, 1e5);
 
         uint256 feeAmountNodeOperator = currentNodeOperatorIncome - lastNodeOperatorIncomeClaimed;
@@ -398,11 +398,11 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         wethTransferOut = (shortfallNo ? remainingNo : noOut) + (shortfallAdmin ? remainingAdmin : adminOut);
 
-        lastNodeOperatorIncomeClaimed = currentIncomeFromRewards().mulDiv(adminFeeBasePoint, 1e5);
+        lastNodeOperatorIncomeClaimed = currentIncomeFromRewards().mulDiv(treasuryFee, 1e5);
         lastAdminIncomeClaimed = currentIncomeFromRewards().mulDiv(nodeOperatorFeeBasePoint, 1e5);
 
         emit NodeOperatorFeeClaimed(feeAmountNodeOperator);
-        emit AdminFeeClaimed(feeAmountAdmin);
+        emit TreasuryFeeClaimed(feeAmountAdmin);
     }
 
     /**
@@ -476,5 +476,18 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function totalEthLost() public view returns (uint256) {
         return totalCounts * (1 ether / averagePenaltyBond());
+    }
+
+    /**
+     * @notice Sets the collateralization ratio basis points.
+     * @dev This function allows the admin to update the collateralization ratio which determines the level of collateral required.
+     * The collateralization ratio must be a reasonable percentage, typically expressed in basis points (1e5 basis points = 100%).
+     * @param _liquidityReserveRatio The new collateralization ratio in basis points.
+     * @custom:requires This function can only be called by an address with the Medium Timelock role.
+     */
+    function setLiquidityReserveRatio(uint256 _liquidityReserveRatio) external onlyShortTimelock {
+        require(_liquidityReserveRatio >= 0, 'WETHVault: Collateralization ratio must be positive');
+        require(_liquidityReserveRatio <= 1e5, 'WETHVault: Collateralization ratio must be less than or equal to 100%');
+        liquidityReserveRatio = _liquidityReserveRatio;
     }
 }
