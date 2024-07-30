@@ -6,6 +6,7 @@ import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { getEventNames, upgradePriceFetcherToMock, whitelistUserServerSig } from "./utils/utils";
 import { ContractTransaction } from "@ethersproject/contracts";
+import { wEth } from "../typechain-types/contracts/Testing";
 
 describe("xrETH", function () {
 
@@ -68,6 +69,41 @@ describe("xrETH", function () {
     const expectedxrETHInSystem = ethers.utils.parseEther("100");
     const actualxrETHInSystem = await protocol.vCWETH.totalAssets();
     expect(expectedxrETHInSystem).equals(actualxrETHInSystem)
+  })
+
+  it.only("success - makes deposit, positive oracle yield updates, withdraws for more than deposit", async () => {
+    const setupData = await loadFixture(protocolFixture);
+    const { protocol, signers, rocketPool } = setupData;
+
+    const {sig, timestamp} = await whitelistUserServerSig(setupData, signers.ethWhale);
+
+    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("100"));
+    await protocol.whitelist.connect(signers.admin).addOperator(signers.ethWhale.address, timestamp, sig);
+
+    await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
+    await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
+    await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
+
+    const expectedxrETHInSystem = ethers.utils.parseEther("100");
+    const actualxrETHInSystem = await protocol.vCWETH.totalAssets();
+    expect(expectedxrETHInSystem).equals(actualxrETHInSystem)
+    expect(await protocol.vCWETH.principal()).equals(expectedxrETHInSystem);
+    expect(await protocol.vCWETH.currentIncomeFromRewards()).equals(0);
+    expect(await protocol.vCWETH.totalYieldDistributed()).equals(0);
+
+    console.log("before share deem", await protocol.wETH.balanceOf(signers.ethWhale.address));
+    console.log("before share deem", await protocol.vCWETH.balanceOf(signers.ethWhale.address));
+    const shares = (await protocol.vCWETH.balanceOf(signers.ethWhale.address)).div(10)
+    // attempt to redeem 10% of shares for 10 eth which is 10% of 100 eth
+    await protocol.vCWETH.connect(signers.ethWhale).redeem(shares, signers.ethWhale.address, signers.ethWhale.address);
+    expect(await protocol.vCWETH.principal()).equals( ethers.utils.parseEther("90"));
+    expect(await protocol.vCWETH.currentIncomeFromRewards()).equals(0);
+    expect(await protocol.vCWETH.totalYieldDistributed()).equals(0);
+    console.log("after share dem", await protocol.wETH.balanceOf(signers.ethWhale.address));
+    console.log("before share deem", await protocol.vCWETH.balanceOf(signers.ethWhale.address));
+
+    console.log("totalassets after reddme", await protocol.vCWETH.totalAssets())
+ 
   })
 
 

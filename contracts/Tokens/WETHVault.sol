@@ -112,16 +112,21 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         vars.totalPriceOfShares = assets;
         vars.lastPricePaidPerShare = positions[receiver].pricePaidPerShare;
         vars.originalValueTimesShares = vars.lastPricePaidPerShare * positions[receiver].shares * 1e18;
+        console.log("WETHVault._deposit.vars.originalValueTimesShares", vars.originalValueTimesShares);
+        console.log("WETHVault._deposit.vars.lastPricePaidPerShare", vars.lastPricePaidPerShare);
 
         vars.newValueTimesShares = vars.totalPriceOfShares * 1e18;
         vars.totalShares = positions[receiver].shares + shares;
         vars.weightedPriceSum = vars.originalValueTimesShares + vars.newValueTimesShares;
+        console.log("WETHVault._deposit.vars.totalShares", vars.totalShares);
+        console.log("WETHVault._deposit.vars.newValueTimesShares", vars.newValueTimesShares);
+        console.log("WETHVault._deposit.vars.weightedPriceSum", vars.weightedPriceSum);
 
         positions[receiver].pricePaidPerShare =
-            vars.weightedPriceSum /
-            (vars.totalShares == 0 ? 1 : vars.totalShares) /
-            1e18;
+            vars.weightedPriceSum / (vars.totalShares == 0 ? 1 : vars.totalShares) / 1e18;
         positions[receiver].shares += shares;
+        console.log("WETHVault._deposit.positions[receiver].pricePaidPerShare", positions[receiver].pricePaidPerShare);
+        console.log("WETHVault._deposit.positions[receiver].shares", positions[receiver].shares);
 
         principal += assets;
 
@@ -150,12 +155,14 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 shares
     ) internal virtual override nonReentrant {
         require(caller == receiver, 'caller must be receiver');
+        require(owner == receiver, 'caller must be owner');
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
 
         uint256 lastPriceOfShares = positions[owner].pricePaidPerShare * shares;
-
+        console.log("WETHVault._withdraw.lastPriceOfShares", lastPriceOfShares);
+        console.log("WETHVault._withdraw.assets", assets);
         if (assets > lastPriceOfShares) {
             uint256 capitalGain = assets - lastPriceOfShares;
             totalYieldDistributed += capitalGain;
