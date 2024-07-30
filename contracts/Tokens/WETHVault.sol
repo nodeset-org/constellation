@@ -46,7 +46,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public rplCoverageRatio;
     uint256 public totalYieldDistributed;
     uint256 public treasuryFee; // Treasury fee in basis points
-    uint256 public nodeOperatorFeeBasePoint;
+    uint256 public nodeOperatorFee; // NO fee in basis points
 
     uint256 public principal; // Total principal amount (sum of all deposits)
     uint256 public lastTreasuryIncomeClaimed; // Tracks the amount of income already claimed by the admin
@@ -77,7 +77,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         liquidityReserveRatio = 0.1e5; // 10% of TVL
         rplCoverageRatio = 0.15e18;
         treasuryFee = 0.01e5;
-        nodeOperatorFeeBasePoint = 0.01e5;
+        nodeOperatorFee = 0.01e5;
 
         ethPerSlashReward = 0.001 ether;
 
@@ -260,7 +260,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         uint256 currentIncome = currentIncomeFromRewards();
         uint256 currentTreasuryIncome = currentIncome.mulDiv(treasuryFee, 1e5);
-        uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFeeBasePoint, 1e5);
+        uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFee, 1e5);
         (uint256 distributableYield, bool signed) = getDistributableYield();
 
         return
@@ -359,11 +359,11 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @notice Sets the node operator fee in basis points.
      * @dev This function allows the admin to update the node operator fee, which is calculated in basis points. 
      * The fee must not exceed 100%.
-     * @param _nodeOperatorFeeBasePoint The new node operator fee in basis points.
+     * @param _nodeOperatorFee The new node operator fee in basis points.
      */
-    function setNodeOperatorFee(uint256 _nodeOperatorFeeBasePoint) external onlyShortTimelock {
-        require(_nodeOperatorFeeBasePoint <= 1e5, 'Fee too high');
-        nodeOperatorFeeBasePoint = _nodeOperatorFeeBasePoint;
+    function setNodeOperatorFee(uint256 _nodeOperatorFee) external onlyShortTimelock {
+        require(_nodeOperatorFee <= 1e5, 'Fee too high');
+        nodeOperatorFee = _nodeOperatorFee;
     }
 
     /**
@@ -386,7 +386,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function _claimFees() internal returns (uint256 wethTransferOut) {
         uint256 currentIncome = currentIncomeFromRewards();
         uint256 currentTreasuryIncome = currentIncome.mulDiv(treasuryFee, 1e5);
-        uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFeeBasePoint, 1e5);
+        uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFee, 1e5);
 
         uint256 feeAmountNodeOperator = currentNodeOperatorIncome - lastNodeOperatorIncomeClaimed;
         uint256 feeAmountTreasury = currentTreasuryIncome - lastTreasuryIncomeClaimed;
@@ -409,7 +409,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         wethTransferOut = (shortfallNo ? remainingNo : noOut) + (shortfallTreasury ? remainingTreasury : treasuryOut);
 
         lastNodeOperatorIncomeClaimed = currentIncomeFromRewards().mulDiv(treasuryFee, 1e5);
-        lastTreasuryIncomeClaimed = currentIncomeFromRewards().mulDiv(nodeOperatorFeeBasePoint, 1e5);
+        lastTreasuryIncomeClaimed = currentIncomeFromRewards().mulDiv(nodeOperatorFee, 1e5);
 
         emit NodeOperatorFeeClaimed(feeAmountNodeOperator);
         emit TreasuryFeeClaimed(feeAmountTreasury);
