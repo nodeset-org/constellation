@@ -32,7 +32,7 @@ struct Claim {
 /**
  * @title SuperNodeAccount
  * @author Theodore Clapp
- * @dev Let's Sub Node Operators collect their share of rewards
+ * @dev Allows Sub Node Operators collect their share of rewards
  */
 contract YieldDistributor is UpgradeableBase {
     event RewardDistributed(Reward);
