@@ -16,17 +16,17 @@ import 'hardhat/console.sol';
 /// @custom:security-contact info@nodeoperator.org
 contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
-    event AdminFeeClaimed(uint256 amount);
+    event TreasuryFeeClaimed(uint256 amount);
 
     string constant NAME = 'Constellation RPL';
     string constant SYMBOL = 'xRPL'; // Vaulted Constellation RPL
 
     bool public enforceWethCoverageRatio;
 
-    uint256 public adminFeeBasisPoint;
+    uint256 public treasuryFee;
 
     uint256 public principal; // Total principal amount (sum of all deposits)
-    uint256 public lastIncomeClaimed; // Tracks the amount of income already claimed by the admin
+    uint256 public lastIncomeClaimed; // Tracks the amount of income already claimed by the treasury
 
     uint256 public liquidityReserveRatio; // collateralization ratio
 
@@ -48,7 +48,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         liquidityReserveRatio = 0.02e5;
         wethCoverageRatio = 1.75e5;
         enforceWethCoverageRatio = false;
-        adminFeeBasisPoint = 0.01e5;
+        treasuryFee = 0.01e5;
     }
 
     /**
@@ -77,7 +77,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         principal += assets;
 
         address payable pool = _directory.getDepositPoolAddress();
-        _claimAdminFee();
+        _claimTreasuryFee();
         super._deposit(caller, receiver, assets, shares);
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
         FundRouter(pool).sendRplToDistributors();
@@ -107,7 +107,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
             return;
         }
 
-        _claimAdminFee();
+        _claimTreasuryFee();
 
         // required violation of CHECKS/EFFECTS/INTERACTIONS
         principal -= assets;
@@ -138,12 +138,12 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Calculates the current admin income from rewards.
-     * @dev This function calculates the admin's share of the current income from rewards based on the admin fee basis points.
-     * @return The current admin income from rewards.
+     * @notice Calculates the current treasury income from rewards.
+     * @dev This function calculates the treasury's share of the current income from rewards based on the treasury fee basis points.
+     * @return The current treasury income from rewards.
      */
-    function currentAdminIncomeFromRewards() public view returns (uint256) {
-        return currentIncomeFromRewards().mulDiv(adminFeeBasisPoint, 1e5);
+    function currentTreasuryIncomeFromRewards() public view returns (uint256) {
+        return currentIncomeFromRewards().mulDiv(treasuryFee, 1e5);
     }
 
     /**
@@ -155,7 +155,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
             (super.totalAssets() +
                 FundRouter(_directory.getDepositPoolAddress()).getTvlRpl() +
                 OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl()) -
-            currentAdminIncomeFromRewards();
+            currentTreasuryIncomeFromRewards();
     }
 
     /**
@@ -178,15 +178,15 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     /**ADMIN FUNCTIONS */
 
     /**
-     * @notice Sets the admin fee basis points.
-     * @dev This function allows the admin to update the fee basis points that the admin will receive from the rewards.
-     * The admin fee must be less than or equal to 100% (1e5 basis points).
-     * @param _adminFeeBasePoint The new admin fee in basis points.
+     * @notice Sets the treasurer fee basis points.
+     * @dev This function allows the admin to update the fee basis points that the treasury will receive from the rewards.
+     * The treasury fee must be less than or equal to 100% (1e5 basis points).
+     * @param _treasuryFee The new treasury fee in basis points.
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
-    function setAdminFee(uint256 _adminFeeBasePoint) external onlyMediumTimelock {
-        require(_adminFeeBasePoint <= 1e5, 'Fee too high');
-        adminFeeBasisPoint = _adminFeeBasePoint;
+    function setTreasuryFee(uint256 _treasuryFee) external onlyMediumTimelock {
+        require(_treasuryFee <= 1e5, 'Fee too high');
+        treasuryFee = _treasuryFee;
     }
 
     /**
@@ -212,23 +212,23 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @dev Internal function to claim the admin fees.
-     * This function calculates the current admin income from rewards, determines the fee amount based on the income
+     * @dev Internal function to claim the treasury fees.
+     * This function calculates the current treasury income from rewards, determines the fee amount based on the income
      * that hasn't been claimed yet, and transfers this fee out to the treasury. It then updates the `lastIncomeClaimed`
-     * to the latest claimed amount. It is used within deposit and withdrawal operations to periodically claim the admin fee.
+     * to the latest claimed amount. It is used within deposit and withdrawal operations to periodically claim the treasury fee.
      *
-     * Emits an `AdminFeeClaimed` event with the amount of the fee claimed.
+     * Emits an `TreasuryFeeClaimed` event with the amount of the fee claimed.
      */
-    function _claimAdminFee() internal {
-        uint256 currentAdminIncome = currentAdminIncomeFromRewards();
-        uint256 feeAmount = currentAdminIncome - lastIncomeClaimed;
+    function _claimTreasuryFee() internal {
+        uint256 currentTreasuryIncome = currentTreasuryIncomeFromRewards();
+        uint256 feeAmount = currentTreasuryIncome - lastIncomeClaimed;
 
         _doTransferOut(_directory.getTreasuryAddress(), feeAmount);
 
         // Update lastIncomeClaimed to reflect the new total income claimed
-        lastIncomeClaimed = currentAdminIncomeFromRewards();
+        lastIncomeClaimed = currentTreasuryIncomeFromRewards();
 
-        emit AdminFeeClaimed(feeAmount);
+        emit TreasuryFeeClaimed(feeAmount);
     }
 
     /**
@@ -265,16 +265,16 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Internal function to claim the admin fees.
-     * @dev This function calculates the current admin income from rewards, determines the fee amount based on the income
+     * @notice Internal function to claim the treasury fees.
+     * @dev This function calculates the current treasury income from rewards, determines the fee amount based on the income
      * that hasn't been claimed yet, and transfers this fee out to the treasury. It then updates the `lastIncomeClaimed`
      * to the latest claimed amount. This function is used within deposit and withdrawal operations to periodically claim the admin fee.
-     * It ensures the admin receives their due income from the vault's rewards.
+     * It ensures the treasury receives their due income from the vault's rewards.
      *
-     * Emits an `AdminFeeClaimed` event with the amount of the fee claimed.
+     * Emits an `TreasuryFeeClaimed` event with the amount of the fee claimed.
      */
-    function claimAdminFee() public onlyAdmin {
-        _claimAdminFee();
+    function claimTreasuryFee() public onlyTreasurer {
+        _claimTreasuryFee();
     }
 
     /**
