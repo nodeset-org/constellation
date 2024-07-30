@@ -46,10 +46,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public rplCoverageRatio;
     uint256 public totalYieldDistributed;
     uint256 public treasuryFee; // Treasury fee in basis points
-    uint256 public nodeOperatorFeeBasePoint;
+    uint256 public nodeOperatorFee; // NO fee in basis points
 
     uint256 public principal; // Total principal amount (sum of all deposits)
-    uint256 public lastAdminIncomeClaimed; // Tracks the amount of income already claimed by the admin
+    uint256 public lastTreasuryIncomeClaimed; // Tracks the amount of income already claimed by the admin
     uint256 public lastNodeOperatorIncomeClaimed; // Tracks the amount of income already claimed by the Node Operator
     uint256 public ethPerSlashReward; // Tracks how much a user gets for reporting a slasher (in wei)
 
@@ -77,7 +77,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         liquidityReserveRatio = 0.1e5; // 10% of TVL
         rplCoverageRatio = 0.15e18;
         treasuryFee = 0.01e5;
-        nodeOperatorFeeBasePoint = 0.01e5;
+        nodeOperatorFee = 0.01e5;
 
         ethPerSlashReward = 0.001 ether;
 
@@ -134,8 +134,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Handles withdrawals from the vault, updating the position and distributing fees.
-     * @dev This function calculates and records any capital gains or losses, updates the owner's position, and distributes the assets to the receiver. It also transfers the assets from the deposit pool.
+     * @notice Handles withdrawals from the vault, updating the position and distributing fees to operators and the treasury.
+     * @dev This function calculates and records any capital gains or losses, updates the owner's position, and distributes the assets to the receiver. 
+     * It also transfers the assets from the deposit pool. May revert if the liquidity reserves are too low.
      * @param caller The address initiating the withdrawal.
      * @param receiver The address designated to receive the withdrawn assets.
      * @param owner The address that owns the shares being redeemed.
@@ -248,7 +249,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Returns the total assets managed by this vault.
-     * @dev This function calculates the total assets by summing the vault's own assets, the distributable yield, and the assets held in the deposit pool and Operator Distributor. It then subtracts the admin and node operator incomes to get the net total assets.
+     * @dev This function calculates the total assets by summing the vault's own assets, the distributable yield, 
+     * and the assets held in the deposit pool and Operator Distributor. It then subtracts the treasury and node operator incomes to get the net total assets.
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
@@ -257,8 +259,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         FundRouter dp = FundRouter(getDirectory().getDepositPoolAddress());
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         uint256 currentIncome = currentIncomeFromRewards();
-        uint256 currentAdminIncome = currentIncome.mulDiv(treasuryFee, 1e5);
-        uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFeeBasePoint, 1e5);
+        uint256 currentTreasuryIncome = currentIncome.mulDiv(treasuryFee, 1e5);
+        uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFee, 1e5);
         (uint256 distributableYield, bool signed) = getDistributableYield();
 
         return
@@ -267,7 +269,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
                     int(super.totalAssets() + dp.getTvlEth() + od.getTvlEth()) +
                         (signed ? -int(distributableYield) : int(distributableYield))
                 )
-            ) - (currentAdminIncome + currentNodeOperatorIncome);
+            ) - (currentTreasuryIncome + currentNodeOperatorIncome);
     }
 
     /**
@@ -284,14 +286,16 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         if (tvlRpl == 0) return 1e18;
 
-        uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+        uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
 
-        return (tvlEth * ethPriceInRpl) / tvlRpl;
+        return (tvlEth * rplPerEth) / tvlRpl;
     }
 
     /**
      * @notice Calculates the required collateral after a specified deposit.
-     * @dev This function calculates the required collateral to ensure the contract remains sufficiently collateralized after a specified deposit amount. It compares the current balance with the required collateral based on the total assets including the deposit.
+     * @dev This function calculates the required collateral to ensure the contract remains sufficiently collateralized 
+     * after a specified deposit amount. It compares the current balance with the required collateral based on 
+     * the total assets, including the deposit.
      * @param deposit The amount of the deposit to consider in the collateral calculation.
      * @return The amount of collateral required after the specified deposit.
      */
@@ -342,7 +346,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Sets the treasury fee in basis points.
-     * @dev This function allows the admin to update the treasury fee, which is calculated in basis points. The fee must not exceed 100%.
+     * @dev This function allows the admin to update the treasury fee, which is calculated in basis points. 
+     * The fee must not exceed 100%.
      * @param _treasuryFee The new treasury fee in basis points.
      */
     function setTreasuryFee(uint256 _treasuryFee) external onlyMediumTimelock {
@@ -352,12 +357,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Sets the node operator fee in basis points.
-     * @dev This function allows the admin to update the node operator fee, which is calculated in basis points. The fee must not exceed 100%.
-     * @param _nodeOperatorFeeBasePoint The new node operator fee in basis points.
+     * @dev This function allows the admin to update the node operator fee, which is calculated in basis points. 
+     * The fee must not exceed 100%.
+     * @param _nodeOperatorFee The new node operator fee in basis points.
      */
-    function setNodeOperatorFee(uint256 _nodeOperatorFeeBasePoint) external onlyShortTimelock {
-        require(_nodeOperatorFeeBasePoint <= 1e5, 'Fee too high');
-        nodeOperatorFeeBasePoint = _nodeOperatorFeeBasePoint;
+    function setNodeOperatorFee(uint256 _nodeOperatorFee) external onlyShortTimelock {
+        require(_nodeOperatorFee <= 1e5, 'Fee too high');
+        nodeOperatorFee = _nodeOperatorFee;
     }
 
     /**
@@ -370,49 +376,52 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         ethPerSlashReward = _ethPerSlashReward;
     }
 
-    /**
-     * @notice Claims the accumulated admin and node operator fees.
-     * @dev This function allows the protocol or admin to claim the fees accumulated from rewards. It transfers the fees to the respective addresses.
+     * @notice Claims the accumulated treasury and node operator fees.
+     * @dev This function allows the protocol or admin to claim the fees accumulated from rewards. 
+     * It transfers the fees to the respective addresses.
      */
     function claimFees() external onlyProtocolOrAdmin {
         _claimFees();
     }
 
     /**
-     * @notice Internal function to claim the admin and node operator fees.
-     * @dev This function calculates the current admin and node operator income from rewards, determines the fee amount based on the income that hasn't been claimed yet, and transfers these fees to the respective addresses. It then updates the `lastAdminIncomeClaimed` and `lastNodeOperatorIncomeClaimed` to the latest claimed amounts.
+     * @notice Internal function to claim the treasury and node operator fees.
+     * @dev This function calculates the current treasury and node operator income from rewards, 
+     * determines the fee amount based on the income that hasn't been claimed yet, and transfers 
+     * these fees to the respective addresses. It then updates the `lastTreasuryIncomeClaimed` and 
+     * `lastNodeOperatorIncomeClaimed` to the latest claimed amounts.
      * @return wethTransferOut The amount of WETH transferred out as fees.
      */
     function _claimFees() internal returns (uint256 wethTransferOut) {
         uint256 currentIncome = currentIncomeFromRewards();
-        uint256 currentAdminIncome = currentIncome.mulDiv(treasuryFee, 1e5);
-        uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFeeBasePoint, 1e5);
+        uint256 currentTreasuryIncome = currentIncome.mulDiv(treasuryFee, 1e5);
+        uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFee, 1e5);
 
         uint256 feeAmountNodeOperator = currentNodeOperatorIncome - lastNodeOperatorIncomeClaimed;
-        uint256 feeAmountAdmin = currentAdminIncome - lastAdminIncomeClaimed;
+        uint256 feeAmountTreasury = currentTreasuryIncome - lastTreasuryIncomeClaimed;
 
         YieldDistributor yd = YieldDistributor(_directory.getYieldDistributorAddress());
 
-        // Transfer the fee to the NodeOperator and admin treasury
+        // Transfer the fee to the NodeOperator and treasury
 
         console.log('no fee', feeAmountNodeOperator);
-        console.log('no fee', feeAmountAdmin);
+        console.log('no fee', feeAmountTreasury);
         (bool shortfallNo, uint256 noOut, uint256 remainingNo) = _doTransferOut(address(yd), feeAmountNodeOperator);
         yd.wethReceivedVoidClaim(noOut);
         console.log('transfered to nodep po');
-        (bool shortfallAdmin, uint256 adminOut, uint256 remainingAdmin) = _doTransferOut(
+        (bool shortfallTreasury, uint256 treasuryOut, uint256 remainingTreasury) = _doTransferOut(
             _directory.getTreasuryAddress(),
-            feeAmountAdmin
+            feeAmountTreasury
         );
-        console.log('Claimed admin and node operator fee');
+        console.log('Claimed treasury and node operator fee');
 
-        wethTransferOut = (shortfallNo ? remainingNo : noOut) + (shortfallAdmin ? remainingAdmin : adminOut);
+        wethTransferOut = (shortfallNo ? remainingNo : noOut) + (shortfallTreasury ? remainingTreasury : treasuryOut);
 
         lastNodeOperatorIncomeClaimed = currentIncomeFromRewards().mulDiv(treasuryFee, 1e5);
-        lastAdminIncomeClaimed = currentIncomeFromRewards().mulDiv(nodeOperatorFeeBasePoint, 1e5);
+        lastTreasuryIncomeClaimed = currentIncomeFromRewards().mulDiv(nodeOperatorFee, 1e5);
 
         emit NodeOperatorFeeClaimed(feeAmountNodeOperator);
-        emit TreasuryFeeClaimed(feeAmountAdmin);
+        emit TreasuryFeeClaimed(feeAmountTreasury);
     }
 
     /**

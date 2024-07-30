@@ -88,7 +88,7 @@ describe("xRPL", function () {
     expect(expectedRplInSystem).equals(actualRplInSystem)
 
     console.log("currentIncome", await protocol.vCRPL.currentIncomeFromRewards());
-    console.log("currentAdminIncome", await protocol.vCRPL.currentTreasuryIncomeFromRewards());
+    console.log("currentTreasuryIncome", await protocol.vCRPL.currentTreasuryIncomeFromRewards());
 
     await rocketPool.rplContract.connect(signers.random2).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
     console.log(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address));

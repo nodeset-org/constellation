@@ -277,8 +277,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Internal function to process the next minipool in line.
+     * @notice Process the next minipool in line.
      * Handles RPL top-up and balance distribution based on minipool's current state.
+     * Although this can be called manually, this typically happens automatically as part of other state changes
+     * like claiming NO fees or depositing/withdrawing from the token vaults.
      */
     function processNextMinipool() external {
         _processNextMinipool();
