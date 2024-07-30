@@ -24,7 +24,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     struct Position {
         uint256 shares;
-        uint256 pricePaidPerShare;
+        uint256 costBasis;
     }
 
     struct WeightedAverageCalculation {
@@ -44,7 +44,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     bool public enforceRplCoverageRatio;
     uint256 public liquidityReserveRatio;
     uint256 public rplCoverageRatio;
-    uint256 public totalYieldDistributed;
     uint256 public treasuryFee; // Treasury fee in basis points
     uint256 public nodeOperatorFeeBasePoint;
 
@@ -108,31 +107,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         address payable pool = _directory.getDepositPoolAddress();
 
-        Position storage currentPosition = positions[receiver];
-        uint256 totalAssetsValue = totalAssets();
-        uint256 currentTotalShares = totalSupply();
-        uint256 shareValue = _convertToShares(1, MathUpgradeable.Rounding.Down);
-
-        console.log('Function _deposit:');
-        console.log('Receiver:', receiver);
-        console.log('Total Assets Value:', totalAssetsValue);
-        console.log('Current Total Shares:', currentTotalShares);
-        console.log('Calculated Share Value (scaled):', shareValue);
-
-        uint256 totalShares = currentPosition.shares + shares;
-        uint256 newShareCost = (shares * shareValue) / 1e18;
-        uint256 totalCost = (currentPosition.pricePaidPerShare * currentPosition.shares) + newShareCost;
-        uint256 newPricePaidPerShare = (totalShares > 0) ? totalCost / totalShares : 0;
-
-        console.log('New Shares Deposited:', shares);
-        console.log('Total Shares After Deposit:', totalShares);
-        console.log('New Share Cost:', newShareCost);
-        console.log('Total Cost of All Shares:', totalCost);
-        console.log('New Price Paid Per Share:', newPricePaidPerShare);
-
-        currentPosition.shares = totalShares;
-        currentPosition.pricePaidPerShare = newPricePaidPerShare;
-
         principal += assets;
 
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
@@ -163,37 +137,22 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             return;
         }
 
-        Position storage ownerPosition = positions[receiver];
-        uint256 totalAssetsValue = totalAssets();
-        uint256 currentTotalShares = totalSupply();
-        uint256 shareValue = _convertToShares(1e8, MathUpgradeable.Rounding.Down);
-
-        console.log('Function _withdraw:');
-        console.log('Receiver:', receiver);
-        console.log('Total Assets Value:', totalAssetsValue);
-        console.log('Current Total Shares:', currentTotalShares);
-        console.log('Price Paid Per Share:', ownerPosition.pricePaidPerShare);
-        console.log('Current Share Value (scaled):', shareValue);
-        console.log('Shares Withdrawn:', shares);
-
-        if (shareValue > ownerPosition.pricePaidPerShare) {
-            uint256 capitalGain = ((shareValue - ownerPosition.pricePaidPerShare) * shares) / 1e18;
-            totalYieldDistributed += capitalGain;
-            emit NewCapitalGain(capitalGain, receiver);
-            console.log('Capital Gain:', capitalGain);
-        } else {
-            uint256 capitalLoss = ((ownerPosition.pricePaidPerShare - shareValue) * shares) / 1e18;
-            emit NewCapitalLoss(capitalLoss, receiver);
-            console.log('Capital Loss:', capitalLoss);
-        }
-
-        ownerPosition.shares -= shares;
-        if (ownerPosition.shares == 0) {
-            ownerPosition.pricePaidPerShare = 0;
-        }
-
         FundRouter(_directory.getDepositPoolAddress()).sendEthToDistributors();
-        principal -= assets;
+
+        uint256 currentIncome = currentIncomeFromRewards();
+        uint256 currentAdminIncome = currentIncome.mulDiv(treasuryFee, 1e5);
+        uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFeeBasePoint, 1e5);
+        uint256 communityReward = currentIncome - (currentAdminIncome + currentNodeOperatorIncome);
+        uint256 rewardsPerShare = communityReward.mulDiv(1e18, totalSupply());
+        uint256 totalRewardsForShares = rewardsPerShare.mulDiv(shares, 1e18);
+
+        console.log('_withdraw.totalRewardsForShares', totalRewardsForShares);
+        console.log('_withdraw.shares', shares);
+        console.log('_withdraw.shares', assets);
+        console.log('_withdraw.rewardsPerShare', rewardsPerShare);
+        console.log('_withdraw.communityReward', communityReward);
+
+        principal -= assets - totalRewardsForShares;
 
         super._withdraw(caller, receiver, owner, assets, shares);
 
@@ -210,7 +169,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         int256 totalUnrealizedAccrual = getOracle().getTotalYieldAccrued() -
             int256(OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleError());
 
-        int256 diff = totalUnrealizedAccrual - int(totalYieldDistributed);
+        int256 diff = totalUnrealizedAccrual;
         if (diff >= 0) {
             signed = false;
             distributableYield = uint256(diff);
@@ -320,15 +279,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function getRequiredCollateral() public view returns (uint256) {
         return getRequiredCollateralAfterDeposit(0);
-    }
-
-    /**
-     * @notice Enhances precision in share quantities during the minting process.
-     * @dev This function returns the number of decimal places to offset for share calculations.
-     * @return The number of decimal places for share calculations.
-     */
-    function _decimalsOffset() internal pure override returns (uint8) {
-        return 18;
     }
 
     /**ADMIN FUNCTIONS */

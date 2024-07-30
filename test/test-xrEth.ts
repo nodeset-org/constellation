@@ -90,14 +90,12 @@ describe("xrETH", function () {
     expect(expectedxrETHInSystem).equals(actualxrETHInSystem)
     expect(await protocol.vCWETH.principal()).equals(expectedxrETHInSystem);
     expect(await protocol.vCWETH.currentIncomeFromRewards()).equals(0);
-    expect(await protocol.vCWETH.totalYieldDistributed()).equals(0);
 
     // attempt to redeem 10% of shares for 10 eth which is 10% of 100 eth
     let shares = (await protocol.vCWETH.balanceOf(signers.ethWhale.address)).div(10)
     await protocol.vCWETH.connect(signers.ethWhale).redeem(shares, signers.ethWhale.address, signers.ethWhale.address);
     expect(await protocol.vCWETH.principal()).equals(ethers.utils.parseEther("90"));
     expect(await protocol.vCWETH.currentIncomeFromRewards()).equals(0);
-    expect(await protocol.vCWETH.totalYieldDistributed()).equals(0);
     expect(await protocol.vCWETH.totalAssets()).equals(ethers.utils.parseEther("90"))
 
     // deposit 10 more eth so we are working with an even 100 eth in the system
@@ -126,8 +124,12 @@ describe("xrETH", function () {
     console.log("preview redeem", await protocol.vCWETH.previewRedeem(shares));
     console.log("preview redeem", await protocol.wETH.balanceOf(protocol.vCWETH.address));
     await protocol.vCWETH.connect(signers.ethWhale).redeem(shares, signers.ethWhale.address, signers.ethWhale.address);
-    expect(await protocol.vCWETH.totalYieldDistributed()).equals(ethers.utils.parseEther("1"));
-    expect(await protocol.vCWETH.principal()).equals(ethers.utils.parseEther("99"));
+
+    const expectedPrincipal = ethers.BigNumber.from("99000000000000000001");
+    expect(await protocol.vCWETH.principal()).equals(expectedPrincipal);
+
+
+
     expect(await protocol.vCWETH.totalAssets()).equals(ethers.utils.parseEther("99"))
 
 
