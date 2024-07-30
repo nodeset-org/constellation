@@ -376,6 +376,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         ethPerSlashReward = _ethPerSlashReward;
     }
 
+    /**
      * @notice Claims the accumulated treasury and node operator fees.
      * @dev This function allows the protocol or admin to claim the fees accumulated from rewards. 
      * It transfers the fees to the respective addresses.
