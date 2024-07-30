@@ -344,10 +344,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     /**
      * @notice Handles the destruction of a minipool by a node operator.
-     * @param _nodeOperator Address of the node operator.
      * @param _bond Amount of ETH bonded that needs to be subtracted from the total funded ETH.
      */
-    function onNodeMinipoolDestroy(address _nodeOperator, uint256 _bond) external onlyProtocol {
+    function onNodeMinipoolDestroy(uint256 _bond) external onlyProtocol {
         fundedEth -= _bond;
     }
 
