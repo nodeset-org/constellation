@@ -66,7 +66,7 @@ contract YieldDistributor is UpgradeableBase {
         maxIntervalLengthSeconds = 30 days;
 
         k = 7;
-        maxValidators = 5;
+        maxValidators = 1;
     }
 
     /**
@@ -230,7 +230,7 @@ contract YieldDistributor is UpgradeableBase {
     /**
      * @notice Transfers the accumulated dust (residual ETH) to the specified treasury address.
      * @param treasury The address of the treasury to which the dust will be sent.
-     * @dev This function can only be called by the contract's admin. It allows for the collection of small residual ETH balances (dust) that may have accumulated due to rounding errors or other minor discrepancies.
+     * @dev This function can only be called by the protocol admin. It allows for the collection of small residual ETH balances (dust) that may have accumulated due to rounding errors or other minor discrepancies.
      */
     function adminSweep(address treasury) public onlyMediumTimelock {
         uint256 amount = dustAccrued;
@@ -242,11 +242,20 @@ contract YieldDistributor is UpgradeableBase {
     /**
      * @notice Sets the parameters for the reward incentive model used in reward distribution.
      * @param _k The curvature parameter for the exponential function used in reward calculation.
-     * @param _maxValidators The maximum number of validators to be considered in the reward calculation.
-     * @dev This function can only be called by the contract's admin. Adjusting these parameters can change the reward distribution dynamics for validators.
+     * @dev This function can only be called by the protocol admin. 
+     * Adjusting this parameter will change the reward distribution dynamics for operators.
      */
-    function setRewardIncentiveModel(uint256 _k, uint256 _maxValidators) public onlyShortTimelock {
+    function setRewardIncentiveModel(uint256 _k) public {
         k = _k;
+    }
+
+    /**
+     * @notice Sets the maximum numbder of allowed validators for each operator.
+     * @param _maxValidators The maximum number of validators to be considered in the reward calculation.
+     * @dev This function can only be called by the protocol admin. 
+     * Adjusting this parameter will change the reward distribution dynamics for validators.
+     */
+    function setMaxValidators(uint256 _maxValidators) public {
         maxValidators = _maxValidators;
     }
 
