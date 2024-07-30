@@ -108,25 +108,35 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         address payable pool = _directory.getDepositPoolAddress();
 
-        // Retrieve the current position
         Position storage currentPosition = positions[receiver];
+        uint256 totalAssetsValue = totalAssets();
+        uint256 currentTotalShares = totalSupply();
+        uint256 shareValue = _convertToShares(1, MathUpgradeable.Rounding.Down);
 
-        // Calculate the new weighted average price per share
-        uint256 newShares = currentPosition.shares + shares;
-        uint256 totalValue = (currentPosition.pricePaidPerShare * currentPosition.shares) + (assets * 1e18);
+        console.log('Function _deposit:');
+        console.log('Receiver:', receiver);
+        console.log('Total Assets Value:', totalAssetsValue);
+        console.log('Current Total Shares:', currentTotalShares);
+        console.log('Calculated Share Value (scaled):', shareValue);
 
-        uint256 newPricePaidPerShare = (newShares > 0) ? (totalValue / newShares) : 0;
+        uint256 totalShares = currentPosition.shares + shares;
+        uint256 newShareCost = (shares * shareValue) / 1e18;
+        uint256 totalCost = (currentPosition.pricePaidPerShare * currentPosition.shares) + newShareCost;
+        uint256 newPricePaidPerShare = (totalShares > 0) ? totalCost / totalShares : 0;
 
-        // Update the receiver's position
-        currentPosition.shares = newShares;
+        console.log('New Shares Deposited:', shares);
+        console.log('Total Shares After Deposit:', totalShares);
+        console.log('New Share Cost:', newShareCost);
+        console.log('Total Cost of All Shares:', totalCost);
+        console.log('New Price Paid Per Share:', newPricePaidPerShare);
+
+        currentPosition.shares = totalShares;
         currentPosition.pricePaidPerShare = newPricePaidPerShare;
 
         principal += assets;
 
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
-
         FundRouter(pool).sendEthToDistributors();
-
         _claimFees();
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
     }
@@ -153,40 +163,41 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             return;
         }
 
-        uint256 lastPriceOfShares = positions[owner].pricePaidPerShare * shares;
-        console.log('WETHVault._withdraw.lastPriceOfShares', lastPriceOfShares);
-        console.log('WETHVault._withdraw.assets', assets);
-        if (assets > lastPriceOfShares) {
-            uint256 capitalGain = assets - lastPriceOfShares;
+        Position storage ownerPosition = positions[receiver];
+        uint256 totalAssetsValue = totalAssets();
+        uint256 currentTotalShares = totalSupply();
+        uint256 shareValue = _convertToShares(1e8, MathUpgradeable.Rounding.Down);
+
+        console.log('Function _withdraw:');
+        console.log('Receiver:', receiver);
+        console.log('Total Assets Value:', totalAssetsValue);
+        console.log('Current Total Shares:', currentTotalShares);
+        console.log('Price Paid Per Share:', ownerPosition.pricePaidPerShare);
+        console.log('Current Share Value (scaled):', shareValue);
+        console.log('Shares Withdrawn:', shares);
+
+        if (shareValue > ownerPosition.pricePaidPerShare) {
+            uint256 capitalGain = ((shareValue - ownerPosition.pricePaidPerShare) * shares) / 1e18;
             totalYieldDistributed += capitalGain;
             emit NewCapitalGain(capitalGain, receiver);
+            console.log('Capital Gain:', capitalGain);
         } else {
-            emit NewCapitalLoss(lastPriceOfShares - assets, receiver);
+            uint256 capitalLoss = ((ownerPosition.pricePaidPerShare - shareValue) * shares) / 1e18;
+            emit NewCapitalLoss(capitalLoss, receiver);
+            console.log('Capital Loss:', capitalLoss);
         }
 
-        positions[owner].shares -= shares;
-        if (positions[owner].shares == 0) {
-            positions[owner].pricePaidPerShare = 0;
+        ownerPosition.shares -= shares;
+        if (ownerPosition.shares == 0) {
+            ownerPosition.pricePaidPerShare = 0;
         }
-
-        console.log('ABC1');
 
         FundRouter(_directory.getDepositPoolAddress()).sendEthToDistributors();
-
-        console.log('ABC2');
-
         principal -= assets;
 
-        console.log('ABC3');
-        console.log('ABC3.', IERC20(asset()).balanceOf(address(this)));
-        console.log('ABC3.', address(this).balance);
         super._withdraw(caller, receiver, owner, assets, shares);
 
-        console.log('ABC4');
-
         _claimFees();
-
-        console.log('ABC5');
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
     }
 
