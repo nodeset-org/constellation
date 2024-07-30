@@ -85,11 +85,11 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Handles withdrawals from the vault, distributing the taker fees to the treasury.
+     * @notice Handles withdrawals from the vault, distributing fees to the treasury.
      * @dev This function first calculates the taker fee based on the withdrawal amount and then
      * proceeds with the withdrawal process. After the withdrawal, the calculated fee is transferred
      * to the treasury. This function overrides the `_withdraw` function in the parent contract to
-     * ensure custom business logic is applied.
+     * ensure custom business logic is applied. May revert if the liquidity reserves are too low.
      * @param caller The address initiating the withdrawal.
      * @param receiver The address designated to receive the withdrawn assets.
      * @param owner The address that owns the shares being redeemed.

@@ -134,8 +134,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Handles withdrawals from the vault, updating the position and distributing fees.
-     * @dev This function calculates and records any capital gains or losses, updates the owner's position, and distributes the assets to the receiver. It also transfers the assets from the deposit pool.
+     * @notice Handles withdrawals from the vault, updating the position and distributing fees to operators and the treasury.
+     * @dev This function calculates and records any capital gains or losses, updates the owner's position, and distributes the assets to the receiver. 
+     * It also transfers the assets from the deposit pool. May revert if the liquidity reserves are too low.
      * @param caller The address initiating the withdrawal.
      * @param receiver The address designated to receive the withdrawn assets.
      * @param owner The address that owns the shares being redeemed.
@@ -248,7 +249,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Returns the total assets managed by this vault.
-     * @dev This function calculates the total assets by summing the vault's own assets, the distributable yield, and the assets held in the deposit pool and Operator Distributor. It then subtracts the treasury and node operator incomes to get the net total assets.
+     * @dev This function calculates the total assets by summing the vault's own assets, the distributable yield, 
+     * and the assets held in the deposit pool and Operator Distributor. It then subtracts the treasury and node operator incomes to get the net total assets.
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
@@ -291,7 +293,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Calculates the required collateral after a specified deposit.
-     * @dev This function calculates the required collateral to ensure the contract remains sufficiently collateralized after a specified deposit amount. It compares the current balance with the required collateral based on the total assets including the deposit.
+     * @dev This function calculates the required collateral to ensure the contract remains sufficiently collateralized 
+     * after a specified deposit amount. It compares the current balance with the required collateral based on 
+     * the total assets, including the deposit.
      * @param deposit The amount of the deposit to consider in the collateral calculation.
      * @return The amount of collateral required after the specified deposit.
      */
@@ -342,7 +346,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Sets the treasury fee in basis points.
-     * @dev This function allows the admin to update the treasury fee, which is calculated in basis points. The fee must not exceed 100%.
+     * @dev This function allows the admin to update the treasury fee, which is calculated in basis points. 
+     * The fee must not exceed 100%.
      * @param _treasuryFee The new treasury fee in basis points.
      */
     function setTreasuryFee(uint256 _treasuryFee) external onlyMediumTimelock {
@@ -352,7 +357,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Sets the node operator fee in basis points.
-     * @dev This function allows the admin to update the node operator fee, which is calculated in basis points. The fee must not exceed 100%.
+     * @dev This function allows the admin to update the node operator fee, which is calculated in basis points. 
+     * The fee must not exceed 100%.
      * @param _nodeOperatorFeeBasePoint The new node operator fee in basis points.
      */
     function setNodeOperatorFee(uint256 _nodeOperatorFeeBasePoint) external onlyShortTimelock {
@@ -362,7 +368,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Claims the accumulated treasury and node operator fees.
-     * @dev This function allows the protocol or admin to claim the fees accumulated from rewards. It transfers the fees to the respective addresses.
+     * @dev This function allows the protocol or admin to claim the fees accumulated from rewards. 
+     * It transfers the fees to the respective addresses.
      */
     function claimFees() external onlyProtocolOrAdmin {
         _claimFees();
@@ -370,7 +377,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Internal function to claim the treasury and node operator fees.
-     * @dev This function calculates the current treasury and node operator income from rewards, determines the fee amount based on the income that hasn't been claimed yet, and transfers these fees to the respective addresses. It then updates the `lastTreasuryIncomeClaimed` and `lastNodeOperatorIncomeClaimed` to the latest claimed amounts.
+     * @dev This function calculates the current treasury and node operator income from rewards, 
+     * determines the fee amount based on the income that hasn't been claimed yet, and transfers 
+     * these fees to the respective addresses. It then updates the `lastTreasuryIncomeClaimed` and 
+     * `lastNodeOperatorIncomeClaimed` to the latest claimed amounts.
      * @return wethTransferOut The amount of WETH transferred out as fees.
      */
     function _claimFees() internal returns (uint256 wethTransferOut) {
