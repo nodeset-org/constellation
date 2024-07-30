@@ -108,25 +108,18 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         address payable pool = _directory.getDepositPoolAddress();
 
-        WeightedAverageCalculation memory vars;
-        vars.totalPriceOfShares = assets;
-        vars.lastPricePaidPerShare = positions[receiver].pricePaidPerShare;
-        vars.originalValueTimesShares = vars.lastPricePaidPerShare * positions[receiver].shares * 1e18;
-        console.log("WETHVault._deposit.vars.originalValueTimesShares", vars.originalValueTimesShares);
-        console.log("WETHVault._deposit.vars.lastPricePaidPerShare", vars.lastPricePaidPerShare);
+        // Retrieve the current position
+        Position storage currentPosition = positions[receiver];
 
-        vars.newValueTimesShares = vars.totalPriceOfShares * 1e18;
-        vars.totalShares = positions[receiver].shares + shares;
-        vars.weightedPriceSum = vars.originalValueTimesShares + vars.newValueTimesShares;
-        console.log("WETHVault._deposit.vars.totalShares", vars.totalShares);
-        console.log("WETHVault._deposit.vars.newValueTimesShares", vars.newValueTimesShares);
-        console.log("WETHVault._deposit.vars.weightedPriceSum", vars.weightedPriceSum);
+        // Calculate the new weighted average price per share
+        uint256 newShares = currentPosition.shares + shares;
+        uint256 totalValue = (currentPosition.pricePaidPerShare * currentPosition.shares) + (assets * 1e18);
 
-        positions[receiver].pricePaidPerShare =
-            vars.weightedPriceSum / (vars.totalShares == 0 ? 1 : vars.totalShares) / 1e18;
-        positions[receiver].shares += shares;
-        console.log("WETHVault._deposit.positions[receiver].pricePaidPerShare", positions[receiver].pricePaidPerShare);
-        console.log("WETHVault._deposit.positions[receiver].shares", positions[receiver].shares);
+        uint256 newPricePaidPerShare = (newShares > 0) ? (totalValue / newShares) : 0;
+
+        // Update the receiver's position
+        currentPosition.shares = newShares;
+        currentPosition.pricePaidPerShare = newPricePaidPerShare;
 
         principal += assets;
 
@@ -161,8 +154,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         }
 
         uint256 lastPriceOfShares = positions[owner].pricePaidPerShare * shares;
-        console.log("WETHVault._withdraw.lastPriceOfShares", lastPriceOfShares);
-        console.log("WETHVault._withdraw.assets", assets);
+        console.log('WETHVault._withdraw.lastPriceOfShares', lastPriceOfShares);
+        console.log('WETHVault._withdraw.assets', assets);
         if (assets > lastPriceOfShares) {
             uint256 capitalGain = assets - lastPriceOfShares;
             totalYieldDistributed += capitalGain;
