@@ -114,11 +114,21 @@ contract FundRouter is UpgradeableBase {
         } else {
             console.log('sendEthToDistributors.G');
 
-            // If not enough ETH balance, convert the shortfall in WETH back to ETH and send it
+            // Calculate shortfall in ETH needed
             uint256 shortfall = requiredCapital - ethBalance;
-            WETH.deposit{value: shortfall}();
-            SafeERC20.safeTransfer(IERC20(address(WETH)), address(vweth), shortfall);
-            console.log('sendEthToDistributors.H');
+            console.log('FundRouter.sendEthToDisgtributors.shortfall', shortfall);
+
+            // Ensure enough WETH to cover the shortfall
+            if (wethBalance >= shortfall) {
+                console.log('sendEthToDistributors.G1');
+                // Transfer the required capital in WETH to the vault
+                SafeERC20.safeTransfer(IERC20(address(WETH)), address(vweth), shortfall);
+                console.log('sendEthToDistributors.H');
+            } else {
+                // Log or handle the case where there isn't enough WETH to cover the shortfall
+                console.log('Insufficient WETH to cover the shortfall:', wethBalance, shortfall);
+                SafeERC20.safeTransfer(IERC20(address(WETH)), address(vweth), wethBalance);
+            }
         }
         console.log('sendEthToDistributors.I');
     }

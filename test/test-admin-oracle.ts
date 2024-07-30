@@ -60,7 +60,6 @@ describe("XRETHAdminOracle", function () {
             const { admin, random } = signers;
 
             const adminOracleRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ORACLE_ROLE"));
-
             await directory.connect(admin).grantRole(adminOracleRole, random.address);
 
             const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
@@ -70,7 +69,6 @@ describe("XRETHAdminOracle", function () {
             const newTotalYield = ethers.utils.parseEther("100");
             const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "address", "uint256"], [newTotalYield, timestamp, oracle.address, chainId]);
             const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
-
 
             await oracle.connect(admin).setTotalYieldAccrued(signature, newTotalYield, timestamp);
             expect(await oracle.getTotalYieldAccrued()).to.equal(newTotalYield);

@@ -75,6 +75,7 @@ describe("xrETH", function () {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
+    const {admin} = signers;
     const { sig, timestamp } = await whitelistUserServerSig(setupData, signers.ethWhale);
 
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("100"));
@@ -91,15 +92,44 @@ describe("xrETH", function () {
     expect(await protocol.vCWETH.currentIncomeFromRewards()).equals(0);
     expect(await protocol.vCWETH.totalYieldDistributed()).equals(0);
 
-    const shares = (await protocol.vCWETH.balanceOf(signers.ethWhale.address)).div(10)
     // attempt to redeem 10% of shares for 10 eth which is 10% of 100 eth
+    let shares = (await protocol.vCWETH.balanceOf(signers.ethWhale.address)).div(10)
     await protocol.vCWETH.connect(signers.ethWhale).redeem(shares, signers.ethWhale.address, signers.ethWhale.address);
     expect(await protocol.vCWETH.principal()).equals(ethers.utils.parseEther("90"));
     expect(await protocol.vCWETH.currentIncomeFromRewards()).equals(0);
     expect(await protocol.vCWETH.totalYieldDistributed()).equals(0);
-
     expect(await protocol.vCWETH.totalAssets()).equals(ethers.utils.parseEther("90"))
-    
+
+    // deposit 10 more eth so we are working with an even 100 eth in the system
+    await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("10") });
+    await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("10"));
+    await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("10"), signers.ethWhale.address);
+
+    expect(await protocol.vCWETH.totalAssets()).equals(ethers.utils.parseEther("100"))
+
+    // increase oracle value
+    const network = await ethers.provider.getNetwork();
+    const chainId = network.chainId;
+    const newTotalYield = ethers.utils.parseEther("100");
+    const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "address", "uint256"], [newTotalYield, timestamp, protocol.oracle.address, chainId]);
+    const signature = await admin.signMessage(ethers.utils.arrayify(messageHash));
+
+    expect(await protocol.oracle.getTotalYieldAccrued()).to.equal(0);
+    await protocol.oracle.connect(admin).setTotalYieldAccrued(signature, newTotalYield, timestamp);
+    expect(await protocol.oracle.getTotalYieldAccrued()).to.equal(newTotalYield);
+
+    // expect 100 eth in income reported per oracle
+    expect(await protocol.vCWETH.currentIncomeFromRewards()).equals(ethers.utils.parseEther("100"));
+
+    // redeem 1% of shares for eth but we should expect a 50% gain from the additional 100 eth reported from oracle
+    shares = (await protocol.vCWETH.balanceOf(signers.ethWhale.address)).div(100)
+    console.log("preview redeem", await protocol.vCWETH.previewRedeem(shares));
+    console.log("preview redeem", await protocol.wETH.balanceOf(protocol.vCWETH.address));
+    await protocol.vCWETH.connect(signers.ethWhale).redeem(shares, signers.ethWhale.address, signers.ethWhale.address);
+    expect(await protocol.vCWETH.principal()).equals(ethers.utils.parseEther("99"));
+    expect(await protocol.vCWETH.totalYieldDistributed()).equals(0);
+    expect(await protocol.vCWETH.totalAssets()).equals(ethers.utils.parseEther("99"))
+
 
   })
 
