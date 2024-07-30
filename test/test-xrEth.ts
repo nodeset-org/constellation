@@ -71,7 +71,7 @@ describe("xrETH", function () {
     expect(expectedxrETHInSystem).equals(actualxrETHInSystem)
   })
 
-  it.only("success - makes deposit, positive oracle yield updates, withdraws for more than deposit", async () => {
+  it("success - makes deposit, positive oracle yield updates, withdraws for more than deposit", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
