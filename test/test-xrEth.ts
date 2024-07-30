@@ -22,7 +22,7 @@ describe("xrETH", function () {
     expect(await protocol.vCWETH.rplCoverageRatio()).equals(ethers.utils.parseUnits(".15", 18))
     expect(await protocol.vCWETH.enforceRplCoverageRatio()).equals(false)
     expect(await protocol.vCWETH.treasuryFee()).equals(ethers.utils.parseUnits("0.01", 5))
-    expect(await protocol.vCWETH.nodeOperatorFeeBasePoint()).equals(ethers.utils.parseUnits("0.01", 5))
+    expect(await protocol.vCWETH.nodeOperatorFee()).equals(ethers.utils.parseUnits("0.01", 5))
   })
 
   it("fail - tries to deposit weth as 'bad actor' involved in AML or other flavors of bad", async () => {
