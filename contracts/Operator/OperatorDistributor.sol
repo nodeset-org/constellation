@@ -26,7 +26,7 @@ import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
  */
 contract OperatorDistributor is UpgradeableBase, Errors {
     event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
-    event MinipoolDestroyed(address indexed _minipoolAddress, address indexed _nodeAddress);
+    event MinipoolDestroyed(address indexed _minipoolAddress);
     event WarningNoMiniPoolsToHarvest();
 
     event WarningMinipoolNotStaking(
@@ -355,6 +355,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      */
     function onNodeMinipoolDestroy(address _nodeOperator, uint256 _bond) external onlyProtocol {
         fundedEth -= _bond;
+        emit MinipoolDestroyed(_nodeOperator);
     }
 
     /**
