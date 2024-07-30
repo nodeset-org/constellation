@@ -49,7 +49,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public nodeOperatorFeeBasePoint;
 
     uint256 public principal; // Total principal amount (sum of all deposits)
-    uint256 public lastAdminIncomeClaimed; // Tracks the amount of income already claimed by the admin
+    uint256 public lastTreasuryIncomeClaimed; // Tracks the amount of income already claimed by the admin
     uint256 public lastNodeOperatorIncomeClaimed; // Tracks the amount of income already claimed by the Node Operator
     uint256 public ethPerSlashReward; // Tracks how much a user gets for reporting a slasher
 
@@ -248,7 +248,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Returns the total assets managed by this vault.
-     * @dev This function calculates the total assets by summing the vault's own assets, the distributable yield, and the assets held in the deposit pool and Operator Distributor. It then subtracts the admin and node operator incomes to get the net total assets.
+     * @dev This function calculates the total assets by summing the vault's own assets, the distributable yield, and the assets held in the deposit pool and Operator Distributor. It then subtracts the treasury and node operator incomes to get the net total assets.
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
@@ -257,7 +257,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         FundRouter dp = FundRouter(getDirectory().getDepositPoolAddress());
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         uint256 currentIncome = currentIncomeFromRewards();
-        uint256 currentAdminIncome = currentIncome.mulDiv(treasuryFee, 1e5);
+        uint256 currentTreasuryIncome = currentIncome.mulDiv(treasuryFee, 1e5);
         uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFeeBasePoint, 1e5);
         (uint256 distributableYield, bool signed) = getDistributableYield();
 
@@ -267,7 +267,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
                     int(super.totalAssets() + dp.getTvlEth() + od.getTvlEth()) +
                         (signed ? -int(distributableYield) : int(distributableYield))
                 )
-            ) - (currentAdminIncome + currentNodeOperatorIncome);
+            ) - (currentTreasuryIncome + currentNodeOperatorIncome);
     }
 
     /**
@@ -361,7 +361,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Claims the accumulated admin and node operator fees.
+     * @notice Claims the accumulated treasury and node operator fees.
      * @dev This function allows the protocol or admin to claim the fees accumulated from rewards. It transfers the fees to the respective addresses.
      */
     function claimFees() external onlyProtocolOrAdmin {
@@ -369,40 +369,40 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Internal function to claim the admin and node operator fees.
-     * @dev This function calculates the current admin and node operator income from rewards, determines the fee amount based on the income that hasn't been claimed yet, and transfers these fees to the respective addresses. It then updates the `lastAdminIncomeClaimed` and `lastNodeOperatorIncomeClaimed` to the latest claimed amounts.
+     * @notice Internal function to claim the treasury and node operator fees.
+     * @dev This function calculates the current treasury and node operator income from rewards, determines the fee amount based on the income that hasn't been claimed yet, and transfers these fees to the respective addresses. It then updates the `lastTreasuryIncomeClaimed` and `lastNodeOperatorIncomeClaimed` to the latest claimed amounts.
      * @return wethTransferOut The amount of WETH transferred out as fees.
      */
     function _claimFees() internal returns (uint256 wethTransferOut) {
         uint256 currentIncome = currentIncomeFromRewards();
-        uint256 currentAdminIncome = currentIncome.mulDiv(treasuryFee, 1e5);
+        uint256 currentTreasuryIncome = currentIncome.mulDiv(treasuryFee, 1e5);
         uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFeeBasePoint, 1e5);
 
         uint256 feeAmountNodeOperator = currentNodeOperatorIncome - lastNodeOperatorIncomeClaimed;
-        uint256 feeAmountAdmin = currentAdminIncome - lastAdminIncomeClaimed;
+        uint256 feeAmountTreasury = currentTreasuryIncome - lastTreasuryIncomeClaimed;
 
         YieldDistributor yd = YieldDistributor(_directory.getYieldDistributorAddress());
 
-        // Transfer the fee to the NodeOperator and admin treasury
+        // Transfer the fee to the NodeOperator and treasury
 
         console.log('no fee', feeAmountNodeOperator);
-        console.log('no fee', feeAmountAdmin);
+        console.log('no fee', feeAmountTreasury);
         (bool shortfallNo, uint256 noOut, uint256 remainingNo) = _doTransferOut(address(yd), feeAmountNodeOperator);
         yd.wethReceivedVoidClaim(noOut);
         console.log('transfered to nodep po');
-        (bool shortfallAdmin, uint256 adminOut, uint256 remainingAdmin) = _doTransferOut(
+        (bool shortfallTreasury, uint256 treasuryOut, uint256 remainingTreasury) = _doTransferOut(
             _directory.getTreasuryAddress(),
-            feeAmountAdmin
+            feeAmountTreasury
         );
-        console.log('Claimed admin and node operator fee');
+        console.log('Claimed treasury and node operator fee');
 
-        wethTransferOut = (shortfallNo ? remainingNo : noOut) + (shortfallAdmin ? remainingAdmin : adminOut);
+        wethTransferOut = (shortfallNo ? remainingNo : noOut) + (shortfallTreasury ? remainingTreasury : treasuryOut);
 
         lastNodeOperatorIncomeClaimed = currentIncomeFromRewards().mulDiv(treasuryFee, 1e5);
-        lastAdminIncomeClaimed = currentIncomeFromRewards().mulDiv(nodeOperatorFeeBasePoint, 1e5);
+        lastTreasuryIncomeClaimed = currentIncomeFromRewards().mulDiv(nodeOperatorFeeBasePoint, 1e5);
 
         emit NodeOperatorFeeClaimed(feeAmountNodeOperator);
-        emit TreasuryFeeClaimed(feeAmountAdmin);
+        emit TreasuryFeeClaimed(feeAmountTreasury);
     }
 
     /**
