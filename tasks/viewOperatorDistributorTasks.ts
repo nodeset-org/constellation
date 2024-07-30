@@ -31,6 +31,20 @@ task("viewOperatorDistributor", "Displays public variables and view functions of
     console.log("getTvlRpl:", tvlRpl.toString());
   });
 
+  task("getDeployedRpl", "Displays the total value locked (ETH) in the OperatorDistributor contract")
+  .addParam("address", "The address of the OperatorDistributor contract")
+  .setAction(async ({ address }, hre) => {
+    const od = await hre.ethers.getContractAt("OperatorDistributor", address);
+    const fundedRpl = await od.fundedRpl();
+    console.log("fundedRpl:", fundedRpl.toString());
+
+    const directoryAddr = await od.getDirectory();
+    const directory = await hre.ethers.getContractAt("Directory", directoryAddr);
+
+    const rocketNodeStaking = await hre.ethers.getContractAt("RocketNodeStaking", await directory.getRocketNodeStakingAddress());
+    const totalStaked = await rocketNodeStaking.getNodeRPLStake(await directory.getSuperNodeAddress());
+    console.log("Total Staked by Super Node", totalStaked);
+  });
 
 task("getTvlEth", "Displays the total value locked (ETH) in the OperatorDistributor contract")
   .addParam("address", "The address of the OperatorDistributor contract")
