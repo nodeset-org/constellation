@@ -19,6 +19,7 @@ describe("Operator Distributor", function () {
 		const rocketDepositPool = await ethers.getContractAt("RocketDepositPool", rocketDepositPoolContract.address);
 
 		await prepareOperatorDistributionContract(setupData, 2);
+		console.log("start");
 		const NodeAccounts = await registerNewValidator(setupData, [signers.random, signers.random2])
 
 		// send rpl to the operator distributor

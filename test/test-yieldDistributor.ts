@@ -43,7 +43,9 @@ describe("Yield Distributor", function () {
     await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
 
     await signers.ethWhale.sendTransaction({ to: protocol.operatorDistributor.address, value: ethers.utils.parseEther("30") });
+    console.log("Pre-registernewvalidator");
     await registerNewValidator(setupData, [signers.random, signers.random2, signers.random3]);
+    console.log("Post-registernewvalidator");
 
     const tx1 = await protocol.yieldDistributor.connect(signers.ethWhale).harvest(signers.random.address, 1, 1);
     const tx2 = await protocol.yieldDistributor.connect(signers.ethWhale).harvest(signers.random2.address, 1, 1);
