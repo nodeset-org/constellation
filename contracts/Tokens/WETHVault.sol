@@ -51,11 +51,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public lastTreasuryIncomeClaimed; // Tracks the amount of income already claimed by the admin
     uint256 public lastNodeOperatorIncomeClaimed; // Tracks the amount of income already claimed by the Node Operator
     uint256 public ethPerSlashReward; // Tracks how much a user gets for reporting a slasher
-    uint256 public totalTreasuryIncomeClaimed;
-    uint256 public totalNodeOperatorIncomeClaimed;
-    uint256 public totalCommunityIncomeClaimed;
-    uint256 public sharesRedeemed;
-    uint256 public assetsRedeemed;
 
     uint256 public unclaimedTreasuryIncome;
     uint256 public unclaimedNodeOperatorIncome;
@@ -164,11 +159,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         principal -= assets - totalRewardsForShares;
 
-        totalCommunityIncomeClaimed += totalRewardsForShares;
-
-        sharesRedeemed += shares;
-        assetsRedeemed += assets;
-
         super._withdraw(caller, receiver, owner, assets, shares);
 
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
@@ -215,7 +205,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             uint256(
                 int(_totalAssets() + dp.getTvlEth() + od.getTvlEth()) +
                     (signed ? -int(distributableYield) : int(distributableYield))
-            ) + totalCommunityIncomeClaimed;
+            );
     }
 
     /**
@@ -225,10 +215,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function currentIncomeFromRewards() public view returns (uint256) {
         unchecked {
-            uint256 tvl = getTvl() +
-                totalCommunityIncomeClaimed +
-                totalTreasuryIncomeClaimed +
-                totalNodeOperatorIncomeClaimed;
+            uint256 tvl = getTvl() ;
             if (tvl < principal) {
                 return 0;
             }
@@ -236,7 +223,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         }
     }
 
-    function updateUnclaimedRewards() public {}
+    function updateUnclaimedRewards(uint256 currentIncome) public {
+        uint256 currentTreasuryIncome = currentIncome.mulDiv(treasuryFee, 1e5);
+        uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFee, 1e5);
+
+        uint256 feeAmountNodeOperator = currentNodeOperatorIncome - lastNodeOperatorIncomeClaimed;
+        uint256 feeAmountTreasury = currentTreasuryIncome - lastTreasuryIncomeClaimed;
+    }
 
     /**
      * @notice Returns the total assets managed by this vault.
@@ -248,22 +241,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         //console.log("WETHVault.totalAssets()");
         //console.log(getDirectory().getDepositPoolAddress());
 
-        uint256 currentIncome = currentIncomeFromRewards();
-        uint256 currentTreasuryIncome = currentIncome.mulDiv(treasuryFee, 1e5) - lastTreasuryIncomeClaimed;
-        uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFee, 1e5) - lastNodeOperatorIncomeClaimed;
+        //console.log('WETHVault.totalAssets.currentIncome', currentIncome);
+        //console.log('WETHVault.totalAssets.currentTreasuryIncome', currentTreasuryIncome);
+        //console.log('WETHVault.totalAssets.currentNodeOperatorIncome', currentNodeOperatorIncome);
+        //console.log('WETHVault.totalAssets.lastTreasuryIncomeClaimed', lastTreasuryIncomeClaimed);
+        //console.log('WETHVault.totalAssets.lastNodeOperatorIncomeClaimed', lastNodeOperatorIncomeClaimed);
 
-
-        console.log('WETHVault.totalAssets.currentIncome', currentIncome);
-        console.log('WETHVault.totalAssets.currentTreasuryIncome', currentTreasuryIncome);
-        console.log('WETHVault.totalAssets.currentNodeOperatorIncome', currentNodeOperatorIncome);
-        console.log('WETHVault.totalAssets.lastTreasuryIncomeClaimed', lastTreasuryIncomeClaimed);
-        console.log('WETHVault.totalAssets.lastNodeOperatorIncomeClaimed', lastNodeOperatorIncomeClaimed);
-
-        return getTvl() - (currentTreasuryIncome + currentNodeOperatorIncome);
-    }
-
-    function totalSupply() public view virtual override(ERC20Upgradeable, IERC20Upgradeable) returns (uint256) {
-        return super.totalSupply() + sharesRedeemed;
+        return getTvl() - (unclaimedNodeOperatorIncome + unclaimedTreasuryIncome);
     }
 
     /**
@@ -369,18 +353,15 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @return wethTransferOut The amount of WETH transferred out as fees.
      */
     function _claimFees(uint256 currentIncome) internal returns (uint256 wethTransferOut) {
-        uint256 currentTreasuryIncome = currentIncome.mulDiv(treasuryFee, 1e5);
-        uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFee, 1e5);
 
-        uint256 feeAmountNodeOperator = currentNodeOperatorIncome - lastNodeOperatorIncomeClaimed;
-        uint256 feeAmountTreasury = currentTreasuryIncome - lastTreasuryIncomeClaimed;
 
-        YieldDistributor yd = YieldDistributor(_directory.getYieldDistributorAddress());
+        updateUnclaimedRewards(currentIncome);
 
         // Transfer the fee to the NodeOperator and treasury
 
         console.log('feeAmountNodeOperator fee', feeAmountNodeOperator);
         console.log('feeAmountTreasury fee', feeAmountTreasury);
+        YieldDistributor yd = YieldDistributor(_directory.getYieldDistributorAddress());
         (bool shortfallNo, uint256 noOut, uint256 remainingNo) = _doTransferOut(address(yd), feeAmountNodeOperator);
         yd.wethReceivedVoidClaim(noOut);
         console.log('shortfallNo', shortfallNo);
@@ -391,9 +372,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             feeAmountTreasury
         );
         console.log('Claimed treasury and node operator fee');
-
-        totalTreasuryIncomeClaimed += treasuryOut;
-        totalNodeOperatorIncomeClaimed += noOut;
 
         wethTransferOut = (shortfallNo ? remainingNo : noOut) + (shortfallTreasury ? remainingTreasury : treasuryOut);
 
