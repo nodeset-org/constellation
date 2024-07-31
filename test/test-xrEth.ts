@@ -153,7 +153,6 @@ describe("xrETH", function () {
     console.log("OD TVL", await protocol.operatorDistributor.getTvlEth());
     console.log("DP TVL", await protocol.depositPool.getTvlEth());
 
-    // todo test totalAssets
     expect(await protocol.vCWETH.totalAssets()).equals(expectedTotalAssets);
 
   })
