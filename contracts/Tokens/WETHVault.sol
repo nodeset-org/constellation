@@ -154,7 +154,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFee, 1e5);
         uint256 communityReward = currentIncome - (currentAdminIncome + currentNodeOperatorIncome);
         uint256 rewardsPerShare = communityReward.mulDiv(1e18, totalSupply());
-        uint256 totalRewardsForShares = rewardsPerShare.mulDiv(shares, 1e18);
+        uint256 totalRewardsForShares = rewardsPerShare.mulDiv(shares, 1e18) - totalCommunityIncomeClaimed;
 
         console.log('_withdraw.totalRewardsForShares', totalRewardsForShares);
         console.log('_withdraw.shares', shares);

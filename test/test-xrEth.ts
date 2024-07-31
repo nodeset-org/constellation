@@ -124,6 +124,7 @@ describe("xrETH", function () {
     const currentNodeOperatorIncome0 = oracleValue.mul(await protocol.vCWETH.nodeOperatorFee()).div(ethers.utils.parseUnits("1", 5));
     const expectedTotalAssets0 = oracleValue.add(oracleValue).sub(currentAdminIncome0.add(currentNodeOperatorIncome0));
     expect(await protocol.vCWETH.totalAssets()).equals(expectedTotalAssets0)
+    console.log("ActualTotalAssets", await protocol.vCWETH.totalAssets());
 
     
     // redeem 1% of shares for eth but we should expect a ~98% gain from the additional 100 eth reported from oracle
@@ -158,6 +159,25 @@ describe("xrETH", function () {
 
     expect(await protocol.vCWETH.totalAssets()).equals(expectedTotalAssets);
 
+    await protocol.vCWETH.connect(signers.ethWhale).redeem(shares, signers.ethWhale.address, signers.ethWhale.address);
+    
+    console.log("preview redeem", await protocol.vCWETH.previewRedeem(shares));
+    console.log("expectedTotalAssets", expectedTotalAssets);
+    console.log("ActualTotalAssets", await protocol.vCWETH.totalAssets());
+    console.log("currentIncome", currentIncomeFromRewards);
+    console.log("distributableYield", await protocol.vCWETH.getDistributableYield());
+    console.log("OD TVL", await protocol.operatorDistributor.getTvlEth());
+    console.log("DP TVL", await protocol.depositPool.getTvlEth());
+
+    await protocol.vCWETH.connect(signers.ethWhale).redeem(shares, signers.ethWhale.address, signers.ethWhale.address);
+    
+    console.log("preview redeem", await protocol.vCWETH.previewRedeem(shares));
+    console.log("expectedTotalAssets", expectedTotalAssets);
+    console.log("ActualTotalAssets", await protocol.vCWETH.totalAssets());
+    console.log("currentIncome", currentIncomeFromRewards);
+    console.log("distributableYield", await protocol.vCWETH.getDistributableYield());
+    console.log("OD TVL", await protocol.operatorDistributor.getTvlEth());
+    console.log("DP TVL", await protocol.depositPool.getTvlEth());
   })
 
 
