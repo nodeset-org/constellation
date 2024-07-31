@@ -40,7 +40,7 @@ This repository contains Solidity smart contracts for Constellation, a second la
 9. **Directory.sol**
    - Holds references to all protocol contracts and manages role mechanisms.
 
-10. **FundRouter.sol**
+10. **AssetRouter.sol**
     - Manages protocol asset routing between vaults and other distributors.
 
 11. **WETHVault.sol**

@@ -4,7 +4,7 @@ import path from 'path';
 import { getNextContractAddress } from "../../test/utils/utils";
 import { getInitializerData } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import readline from 'readline';
-import { Treasury, Directory, FundRouter, IRocketStorage, IXRETHOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, XRETHAdminOracle, YieldDistributor } from "../../typechain-types";
+import { Treasury, Directory, AssetRouter, IRocketStorage, IXRETHOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, XRETHAdminOracle, YieldDistributor } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Protocol, Signers } from "../../test/test";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
@@ -94,7 +94,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
     })
 
     const depositPoolProxy = await retryOperation(async function () {
-        const dp = await upgrades.deployProxy(await ethers.getContractFactory("FundRouter", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        const dp = await upgrades.deployProxy(await ethers.getContractFactory("AssetRouter", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         if (log) console.log("Fund Router (Deposit Pool) deployed to", dp.address)
         return dp
     })
@@ -190,7 +190,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
         whitelist: whitelistProxy as Whitelist,
         vCWETH: vCWETHProxy as WETHVault,
         vCRPL: vCRPLProxy as RPLVault,
-        depositPool: depositPoolProxy as FundRouter,
+        depositPool: depositPoolProxy as AssetRouter,
         operatorDistributor: operatorDistributorProxy as OperatorDistributor,
         yieldDistributor: yieldDistributorProxy as YieldDistributor,
         priceFetcher: priceFetcherProxy as PriceFetcher,

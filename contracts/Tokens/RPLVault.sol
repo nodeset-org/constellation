@@ -8,7 +8,7 @@ import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import './WETHVault.sol';
 
 import '../UpgradeableBase.sol';
-import '../FundRouter.sol';
+import '../AssetRouter.sol';
 import '../Operator/OperatorDistributor.sol';
 
 import 'hardhat/console.sol';
@@ -80,7 +80,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         _claimTreasuryFee();
         super._deposit(caller, receiver, assets, shares);
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
-        FundRouter(pool).sendRplToDistributors();
+        AssetRouter(pool).sendRplToDistributors();
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
     }
 
@@ -113,7 +113,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         principal -= assets;
 
         super._withdraw(caller, receiver, owner, assets, shares);
-        FundRouter(_directory.getDepositPoolAddress()).sendRplToDistributors();
+        AssetRouter(_directory.getDepositPoolAddress()).sendRplToDistributors();
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
     }
 
@@ -127,7 +127,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     function currentIncomeFromRewards() public view returns (uint256) {
         unchecked {
             uint256 tvl = super.totalAssets() +
-                FundRouter(_directory.getDepositPoolAddress()).getTvlRpl() +
+                AssetRouter(_directory.getDepositPoolAddress()).getTvlRpl() +
                 OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl();
 
             if (tvl < principal) {
@@ -153,7 +153,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     function totalAssets() public view override returns (uint256) {
         return
             (super.totalAssets() +
-                FundRouter(_directory.getDepositPoolAddress()).getTvlRpl() +
+                AssetRouter(_directory.getDepositPoolAddress()).getTvlRpl() +
                 OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl()) -
             currentTreasuryIncomeFromRewards();
     }
