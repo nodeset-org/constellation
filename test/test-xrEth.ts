@@ -4,8 +4,9 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { getEventNames, upgradePriceFetcherToMock, whitelistUserServerSig } from "./utils/utils";
+import { expectNumberE18ToBeApproximately, getEventNames, upgradePriceFetcherToMock, whitelistUserServerSig } from "./utils/utils";
 import { ContractTransaction } from "@ethersproject/contracts";
+import { wEth } from "../typechain-types/contracts/Testing";
 
 describe("xrETH", function () {
 
@@ -56,7 +57,7 @@ describe("xrETH", function () {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
-    const {sig, timestamp} = await whitelistUserServerSig(setupData, signers.ethWhale);
+    const { sig, timestamp } = await whitelistUserServerSig(setupData, signers.ethWhale);
 
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("100"));
     await protocol.whitelist.connect(signers.admin).addOperator(signers.ethWhale.address, timestamp, sig);
@@ -68,6 +69,161 @@ describe("xrETH", function () {
     const expectedxrETHInSystem = ethers.utils.parseEther("100");
     const actualxrETHInSystem = await protocol.vCWETH.totalAssets();
     expect(expectedxrETHInSystem).equals(actualxrETHInSystem)
+  })
+
+  it.only("success - makes deposit, positive oracle yield updates, withdraws for more than deposit", async () => {
+    const setupData = await loadFixture(protocolFixture);
+    const { protocol, signers, rocketPool } = setupData;
+
+    const { admin } = signers;
+    const { sig, timestamp } = await whitelistUserServerSig(setupData, signers.ethWhale);
+
+    console.log("STEP 0 - initializing protocol with funds")
+    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("100"));
+    await protocol.whitelist.connect(signers.admin).addOperator(signers.ethWhale.address, timestamp, sig);
+
+    await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
+    await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
+    await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
+
+    const expectedxrETHInSystem = ethers.utils.parseEther("100");
+    const actualxrETHInSystem = await protocol.vCWETH.totalAssets();
+    expect(expectedxrETHInSystem).equals(actualxrETHInSystem)
+    expect(await protocol.vCWETH.principal()).equals(expectedxrETHInSystem);
+    expect(await protocol.vCWETH.currentIncomeFromRewards()).equals(0);
+
+    console.log("STEP 1 - trying to redeem 10% of shares for 10 eth which is 10% of 100 eth")
+    // attempt to redeem 10% of shares for 10 eth which is 10% of 100 eth
+    let shares = (await protocol.vCWETH.balanceOf(signers.ethWhale.address)).div(10)
+    await protocol.vCWETH.connect(signers.ethWhale).redeem(shares, signers.ethWhale.address, signers.ethWhale.address);
+    expect(await protocol.vCWETH.principal()).equals(ethers.utils.parseEther("90"));
+    expect(await protocol.vCWETH.currentIncomeFromRewards()).equals(0);
+    expect(await protocol.vCWETH.totalAssets()).equals(ethers.utils.parseEther("90"))
+
+    console.log("STEP 2 - trying to deposit 10 more eth so we are working with an even 100 eth in the system")
+    // deposit 10 more eth so we are working with an even 100 eth in the system
+    await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("10") });
+    await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("10"));
+    await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("10"), signers.ethWhale.address);
+    expect(await protocol.vCWETH.principal()).equals(ethers.utils.parseEther("100"));
+    expect(await protocol.vCWETH.totalAssets()).equals(ethers.utils.parseEther("100"))
+
+    console.log("STEP 3 - trying to increase oracle value")
+    // increase oracle value
+    const network = await ethers.provider.getNetwork();
+    const chainId = network.chainId;
+    const newTotalYield = ethers.utils.parseEther("100");
+    const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "address", "uint256"], [newTotalYield, timestamp, protocol.oracle.address, chainId]);
+    const signature = await admin.signMessage(ethers.utils.arrayify(messageHash));
+
+    expect(await protocol.oracle.getTotalYieldAccrued()).to.equal(0);
+    await protocol.oracle.connect(admin).setTotalYieldAccrued(signature, newTotalYield, timestamp);
+    expect(await protocol.oracle.getTotalYieldAccrued()).to.equal(newTotalYield);
+
+    console.log("STEP 4 - trying to expect 100 eth in income reported per oracle")
+    // expect 100 eth in income reported per oracle
+    const oracleValue = ethers.utils.parseEther("100");
+    expect(await protocol.vCWETH.currentIncomeFromRewards()).equals(oracleValue);
+    expect(await protocol.vCWETH.principal()).equals(ethers.utils.parseEther("100"));
+    const currentAdminIncome0 = oracleValue.mul(await protocol.vCWETH.treasuryFee()).div(ethers.utils.parseUnits("1", 5));
+    const currentNodeOperatorIncome0 = oracleValue.mul(await protocol.vCWETH.nodeOperatorFee()).div(ethers.utils.parseUnits("1", 5));
+    const expectedTotalAssets0 = oracleValue.add(oracleValue).sub(currentAdminIncome0.add(currentNodeOperatorIncome0));
+    expect(await protocol.vCWETH.totalAssets()).equals(expectedTotalAssets0)
+    console.log("ActualTotalAssets", await protocol.vCWETH.totalAssets());
+
+    console.log("STEP 5 - trying to redeem 1% of shares for eth but we should expect a ~98% gain from the additional 100 eth reported from oracle")
+    // redeem 1% of shares for eth but we should expect a ~98% gain from the additional 100 eth reported from oracle
+    shares = (await protocol.vCWETH.balanceOf(signers.ethWhale.address)).div(100)
+    const singleShareValue = await protocol.vCWETH.previewRedeem(shares); // this should remain constant through subsequent redeems
+    let balanceBefore = await protocol.wETH.balanceOf(signers.ethWhale.address);
+    await protocol.vCWETH.connect(signers.ethWhale).redeem(shares, signers.ethWhale.address, signers.ethWhale.address);
+    let balanceAfter = await protocol.wETH.balanceOf(signers.ethWhale.address);
+    expect(balanceAfter.sub(balanceBefore)).equals(singleShareValue);
+
+    // check treasury and yieldDistributor
+    const treasuryAddress = await protocol.directory.getTreasuryAddress();
+    expect(await protocol.wETH.balanceOf(treasuryAddress)).equals(currentAdminIncome0);
+    expect(await protocol.wETH.balanceOf(protocol.yieldDistributor.address)).equals(currentNodeOperatorIncome0);
+
+
+    const expectedPrincipal = ethers.BigNumber.from("99000000000000000001"); // because we claim before
+    expect(await protocol.vCWETH.principal()).equals(expectedPrincipal);
+
+    const currentIncomeFromRewards = await protocol.vCWETH.currentIncomeFromRewards();
+    const currentAdminIncome = currentIncomeFromRewards.mul(await protocol.vCWETH.treasuryFee()).div(ethers.utils.parseUnits("1", 5));
+    const currentNodeOperatorIncome = currentIncomeFromRewards.mul(await protocol.vCWETH.nodeOperatorFee()).div(ethers.utils.parseUnits("1", 5));
+
+    const expectedTotalAssets = expectedPrincipal.add(oracleValue).sub(currentAdminIncome.add(currentNodeOperatorIncome));
+    console.log("preview redeem 5", await protocol.vCWETH.previewRedeem(shares));
+    console.log("expectedTotalAssets", expectedTotalAssets);
+    console.log("ActualTotalAssets", await protocol.vCWETH.totalAssets());
+    console.log("currentIncome", currentIncomeFromRewards);
+    console.log("distributableYield", await protocol.vCWETH.getDistributableYield());
+    console.log("OD TVL", await protocol.operatorDistributor.getTvlEth());
+    console.log("DP TVL", await protocol.depositPool.getTvlEth());
+
+    expect(await protocol.vCWETH.totalAssets()).equals(expectedTotalAssets);
+
+    console.log("STEP 6 - trying to redeem 1% of shares for eth but we should expect a ~98% gain from the additional 100 eth reported from oracle")
+    balanceBefore = await protocol.wETH.balanceOf(signers.ethWhale.address);
+    await protocol.vCWETH.connect(signers.ethWhale).redeem(shares, signers.ethWhale.address, signers.ethWhale.address);
+    balanceAfter = await protocol.wETH.balanceOf(signers.ethWhale.address);
+    expectNumberE18ToBeApproximately(balanceAfter.sub(balanceBefore), singleShareValue, 0.5)
+
+    console.log("preview redeem 9", await protocol.vCWETH.previewRedeem(shares));
+    console.log("expectedTotalAssets", expectedTotalAssets);
+    console.log("ActualTotalAssets", await protocol.vCWETH.totalAssets());
+    console.log("currentIncome", currentIncomeFromRewards);
+    console.log("distributableYield", await protocol.vCWETH.getDistributableYield());
+    console.log("OD TVL", await protocol.operatorDistributor.getTvlEth());
+    console.log("DP TVL", await protocol.depositPool.getTvlEth());
+
+    console.log("STEP 7 - trying to redeem 1% of shares for eth but we should expect a ~98% gain from the additional 100 eth reported from oracle")
+    balanceBefore = await protocol.wETH.balanceOf(signers.ethWhale.address);
+    await protocol.vCWETH.connect(signers.ethWhale).redeem(shares, signers.ethWhale.address, signers.ethWhale.address);
+    balanceAfter = await protocol.wETH.balanceOf(signers.ethWhale.address);
+    expectNumberE18ToBeApproximately(balanceAfter.sub(balanceBefore), singleShareValue, 0.001)
+
+    console.log("preview redeem 7", await protocol.vCWETH.previewRedeem(shares));
+    console.log("expectedTotalAssets", expectedTotalAssets);
+    console.log("ActualTotalAssets", await protocol.vCWETH.totalAssets());
+    console.log("currentIncome", currentIncomeFromRewards);
+    console.log("distributableYield", await protocol.vCWETH.getDistributableYield());
+    console.log("OD TVL", await protocol.operatorDistributor.getTvlEth());
+    console.log("DP TVL", await protocol.depositPool.getTvlEth());
+
+    // deposit 100 more eth
+    await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
+    await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
+    await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
+
+    console.log("STEP 8 - trying to redeem 1% of shares for eth but we should expect a ~98% gain from the additional 100 eth reported from oracle")
+    balanceBefore = await protocol.wETH.balanceOf(signers.ethWhale.address);
+    await protocol.vCWETH.connect(signers.ethWhale).redeem(shares, signers.ethWhale.address, signers.ethWhale.address);
+    balanceAfter = await protocol.wETH.balanceOf(signers.ethWhale.address);
+    expect(balanceAfter.sub(balanceBefore)).equals(singleShareValue);
+
+    console.log("preview redeem 8", await protocol.vCWETH.previewRedeem(shares));
+    console.log("expectedTotalAssets", expectedTotalAssets);
+    console.log("ActualTotalAssets", await protocol.vCWETH.totalAssets());
+    console.log("currentIncome", currentIncomeFromRewards);
+    console.log("distributableYield", await protocol.vCWETH.getDistributableYield());
+    console.log("OD TVL", await protocol.operatorDistributor.getTvlEth());
+    console.log("DP TVL", await protocol.depositPool.getTvlEth());
+
+    console.log("STEP 9 - trying to redeem 1% of shares for eth but we should expect a ~98% gain from the additional 100 eth reported from oracle")
+    balanceBefore = await protocol.wETH.balanceOf(signers.ethWhale.address);
+    await protocol.vCWETH.connect(signers.ethWhale).redeem(shares, signers.ethWhale.address, signers.ethWhale.address);
+    balanceAfter = await protocol.wETH.balanceOf(signers.ethWhale.address);
+    expect(balanceAfter.sub(balanceBefore)).equals(singleShareValue);
+
+    console.log("preview redeem 9", await protocol.vCWETH.previewRedeem(shares));
+    console.log("expectedTotalAssets", expectedTotalAssets);
+    console.log("ActualTotalAssets", await protocol.vCWETH.totalAssets());
+    console.log("currentIncome", currentIncomeFromRewards);
+    console.log("distributableYield", await protocol.vCWETH.getDistributableYield());
+    console.log("OD TVL", await protocol.operatorDistributor.getTvlEth());
+    console.log("DP TVL", await protocol.depositPool.getTvlEth());
   })
 
 

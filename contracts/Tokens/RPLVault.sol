@@ -67,6 +67,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
+        _claimTreasuryFee();
 
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
         require(
@@ -77,7 +78,6 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         principal += assets;
 
         address payable pool = _directory.getDepositPoolAddress();
-        _claimTreasuryFee();
         super._deposit(caller, receiver, assets, shares);
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
         FundRouter(pool).sendRplToDistributors();
