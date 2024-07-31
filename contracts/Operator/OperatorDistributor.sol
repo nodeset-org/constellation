@@ -72,7 +72,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         super.initialize(_directory);
         // defaulting these to 8eth to only allow LEB8 minipools
         targetStakeRatio = 1.5e18; // Set to 150% as a default ratio.
-        minimumStakeRatio = .15e18; // 15% by default
+        minimumStakeRatio = 0.15e18; // 15% by default
         requiredLEBStaked = 8 ether; // Default to 8 ETH to align with specific minipool configurations.
     }
 
@@ -236,21 +236,24 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /**
      * @notice Calculates the additional RPL needed to maintain the minimum staking ratio.
      * @param _existingRplStake Current amount of RPL staked by the node.
-     * @param _ethStaked Amount of ETH currently staked by the node.
+     * @param _rpEthBorrowed Amount of ETH currently staked by the node.
      * @return requiredStakeRpl Amount of additional RPL needed.
      */
     function calculateRplStakeShortfall(
         uint256 _existingRplStake,
-        uint256 _ethStaked
+        uint256 _rpEthBorrowed
     ) public view returns (uint256 requiredStakeRpl) {
+       
         console.log('before calling getPriceFetcherAddress');
         console.logAddress(getDirectory().getPriceFetcherAddress());
         console.log('B');
         uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
         console.log('price', ethPriceInRpl);
-        uint256 stakeRatio = _existingRplStake == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / _existingRplStake;
-        if (stakeRatio < minimumStakeRatio) {
-            uint256 minuend = minimumStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
+        uint256 borrowedStakeRatio = _existingRplStake == 0 ? 1e18 : (_rpEthBorrowed * ethPriceInRpl * 1e18) / _existingRplStake;
+        console.log('borrowedStakeRatio', borrowedStakeRatio);
+        console.log('minimumStakeRatio', minimumStakeRatio);
+        if (borrowedStakeRatio < minimumStakeRatio) {
+            uint256 minuend = minimumStakeRatio.mulDiv(_rpEthBorrowed * ethPriceInRpl, 1e18 * 10 ** 18);
             console.log('calculateRplStakeShortfall.minuend', minuend);
             requiredStakeRpl = minuend < _existingRplStake ? 0 : minuend - _existingRplStake;
         } else {
@@ -315,7 +318,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     function _processNextMinipool() internal {
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
 
-        rebalanceRplStake(sna.totalEthStaking());
+        rebalanceRplStake(sna.getTotalEthStaked());
 
         /**
          * @dev We are only calling distributeBalance with a true flag to prevent griefing vectors. This ensures we
