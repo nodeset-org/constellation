@@ -5762,7 +5762,7 @@ export const rplVaultAbi = [
   {
     type: 'function',
     inputs: [],
-    name: 'currentIncomeFromRewards',
+    name: 'redeemableRewards',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
@@ -29730,7 +29730,7 @@ export const wethVaultAbi = [
   {
     type: 'function',
     inputs: [],
-    name: 'currentIncomeFromRewards',
+    name: 'redeemableRewards',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },

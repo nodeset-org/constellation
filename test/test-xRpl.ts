@@ -87,7 +87,7 @@ describe("xRPL", function () {
     const actualRplInSystem = await protocol.vCRPL.totalAssets();
     expect(expectedRplInSystem).equals(actualRplInSystem)
 
-    console.log("currentIncome", await protocol.vCRPL.currentIncomeFromRewards());
+    console.log("currentIncome", await protocol.vCRPL.redeemableRewards());
     console.log("currentTreasuryIncome", await protocol.vCRPL.currentTreasuryIncomeFromRewards());
 
     await rocketPool.rplContract.connect(signers.random2).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
@@ -116,13 +116,13 @@ describe("xRPL", function () {
     const actualRplInSystem = await protocol.vCRPL.totalAssets();
     expect(expectedRplInSystem).equals(actualRplInSystem)
 
-    expect(await protocol.vCRPL.currentIncomeFromRewards()).equals(0);
+    expect(await protocol.vCRPL.redeemableRewards()).equals(0);
     expect(await protocol.vCRPL.currentTreasuryIncomeFromRewards()).equals(0);
 
     // incoming funds to DP
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, ethers.utils.parseEther("10"));
 
-    expect(await protocol.vCRPL.currentIncomeFromRewards()).equals(ethers.utils.parseEther("10"));
+    expect(await protocol.vCRPL.redeemableRewards()).equals(ethers.utils.parseEther("10"));
     expect(await protocol.vCRPL.currentTreasuryIncomeFromRewards()).equals(ethers.utils.parseEther(".1"));
 
     expect(await protocol.vCRPL.principal()).equals(ethers.utils.parseEther("100"));

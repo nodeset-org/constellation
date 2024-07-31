@@ -124,7 +124,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * If the TVL is less than the principal, it returns 0.
      * @return The current income from rewards.
      */
-    function currentIncomeFromRewards() public view returns (uint256) {
+    function redeemableRewards() public view returns (uint256) {
         unchecked {
             uint256 tvl = super.totalAssets() +
                 FundRouter(_directory.getDepositPoolAddress()).getTvlRpl() +
@@ -143,7 +143,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @return The current treasury income from rewards.
      */
     function currentTreasuryIncomeFromRewards() public view returns (uint256) {
-        return currentIncomeFromRewards().mulDiv(treasuryFee, 1e5);
+        return redeemableRewards().mulDiv(treasuryFee, 1e5);
     }
 
     /**
