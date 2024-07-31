@@ -137,7 +137,10 @@ describe("xrETH", function () {
     expect(await protocol.wETH.balanceOf(protocol.yieldDistributor.address)).equals(currentNodeOperatorIncome0);
 
 
-    const expectedPrincipal = ethers.BigNumber.from("99000000000000000001"); // because we claim before
+    const expectedPrincipal = ethers.BigNumber.from("99090000000000000000"); // because we claim before
+    // const expectedPrincipal = ethers.BigNumber.from("99000000000000000001"); // because we claim before
+    // const expectedPrincipal = ethers.BigNumber.from("98980400000000000001"); // because we claim before
+    // const expectedPrincipal = ethers.BigNumber.from("97000000000000000001"); // because we claim before
     expect(await protocol.vCWETH.principal()).equals(expectedPrincipal);
 
     const currentIncomeFromRewards = await protocol.vCWETH.currentIncomeFromRewards();
