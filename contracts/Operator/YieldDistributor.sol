@@ -192,7 +192,7 @@ contract YieldDistributor is UpgradeableBase {
 
     /**
      * @notice Ends the current rewards interval and starts a new one.
-     * @dev This function records the rewards for the current interval and increments the interval counter. It's primarily triggered when there's a change in the number of operators or when the duration of the current interval exceeds the `maxIntervalLengthSeconds`. Also, it triggers the process of distributing rewards to the minipools via the `OperatorDistributor`. Intervals without yield are skipped, except for the first interval.
+     * @dev This function records the rewards for the current interval and increments the interval counter. It's primarily triggered when there's a change in the number of operators or when the duration of the current interval exceeds the `maxIntervalLengthSeconds`. Also, it triggers the process of distributing rewards from the minipool contracts via the `OperatorDistributor`. Intervals without yield are skipped, except for the first interval.
      */
     function finalizeInterval() public onlyProtocolOrAdmin {
         console.log("calling claim node operator fee");
