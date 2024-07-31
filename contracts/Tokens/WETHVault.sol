@@ -154,7 +154,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFee, 1e5);
         uint256 communityReward = currentIncome - (currentAdminIncome + currentNodeOperatorIncome);
         uint256 rewardsPerShare = communityReward.mulDiv(1e18, totalSupply());
-        uint256 totalRewardsForShares = rewardsPerShare.mulDiv(shares, 1e18) - totalCommunityIncomeClaimed;
+        uint256 totalRewardsForShares = rewardsPerShare.mulDiv(shares, 1e18);
 
         console.log('_withdraw.totalRewardsForShares', totalRewardsForShares);
         console.log('_withdraw.shares', shares);
@@ -263,7 +263,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     function totalSupply() public view virtual override(ERC20Upgradeable, IERC20Upgradeable) returns (uint256) {
-        return super.totalSupply() + sharesRedeemed;
+        return super.totalSupply();
     }
 
     /**
