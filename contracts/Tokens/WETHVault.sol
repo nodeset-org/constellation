@@ -57,6 +57,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public sharesRedeemed;
     uint256 public assetsRedeemed;
 
+    uint256 public adminRewardSnapshot;
+    uint256 public communityRewardSnapshot;
+    uint256 public nodeOperatorRewardSnapshot;
+
     uint256 public unclaimedTreasuryIncome;
     uint256 public unclaimedNodeOperatorIncome;
 
@@ -109,7 +113,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
-        _claimFees(currentIncomeFromRewards());
+        _claimFees(redeemableRewards());
 
         require(!enforceRplCoverageRatio || tvlRatioEthRpl() < rplCoverageRatio, 'insufficient RPL coverage');
         super._deposit(caller, receiver, assets, shares);
@@ -145,7 +149,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
-        uint256 currentIncome = currentIncomeFromRewards();
+        uint256 currentIncome = redeemableRewards();
         _claimFees(currentIncome);
 
         FundRouter(_directory.getDepositPoolAddress()).sendEthToDistributors();
@@ -155,6 +159,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 communityReward = currentIncome - (currentAdminIncome + currentNodeOperatorIncome);
         uint256 rewardsPerShare = communityReward.mulDiv(1e18, totalSupply());
         uint256 totalRewardsForShares = rewardsPerShare.mulDiv(shares, 1e18);
+
+        adminRewardSnapshot = currentAdminIncome;
+        communityRewardSnapshot = communityReward;
+        nodeOperatorRewardSnapshot = currentNodeOperatorIncome;
 
         console.log('_withdraw.totalRewardsForShares', totalRewardsForShares);
         console.log('_withdraw.shares', shares);
@@ -241,9 +249,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         return redeemableRewards();
     }
 
-    function totalSupply() public view virtual override(ERC20Upgradeable, IERC20Upgradeable) returns (uint256) {
-        return super.totalSupply();
-    }
+    // function totalSupply() public view virtual override(ERC20Upgradeable, IERC20Upgradeable) returns (uint256) {
+    //     return super.totalSupply();
+    // }
 
     /**
      * @notice Calculates the Total Value Locked (TVL) ratio between ETH and RPL within the contract.
