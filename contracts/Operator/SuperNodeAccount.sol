@@ -506,6 +506,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
         uint256 rplStaking = rocketNodeStaking.getNodeRPLStake(address(this));
         uint256 newEthBorrowed = 32 ether - _bond;
+        console.log('newEthBorrowed', newEthBorrowed);
         uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(rplStaking, getTotalEthMatched() + newEthBorrowed);
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired && od.balance >= _bond;
     }

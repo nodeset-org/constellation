@@ -48,4 +48,8 @@ contract MockRocketNodeStaking is IRocketNodeStaking {
     function getNodeRPLStakedTime(address _nodeAddress) external view override returns (uint256) {}
 
     function getNodeRPLLocked(address _nodeAddress) external view override returns (uint256) {}
+
+    function getNodeETHMatched(address _nodeAddress) external view returns (uint256) {}
+
+    function getNodeETHProvided(address _nodeAddress) external view returns (uint256) {}
 }
