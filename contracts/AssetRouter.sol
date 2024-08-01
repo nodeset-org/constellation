@@ -106,10 +106,10 @@ contract AssetRouter is UpgradeableBase {
 
             console.log('sendEthToDistributors.E2');
 
-            uint256 surplus = balanceWeth - requiredCapital;
+            uint256 surplus = balanceWeth;
             console.log('sendEthToDistributors.E3');
 
-            balanceWeth -= surplus;
+            balanceWeth = 0;
             _gateOpen = true;
             weth.withdraw(surplus);
             _gateOpen = false;
