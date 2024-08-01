@@ -68,21 +68,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     /**
      * @notice Fallback function to handle incoming Ether transactions.
-     * @dev Automatically routes incoming ETH to the AssetRouter contract for distribution unless sent by the deposit pool directly.
      */
     receive() external payable {
-        address payable dp = _directory.getAssetRouterAddress();
-        console.log('fallback od initial');
-        console.log(address(this).balance);
-
-        if (msg.sender != dp) {
-            (bool success, ) = dp.call{value: msg.value}('');
-            require(success, 'low level call failed in od');
-            AssetRouter(dp).sendEthToDistributors();
-        }
-
-        console.log('fallback od final');
-        console.log(address(this).balance);
+        revert("To fund this contract, please deposit into WETHVault instead.");
     }
 
     /**
