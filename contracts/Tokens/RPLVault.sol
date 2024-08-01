@@ -30,7 +30,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     uint256 public liquidityReserveRatio; // collateralization ratio
 
-    uint256 public wethCoverageRatio; // weth coverage ratio
+    uint256 public minWethRplRatio; // weth coverage ratio
 
     constructor() initializer {}
 
@@ -46,7 +46,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
         liquidityReserveRatio = 0.02e5;
-        wethCoverageRatio = 1.75e5;
+        minWethRplRatio = 1.75e5;
         enforceWethCoverageRatio = false;
         treasuryFee = 0.01e5;
     }
@@ -70,7 +70,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
         require(
-            !enforceWethCoverageRatio || vweth.tvlRatioEthRpl(assets, false) > wethCoverageRatio,
+            !enforceWethCoverageRatio || vweth.tvlRatioEthRpl(assets, false) > minWethRplRatio,
             'insufficient weth coverage ratio'
         );
 
@@ -207,7 +207,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _wethCoverageRatio The new WETH coverage ratio to be set (in base points).
      */
     function setWETHCoverageRatio(uint256 _wethCoverageRatio) external onlyShortTimelock {
-        wethCoverageRatio = _wethCoverageRatio;
+        minWethRplRatio = _wethCoverageRatio;
     }
 
     /**

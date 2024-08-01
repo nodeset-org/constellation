@@ -43,7 +43,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     bool public enforceRplCoverageRatio;
     uint256 public liquidityReserveRatio;
-    uint256 public rplCoverageRatio;
+    uint256 public maxWethRplRatio;
     uint256 public totalYieldDistributed;
     uint256 public treasuryFee; // Treasury fee in basis points
     uint256 public nodeOperatorFee; // NO fee in basis points
@@ -51,13 +51,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public principal; // Total principal amount (sum of all deposits)
     uint256 public lastTreasuryIncomeClaimed; // Tracks the amount of income already claimed by the admin
     uint256 public lastNodeOperatorIncomeClaimed; // Tracks the amount of income already claimed by the Node Operator
-    uint256 public ethPerSlashReward; // Tracks how much a user gets for reporting a slasher (in wei)
 
     uint256 public totalCounts;
     uint256 public totalPenaltyBond;
     uint256 public penaltyBondCount;
-
-    mapping(address => uint256) slashTracker;
 
     mapping(address => Position) public positions;
 
@@ -75,11 +72,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
         liquidityReserveRatio = 0.1e5; // 10% of TVL
-        rplCoverageRatio = 0.15e18;
+        maxWethRplRatio = 0.15e18;
         treasuryFee = 0.01e5;
         nodeOperatorFee = 0.01e5;
-
-        ethPerSlashReward = 0.001 ether;
 
         enforceRplCoverageRatio = false;
     }
@@ -103,7 +98,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             return;
         }
 
-        require(!enforceRplCoverageRatio || tvlRatioEthRpl(assets, true) < rplCoverageRatio, 'insufficient RPL coverage');
+        require(!enforceRplCoverageRatio || tvlRatioEthRpl(assets, true) < maxWethRplRatio, 'insufficient RPL coverage');
         super._deposit(caller, receiver, assets, shares);
 
         address payable pool = _directory.getAssetRouterAddress();
@@ -332,7 +327,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _rplCoverageRatio The new RPL coverage ratio to be set.
      */
     function setRplCoverageRatio(uint256 _rplCoverageRatio) external onlyShortTimelock {
-        rplCoverageRatio = _rplCoverageRatio;
+        maxWethRplRatio = _rplCoverageRatio;
     }
 
     /**
@@ -364,16 +359,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function setNodeOperatorFee(uint256 _nodeOperatorFee) external onlyShortTimelock {
         require(_nodeOperatorFee <= 1e5, 'Fee too high');
         nodeOperatorFee = _nodeOperatorFee;
-    }
-
-    /**
-     * @notice Sets the reward for reporting a slashed minipool.
-     * @dev This function allows the admin to update the reward for reporting a slashed minipool. The reward must not exceed 0.1 ether.
-     * @param _ethPerSlashReward The new reward for reporting a slashed minipool in wei.
-     */
-    function setEthPerSlashReward(uint256 _ethPerSlashReward) external onlyShortTimelock {
-        require(_ethPerSlashReward <= 0.1 ether, 'Reward too high');
-        ethPerSlashReward = _ethPerSlashReward;
     }
 
     /**
@@ -457,45 +442,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             SafeERC20.safeTransfer(asset, _to, _amount);
             return (false, _amount, _amount);
         }
-    }
-
-    /**
-     * @notice Updates the slashing amounts for the specified bad minipools.
-     * @dev This function iterates through the list of bad minipools, checks for any penalties incurred since the last update, and updates the total counts and penalty bonds accordingly. It also rewards the caller with a predefined ETH amount for each slashing report.
-     * @param badMinipools An array of addresses representing the bad minipools to be checked for slashing updates.
-     */
-    function updateSlashingAmounts(address[] memory badMinipools) external {
-        for (uint256 i = 0; i < badMinipools.length; i++) {
-            address badMinipool = badMinipools[i];
-            uint256 counts = _directory.getRocketNetworkPenalties().getPenaltyCount(badMinipool);
-
-            if (counts > slashTracker[badMinipool]) {
-                uint256 diff = counts - slashTracker[badMinipool];
-                totalCounts += diff;
-                slashTracker[badMinipool] = counts;
-                totalPenaltyBond += IMinipool(badMinipool).getUserDepositBalance() * diff;
-                penaltyBondCount += diff;
-                IERC20(asset()).transfer(msg.sender, ethPerSlashReward);
-            }
-        }
-    }
-
-    /**
-     * @notice Calculates the average penalty bond across all slashing events.
-     * @dev This function computes the average penalty bond by dividing the total penalty bond by the number of penalty bond counts.
-     * @return The average penalty bond value.
-     */
-    function averagePenaltyBond() public view returns (uint256) {
-        return totalPenaltyBond / penaltyBondCount;
-    }
-
-    /**
-     * @notice Calculates the total ETH lost due to slashing events.
-     * @dev This function computes the total ETH lost by multiplying the total counts of slashing events by the value of 1 ETH divided by the average penalty bond.
-     * @return The total amount of ETH lost.
-     */
-    function totalEthLost() public view returns (uint256) {
-        return totalCounts * (1 ether / averagePenaltyBond());
     }
 
     /**
