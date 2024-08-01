@@ -106,7 +106,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         require(!enforceRplCoverageRatio || tvlRatioEthRpl() < rplCoverageRatio, 'insufficient RPL coverage');
         super._deposit(caller, receiver, assets, shares);
 
-        address payable pool = _directory.getDepositPoolAddress();
+        address payable pool = _directory.getAssetRouterAddress();
 
         WeightedAverageCalculation memory vars;
         vars.totalPriceOfShares = assets;
@@ -172,7 +172,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         console.log('ABC1');
 
-        AssetRouter(_directory.getDepositPoolAddress()).sendEthToDistributors();
+        AssetRouter(_directory.getAssetRouterAddress()).sendEthToDistributors();
 
         console.log('ABC2');
 
@@ -226,7 +226,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function currentIncomeFromRewards() public view returns (uint256) {
         unchecked {
-            AssetRouter dp = AssetRouter(getDirectory().getDepositPoolAddress());
+            AssetRouter dp = AssetRouter(getDirectory().getAssetRouterAddress());
             console.log('WETHVault.currentIncomeFromRewards()');
             console.log(gasleft());
             console.log('getDirectory()');
@@ -256,7 +256,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function totalAssets() public view override returns (uint256) {
         //console.log("WETHVault.totalAssets()");
         //console.log(getDirectory().getDepositPoolAddress());
-        AssetRouter dp = AssetRouter(getDirectory().getDepositPoolAddress());
+        AssetRouter dp = AssetRouter(getDirectory().getAssetRouterAddress());
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         uint256 currentIncome = currentIncomeFromRewards();
         uint256 currentTreasuryIncome = currentIncome.mulDiv(treasuryFee, 1e5);

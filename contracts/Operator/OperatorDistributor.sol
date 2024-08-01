@@ -176,7 +176,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             ) {
                 // NOTE: to auditors: double check that all cases are covered such that withdrawRPL will not revert execution
                 console.log('rebalanceRplStake.excessRpl', excessRpl);
-                AssetRouter(_directory.getDepositPoolAddress()).unstakeRpl(_nodeAccount, excessRpl);
+                AssetRouter(_directory.getAssetRouterAddress()).unstakeRpl(_nodeAccount, excessRpl);
             } else {
                 console.log('failed to rebalanceRplStake.excessRpl', excessRpl);
             }
@@ -186,7 +186,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('finished rebalanceRplStake.targetStake', targetStake);
         console.log('finished rebalanceRplStake.rplStaked', rplStaked);
     }
-getAssetRouterAddress
+
     function _performTopUp(address _superNode, uint256 _requiredStake) internal returns (uint256) {
         uint256 currentRplBalance = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
         console.log('_performTopUp.currentRplBalance', currentRplBalance);
@@ -196,8 +196,8 @@ getAssetRouterAddress
             }
             // stakeRPLOnBehalfOf
             // transfer RPL to deposit pool
-            IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), _requiredStake);
-            AssetRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_superNode, _requiredStake);
+            IERC20(_directory.getRPLAddress()).transfer(_directory.getAssetRouterAddress(), _requiredStake);
+            AssetRouter(_directory.getAssetRouterAddress()).stakeRPLFor(_superNode, _requiredStake);
             console.log('_performTopUp._requiredStake', _requiredStake);
             return _requiredStake;
         } else {
@@ -205,9 +205,9 @@ getAssetRouterAddress
                 return 0;
             }
             // stake what we have
-            IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), currentRplBalance);
-            AssetRouter(_directory.getDepositPoolAddress()).stakeRPgetAssetRouterAddressentRplBalance);
-            console.log('_performTogetAssetRouterAddress', currentRplBalance);
+            IERC20(_directory.getRPLAddress()).transfer(_directory.getAssetRouterAddress(), currentRplBalance);
+            AssetRouter(_directory.getAssetRouterAddress()).stakeRPLFor(_superNode, currentRplBalance);
+            console.log('_performTopUp.currentRplBalance', currentRplBalance);
             return currentRplBalance;
         }
     }
@@ -215,8 +215,8 @@ getAssetRouterAddress
     /**
      * @notice Calculates the additional RPL needed to maintain the minimum staking ratio.
      * @param _existingRplStake Current amount of RPL staked by the node.
-     * @param _rpEthMatched Amount of ETH currently staked by the ngetAssetRouterAddress
-     * @return requiredStakeRpl AmogetAssetRouterAddress needed.
+     * @param _rpEthMatched Amount of ETH currently staked by the node.
+     * @return requiredStakeRpl Amount of additional RPL needed.
      */
     function calculateRplStakeShortfall(
         uint256 _existingRplStake,
@@ -309,9 +309,9 @@ getAssetRouterAddress
             uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
             if (totalBalance < 8 ether) {
                 // track incoming eth
-                uint256 initalBalance = _directory.getDepositPoolAddress().balance;
+                uint256 initalBalance = _directory.getAssetRouterAddress().balance;
                 minipool.distributeBalance(true);
-                uint256 finalBalance = _directory.getDepositPoolAddress().balance;
+                uint256 finalBalance = _directory.getAssetRouterAddress().balance;
                 oracleError += finalBalance - initalBalance;
             }
         }
@@ -320,9 +320,9 @@ getAssetRouterAddress
     /**
      * @notice Sets the required ETH stake for activating a minipool.
      * @param _requiredLEBStaked Amount of ETH required.
-     */getAssetRouterAddress
+     */
     function setBondRequirements(uint256 _requiredLEBStaked) external onlyAdmin {
-        requiredLEBStaked = _requiredLEBStaked;getAssetRouterAddress
+        requiredLEBStaked = _requiredLEBStaked;
     }
 
     /**

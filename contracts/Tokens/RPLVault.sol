@@ -76,7 +76,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
         principal += assets;
 
-        address payable pool = _directory.getDepositPoolAddress();
+        address payable pool = _directory.getAssetRouterAddress();
         _claimTreasuryFee();
         super._deposit(caller, receiver, assets, shares);
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
@@ -113,7 +113,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         principal -= assets;
 
         super._withdraw(caller, receiver, owner, assets, shares);
-        AssetRouter(_directory.getDepositPoolAddress()).sendRplToDistributors();
+        AssetRouter(_directory.getAssetRouterAddress()).sendRplToDistributors();
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
     }
 
@@ -127,7 +127,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     function currentIncomeFromRewards() public view returns (uint256) {
         unchecked {
             uint256 tvl = super.totalAssets() +
-                AssetRouter(_directory.getDepositPoolAddress()).getTvlRpl() +
+                AssetRouter(_directory.getAssetRouterAddress()).getTvlRpl() +
                 OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl();
 
             if (tvl < principal) {
@@ -153,7 +153,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     function totalAssets() public view override returns (uint256) {
         return
             (super.totalAssets() +
-                AssetRouter(_directory.getDepositPoolAddress()).getTvlRpl() +
+                AssetRouter(_directory.getAssetRouterAddress()).getTvlRpl() +
                 OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl()) -
             currentTreasuryIncomeFromRewards();
     }
