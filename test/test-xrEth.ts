@@ -123,10 +123,11 @@ describe("xrETH", function () {
     await protocol.wETH.connect(signers.random).approve(protocol.vCWETH.address, depositAmount);
     await protocol.vCWETH.connect(signers.random).deposit(depositAmount, signers.random.address);
     
-    expect(await protocol.vCWETH.totalAssets()).equals(totalDeposit)
+    expect(await protocol.vCWETH.totalAssets()).equals(totalDeposit);
     
     const shareValue = await protocol.vCWETH.convertToAssets(ethers.utils.parseEther("1"))
     const initialRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
+    expect(initialRedeemValue).equals(ethers.utils.parseEther("1"));
 
     const executionLayerReward = ethers.utils.parseEther("1");
     signers.ethWhale.sendTransaction({
@@ -156,12 +157,12 @@ describe("xrETH", function () {
     preBalance = await protocol.wETH.balanceOf(signers.random.address);
     await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     postBalance = await protocol.wETH.balanceOf(signers.random.address);
-    expectNumberE18ToBeApproximately(expectedRedeemValue, postBalance.sub(preBalance), 0.00000001)
+    expectNumberE18ToBeApproximately(expectedRedeemValue, postBalance.sub(preBalance), 0.0000000001)
 
     preBalance = await protocol.wETH.balanceOf(signers.random.address);
     await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     postBalance = await protocol.wETH.balanceOf(signers.random.address);
-    expectNumberE18ToBeApproximately(expectedRedeemValue, postBalance.sub(preBalance), 0.00000001)
+    expectNumberE18ToBeApproximately(expectedRedeemValue, postBalance.sub(preBalance), 0.0000000001)
 
     // preview of redeeming all shares
     expectNumberE18ToBeApproximately(await protocol.vCWETH.previewRedeem(totalDeposit), expectedCommunityPortion.add(totalDeposit), 0.00000001)

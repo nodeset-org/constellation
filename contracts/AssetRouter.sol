@@ -180,7 +180,7 @@ contract AssetRouter is UpgradeableBase {
     }
 
     function onClaimSkimmedRewards(IMinipool _minipool) external onlyProtocol {
-        _minipool.distributeBalance(false);
+        _minipool.distributeBalance(true);
     }
 
     function onRewardsRecieved(uint256 _amount) external onlyProtocol {
