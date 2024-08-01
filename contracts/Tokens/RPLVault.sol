@@ -70,7 +70,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
         require(
-            !enforceWethCoverageRatio || vweth.tvlRatioEthRpl() > wethCoverageRatio,
+            !enforceWethCoverageRatio || vweth.tvlRatioEthRpl(assets, false) > wethCoverageRatio,
             'insufficient weth coverage ratio'
         );
 

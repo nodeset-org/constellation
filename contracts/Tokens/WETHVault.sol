@@ -103,7 +103,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             return;
         }
 
-        require(!enforceRplCoverageRatio || tvlRatioEthRpl() < rplCoverageRatio, 'insufficient RPL coverage');
+        require(!enforceRplCoverageRatio || tvlRatioEthRpl(assets, true) < rplCoverageRatio, 'insufficient RPL coverage');
         super._deposit(caller, receiver, assets, shares);
 
         address payable pool = _directory.getAssetRouterAddress();
@@ -280,7 +280,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * ratio of 1e18 to handle division by zero errors.
      * @return uint256 The ratio of TVL in ETH to TVL in RPL, scaled by 1e18.
      */
-    function tvlRatioEthRpl() public view returns (uint256) {
+    function tvlRatioEthRpl(uint256 newDeposit, bool isWeth) public view returns (uint256) {
         uint256 tvlEth = totalAssets();
         uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress()).totalAssets();
 
@@ -288,7 +288,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
 
-        return (tvlEth * rplPerEth) / tvlRpl;
+        return isWeth ? ((tvlEth + newDeposit) * rplPerEth) / tvlRpl : ((tvlEth + newDeposit) * rplPerEth) / tvlRpl + newDeposit;
     }
 
     /**
