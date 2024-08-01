@@ -132,7 +132,7 @@ describe("xRPL", function () {
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
     expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("2")))
 
-    preBalance = await protocol.vCRPL.balanceOf(signers.random.address);
+    preBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     await protocol.vCRPL.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     postBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
