@@ -28,6 +28,17 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
     // Allow receiving ETH
     receive() external payable {}
 
+    // mock mode:
+    bool public isMocking;
+
+    function useMock() public {
+        isMocking = true;
+    }
+
+    function disableMock() public {
+        isMocking = false;
+    }
+
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Version
@@ -144,6 +155,7 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
         uint256[] calldata _amountETH,
         bytes32[][] calldata _merkleProof
     ) internal {
+        if (isMocking) return;
         // Set initial parameters to the first reward index in the array
         uint256 indexWordIndex = _rewardIndex[0] / 256;
         bytes32 claimedWordKey = keccak256(abi.encodePacked('rewards.interval.claimed', _nodeAddress, indexWordIndex));
