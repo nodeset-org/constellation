@@ -16,7 +16,6 @@ import 'hardhat/console.sol';
 
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
-
     using Math for uint256;
 
     string constant NAME = 'Constellation ETH';
@@ -39,7 +38,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public penaltyBondCount;
 
     mapping(address => uint256) slashTracker;
-
 
     constructor() initializer {}
 
@@ -82,6 +80,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
 
         require(!enforceRplCoverageRatio || tvlRatioEthRpl() < rplCoverageRatio, 'insufficient RPL coverage');
         super._deposit(caller, receiver, assets, shares);
@@ -92,13 +91,11 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         SafeERC20.safeTransfer(IERC20(asset()), address(ar), assets);
 
         ar.sendEthToDistributors();
-
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
     }
 
     /**
      * @notice Handles withdrawals from the vault, updating the position and distributing fees to operators and the treasury.
-     * @dev This function calculates and records any capital gains or losses, updates the owner's position, and distributes the assets to the receiver. 
+     * @dev This function calculates and records any capital gains or losses, updates the owner's position, and distributes the assets to the receiver.
      * It also transfers the assets from the deposit pool. May revert if the liquidity reserves are too low.
      * @param caller The address initiating the withdrawal.
      * @param receiver The address designated to receive the withdrawn assets.
@@ -117,14 +114,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
 
         balanceWeth -= assets;
 
         AssetRouter(_directory.getDepositPoolAddress()).sendEthToDistributors();
 
         super._withdraw(caller, receiver, owner, assets, shares);
-
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
     }
 
     /**
@@ -133,8 +129,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @return distributableYield The total yield available for distribution.
      */
     function getDistributableYield() public view returns (uint256 distributableYield, bool signed) {
-        int256 totalUnrealizedAccrual = getOracle().getTotalYieldAccrued() -
-            int256(OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleError());
+        uint256 lastUpdate = getOracle().getLastUpdatedTotalYieldAccrued();
+        int256 oracleError = int256(OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleError());
+        int256 totalUnrealizedAccrual = getOracle().getTotalYieldAccrued() - (lastUpdate == 0 ? int256(0) : oracleError);
 
         int256 diff = totalUnrealizedAccrual - int(totalYieldDistributed);
         if (diff >= 0) {
@@ -157,7 +154,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Returns the total assets managed by this vault.
-     * @dev This function calculates the total assets by summing the vault's own assets, the distributable yield, 
+     * @dev This function calculates the total assets by summing the vault's own assets, the distributable yield,
      * and the assets held in the deposit pool and Operator Distributor. It then subtracts the treasury and node operator incomes to get the net total assets.
      * @return The aggregated total assets managed by this vault.
      */
@@ -165,13 +162,12 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         AssetRouter dp = AssetRouter(getDirectory().getDepositPoolAddress());
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         (uint256 distributableYield, bool signed) = getDistributableYield();
-        return
-            (
-                uint256(
-                    int(balanceWeth + dp.getTvlEth() + od.getTvlEth()) +
-                        (signed ? -int(distributableYield) : int(distributableYield))
-                )
-            );
+        return (
+            uint256(
+                int(balanceWeth + dp.getTvlEth() + od.getTvlEth()) +
+                    (signed ? -int(distributableYield) : int(distributableYield))
+            )
+        );
     }
 
     /**
@@ -195,8 +191,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Calculates the required collateral after a specified deposit.
-     * @dev This function calculates the required collateral to ensure the contract remains sufficiently collateralized 
-     * after a specified deposit amount. It compares the current balance with the required collateral based on 
+     * @dev This function calculates the required collateral to ensure the contract remains sufficiently collateralized
+     * after a specified deposit amount. It compares the current balance with the required collateral based on
      * the total assets, including the deposit.
      * @param deposit The amount of the deposit to consider in the collateral calculation.
      * @return The amount of collateral required after the specified deposit.
@@ -238,7 +234,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Sets the treasury fee in basis points.
-     * @dev This function allows the admin to update the treasury fee, which is calculated in basis points. 
+     * @dev This function allows the admin to update the treasury fee, which is calculated in basis points.
      * The fee must not exceed 100%.
      * @param _treasuryFee The new treasury fee in basis points.
      */
@@ -249,7 +245,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Sets the node operator fee in basis points.
-     * @dev This function allows the admin to update the node operator fee, which is calculated in basis points. 
+     * @dev This function allows the admin to update the node operator fee, which is calculated in basis points.
      * The fee must not exceed 100%.
      * @param _nodeOperatorFee The new node operator fee in basis points.
      */

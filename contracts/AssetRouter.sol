@@ -187,6 +187,7 @@ contract AssetRouter is UpgradeableBase {
         IWETH weth = IWETH(_directory.getWETHAddress());
         weth.deposit{value: _amount}();
         balanceWeth += _amount;
+        console.log("onRewardsRecieved ", _amount);
 
         // send funds to yield distributor and admin treasury
     }

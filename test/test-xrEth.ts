@@ -126,14 +126,20 @@ describe("xrETH", function () {
     expect(await protocol.vCWETH.totalAssets()).equals(totalDeposit)
     
     const shareValue = await protocol.vCWETH.convertToAssets(ethers.utils.parseEther("1"))
-    const expectedRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
+    const initialedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
     
-
+    
     const executionLayerReward = ethers.utils.parseEther("1");
     signers.ethWhale.sendTransaction({
       to: minipools[0],
       value: executionLayerReward
     })
+    const expectedShareOfReward = ethers.BigNumber.from("362500000000000000");
+    
+    await protocol.operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
+    const expectedRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
+
+    expect(await protocol.vCWETH.totalAssets()).equals(totalDeposit.add(expectedShareOfReward))
 
     let preBalance = await protocol.wETH.balanceOf(signers.random.address);
     await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);

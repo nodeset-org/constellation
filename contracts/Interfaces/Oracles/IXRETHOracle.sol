@@ -7,4 +7,6 @@ interface IXRETHOracle {
     /// @return The total value locked in the protocol, in wei, for each minipool + rewards earned.
     function getTotalYieldAccrued() external view returns (int256);
 
+    function getLastUpdatedTotalYieldAccrued() external view returns (uint256);
+
 }
