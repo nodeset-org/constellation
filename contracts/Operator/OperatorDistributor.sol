@@ -71,7 +71,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @dev Automatically routes incoming ETH to the AssetRouter contract for distribution unless sent by the deposit pool directly.
      */
     receive() external payable {
-        address payable dp = _directory.getDepositPoolAddress();
+        address payable dp = _directory.getAssetRouterAddress();
         console.log('fallback od initial');
         console.log(address(this).balance);
 
@@ -90,7 +90,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @dev Calls to external contracts for transferring balances and ensures successful execution of these calls.
      */
     function _rebalanceLiquidity() internal nonReentrant {
-        address payable dp = _directory.getDepositPoolAddress();
+        address payable dp = _directory.getAssetRouterAddress();
         (bool success, ) = dp.call{value: address(this).balance}('');
         require(success, 'low level call failed in od');
         AssetRouter(dp).sendEthToDistributors();
@@ -101,7 +101,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Returns the total ETH held by the contract, including both the balance of this contract and the funded ETH.
+     * @notice Returns the total ETH held by the contract, including both the balance of this contract and the staked ETH.
      * @return uint256 Total amount of ETH under the management of the contract.
      */
     function getTvlEth() public view returns (uint) {
@@ -109,7 +109,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Returns the total RPL held by the contract, including both the balance of this contract and the funded RPL.
+     * @notice Returns the total RPL held by the contract, including both the balance of this contract and the staked RPL.
      * @return uint256 Total amount of RPL under the management of the contract.
      */
     function getTvlRpl() public view returns (uint) {
@@ -186,7 +186,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('finished rebalanceRplStake.targetStake', targetStake);
         console.log('finished rebalanceRplStake.rplStaked', rplStaked);
     }
-
+getAssetRouterAddress
     function _performTopUp(address _superNode, uint256 _requiredStake) internal returns (uint256) {
         uint256 currentRplBalance = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
         console.log('_performTopUp.currentRplBalance', currentRplBalance);
@@ -206,8 +206,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             }
             // stake what we have
             IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), currentRplBalance);
-            AssetRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_superNode, currentRplBalance);
-            console.log('_performTopUp.currentRplBalance', currentRplBalance);
+            AssetRouter(_directory.getDepositPoolAddress()).stakeRPgetAssetRouterAddressentRplBalance);
+            console.log('_performTogetAssetRouterAddress', currentRplBalance);
             return currentRplBalance;
         }
     }
@@ -215,8 +215,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /**
      * @notice Calculates the additional RPL needed to maintain the minimum staking ratio.
      * @param _existingRplStake Current amount of RPL staked by the node.
-     * @param _rpEthMatched Amount of ETH currently staked by the node.
-     * @return requiredStakeRpl Amount of additional RPL needed.
+     * @param _rpEthMatched Amount of ETH currently staked by the ngetAssetRouterAddress
+     * @return requiredStakeRpl AmogetAssetRouterAddress needed.
      */
     function calculateRplStakeShortfall(
         uint256 _existingRplStake,
@@ -320,9 +320,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /**
      * @notice Sets the required ETH stake for activating a minipool.
      * @param _requiredLEBStaked Amount of ETH required.
-     */
+     */getAssetRouterAddress
     function setBondRequirements(uint256 _requiredLEBStaked) external onlyAdmin {
-        requiredLEBStaked = _requiredLEBStaked;
+        requiredLEBStaked = _requiredLEBStaked;getAssetRouterAddress
     }
 
     /**

@@ -73,7 +73,7 @@ describe("Operator Distributor", function () {
 
 		const initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
 		expect(initialRplStake).equals(0)
-		await prepareOperatorDistributionContract(setupData, 2);
+		await prepareOperatorDistributionContract(setupData, 1);
 		await registerNewValidator(setupData, [signers.random]);
 
 		const price = await protocol.priceFetcher.getPrice();

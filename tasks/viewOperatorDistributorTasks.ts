@@ -8,13 +8,6 @@ task("viewOperatorDistributor", "Displays public variables and view functions of
 
     console.log("Operator Distributor");
 
-    // Public variables
-    const fundedEth = await od.fundedEth();
-    console.log("fundedEth:", fundedEth.toString());
-
-    const fundedRpl = await od.fundedRpl();
-    console.log("fundedRpl:", fundedRpl.toString());
-
     const targetStakeRatio = await od.targetStakeRatio();
     console.log("targetStakeRatio:", targetStakeRatio.toString());
 
@@ -35,8 +28,6 @@ task("viewOperatorDistributor", "Displays public variables and view functions of
   .addParam("address", "The address of the OperatorDistributor contract")
   .setAction(async ({ address }, hre) => {
     const od = await hre.ethers.getContractAt("OperatorDistributor", address);
-    const fundedRpl = await od.fundedRpl();
-    console.log("fundedRpl:", fundedRpl.toString());
 
     const directoryAddr = await od.getDirectory();
     const directory = await hre.ethers.getContractAt("Directory", directoryAddr);
