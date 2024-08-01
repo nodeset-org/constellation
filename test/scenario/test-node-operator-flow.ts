@@ -50,14 +50,23 @@ describe("Node Operator Onboarding", function () {
     it("node operator creates minipool via creating validator account", async function () {
         console.log("operator flow minipoolAddress fda:,", minipoolAddress);
 
+        //await assertAddOperator(setupData, signers.hyperdriver);
+
         // now we must create a minipool via super node
+        console.log("===FIRST HASSUFFICIENTLIQUIDITY===");
         expect(await protocol.superNode.hasSufficientLiquidity(bondValue)).equals(false);
+        console.log("===PREPARE OPERATOR DISTRIBUTOR===");
         await prepareOperatorDistributionContract(setupData, 1);
+        console.log('ETH balance of OD', await ethers.provider.getBalance(protocol.operatorDistributor.address));
+        console.log('RPL balance of OD', await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address));
+        console.log("===SECOND HASSUFFICIENTLIQUIDITY===");
         expect(await protocol.superNode.hasSufficientLiquidity(bondValue)).equals(true);
 
         console.log("is this f-ing thing null?", signers.hyperdriver.address)
         //expect(await protocol.superNode.subNodeOperatorHasMinipool(signers.hyperdriver.address)).equals(false);
         console.log("operator flow minipoolAddress adf:,", minipoolAddress);
+        expect(await protocol.superNode.getTotalEthStaked()).equals(BigInt(0));
+        expect(await protocol.superNode.getTotalEthMatched()).equals(BigInt(0));
         minipoolAddress = await deployMinipool(setupData, bondValue);
         console.log("operator flow minipoolAddress", minipoolAddress);
 

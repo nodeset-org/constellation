@@ -47,8 +47,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     // Total amount of ETH locked in all minipools
     uint256 public totalEthLocked;
-    // Total amount of ETH staked in all minipools
-    uint256 public totalEthStaking;
 
     // Variables for pre-signed exit message checks
     bool public adminServerCheck;
@@ -130,7 +128,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         Directory directory = Directory(_directory);
         _registerNode('Australia/Brisbane');
         address dp = directory.getDepositPoolAddress();
-        IRocketNodeManager(directory.getRocketNodeManagerAddress()).setRPLWithdrawalAddress(address(this), dp, true);
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), dp, true);
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(true);
     }
@@ -220,7 +217,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         od.onMinipoolCreated(_expectedMinipoolAddress, subNodeOperator, bond);
-        od.rebalanceRplStake(totalEthStaking + (32 ether - bond));
+        od.rebalanceRplStake(getTotalEthStaked() + bond);
 
         subNodeOperatorMinipools[subNodeOperator].push(_expectedMinipoolAddress);
 
@@ -296,7 +293,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         IMinipool minipool = IMinipool(_minipool);
         minipool.stake(_validatorSignature, _depositDataRoot);
         // RP close call will revert unless you're in the right state, so this may waste your gas if you call at the wrong time!
-        totalEthStaking += (32 ether - bond);
 
         // Refund the locked ETH
         uint256 lockupBalance = lockedEth[_minipool];
@@ -323,8 +319,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         IMinipool minipool = IMinipool(_minipool);
         OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(_subNodeOperator, bond);
         _stopTrackingMinipool(_minipool);
-
-        totalEthStaking -= bond;
 
         minipool.close();
     }
@@ -484,8 +478,25 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /**
+     * @return uint256 The amount of ETH bonded with this node from WETHVault deposits.
+     */
+    function getTotalEthStaked() public view returns (uint256) {
+        Directory directory = getDirectory();
+        return IRocketNodeStaking(directory.getRocketNodeStakingAddress()).getNodeETHProvided(address(this));
+    }
+
+    /**
+     * @return uint256 The amount of ETH matched with this node from the rETH deposit pool
+     */
+    function getTotalEthMatched() public view returns (uint256) {
+        Directory directory = getDirectory();
+        return IRocketNodeStaking(directory.getRocketNodeStakingAddress()).getNodeETHMatched(address(this));
+    }
+
+    /**
      * @notice Checks if there is sufficient liquidity in the protocol to cover a specified bond amount.
-     * @dev This function helps ensure that there are enough resources (both RPL and ETH) available in the system to cover the bond required for creating or operating a minipool. It is crucial for maintaining financial stability and operational continuity.
+     * @dev This function helps ensure that there are enough resources (both RPL and ETH) available in the system to cover the bond required for creating or operating a minipool. 
+     * It is crucial for maintaining financial stability and operational continuity.
      * @param _bond The bond amount in wei for which liquidity needs to be checked.
      * @return bool Returns true if there is sufficient liquidity to cover the bond; false otherwise.
      */
@@ -493,7 +504,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         address payable od = _directory.getOperatorDistributorAddress();
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
         uint256 rplStaking = rocketNodeStaking.getNodeRPLStake(address(this));
-        uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(rplStaking, totalEthStaking + _bond);
+        uint256 newEthBorrowed = 32 ether - _bond;
+        console.log('newEthBorrowed', newEthBorrowed);
+        uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(rplStaking, getTotalEthMatched() + newEthBorrowed);
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired && od.balance >= _bond;
     }
 

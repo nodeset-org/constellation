@@ -8,18 +8,18 @@ import { assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract
 import { parseRewardsMap } from "./utils/merkleClaim";
 import { submitRewards } from "./rocketpool/rewards/scenario-submit-rewards";
 
-describe(`FundRouter`, () => {
+describe(`AssetRouter`, () => {
 
     describe('stakeRPLFor', () => {
         it("success - admin stakes rpl for random node", async () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
 
-            console.log("fundroutertest.AC")
+            console.log("assetroutertest.AC")
             await prepareOperatorDistributionContract(setupData, 2);
-            console.log("fundroutertest.A")
+            console.log("assetroutertest.A")
             await registerNewValidator(setupData, [signers.random]);
-            console.log("fundroutertest.AB")
+            console.log("assetroutertest.AB")
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
             await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
@@ -236,7 +236,7 @@ describe(`FundRouter`, () => {
             await rp.rocketRewardsPool.submitRewardSnapshot(submission);
     
             // Perform the Merkle Claim for each validator
-            await protocol.depositPool.merkleClaim(
+            await protocol.superNode.merkleClaim(
                 protocol.superNode.address,
                 [0],
                 amountsRPL0,

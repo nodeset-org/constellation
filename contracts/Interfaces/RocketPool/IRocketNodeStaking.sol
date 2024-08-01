@@ -33,4 +33,8 @@ interface IRocketNodeStaking {
         address _caller,
         bool _allowed
     ) external;
+
+    function getNodeETHMatched(address _nodeAddress) external view returns (uint256);
+
+    function getNodeETHProvided(address _nodeAddress) external view returns (uint256);
 }
