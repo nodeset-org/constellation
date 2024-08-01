@@ -61,6 +61,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public adminRewardSnapshot;
     uint256 public communityRewardSnapshot;
     uint256 public nodeOperatorRewardSnapshot;
+    uint256 public totalFees;
 
     uint256 public unclaimedTreasuryIncome;
     uint256 public unclaimedNodeOperatorIncome;
@@ -155,9 +156,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         FundRouter(_directory.getDepositPoolAddress()).sendEthToDistributors();
 
-        uint256 currentAdminIncome = currentIncome.mulDiv(treasuryFee, 1e5) - lastTreasuryIncomeClaimed;
-        uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFee, 1e5) - lastNodeOperatorIncomeClaimed;
-        uint256 communityReward = currentIncome - (currentAdminIncome + currentNodeOperatorIncome);
+        //uint256 currentAdminIncome = currentIncome.mulDiv(treasuryFee, 1e5) - lastTreasuryIncomeClaimed;
+        //uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFee, 1e5) - lastNodeOperatorIncomeClaimed;
+        uint256 communityReward = currentIncome - (adminRewardSnapshot + nodeOperatorRewardSnapshot);
         uint256 rewardsPerShare = communityReward.mulDiv(1e18, totalSupply());
         uint256 totalRewardsForShares = rewardsPerShare.mulDiv(shares, 1e18);
 
@@ -245,7 +246,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
-        return getTvl() - adminRewardSnapshot - nodeOperatorRewardSnapshot;
+        return getTvl();
     }
 
     function totalSupply() public view virtual override(ERC20Upgradeable, IERC20Upgradeable) returns (uint256) {
@@ -409,8 +410,21 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         lastNodeOperatorIncomeClaimed = noOut;
         lastTreasuryIncomeClaimed = treasuryOut;
 
-        nodeOperatorRewardSnapshot = noOut;
-        adminRewardSnapshot = treasuryOut;
+        console.log("_claimFees.nodeOperatorRewardSnapshot", nodeOperatorRewardSnapshot);
+        console.log("_claimFees.adminRewardSnapshot", adminRewardSnapshot);
+        
+       //nodeOperatorRewardSnapshot = noOut > 0 ? noOut : nodeOperatorRewardSnapshot;
+       //adminRewardSnapshot = treasuryOut > 0 ? treasuryOut : adminRewardSnapshot;
+
+        //slipTreasury = adminRewardSnapshot - currentTreasuryIncome;
+        //slipNodeOperator = nodeOperatorRewardSnapshot - currentNodeOperatorIncome;
+
+        totalFees += wethTransferOut;
+
+        console.log("_claimFees.nodeOperatorRewardSnapshot", nodeOperatorRewardSnapshot);
+        console.log("_claimFees.adminRewardSnapshot", adminRewardSnapshot);
+        console.log("_claimFees.wethTransferOut", wethTransferOut);
+        console.log("_claimFees.totalFees", totalFees);
 
         supplyOffset += _convertToShares(wethTransferOut, MathUpgradeable.Rounding.Down);
 

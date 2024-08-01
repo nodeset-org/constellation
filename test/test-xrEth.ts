@@ -196,6 +196,7 @@ describe("xrETH", function () {
     console.log("DP TVL", await protocol.depositPool.getTvlEth());
 
     // deposit 100 more eth
+    console.log("starting to deposit in step 7--------------------------")
     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
