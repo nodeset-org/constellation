@@ -159,19 +159,19 @@ contract YieldDistributor is UpgradeableBase {
 
             uint256 fullEthReward = ((claim.amount * 1e18) / claim.numOperators) / 1e18;
 
-            console.log("full reward", i);
-            console.log(fullEthReward);
-            console.log(claim.amount);
+            console.log("full reward for interval", i, claim.amount);
+            console.log('fullEthReward (for running max minipools)', fullEthReward);
 
             uint256 operatorsPortion = ProtocolMath.exponentialFunction(
                 operator.currentValidatorCount,
                 maxValidators,
                 k,
                 1,
-                claim.amount,
+                fullEthReward,
                 1e18
             );
 
+            console.log('operator is running', operator.currentValidatorCount, 'so their actual reward is', operatorsPortion);
             totalReward += operatorsPortion;
             dustAccrued += fullEthReward - operatorsPortion;
             hasClaimed[_rewardee][i] = true;
