@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from ".././test";
 
-describe("CoverageRatio", function () {
+describe("CoverageRatio", async function () {
     // describe("Initialization", function () {
     //     it("Should initialize with correct directory address", async function () {
     //         const { protocol, signers } = await loadFixture(protocolFixture);
@@ -11,19 +11,41 @@ describe("CoverageRatio", function () {
     //     });
     // });
 
+
+
     describe("minting xWETH", async function() {
         describe("when minting from below the coverage ratio", async function() {
             describe("when minting stays below the coverage ratio", async function() {
                 it("should revert", async function() {
+                    const setupData = await loadFixture(protocolFixture);
+                    const { protocol, signers, rocketPool } = setupData;
+                   
                     // Disable enforceRplCoverageRatio
+                    await protocol.vCWETH.connect(signers.admin).setEnforceRplCoverageRatio(false);
                     // Disable enforceWethCoverageRatio
+                    await protocol.vCRPL.connect(signers.admin).setEnforceWethCoverageRatio(false);
+                   
                     // Mint 1000 xWETH + 100,000 xRPL (i.e. 100% ratio)
-                    // Set minWethRplRatio to 200%
-                    // Set maxWethRplRatio to 300%
-                    // Enable enforceWethCoverageRatio
-                    // Enable enforceRplCoverageRatio
-                    // Mint 1 xWETH
-                    // Check if it reverts
+                    const ethMintAmount = ethers.utils.parseEther("100");
+                    await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address, {value: ethMintAmount});
+                    // await protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("100000"), signers.ethWhale.address);
+                    
+                    // // Set minWethRplRatio to 200%
+                    // await protocol.vCRPL.setWETHCoverageRatio(2e18);
+                    // // Set maxWethRplRatio to 300%
+                    // await protocol.vCWETH.setRplCoverageRatio(3e18);
+
+                    // // Enable enforceWethCoverageRatio
+                    // await protocol.vCRPL.connect(signers.deployer).setEnforceWethCoverageRatio(true);
+                    // // Enable enforceRplCoverageRatio
+                    // await protocol.vCWETH.connect(signers.deployer).setEnforceRplCoverageRatio(true);
+
+                    // // Mint 1 xWETH
+                    // // Check if it reverts
+                    // await expect(
+                    //     protocol.vCWETH.connect(signers.ethWhale)
+                    //         .deposit(ethers.utils.parseEther("1"), signers.ethWhale.address)
+                    // ).to.be.revertedWith("signer must have permission from admin oracle role");
                 });
             });
             describe("when minting hits the bottom threshold (minWethRplRatio)", async function() {
