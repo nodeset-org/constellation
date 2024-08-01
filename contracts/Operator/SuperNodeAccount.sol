@@ -130,7 +130,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         Directory directory = Directory(_directory);
         _registerNode('Australia/Brisbane');
         address dp = directory.getDepositPoolAddress();
-        IRocketNodeManager(directory.getRocketNodeManagerAddress()).setRPLWithdrawalAddress(address(this), dp, true);
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), dp, true);
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(true);
     }

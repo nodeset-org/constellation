@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import '../UpgradeableBase.sol';
 import '../Whitelist/Whitelist.sol';
-import '../FundRouter.sol';
+import '../AssetRouter.sol';
 import '../PriceFetcher.sol';
 import '../Tokens/WETHVault.sol';
 import './SuperNodeAccount.sol';
@@ -73,7 +73,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     /**
      * @notice Fallback function to handle incoming Ether transactions.
-     * @dev Automatically routes incoming ETH to the FundRouter contract for distribution unless sent by the deposit pool directly.
+     * @dev Automatically routes incoming ETH to the AssetRouter contract for distribution unless sent by the deposit pool directly.
      */
     receive() external payable {
         address payable dp = _directory.getDepositPoolAddress();
@@ -83,7 +83,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         if (msg.sender != dp) {
             (bool success, ) = dp.call{value: msg.value}('');
             require(success, 'low level call failed in od');
-            FundRouter(dp).sendEthToDistributors();
+            AssetRouter(dp).sendEthToDistributors();
         }
 
         console.log('fallback od final');
@@ -98,11 +98,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         address payable dp = _directory.getDepositPoolAddress();
         (bool success, ) = dp.call{value: address(this).balance}('');
         require(success, 'low level call failed in od');
-        FundRouter(dp).sendEthToDistributors();
+        AssetRouter(dp).sendEthToDistributors();
 
         IERC20 rpl = IERC20(_directory.getRPLAddress());
         SafeERC20.safeTransfer(rpl, dp, rpl.balanceOf(address(this)));
-        FundRouter(dp).sendRplToDistributors();
+        AssetRouter(dp).sendRplToDistributors();
     }
 
     /**
@@ -192,7 +192,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 // NOTE: to auditors: double check that all cases are covered such that withdrawRPL will not revert execution
                 fundedRpl -= excessRpl;
                 console.log('rebalanceRplStake.excessRpl', excessRpl);
-                FundRouter(_directory.getDepositPoolAddress()).unstakeRpl(_nodeAccount, excessRpl);
+                AssetRouter(_directory.getDepositPoolAddress()).unstakeRpl(_nodeAccount, excessRpl);
             } else {
                 console.log('failed to rebalanceRplStake.excessRpl', excessRpl);
             }
@@ -213,7 +213,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             // stakeRPLOnBehalfOf
             // transfer RPL to deposit pool
             IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), _requiredStake);
-            FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_superNode, _requiredStake);
+            AssetRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_superNode, _requiredStake);
             console.log('_performTopUp._requiredStake', _requiredStake);
             return _requiredStake;
         } else {
@@ -222,7 +222,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             }
             // stake what we have
             IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), currentRplBalance);
-            FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_superNode, currentRplBalance);
+            AssetRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_superNode, currentRplBalance);
             console.log('_performTopUp.currentRplBalance', currentRplBalance);
             return currentRplBalance;
         }
