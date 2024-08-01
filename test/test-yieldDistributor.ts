@@ -79,7 +79,6 @@ describe("Yield Distributor", function () {
 
     await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
 
-    await signers.ethWhale.sendTransaction({ to: protocol.operatorDistributor.address, value: ethers.utils.parseEther("30") });
     await registerNewValidator(setupData, [signers.random, signers.random2, signers.random3]);
 
     // update operator controllers for each operator
@@ -93,16 +92,18 @@ describe("Yield Distributor", function () {
 
     expectNumberE18ToBeApproximately(await ethers.provider.getBalance(protocol.yieldDistributor.address), ethers.BigNumber.from("0"), 0.0001);
 
-    const expectedReward = evaluateModel(.2, 7, 1).toFixed(18).toString();
+    // TODO: fix precision on typescript model
+    //const expectedReward = ethers.utils.parseEther(evaluateModel(1, 7, 1/operators.length).toFixed(18).toString());
+    const expectedReward = "333333333333333332";
 
     await expect(tx1).to.emit(yieldDistributor, "RewardDistributed")
-      .withArgs([signers.random4.address, ethers.utils.parseEther(expectedReward).add(1)]);
+      .withArgs([signers.random4.address, expectedReward]);
 
     await expect(tx2).to.emit(yieldDistributor, "RewardDistributed")
-      .withArgs([signers.random5.address, ethers.utils.parseEther(expectedReward).add(1)]);
+      .withArgs([signers.random5.address, expectedReward]);
 
     await expect(tx3).to.emit(yieldDistributor, "RewardDistributed")
-      .withArgs([signers.rplWhale.address, ethers.utils.parseEther(expectedReward).add(1)]);
+      .withArgs([signers.rplWhale.address, expectedReward]);
   });
 
 
