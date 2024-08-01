@@ -74,13 +74,24 @@ describe("xrETH", function () {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
-    await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
-    await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
-    await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
+    const depositAmount = ethers.utils.parseEther("100");
+    const expectedReserveInVault = ethers.utils.parseEther("10");
+    const surplusSentToOD = ethers.utils.parseEther("90");
 
+    await protocol.wETH.connect(signers.random).deposit({ value: depositAmount });
+    await protocol.wETH.connect(signers.random).approve(protocol.vCWETH.address, depositAmount);
+    await protocol.vCWETH.connect(signers.random).deposit(depositAmount, signers.random.address);
+
+    console.log("totalAssets", await protocol.vCWETH.totalAssets());
+    expect(await protocol.vCWETH.totalAssets()).equals(depositAmount)
+    expect(await protocol.vCWETH.balanceWeth()).equals(expectedReserveInVault);
+    expect(await protocol.operatorDistributor.balanceEth()).equals(surplusSentToOD);
     console.log("balanceWeth vault", await protocol.vCWETH.balanceWeth());
     console.log("balanceWeth operator distributor", await protocol.operatorDistributor.balanceEth());
     console.log("balanceWeth asset rounter", await protocol.depositPool.balanceWeth());
+
+    const shareValue = await protocol.vCWETH.convertToAssets(ethers.utils.parseEther("1"))
+
   })
 
 

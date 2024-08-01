@@ -202,10 +202,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @return The amount of collateral required after the specified deposit.
      */
     function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns (uint256) {
-        uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 fullBalance = totalAssets() + deposit;
         uint256 requiredBalance = liquidityReserveRatio.mulDiv(fullBalance, 1e5, Math.Rounding.Up);
-        return requiredBalance > currentBalance ? requiredBalance : 0;
+        return requiredBalance > balanceWeth ? requiredBalance : 0;
     }
 
     /**
@@ -215,15 +214,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function getRequiredCollateral() public view returns (uint256) {
         return getRequiredCollateralAfterDeposit(0);
-    }
-
-    /**
-     * @notice Enhances precision in share quantities during the minting process.
-     * @dev This function returns the number of decimal places to offset for share calculations.
-     * @return The number of decimal places for share calculations.
-     */
-    function _decimalsOffset() internal pure override returns (uint8) {
-        return 18;
     }
 
     /**ADMIN FUNCTIONS */
