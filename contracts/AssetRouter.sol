@@ -185,11 +185,28 @@ contract AssetRouter is UpgradeableBase {
 
     function onRewardsRecieved(uint256 _amount) external onlyProtocol {
         IWETH weth = IWETH(_directory.getWETHAddress());
-        weth.deposit{value: _amount}();
-        balanceWeth += _amount;
-        console.log("onRewardsRecieved ", _amount);
+        WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
 
-        // send funds to yield distributor and admin treasury
+        uint256 treasuryPortion = vweth.getTreasuryPortion(_amount);
+        uint256 nodeOperatorPortion = vweth.getNodeOperatorPortion(_amount);
+
+        console.log("treasuryPortion", treasuryPortion);
+        console.log("nodeOperatorPortion", nodeOperatorPortion);
+        console.log("_amount", _amount);
+
+        (bool success, ) = _directory.getTreasuryAddress().call{value: treasuryPortion}('');
+        require(success, 'Transfer to treasury failed');
+
+        (bool success2, ) = _directory.getYieldDistributorAddress().call{value: nodeOperatorPortion}('');
+        require(success2, 'Transfer to yield distributor failed');
+
+        uint256 communityPortion = _amount - treasuryPortion - nodeOperatorPortion;
+
+        weth.deposit{value: communityPortion}();
+        console.log('onRewardsRecieved.communityPortion', communityPortion);
+        console.log('onRewardsRecieved.treasuryPortion', treasuryPortion);
+        console.log('onRewardsRecieved.nodeOperatorFee', nodeOperatorPortion);
+        balanceWeth += communityPortion;
     }
 
     function openGate() external onlyProtocol {

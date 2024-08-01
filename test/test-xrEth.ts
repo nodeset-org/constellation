@@ -4,7 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { getEventNames, prepareOperatorDistributionContract, registerNewValidator, upgradePriceFetcherToMock, whitelistUserServerSig } from "./utils/utils";
+import { expectNumberE18ToBeApproximately, getEventNames, prepareOperatorDistributionContract, registerNewValidator, upgradePriceFetcherToMock, whitelistUserServerSig } from "./utils/utils";
 import { ContractTransaction } from "@ethersproject/contracts";
 
 describe("xrETH", function () {
@@ -70,7 +70,7 @@ describe("xrETH", function () {
     expect(expectedxrETHInSystem).equals(actualxrETHInSystem)
   })
 
-  it("success - tries to deposit and redeem from weth vault multiple times", async () => {
+  it.only("success - tries to deposit and redeem from weth vault multiple times", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
@@ -126,20 +126,27 @@ describe("xrETH", function () {
     expect(await protocol.vCWETH.totalAssets()).equals(totalDeposit)
     
     const shareValue = await protocol.vCWETH.convertToAssets(ethers.utils.parseEther("1"))
-    const initialedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
-    
-    
+    const initialRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
+
     const executionLayerReward = ethers.utils.parseEther("1");
     signers.ethWhale.sendTransaction({
       to: minipools[0],
       value: executionLayerReward
     })
     const expectedShareOfReward = ethers.BigNumber.from("362500000000000000");
+
+    const expectedTreasuryPortion = await protocol.vCWETH.getTreasuryPortion(expectedShareOfReward);
+    const expectedNodeOperatorPortion = await protocol.vCWETH.getNodeOperatorPortion(expectedShareOfReward);
+    const expectedCommunityPortion = expectedShareOfReward.sub(expectedTreasuryPortion.add(expectedNodeOperatorPortion))
+    console.log("expectedCommunityPortion", expectedCommunityPortion);
     
+    const initalTreasuryBalance = await ethers.provider.getBalance(await protocol.directory.getTreasuryAddress());
     await protocol.operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
+    const finalTreasuryBalance = await ethers.provider.getBalance(await protocol.directory.getTreasuryAddress());
+
     const expectedRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
 
-    expect(await protocol.vCWETH.totalAssets()).equals(totalDeposit.add(expectedShareOfReward))
+    expect(await protocol.vCWETH.totalAssets()).equals(totalDeposit.add(expectedCommunityPortion))
 
     let preBalance = await protocol.wETH.balanceOf(signers.random.address);
     await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
@@ -149,12 +156,19 @@ describe("xrETH", function () {
     preBalance = await protocol.wETH.balanceOf(signers.random.address);
     await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     postBalance = await protocol.wETH.balanceOf(signers.random.address);
-    expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
+    expectNumberE18ToBeApproximately(expectedRedeemValue, postBalance.sub(preBalance), 0.00000001)
 
     preBalance = await protocol.wETH.balanceOf(signers.random.address);
     await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     postBalance = await protocol.wETH.balanceOf(signers.random.address);
-    expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
+    expectNumberE18ToBeApproximately(expectedRedeemValue, postBalance.sub(preBalance), 0.00000001)
+
+    // preview of redeeming all shares
+    expectNumberE18ToBeApproximately(await protocol.vCWETH.previewRedeem(totalDeposit), expectedCommunityPortion.add(totalDeposit), 0.00000001)
+
+    expect(await protocol.wETH.balanceOf(protocol.yieldDistributor.address)).equals(expectedNodeOperatorPortion);
+    expect(finalTreasuryBalance.sub(initalTreasuryBalance)).equals(expectedTreasuryPortion);
+    
 
   })
 

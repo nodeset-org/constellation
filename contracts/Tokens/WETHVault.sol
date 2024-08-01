@@ -323,4 +323,12 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function onWethBalanceDecrease(uint256 _amount) external onlyProtocol {
         balanceWeth -= _amount;
     }
+
+    function getTreasuryPortion(uint256 _amount) external view returns (uint256) {
+        return _amount.mulDiv(treasuryFee, 1e5);
+    }
+
+    function getNodeOperatorPortion(uint256 _amount) external view returns (uint256)  {
+        return _amount.mulDiv(nodeOperatorFee, 1e5);
+    }
 }
