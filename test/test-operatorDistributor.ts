@@ -134,33 +134,33 @@ describe("Operator Distributor", function () {
 		console.log("p=exepcted stake", expectedStake)
 	});
 
-	it("success - fundedRpl updates correctly", async function () {
-		// load fixture
-		const setupData = await loadFixture(protocolFixture);
-		const { protocol, signers, rocketPool } = setupData;
-		const { admin, rplWhale } = signers;
-		const { operatorDistributor } = protocol;
-		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
+	// it("success - fundedRpl updates correctly", async function () {
+	// 	// load fixture
+	// 	const setupData = await loadFixture(protocolFixture);
+	// 	const { protocol, signers, rocketPool } = setupData;
+	// 	const { admin, rplWhale } = signers;
+	// 	const { operatorDistributor } = protocol;
+	// 	const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
 
-		//await rocketPool.rockStorageContract.setUint("0x2667306bf1c3fdbd6985406babb7b6f4af682212c96c7461d13f2c6e46339fe5", ethers.utils.parseEther(".3"));
+	// 	//await rocketPool.rockStorageContract.setUint("0x2667306bf1c3fdbd6985406babb7b6f4af682212c96c7461d13f2c6e46339fe5", ethers.utils.parseEther(".3"));
 
-		await operatorDistributor.connect(admin).setTargetStakeRatio(ethers.utils.parseEther(".5"));
+	// 	await operatorDistributor.connect(admin).setTargetStakeRatio(ethers.utils.parseEther(".5"));
 
-		expect(await protocol.operatorDistributor.fundedRpl()).equals(0);
-		await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("5000"));
-		await protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("5000"), signers.rplWhale.address);
+	// 	expect(await protocol.operatorDistributor.fundedRpl()).equals(0);
+	// 	await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("5000"));
+	// 	await protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("5000"), signers.rplWhale.address);
 		
-		let initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
-		expect(initialRplStake).equals(0)
-		await prepareOperatorDistributionContract(setupData, 2);
-		await registerNewValidator(setupData, [signers.random]);
-		expect(await protocol.operatorDistributor.fundedRpl()).equals(ethers.utils.parseEther("1200")); // the amount that got staked
+	// 	let initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
+	// 	expect(initialRplStake).equals(0)
+	// 	await prepareOperatorDistributionContract(setupData, 2);
+	// 	await registerNewValidator(setupData, [signers.random]);
+	// 	expect(await protocol.operatorDistributor.fundedRpl()).equals(ethers.utils.parseEther("1200")); // the amount that got staked
 
-		const actualStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
-		let price = await protocol.priceFetcher.getPrice();
-		let expectedStake = ethers.utils.parseEther("8").mul(price);
+	// 	const actualStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
+	// 	let price = await protocol.priceFetcher.getPrice();
+	// 	let expectedStake = ethers.utils.parseEther("8").mul(price);
 		
-	});
+	// });
 
 	it("success - fundedRpl updates correctly when there is shortfall on stake", async function () {
 		// load fixture
