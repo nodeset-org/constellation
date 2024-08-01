@@ -16,25 +16,6 @@ import 'hardhat/console.sol';
 
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
-    event NewCapitalGain(uint256 amount, address indexed winner);
-    event NewCapitalLoss(uint256 amount, address indexed loser);
-
-    event TreasuryFeeClaimed(uint256 amount);
-    event NodeOperatorFeeClaimed(uint256 amount);
-
-    struct Position {
-        uint256 shares;
-        uint256 pricePaidPerShare;
-    }
-
-    struct WeightedAverageCalculation {
-        uint256 totalPriceOfShares;
-        uint256 lastPricePaidPerShare;
-        uint256 originalValueTimesShares;
-        uint256 newValueTimesShares;
-        uint256 totalShares;
-        uint256 weightedPriceSum;
-    }
 
     using Math for uint256;
 
@@ -45,12 +26,12 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public liquidityReserveRatio;
     uint256 public rplCoverageRatio;
     uint256 public totalYieldDistributed;
+
     uint256 public treasuryFee; // Treasury fee in basis points
     uint256 public nodeOperatorFee; // NO fee in basis points
 
-    uint256 public principal; // Total principal amount (sum of all deposits)
-    uint256 public lastTreasuryIncomeClaimed; // Tracks the amount of income already claimed by the admin
-    uint256 public lastNodeOperatorIncomeClaimed; // Tracks the amount of income already claimed by the Node Operator
+    uint256 public balanceWeth;
+
     uint256 public ethPerSlashReward; // Tracks how much a user gets for reporting a slasher (in wei)
 
     uint256 public totalCounts;
@@ -59,7 +40,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     mapping(address => uint256) slashTracker;
 
-    mapping(address => Position) public positions;
 
     constructor() initializer {}
 
@@ -106,30 +86,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         require(!enforceRplCoverageRatio || tvlRatioEthRpl() < rplCoverageRatio, 'insufficient RPL coverage');
         super._deposit(caller, receiver, assets, shares);
 
-        address payable pool = _directory.getDepositPoolAddress();
+        AssetRouter ar = AssetRouter(_directory.getDepositPoolAddress());
 
-        WeightedAverageCalculation memory vars;
-        vars.totalPriceOfShares = assets;
-        vars.lastPricePaidPerShare = positions[receiver].pricePaidPerShare;
-        vars.originalValueTimesShares = vars.lastPricePaidPerShare * positions[receiver].shares * 1e18;
+        ar.onWethBalanceIncrease(assets);
+        SafeERC20.safeTransfer(IERC20(asset()), address(ar), assets);
 
-        vars.newValueTimesShares = vars.totalPriceOfShares * 1e18;
-        vars.totalShares = positions[receiver].shares + shares;
-        vars.weightedPriceSum = vars.originalValueTimesShares + vars.newValueTimesShares;
+        ar.sendEthToDistributors();
 
-        positions[receiver].pricePaidPerShare =
-            vars.weightedPriceSum /
-            (vars.totalShares == 0 ? 1 : vars.totalShares) /
-            1e18;
-        positions[receiver].shares += shares;
-
-        principal += assets;
-
-        SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
-
-        AssetRouter(pool).sendEthToDistributors();
-
-        _claimFees();
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
     }
 
@@ -155,39 +118,12 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             return;
         }
 
-        uint256 lastPriceOfShares = positions[owner].pricePaidPerShare * shares;
-
-        if (assets > lastPriceOfShares) {
-            uint256 capitalGain = assets - lastPriceOfShares;
-            totalYieldDistributed += capitalGain;
-            emit NewCapitalGain(capitalGain, receiver);
-        } else {
-            emit NewCapitalLoss(lastPriceOfShares - assets, receiver);
-        }
-
-        positions[owner].shares -= shares;
-        if (positions[owner].shares == 0) {
-            positions[owner].pricePaidPerShare = 0;
-        }
-
-        console.log('ABC1');
+        balanceWeth -= assets;
 
         AssetRouter(_directory.getDepositPoolAddress()).sendEthToDistributors();
 
-        console.log('ABC2');
-
-        principal -= assets;
-
-        console.log('ABC3');
-        console.log('ABC3.', IERC20(asset()).balanceOf(address(this)));
-        console.log('ABC3.', address(this).balance);
         super._withdraw(caller, receiver, owner, assets, shares);
 
-        console.log('ABC4');
-
-        _claimFees();
-
-        console.log('ABC5');
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
     }
 
@@ -220,56 +156,22 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Calculates the current income from rewards.
-     * @dev This function calculates the total value locked (TVL), subtracts the principal, and returns the difference as the current income from rewards.
-     * @return The current income from rewards.
-     */
-    function currentIncomeFromRewards() public view returns (uint256) {
-        unchecked {
-            AssetRouter dp = AssetRouter(getDirectory().getDepositPoolAddress());
-            console.log('WETHVault.currentIncomeFromRewards()');
-            console.log(gasleft());
-            console.log('getDirectory()');
-            console.log('getDirectory().getOperatorDistributorAddress()');
-            OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
-
-            (uint256 distributableYield, bool signed) = getDistributableYield();
-
-            uint256 tvl = uint256(
-                int(super.totalAssets() + dp.getTvlEth() + od.getTvlEth()) +
-                    (signed ? -int(distributableYield) : int(distributableYield))
-            );
-
-            if (tvl < principal) {
-                return 0;
-            }
-            return tvl - principal;
-        }
-    }
-
-    /**
      * @notice Returns the total assets managed by this vault.
      * @dev This function calculates the total assets by summing the vault's own assets, the distributable yield, 
      * and the assets held in the deposit pool and Operator Distributor. It then subtracts the treasury and node operator incomes to get the net total assets.
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
-        //console.log("WETHVault.totalAssets()");
-        //console.log(getDirectory().getDepositPoolAddress());
         AssetRouter dp = AssetRouter(getDirectory().getDepositPoolAddress());
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
-        uint256 currentIncome = currentIncomeFromRewards();
-        uint256 currentTreasuryIncome = currentIncome.mulDiv(treasuryFee, 1e5);
-        uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFee, 1e5);
         (uint256 distributableYield, bool signed) = getDistributableYield();
-
         return
             (
                 uint256(
-                    int(super.totalAssets() + dp.getTvlEth() + od.getTvlEth()) +
+                    int(balanceWeth + dp.getTvlEth() + od.getTvlEth()) +
                         (signed ? -int(distributableYield) : int(distributableYield))
                 )
-            ) - (currentTreasuryIncome + currentNodeOperatorIncome);
+            );
     }
 
     /**
@@ -377,89 +279,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Claims the accumulated treasury and node operator fees.
-     * @dev This function allows the protocol or admin to claim the fees accumulated from rewards. 
-     * It transfers the fees to the respective addresses.
-     */
-    function claimFees() external onlyProtocolOrAdmin {
-        _claimFees();
-    }
-
-    /**
-     * @notice Internal function to claim the treasury and node operator fees.
-     * @dev This function calculates the current treasury and node operator income from rewards, 
-     * determines the fee amount based on the income that hasn't been claimed yet, and transfers 
-     * these fees to the respective addresses. It then updates the `lastTreasuryIncomeClaimed` and 
-     * `lastNodeOperatorIncomeClaimed` to the latest claimed amounts.
-     * @return wethTransferOut The amount of WETH transferred out as fees.
-     */
-    function _claimFees() internal returns (uint256 wethTransferOut) {
-        uint256 currentIncome = currentIncomeFromRewards();
-        uint256 currentTreasuryIncome = currentIncome.mulDiv(treasuryFee, 1e5);
-        uint256 currentNodeOperatorIncome = currentIncome.mulDiv(nodeOperatorFee, 1e5);
-
-        uint256 feeAmountNodeOperator = currentNodeOperatorIncome - lastNodeOperatorIncomeClaimed;
-        uint256 feeAmountTreasury = currentTreasuryIncome - lastTreasuryIncomeClaimed;
-
-        YieldDistributor yd = YieldDistributor(_directory.getYieldDistributorAddress());
-
-        // Transfer the fee to the NodeOperator and treasury
-
-        console.log('no fee', feeAmountNodeOperator);
-        console.log('no fee', feeAmountTreasury);
-        (bool shortfallNo, uint256 noOut, uint256 remainingNo) = _doTransferOut(address(yd), feeAmountNodeOperator);
-        yd.wethReceivedVoidClaim(noOut);
-        console.log('transfered to nodep po');
-        (bool shortfallTreasury, uint256 treasuryOut, uint256 remainingTreasury) = _doTransferOut(
-            _directory.getTreasuryAddress(),
-            feeAmountTreasury
-        );
-        console.log('Claimed treasury and node operator fee');
-
-        wethTransferOut = (shortfallNo ? remainingNo : noOut) + (shortfallTreasury ? remainingTreasury : treasuryOut);
-
-        lastNodeOperatorIncomeClaimed = currentIncomeFromRewards().mulDiv(treasuryFee, 1e5);
-        lastTreasuryIncomeClaimed = currentIncomeFromRewards().mulDiv(nodeOperatorFee, 1e5);
-
-        emit NodeOperatorFeeClaimed(feeAmountNodeOperator);
-        emit TreasuryFeeClaimed(feeAmountTreasury);
-    }
-
-    /**
-     * @notice Transfers out a specified amount of assets to a given address.
-     * @dev This function is callable only by protocol contracts and handles the transfer of assets from the vault to a specified address. If the vault's balance is insufficient, it requests additional assets from the Operator Distributor.
-     * @param _to The address to which the assets will be transferred.
-     * @param _amount The amount of assets to be transferred.
-     * @return A tuple containing a boolean indicating if there was a shortfall, the actual amount transferred, and the remaining balance after the transfer.
-     */
-    function doTransferOut(address _to, uint256 _amount) external onlyProtocol returns (bool, uint256, uint256) {
-        return _doTransferOut(_to, _amount);
-    }
-
-    /**
-     * @notice Internal function to transfer out a specified amount of assets to a given address.
-     * @dev This function handles the internal logic for transferring assets from the vault to a specified address. If the vault's balance is insufficient, it requests additional assets from the Operator Distributor.
-     * @param _to The address to which the assets will be transferred.
-     * @param _amount The amount of assets to be transferred.
-     * @return A tuple containing a boolean indicating if there was a shortfall, the actual amount transferred, and the remaining balance after the transfer.
-     */
-    function _doTransferOut(address _to, uint256 _amount) internal returns (bool, uint256, uint256) {
-        IERC20 asset = IERC20(asset());
-        uint256 balance = asset.balanceOf(address(this));
-        uint256 shortfall = _amount > balance ? _amount - balance : 0;
-        if (shortfall > 0) {
-            SafeERC20.safeTransfer(asset, _to, balance);
-            OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-            uint256 transferedIn = od.transferWEthToVault(shortfall);
-            SafeERC20.safeTransfer(asset, _to, transferedIn);
-            return (true, transferedIn + balance, balance);
-        } else {
-            SafeERC20.safeTransfer(asset, _to, _amount);
-            return (false, _amount, _amount);
-        }
-    }
-
-    /**
      * @notice Updates the slashing amounts for the specified bad minipools.
      * @dev This function iterates through the list of bad minipools, checks for any penalties incurred since the last update, and updates the total counts and penalty bonds accordingly. It also rewards the caller with a predefined ETH amount for each slashing report.
      * @param badMinipools An array of addresses representing the bad minipools to be checked for slashing updates.
@@ -509,5 +328,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         require(_liquidityReserveRatio >= 0, 'WETHVault: Collateralization ratio must be positive');
         require(_liquidityReserveRatio <= 1e5, 'WETHVault: Collateralization ratio must be less than or equal to 100%');
         liquidityReserveRatio = _liquidityReserveRatio;
+    }
+
+    function onWethBalanceIncrease(uint256 _amount) external onlyProtocol {
+        balanceWeth += _amount;
+    }
+
+    function onWethBalanceDecrease(uint256 _amount) external onlyProtocol {
+        balanceWeth -= _amount;
     }
 }

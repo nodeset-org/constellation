@@ -19,6 +19,12 @@ import './Utils/Constants.sol';
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
 /// ETH + RPL intakes from token mints and validator yields and sends to respective ERC4246 vaults.
 contract AssetRouter is UpgradeableBase {
+
+    uint256 public balanceWeth;
+    uint256 public balanceRpl;
+
+    bool internal _gateOpen;
+
     using Math for uint256;
 
     constructor() initializer {}
@@ -38,14 +44,14 @@ contract AssetRouter is UpgradeableBase {
     ///      It sums the ETH balance of this contract and the WETH balance from the WETH contract.
     /// @return The total value in ETH and WETH locked in the deposit pool.
     function getTvlEth() public view returns (uint) {
-        return address(this).balance + IWETH(_directory.getWETHAddress()).balanceOf(address(this));
+        return balanceWeth;
     }
 
     /// @notice Retrieves the total RPL value locked inside this deposit pool.
     /// @dev This function calculates and returns the total amount of RPL tokens held by the deposit pool.
     /// @return The total value in RPL locked in the deposit pool.
     function getTvlRpl() public view returns (uint) {
-        return IERC20(_directory.getRPLAddress()).balanceOf(address(this));
+        return balanceRpl;
     }
 
     ///--------
@@ -54,10 +60,11 @@ contract AssetRouter is UpgradeableBase {
 
     /// @notice Unstakes a specified amount of RPL tokens.
     /// @dev This function allows an administrator to unstake a specified amount of RPL tokens from the Rocket Node Staking contract.
-    /// @param _excessRpl The amount of RPL tokens to unstake.
+    /// @param _amount The amount of RPL tokens to unstake.
     /// @dev The tokens will be withdrawn from the Rocket Node Staking contract.
-    function unstakeRpl(address _nodeAddress, uint256 _excessRpl) external onlyProtocolOrAdmin {
-        IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).withdrawRPL(_nodeAddress, _excessRpl);
+    function unstakeRpl(address _nodeAddress, uint256 _amount) external onlyProtocolOrAdmin {
+        balanceRpl -= _amount;
+        IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).withdrawRPL(_nodeAddress, _amount);
     }
 
     /// @notice Stakes a specified amount of RPL tokens on behalf of a node operator.
@@ -69,55 +76,53 @@ contract AssetRouter is UpgradeableBase {
     function stakeRPLFor(address _nodeAddress, uint256 _amount) external onlyProtocolOrAdmin {
         SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), 0);
         SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), _amount);
+        balanceRpl -= _amount;
         IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, _amount);
     }
 
     /// @notice Distributes ETH to the vault and operator distributor.
     /// @dev This function converts the WETH balance to ETH, sends the required capital to the vault, and the surplus ETH to the operator distributor.
     function sendEthToDistributors() public onlyProtocolOrAdmin nonReentrant {
-        console.log('sendEthToDistributors.A');
-        // Convert entire WETH balance of this contract to ETH
-        IWETH WETH = IWETH(_directory.getWETHAddress());
-        uint256 wethBalance = WETH.balanceOf(address(this));
-        // TODO: Wouldn't be more optimized to start with weth then unwrap if needed?
-        WETH.withdraw(wethBalance);
-        console.log('sendEthToDistributors.B');
+        IWETH weth = IWETH(_directory.getWETHAddress());
 
         // Initialize the vault and operator distributor addresses
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
-        address payable operatorDistributor = payable(getDirectory().getOperatorDistributorAddress());
+        OperatorDistributor operatorDistributor = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         console.log('sendEthToDistributors.C');
 
         // Calculate required capital and total balance
         uint256 requiredCapital = vweth.getRequiredCollateral();
-        uint256 ethBalance = address(this).balance;
         console.log('sendEthToDistributors.D');
         console.log(requiredCapital);
-        console.log(ethBalance);
 
-        if (ethBalance >= requiredCapital) {
+        if (balanceWeth >= requiredCapital) {
             console.log('sendEthToDistributors.E');
 
             // Send required capital in WETH to vault and surplus ETH to operator distributor
-            WETH.deposit{value: requiredCapital}();
-            console.log('sendEthToDistributors.E1');
 
-            SafeERC20.safeTransfer(WETH, address(vweth), requiredCapital);
+            balanceWeth -= requiredCapital;
+            vweth.onWethBalanceIncrease(requiredCapital);
+            SafeERC20.safeTransfer(weth, address(vweth), requiredCapital);
+
             console.log('sendEthToDistributors.E2');
 
-            uint256 surplus = ethBalance - requiredCapital;
+            uint256 surplus = balanceWeth - requiredCapital;
             console.log('sendEthToDistributors.E3');
 
-            (bool success, ) = operatorDistributor.call{value: surplus}('');
-            require(success, 'Transfer failed.');
+            balanceWeth -= surplus;
+            _gateOpen = true;
+            weth.withdraw(surplus);
+            _gateOpen = false;
+            operatorDistributor.onEthBalanceIncrease{value: surplus}(surplus);
             console.log('sendEthToDistributors.F');
         } else {
             console.log('sendEthToDistributors.G');
 
             // If not enough ETH balance, convert the shortfall in WETH back to ETH and send it
-            uint256 shortfall = requiredCapital - ethBalance;
-            WETH.deposit{value: shortfall}();
-            SafeERC20.safeTransfer(IERC20(address(WETH)), address(vweth), shortfall);
+            uint256 shortfall = requiredCapital - balanceWeth;
+            balanceWeth -= shortfall;
+            vweth.onWethBalanceIncrease(shortfall);
+            SafeERC20.safeTransfer(IERC20(address(weth)), address(vweth), shortfall);
             console.log('sendEthToDistributors.H');
         }
         console.log('sendEthToDistributors.I');
@@ -159,8 +164,23 @@ contract AssetRouter is UpgradeableBase {
         console.log('sendRplToDistributors.G');
     }
 
-    /// @notice Receive hook for ETH deposits.
-    /// @dev This function allows the contract to receive ETH deposits sent to its address.
-    ///      It is used as a fallback function to accept incoming ETH transfers.
-    receive() external payable {}
+    function onWethBalanceIncrease(uint256 _amount) external onlyProtocol {
+        balanceWeth += _amount;
+    }
+
+    function onWethBalanceDecrease(uint256 _amount) external onlyProtocol {
+        balanceWeth -= _amount;
+    }
+
+    function onRplBalanceIncrease(uint256 _amount) external onlyProtocol {
+        balanceRpl += _amount;
+    }
+
+    function onRplBalanceDecrease(uint256 _amount) external onlyProtocol {
+        balanceRpl -= _amount;
+    }
+
+    receive() external payable {
+        require(_gateOpen);
+    }
 }

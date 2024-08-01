@@ -70,6 +70,19 @@ describe("xrETH", function () {
     expect(expectedxrETHInSystem).equals(actualxrETHInSystem)
   })
 
+  it.only("success - tries to deposit and redeem from weth vault multiple times", async () => {
+    const setupData = await loadFixture(protocolFixture);
+    const { protocol, signers, rocketPool } = setupData;
+
+    await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
+    await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
+    await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
+
+    console.log("balanceWeth vault", await protocol.vCWETH.balanceWeth());
+    console.log("balanceWeth operator distributor", await protocol.operatorDistributor.balanceEth());
+    console.log("balanceWeth asset rounter", await protocol.depositPool.balanceWeth());
+  })
+
 
   // add tests for deposit and withdraw
 

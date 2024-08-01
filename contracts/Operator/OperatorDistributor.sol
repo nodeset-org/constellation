@@ -60,6 +60,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     // The amount the oracle has already included in its summation
     uint256 public oracleError;
 
+    uint256 public balanceEth;
+    uint256 public balanceRpl;
+
     constructor() initializer {}
 
     /**
@@ -423,4 +426,23 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             return 0;
         }
     }
+
+    function onEthBalanceIncrease(uint256 _amount) external payable onlyProtocol {
+        require(msg.value == _amount, "_amount must match msg.value");
+        balanceEth += _amount;
+    }
+
+    function onEthBalanceDecrease(uint256 _amount) external onlyProtocol {
+        balanceEth -= _amount;
+    }
+
+    function onRplBalanceIncrease(uint256 _amount) external onlyProtocol {
+        balanceRpl += _amount;
+    }
+
+    function onRplBalanceDecrease(uint256 _amount) external onlyProtocol {
+        balanceRpl -= _amount;
+    }
+
+
 }
