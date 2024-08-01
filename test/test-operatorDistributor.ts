@@ -18,9 +18,15 @@ describe("Operator Distributor", function () {
 		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
 		const rocketDepositPool = await ethers.getContractAt("RocketDepositPool", rocketDepositPoolContract.address);
 
+		// set expectations for params
+		//expect(setupData.protocol.operatorDistributor.targetStakeRatio >= (await setupData.protocol.operatorDistributor.minimumStakeRatio()).mul(2));
+		
+		// add minimum assets for 2 minipools
 		await prepareOperatorDistributionContract(setupData, 2);
-		console.log("start");
-		const NodeAccounts = await registerNewValidator(setupData, [signers.random, signers.random2])
+
+		console.log('amount staked after prep', await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address));
+		// create 2 minipools
+		await registerNewValidator(setupData, [signers.random, signers.random2]);
 
 		// send rpl to the operator distributor
 		const rplAmount = ethers.utils.parseEther("1000");
@@ -111,7 +117,7 @@ describe("Operator Distributor", function () {
 		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
 
 		// getSettingUint('node.per.minipool.stake.minimum');
-		await rocketPool.rockStorageContract.setUint("0x2667306bf1c3fdbd6985406babb7b6f4af682212c96c7461d13f2c6e46339fe5", ethers.utils.parseEther(".3"));
+		//await rocketPool.rockStorageContract.setUint("0x2667306bf1c3fdbd6985406babb7b6f4af682212c96c7461d13f2c6e46339fe5", ethers.utils.parseEther(".3"));
 
 		await operatorDistributor.connect(admin).setTargetStakeRatio(ethers.utils.parseEther(".5"));
 
@@ -136,7 +142,7 @@ describe("Operator Distributor", function () {
 		const { operatorDistributor } = protocol;
 		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
 
-		await rocketPool.rockStorageContract.setUint("0x2667306bf1c3fdbd6985406babb7b6f4af682212c96c7461d13f2c6e46339fe5", ethers.utils.parseEther(".3"));
+		//await rocketPool.rockStorageContract.setUint("0x2667306bf1c3fdbd6985406babb7b6f4af682212c96c7461d13f2c6e46339fe5", ethers.utils.parseEther(".3"));
 
 		await operatorDistributor.connect(admin).setTargetStakeRatio(ethers.utils.parseEther(".5"));
 

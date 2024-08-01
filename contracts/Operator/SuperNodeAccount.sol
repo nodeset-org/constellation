@@ -218,7 +218,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         od.onMinipoolCreated(_expectedMinipoolAddress, subNodeOperator, bond);
-        od.rebalanceRplStake(getTotalEthStaked() + (32 ether - bond));
+        od.rebalanceRplStake(getTotalEthStaked() + bond);
 
         subNodeOperatorMinipools[subNodeOperator].push(_expectedMinipoolAddress);
 
