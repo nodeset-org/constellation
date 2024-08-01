@@ -47,7 +47,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     // Total amount of Rocket Pool tokens (RPL) funded or allocated by the contract.
     uint256 public fundedRpl;
 
-    // Target ratio of ETH to RPL stake. 
+    // Target ratio of ETH to RPL stake.
     // RPL will be staked if the stake balance is below this and unstaked if the balance is above.
     uint256 public targetStakeRatio;
 
@@ -104,19 +104,19 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      */
     function _rebalanceLiquidity() internal nonReentrant {
         AssetRouter ar = AssetRouter(_directory.getDepositPoolAddress());
-        
+
         IWETH weth = IWETH(_directory.getWETHAddress());
         weth.deposit{value: balanceEth}();
-        
+
         SafeERC20.safeTransfer(weth, address(ar), balanceEth);
         ar.onWethBalanceIncrease(balanceEth);
-
         balanceEth = 0;
-
         ar.sendEthToDistributors();
 
         IERC20 rpl = IERC20(_directory.getRPLAddress());
-        SafeERC20.safeTransfer(rpl, address(ar), rpl.balanceOf(address(this)));
+        SafeERC20.safeTransfer(rpl, address(ar), balanceRpl);
+        ar.onRplBalanceIncrease(balanceRpl);
+        balanceRpl = 0;
         ar.sendRplToDistributors();
     }
 
@@ -133,7 +133,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @return uint256 Total amount of RPL under the management of the contract.
      */
     function getTvlRpl() public view returns (uint) {
-        return IERC20(_directory.getRPLAddress()).balanceOf(address(this)) + fundedRpl;
+        return balanceRpl + fundedRpl;
     }
 
     /**
@@ -149,6 +149,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         address superNode = _directory.getSuperNodeAddress();
 
+        console.log('od.provisionLiquiditiesForMinipoolCreation.balanceEth', balanceEth);
+        console.log('od.provisionLiquiditiesForMinipoolCreation.balance', address(this).balance);
+        console.log('od.provisionLiquiditiesForMinipoolCreation.balanceOf.weth', IERC20(_directory.getWETHAddress()).balanceOf(address(this)));
+
         (bool success, bytes memory data) = superNode.call{value: _bond}('');
         if (!success) {
             console.log('LowLevelEthTransfer 1');
@@ -156,6 +160,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             console.log(_bond);
             revert LowLevelEthTransfer(success, data);
         }
+
+        balanceEth -= _bond;
         console.log('finished provisionLiquiditiesForMinipoolCreation');
     }
 
@@ -180,11 +186,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('rebalanceRplStake.targetStakeRatio', targetStakeRatio);
 
         uint256 targetStake = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
-
+        console.log("od.rebalanceRplStake.targetStake",targetStake);
         if (targetStake > rplStaked) {
             // stake more
             uint256 stakeIncrease = targetStake - rplStaked;
             console.log('rebalanceRplStake.stakeIncrease', stakeIncrease);
+            console.log('od.rebalanceRplStake.balanceOf', IERC20(_directory.getRPLAddress()).balanceOf(address(this)));
+            console.log('od.rebalanceRplStake.balanceRpl', balanceRpl);
+
             uint256 actualStakeIncrease = _performTopUp(_nodeAccount, stakeIncrease);
             console.log('rebalanceRplStake.actualStakeIncrease', stakeIncrease);
             fundedRpl += actualStakeIncrease;
@@ -207,6 +216,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 // NOTE: to auditors: double check that all cases are covered such that withdrawRPL will not revert execution
                 fundedRpl -= excessRpl;
                 console.log('rebalanceRplStake.excessRpl', excessRpl);
+                balanceRpl += excessRpl;
                 AssetRouter(_directory.getDepositPoolAddress()).unstakeRpl(_nodeAccount, excessRpl);
             } else {
                 console.log('failed to rebalanceRplStake.excessRpl', excessRpl);
@@ -219,8 +229,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     function _performTopUp(address _superNode, uint256 _requiredStake) internal returns (uint256) {
-        uint256 currentRplBalance = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
+        uint256 currentRplBalance = balanceRpl;
         console.log('_performTopUp.currentRplBalance', currentRplBalance);
+        console.log('od._performTopup.balanceOf', IERC20(_directory.getRPLAddress()).balanceOf(address(this)));
         if (currentRplBalance >= _requiredStake) {
             if (_requiredStake == 0) {
                 return 0;
@@ -229,6 +240,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             // transfer RPL to deposit pool
             IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), _requiredStake);
             AssetRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_superNode, _requiredStake);
+            balanceRpl -= _requiredStake;
             console.log('_performTopUp._requiredStake', _requiredStake);
             return _requiredStake;
         } else {
@@ -236,9 +248,12 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 return 0;
             }
             // stake what we have
-            IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), currentRplBalance);
-            AssetRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_superNode, currentRplBalance);
-            console.log('_performTopUp.currentRplBalance', currentRplBalance);
+            console.log('od._performTopup.balanceRpl', balanceRpl);
+            console.log('od._performTopup.balanceOf', IERC20(_directory.getRPLAddress()).balanceOf(address(this)));
+            IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), balanceRpl);
+            AssetRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_superNode, balanceRpl);
+            balanceRpl = 0;
+            console.log('_performTopUp.currentRplBalance', balanceRpl);
             return currentRplBalance;
         }
     }
@@ -259,7 +274,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('B');
         uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
         console.log('price', ethPriceInRpl);
-        uint256 matchedStakeRatio = _existingRplStake == 0 ? 0 : (_rpEthMatched * ethPriceInRpl * 1e18) / _existingRplStake;
+        uint256 matchedStakeRatio = _existingRplStake == 0
+            ? 0
+            : (_rpEthMatched * ethPriceInRpl * 1e18) / _existingRplStake;
         console.log('matchedStakeRatio', matchedStakeRatio);
         console.log('minimumStakeRatio', minimumStakeRatio);
         if (matchedStakeRatio < minimumStakeRatio) {
@@ -344,17 +361,17 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 AssetRouter ar = AssetRouter(_directory.getDepositPoolAddress());
                 ar.openGate();
                 uint256 initalBalance = address(ar).balance;
-                
-                console.log("withdrawal address before skim", _directory.getDepositPoolAddress().balance);
+
+                console.log('withdrawal address before skim', _directory.getDepositPoolAddress().balance);
                 ar.onClaimSkimmedRewards(minipool);
-                console.log("withdrawal address after skim", _directory.getDepositPoolAddress().balance);
+                console.log('withdrawal address after skim', _directory.getDepositPoolAddress().balance);
 
                 uint256 finalBalance = address(ar).balance;
                 ar.closeGate();
-                console.log("finalBalance", finalBalance);
-                console.log("initalBalance", initalBalance);
+                console.log('finalBalance', finalBalance);
+                console.log('initalBalance', initalBalance);
                 uint256 rewards = finalBalance - initalBalance;
-                console.log("rewards recieved", rewards);
+                console.log('rewards recieved', rewards);
                 ar.onRewardsRecieved(rewards);
 
                 oracleError += rewards;
@@ -400,55 +417,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Transfers WETH to a specified vault, provided the contract has enough balance.
-     * @param _amount Amount of WETH to transfer.
-     * @return uint256 Amount of WETH transferred.
-     */
-    function transferWEthToVault(uint256 _amount) external returns (uint256) {
-        address vault = _directory.getWETHVaultAddress();
-        require(msg.sender == vault, 'caller must be vault');
-        address weth = _directory.getWETHAddress();
-
-        // Check if there's enough WETH in the contract
-        uint256 wethBalance = IWETH(weth).balanceOf(address(this));
-        if (wethBalance >= _amount) {
-            IWETH(weth).deposit{value: _amount}();
-            SafeERC20.safeTransfer(IERC20(weth), vault, _amount);
-            return _amount;
-        } else {
-            return 0;
-        }
-    }
-
-    /**
      * @notice Resets the oracle error.
      */
     function resetOracleError() external onlyProtocol {
         oracleError = 0;
     }
 
-    /**
-     * @notice Transfers RPL to a specified vault, provided the contract has enough balance.
-     * @param _amount Amount of RPL to transfer.
-     * @return uint256 Amount of RPL transferred.
-     */
-    function transferRplToVault(uint256 _amount) external returns (uint256) {
-        address vault = _directory.getRPLVaultAddress();
-        require(msg.sender == vault, 'caller must be vault');
-
-        // Check if there's enough RPL in the contract
-        address rpl = IERC4626Upgradeable(vault).asset();
-        uint256 rplBalance = IERC20(rpl).balanceOf(address(this));
-        if (rplBalance >= _amount) {
-            SafeERC20.safeTransfer(IERC20(rpl), vault, _amount);
-            return _amount;
-        } else {
-            return 0;
-        }
-    }
-
     function onEthBalanceIncrease(uint256 _amount) external payable onlyProtocol {
-        require(msg.value == _amount, "_amount must match msg.value");
+        require(msg.value == _amount, '_amount must match msg.value');
         balanceEth += _amount;
     }
 
@@ -458,11 +434,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     function onRplBalanceIncrease(uint256 _amount) external onlyProtocol {
         balanceRpl += _amount;
+        console.log('od.onRplBalanceIncrease.newBalance is', balanceRpl);
+        console.log('od.onRplBalanceIncrease.balanceOf', IERC20(_directory.getRPLAddress()).balanceOf(address(this)));
     }
 
     function onRplBalanceDecrease(uint256 _amount) external onlyProtocol {
         balanceRpl -= _amount;
     }
-
-
 }

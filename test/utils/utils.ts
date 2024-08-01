@@ -547,7 +547,7 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   await setupData.protocol.wETH.connect(setupData.signers.ethWhale).approve(setupData.protocol.vCWETH.address, requiredEth);
   await setupData.protocol.vCWETH.connect(setupData.signers.ethWhale).deposit(requiredEth, setupData.signers.ethWhale.address);
   
-  /*const protocolSigner = setupData.signers.protocolSigner;
+  /*
   await setupData.protocol.depositPool.connect(protocolSigner).openGate();
   await setupData.signers.admin.sendTransaction({
     to: setupData.protocol.operatorDistributor.address,
@@ -562,11 +562,13 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   
 
   // send eth to the rocketpool deposit contract (mint rETH to signers[0])
-
+  
   const rplRequired = await setupData.protocol.operatorDistributor.calculateRplStakeShortfall(0, (ethers.utils.parseEther("32").mul(BigNumber.from(numOperators))).sub(depositAmount));
   console.log('rplRequired', rplRequired);
+  const protocolSigner = setupData.signers.protocolSigner;
   await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequired);
-
+  await setupData.protocol.operatorDistributor.connect(protocolSigner).onRplBalanceIncrease(rplRequired)
+  
   return requiredEth;
 }
 

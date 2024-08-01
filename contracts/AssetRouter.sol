@@ -62,7 +62,6 @@ contract AssetRouter is UpgradeableBase {
     /// @param _amount The amount of RPL tokens to unstake.
     /// @dev The tokens will be withdrawn from the Rocket Node Staking contract.
     function unstakeRpl(address _nodeAddress, uint256 _amount) external onlyProtocolOrAdmin {
-        //   balanceRpl -= _amount;
         IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).withdrawRPL(_nodeAddress, _amount);
     }
 
@@ -75,7 +74,6 @@ contract AssetRouter is UpgradeableBase {
     function stakeRPLFor(address _nodeAddress, uint256 _amount) external onlyProtocolOrAdmin {
         SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), 0);
         SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), _amount);
-        // balanceRpl -= _amount;
         IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, _amount);
     }
 
@@ -134,13 +132,13 @@ contract AssetRouter is UpgradeableBase {
 
         // Initialize the RPLVault and the Operator Distributor addresses
         RPLVault vrpl = RPLVault(getDirectory().getRPLVaultAddress());
-        address operatorDistributor = getDirectory().getOperatorDistributorAddress();
-        IERC20 RPL = IERC20(_directory.getRPLAddress());
+        OperatorDistributor operatorDistributor = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
+        IERC20 rpl = IERC20(_directory.getRPLAddress());
         console.log('sendRplToDistributors.B');
 
         // Fetch the required capital in RPL and the total RPL balance of the contract
         uint256 requiredCapital = vrpl.getRequiredCollateral();
-        uint256 totalBalance = RPL.balanceOf(address(this));
+        uint256 totalBalance = balanceRpl;
         console.log('sendRplToDistributors.C');
 
         // Determine the amount to send to the RPLVault
@@ -150,16 +148,16 @@ contract AssetRouter is UpgradeableBase {
         // Transfer RPL to the RPLVault
         if (toRplVault > 0) {
             console.log('sendRplToDistributors.E');
-
-            SafeERC20.safeTransfer(IERC20(address(RPL)), address(vrpl), toRplVault);
+            SafeERC20.safeTransfer(IERC20(address(rpl)), address(vrpl), toRplVault);
+            vrpl.onRplBalanceIncrease(toRplVault);
+            balanceRpl -= toRplVault;
         }
 
-        // Transfer any surplus RPL to the Operator Distributor
-        if (totalBalance > toRplVault) {
-            console.log('sendRplToDistributors.F');
-
-            SafeERC20.safeTransfer(IERC20(address(RPL)), operatorDistributor, totalBalance - toRplVault);
-        }
+        console.log('ar.sendRplToDistributors.balanceOf.rpl', IERC20(_directory.getRPLAddress()).balanceOf(address(this)));
+        console.log('ar.sendRplToDistributors.balanceRpl', balanceRpl);
+        SafeERC20.safeTransfer(IERC20(address(rpl)), address(operatorDistributor), balanceRpl);
+        operatorDistributor.onRplBalanceIncrease(balanceRpl);
+        balanceRpl = 0;
         console.log('sendRplToDistributors.G');
     }
 
@@ -173,6 +171,8 @@ contract AssetRouter is UpgradeableBase {
 
     function onRplBalanceIncrease(uint256 _amount) external onlyProtocol {
         balanceRpl += _amount;
+        console.log('ar.onRplBalanceIncrease.balanceOf.rpl', IERC20(_directory.getRPLAddress()).balanceOf(address(this)));
+        console.log('ar.onRplBalanceIncrease.balanceRpl', balanceRpl);
     }
 
     function onRplBalanceDecrease(uint256 _amount) external onlyProtocol {
@@ -190,9 +190,9 @@ contract AssetRouter is UpgradeableBase {
         uint256 treasuryPortion = vweth.getTreasuryPortion(_amount);
         uint256 nodeOperatorPortion = vweth.getNodeOperatorPortion(_amount);
 
-        console.log("treasuryPortion", treasuryPortion);
-        console.log("nodeOperatorPortion", nodeOperatorPortion);
-        console.log("_amount", _amount);
+        console.log('treasuryPortion', treasuryPortion);
+        console.log('nodeOperatorPortion', nodeOperatorPortion);
+        console.log('_amount', _amount);
 
         (bool success, ) = _directory.getTreasuryAddress().call{value: treasuryPortion}('');
         require(success, 'Transfer to treasury failed');
