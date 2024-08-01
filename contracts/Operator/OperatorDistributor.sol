@@ -47,8 +47,12 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     // Total amount of Rocket Pool tokens (RPL) funded or allocated by the contract.
     uint256 public fundedRpl;
 
-    // Target ratio of ETH to RPL stake.
+    // Target ratio of ETH to RPL stake. 
+    // RPL will be staked if the stake balance is below this and unstaked if the balance is above.
     uint256 public targetStakeRatio;
+
+    // Minimum ratio of ETH to RPL stake.
+    uint256 public minimumStakeRatio;
 
     // Required amount of ETH staked for a minipool to be active.
     uint256 public requiredLEBStaked;
@@ -67,7 +71,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     function initialize(address _directory) public override initializer {
         super.initialize(_directory);
         // defaulting these to 8eth to only allow LEB8 minipools
-        targetStakeRatio = 1.5e18; // Set to 150% as a default ratio.
+        targetStakeRatio = 0.6e18; // 60% of bonded ETH by default.
+        minimumStakeRatio = 0.15e18; // 15% of matched ETH by default
         requiredLEBStaked = 8 ether; // Default to 8 ETH to align with specific minipool configurations.
     }
 
@@ -229,23 +234,26 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Calculates the additional RPL needed to maintain the target staking ratio.
+     * @notice Calculates the additional RPL needed to maintain the minimum staking ratio.
      * @param _existingRplStake Current amount of RPL staked by the node.
-     * @param _ethStaked Amount of ETH currently staked by the node.
+     * @param _rpEthMatched Amount of ETH currently staked by the node.
      * @return requiredStakeRpl Amount of additional RPL needed.
      */
     function calculateRplStakeShortfall(
         uint256 _existingRplStake,
-        uint256 _ethStaked
+        uint256 _rpEthMatched
     ) public view returns (uint256 requiredStakeRpl) {
-        console.log('before calling getPriceFetcherAddress');
+        console.log('existing rpl staked', _existingRplStake);
+        console.log('_rpEthMatched', _rpEthMatched);
         console.logAddress(getDirectory().getPriceFetcherAddress());
         console.log('B');
         uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
         console.log('price', ethPriceInRpl);
-        uint256 stakeRatio = _existingRplStake == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / _existingRplStake;
-        if (stakeRatio < targetStakeRatio) {
-            uint256 minuend = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
+        uint256 matchedStakeRatio = _existingRplStake == 0 ? 0 : (_rpEthMatched * ethPriceInRpl * 1e18) / _existingRplStake;
+        console.log('matchedStakeRatio', matchedStakeRatio);
+        console.log('minimumStakeRatio', minimumStakeRatio);
+        if (matchedStakeRatio < minimumStakeRatio) {
+            uint256 minuend = minimumStakeRatio.mulDiv(_rpEthMatched * ethPriceInRpl, 1e18 * 10 ** 18);
             console.log('calculateRplStakeShortfall.minuend', minuend);
             requiredStakeRpl = minuend < _existingRplStake ? 0 : minuend - _existingRplStake;
         } else {
@@ -310,7 +318,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     function _processNextMinipool() internal {
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
 
-        rebalanceRplStake(sna.totalEthStaking());
+        rebalanceRplStake(sna.getTotalEthStaked());
 
         /**
          * @dev We are only calling distributeBalance with a true flag to prevent griefing vectors. This ensures we
@@ -346,6 +354,16 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      */
     function setTargetStakeRatio(uint256 _targetStakeRatio) external onlyAdmin {
         targetStakeRatio = _targetStakeRatio;
+    }
+
+    /**
+     * @notice Sets the minimum ETH to RPL stake ratio.
+     * @dev Adjusts the minimum ratio used to maintain balance between ETH and RPL stakes.
+     * Minipools can't be created if the new stake ratio would be below this amount.
+     * @param _minimumStakeRatio The new minimum stake ratio to be set.
+     */
+    function setMinimumStakeRatio(uint256 _minimumStakeRatio) external onlyAdmin {
+        minimumStakeRatio = _minimumStakeRatio;
     }
 
     /**
