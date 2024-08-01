@@ -125,7 +125,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @return uint256 Total amount of ETH under the management of the contract.
      */
     function getTvlEth() public view returns (uint) {
-        return address(this).balance + fundedEth;
+        return balanceEth + fundedEth;
     }
 
     /**

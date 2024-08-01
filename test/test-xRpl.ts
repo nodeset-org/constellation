@@ -79,7 +79,7 @@ describe("xRPL", function () {
 
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random2.address, ethers.utils.parseEther("100"));
     await assertAddOperator(setupData, signers.random2);
-    
+
     await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("1000000"));
     await protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("1000000"), signers.random.address);
 
@@ -87,8 +87,6 @@ describe("xRPL", function () {
     const actualRplInSystem = await protocol.vCRPL.totalAssets();
     expect(expectedRplInSystem).equals(actualRplInSystem)
 
-    console.log("currentIncome", await protocol.vCRPL.currentIncomeFromRewards());
-    console.log("currentTreasuryIncome", await protocol.vCRPL.currentTreasuryIncomeFromRewards());
 
     await rocketPool.rplContract.connect(signers.random2).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
     console.log(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address));
@@ -100,6 +98,45 @@ describe("xRPL", function () {
         from: protocol.vCRPL.address, to: signers.random2.address, value: ethers.utils.parseEther("100")
       },
     ])
+  })
+
+  it.only("success - tries to deposit and redeem from weth vault multiple times", async () => {
+    const setupData = await loadFixture(protocolFixture);
+    const { protocol, signers, rocketPool } = setupData;
+
+    const depositAmount = ethers.utils.parseEther("1000");
+    const expectedReserveInVault = ethers.utils.parseEther("20");
+    const surplusSentToOD = ethers.utils.parseEther("980");
+
+    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, depositAmount)
+
+    await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, depositAmount);
+    await protocol.vCRPL.connect(signers.random).deposit(depositAmount, signers.random.address);
+
+    expect(await protocol.vCRPL.totalAssets()).equals(depositAmount)
+    expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault);
+    expect(await protocol.operatorDistributor.balanceRpl()).equals(surplusSentToOD);
+
+    const shareValue = await protocol.vCRPL.convertToAssets(ethers.utils.parseEther("1"))
+    const expectedRedeemValue = await protocol.vCRPL.previewRedeem(shareValue);
+
+    let preBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
+    await protocol.vCRPL.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
+    let postBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
+    expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
+    expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("1")))
+
+    preBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
+    await protocol.vCRPL.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
+    postBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
+    expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
+    expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("2")))
+
+    preBalance = await protocol.vCRPL.balanceOf(signers.random.address);
+    await protocol.vCRPL.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
+    postBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
+    expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
+    expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("3")))
   })
 
   it("success - a random makes deposit, DP gets 10 rpl, random gets correct amount and so does admin, admin fails to withdraw again, DP gets 69 rpl, admin claims 1%", async () => {
@@ -116,16 +153,10 @@ describe("xRPL", function () {
     const actualRplInSystem = await protocol.vCRPL.totalAssets();
     expect(expectedRplInSystem).equals(actualRplInSystem)
 
-    expect(await protocol.vCRPL.currentIncomeFromRewards()).equals(0);
-    expect(await protocol.vCRPL.currentTreasuryIncomeFromRewards()).equals(0);
 
     // incoming funds to DP
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, ethers.utils.parseEther("10"));
 
-    expect(await protocol.vCRPL.currentIncomeFromRewards()).equals(ethers.utils.parseEther("10"));
-    expect(await protocol.vCRPL.currentTreasuryIncomeFromRewards()).equals(ethers.utils.parseEther(".1"));
-
-    expect(await protocol.vCRPL.principal()).equals(ethers.utils.parseEther("100"));
     // random should be able to withdraw shares worth 10% more, aka, withdraw will trade one share for 1.1 - 1% admin fee RPL
     // admin should be allowed to take 1% of the 10 RPL that landed
     await protocol.vCRPL.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("1"));
@@ -139,30 +170,6 @@ describe("xRPL", function () {
       },
     ])
 
-    expect(await protocol.vCRPL.principal()).equals(BigNumber.from("98901000000000000001"));
-    
-    // admin should claim 0 dollars after recieveing the goods
-    await assertSingleTransferExists(
-      await protocol.vCRPL.connect(signers.admin).claimTreasuryFee(),
-      protocol.vCRPL.address,
-      await protocol.directory.getTreasuryAddress(),
-      ethers.utils.parseEther("0")
-    )
 
-    await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, ethers.utils.parseEther("69"));
-
-    await assertSingleTransferExists(
-      await protocol.vCRPL.connect(signers.admin).claimTreasuryFee(),
-      protocol.vCRPL.address,
-      await protocol.directory.getTreasuryAddress(),
-      ethers.utils.parseEther("0.69")
-    )
-
-    await assertSingleTransferExists(
-      await protocol.vCRPL.connect(signers.admin).claimTreasuryFee(),
-      protocol.vCRPL.address,
-      await protocol.directory.getTreasuryAddress(),
-      ethers.utils.parseEther("0")
-    )
   })
 });

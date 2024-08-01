@@ -77,7 +77,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
         super._deposit(caller, receiver, assets, shares);
 
-        ar.onWethBalanceIncrease(assets);
+        ar.onRplBalanceIncrease(assets);
         SafeERC20.safeTransfer(IERC20(asset()), address(ar), assets);
         ar.sendRplToDistributors();
 
