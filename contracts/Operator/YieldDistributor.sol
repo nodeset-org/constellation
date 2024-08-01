@@ -15,6 +15,8 @@ import '../Interfaces/Oracles/IXRETHOracle.sol';
 import '../Interfaces/IWETH.sol';
 import '../Utils/Constants.sol';
 
+import './SuperNodeAccount.sol';
+
 import "hardhat/console.sol";
 
 struct Reward {
@@ -50,7 +52,7 @@ contract YieldDistributor is UpgradeableBase {
     uint256 public maxIntervalLengthSeconds; // NOs will have to wait at most this long for their payday
 
     uint256 public k; // steepness of the curve
-    uint256 public maxValidators; // max number of validators used to normalize x axis
+
 
     /**
      * @notice Initializes the contract with the specified directory address and sets the initial configurations.
@@ -66,7 +68,6 @@ contract YieldDistributor is UpgradeableBase {
         maxIntervalLengthSeconds = 30 days;
 
         k = 7;
-        maxValidators = 1;
     }
 
     /**
@@ -164,7 +165,7 @@ contract YieldDistributor is UpgradeableBase {
 
             uint256 operatorsPortion = ProtocolMath.exponentialFunction(
                 operator.currentValidatorCount,
-                maxValidators,
+                SuperNodeAccount(_directory.getSuperNodeAddress()).maxValidators(),
                 k,
                 1,
                 fullEthReward,
@@ -247,16 +248,6 @@ contract YieldDistributor is UpgradeableBase {
      */
     function setRewardIncentiveModel(uint256 _k) public {
         k = _k;
-    }
-
-    /**
-     * @notice Sets the maximum numbder of allowed validators for each operator.
-     * @param _maxValidators The maximum number of validators to be considered in the reward calculation.
-     * @dev This function can only be called by the protocol admin. 
-     * Adjusting this parameter will change the reward distribution dynamics for validators.
-     */
-    function setMaxValidators(uint256 _maxValidators) public {
-        maxValidators = _maxValidators;
     }
 
     /****

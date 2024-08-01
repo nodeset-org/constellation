@@ -298,21 +298,19 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         rebalanceRplStake(sna.getTotalEthStaked());
 
-        /**
-         * @dev We are only calling distributeBalance with a true flag to prevent griefing vectors. This ensures we
-         * are only collecting skimmed rewards and not doing anything related to full withdrawals or finalizations.
-         * One example is that if we pass false to distributeBalance, it opens a scenario where operators are forced to
-         * finalize due to having more than 8 ETH. This could result in slashings from griefing vectors.
-         */
         IMinipool minipool = sna.getNextMinipool();
         if (address(minipool) != address(0)) {
             uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
-            if (totalBalance < 8 ether) {
+            if (totalBalance < 8 ether) { // minipool is still staking
                 // track incoming eth
                 uint256 initalBalance = _directory.getAssetRouterAddress().balance;
                 minipool.distributeBalance(true);
                 uint256 finalBalance = _directory.getAssetRouterAddress().balance;
                 oracleError += finalBalance - initalBalance;
+            }
+            else { // the minipool is exited
+                minipool.distributeBalance(false); // this is very expensive
+                this.onNodeMinipoolDestroy(sna.minipoolToOperator[address(minipool)]);
             }
         }
     }
@@ -349,6 +347,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @param _nodeOperator Address of the node operator.
      */
     function onNodeMinipoolDestroy(address _nodeOperator) external onlyProtocol {
+        Whitelist(getDirectory().getWhitelistAddress()).removeValidator(_nodeOperator);
         emit MinipoolDestroyed(_nodeOperator);
     }
 
