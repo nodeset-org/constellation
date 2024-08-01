@@ -4,7 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { getEventNames, upgradePriceFetcherToMock, whitelistUserServerSig } from "./utils/utils";
+import { getEventNames, prepareOperatorDistributionContract, registerNewValidator, upgradePriceFetcherToMock, whitelistUserServerSig } from "./utils/utils";
 import { ContractTransaction } from "@ethersproject/contracts";
 
 describe("xrETH", function () {
@@ -70,7 +70,7 @@ describe("xrETH", function () {
     expect(expectedxrETHInSystem).equals(actualxrETHInSystem)
   })
 
-  it.only("success - tries to deposit and redeem from weth vault multiple times", async () => {
+  it("success - tries to deposit and redeem from weth vault multiple times", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
@@ -82,15 +82,73 @@ describe("xrETH", function () {
     await protocol.wETH.connect(signers.random).approve(protocol.vCWETH.address, depositAmount);
     await protocol.vCWETH.connect(signers.random).deposit(depositAmount, signers.random.address);
 
-    console.log("totalAssets", await protocol.vCWETH.totalAssets());
     expect(await protocol.vCWETH.totalAssets()).equals(depositAmount)
     expect(await protocol.vCWETH.balanceWeth()).equals(expectedReserveInVault);
     expect(await protocol.operatorDistributor.balanceEth()).equals(surplusSentToOD);
-    console.log("balanceWeth vault", await protocol.vCWETH.balanceWeth());
-    console.log("balanceWeth operator distributor", await protocol.operatorDistributor.balanceEth());
-    console.log("balanceWeth asset rounter", await protocol.depositPool.balanceWeth());
-
+    
     const shareValue = await protocol.vCWETH.convertToAssets(ethers.utils.parseEther("1"))
+    const expectedRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
+
+    let preBalance = await protocol.wETH.balanceOf(signers.random.address);
+    await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
+    let postBalance = await protocol.wETH.balanceOf(signers.random.address);
+    expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
+    expect(await protocol.vCWETH.balanceWeth()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("1")))
+
+    preBalance = await protocol.wETH.balanceOf(signers.random.address);
+    await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
+    postBalance = await protocol.wETH.balanceOf(signers.random.address);
+    expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
+    expect(await protocol.vCWETH.balanceWeth()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("2")))
+
+    preBalance = await protocol.wETH.balanceOf(signers.random.address);
+    await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
+    postBalance = await protocol.wETH.balanceOf(signers.random.address);
+    expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
+    expect(await protocol.vCWETH.balanceWeth()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("3")))
+
+  })
+
+  it.only("success - tries to deposit and redeem from weth vault multiple times with minipool reward claims", async () => {
+    const setupData = await loadFixture(protocolFixture);
+    const { protocol, signers, rocketPool } = setupData;
+    
+    const initialDeposit = await prepareOperatorDistributionContract(setupData, 1);
+		const minipools = await registerNewValidator(setupData, [signers.random]);
+
+    const depositAmount = ethers.utils.parseEther("100");
+    const totalDeposit = initialDeposit.add(depositAmount);
+    
+    await protocol.wETH.connect(signers.random).deposit({ value: depositAmount });
+    await protocol.wETH.connect(signers.random).approve(protocol.vCWETH.address, depositAmount);
+    await protocol.vCWETH.connect(signers.random).deposit(depositAmount, signers.random.address);
+    
+    expect(await protocol.vCWETH.totalAssets()).equals(totalDeposit)
+    
+    const shareValue = await protocol.vCWETH.convertToAssets(ethers.utils.parseEther("1"))
+    const expectedRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
+    
+
+    const executionLayerReward = ethers.utils.parseEther("1");
+    signers.ethWhale.sendTransaction({
+      to: minipools[0],
+      value: executionLayerReward
+    })
+
+    let preBalance = await protocol.wETH.balanceOf(signers.random.address);
+    await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
+    let postBalance = await protocol.wETH.balanceOf(signers.random.address);
+    expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
+
+    preBalance = await protocol.wETH.balanceOf(signers.random.address);
+    await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
+    postBalance = await protocol.wETH.balanceOf(signers.random.address);
+    expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
+
+    preBalance = await protocol.wETH.balanceOf(signers.random.address);
+    await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
+    postBalance = await protocol.wETH.balanceOf(signers.random.address);
+    expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
 
   })
 

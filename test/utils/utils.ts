@@ -298,11 +298,11 @@ export async function increaseEVMTime(seconds: number) {
 
 export const registerNewValidator = async (setupData: SetupData, subNodeOperators: SignerWithAddress[]) => {
   const requiredEth = ethers.utils.parseEther('8').mul(subNodeOperators.length);
-  if ((await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)).lt(requiredEth)) {
+  if ((await setupData.protocol.operatorDistributor.balanceEth()).lt(requiredEth)) {
     throw new Error(
       `Not enough eth in operatorDistributor contract to register ${subNodeOperators.length
       } validators. Required ${ethers.utils.formatEther(requiredEth)} eth but only have ${ethers.utils.formatEther(
-        await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)
+        await setupData.protocol.operatorDistributor.balanceEth()
       )} eth`
     );
   }
@@ -320,6 +320,7 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
   // console.log('RPL balance of OD', await setupData.rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)); // 720 RPL
   // console.log('There is enough liquidity for', subNodeOperators.length);
   
+  const minipools = []
   for (let i = 0; i < subNodeOperators.length; i++) {
     console.log('setting up node operator %s of %s', i + 1, subNodeOperators.length);
     console.log('ETH balance of OD', await ethers.provider.getBalance(protocol.operatorDistributor.address));
@@ -347,6 +348,8 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
       salt: salt,
       expectedMinipoolAddress: depositData.minipoolAddress,
     };
+
+    minipools.push(depositData.minipoolAddress)
 
     await setupData.rocketPool.rocketDepositPoolContract.deposit({
       value: ethers.utils.parseEther('32'),
@@ -376,6 +379,8 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
     await protocol.superNode.connect(nodeOperator).stake(depositDataStake.depositData.signature, depositDataStake.depositDataRoot, config.expectedMinipoolAddress);
     console.log("finsihed...", depositDataStake.depositData.signature);
   }
+
+  return minipools;
 };
 
 export const approveHasSignedExitMessageSig = async (
@@ -516,18 +521,53 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   console.log('REQUIRE COLLAT', vaultMinimum);
   const requiredEth = depositAmount
     .add(vaultMinimum)
-    .mul(ethers.utils.parseUnits('1.1', 5))
-    .div(ethers.utils.parseUnits('1', 5));
+    .mul((await setupData.protocol.vCWETH.liquidityReserveRatio()).mul(10))
+    .div(ethers.utils.parseUnits('1', 5))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 2)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 3)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 4)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 5)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 6)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 7)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 8)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 9)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 10)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 11)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 12)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 13)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 14)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 15)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 16)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 17)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 18)))
+    .add(ethers.constants.One)
   console.log('REQUIRE+ETH', requiredEth);
+
+  await setupData.protocol.wETH.connect(setupData.signers.ethWhale).deposit({ value: requiredEth });
+  await setupData.protocol.wETH.connect(setupData.signers.ethWhale).approve(setupData.protocol.vCWETH.address, requiredEth);
+  await setupData.protocol.vCWETH.connect(setupData.signers.ethWhale).deposit(requiredEth, setupData.signers.ethWhale.address);
+  
+  /*const protocolSigner = setupData.signers.protocolSigner;
+  await setupData.protocol.depositPool.connect(protocolSigner).openGate();
   await setupData.signers.admin.sendTransaction({
     to: setupData.protocol.operatorDistributor.address,
     value: requiredEth,
   });
+
+  await setupData.protocol.depositPool.connect(protocolSigner).onRewardsRecieved(requiredEth)
+
+  await setupData.protocol.depositPool.connect(protocolSigner).closeGate();
+  await setupData.protocol.depositPool.connect(protocolSigner).sendEthToDistributors();
+  await setupData.protocol.depositPool.connect(protocolSigner).sendRplToDistributors(); */
+  
+
   // send eth to the rocketpool deposit contract (mint rETH to signers[0])
 
   const rplRequired = await setupData.protocol.operatorDistributor.calculateRplStakeShortfall(0, (ethers.utils.parseEther("32").mul(BigNumber.from(numOperators))).sub(depositAmount));
   console.log('rplRequired', rplRequired);
   await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequired);
+
+  return requiredEth;
 }
 
 export async function getNextContractAddress(signer: SignerWithAddress, offset = 0) {

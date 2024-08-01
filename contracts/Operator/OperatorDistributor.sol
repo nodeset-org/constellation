@@ -103,14 +103,21 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @dev Calls to external contracts for transferring balances and ensures successful execution of these calls.
      */
     function _rebalanceLiquidity() internal nonReentrant {
-        address payable dp = _directory.getDepositPoolAddress();
-        (bool success, ) = dp.call{value: address(this).balance}('');
-        require(success, 'low level call failed in od');
-        AssetRouter(dp).sendEthToDistributors();
+        AssetRouter ar = AssetRouter(_directory.getDepositPoolAddress());
+        
+        IWETH weth = IWETH(_directory.getWETHAddress());
+        weth.deposit{value: balanceEth}();
+        
+        SafeERC20.safeTransfer(weth, address(ar), balanceEth);
+        ar.onWethBalanceIncrease(balanceEth);
+
+        balanceEth = 0;
+
+        ar.sendEthToDistributors();
 
         IERC20 rpl = IERC20(_directory.getRPLAddress());
-        SafeERC20.safeTransfer(rpl, dp, rpl.balanceOf(address(this)));
-        AssetRouter(dp).sendRplToDistributors();
+        SafeERC20.safeTransfer(rpl, address(ar), rpl.balanceOf(address(this)));
+        ar.sendRplToDistributors();
     }
 
     /**
@@ -334,10 +341,19 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
             if (totalBalance < 8 ether) {
                 // track incoming eth
-                uint256 initalBalance = _directory.getDepositPoolAddress().balance;
+                OperatorDistributor od = OperatorDistributor(_directory.getDepositPoolAddress());
+                AssetRouter ar = AssetRouter(_directory.getDepositPoolAddress());
+                ar.openGate();
+                uint256 initalBalance = address(od).balance;
                 minipool.distributeBalance(true);
-                uint256 finalBalance = _directory.getDepositPoolAddress().balance;
-                oracleError += finalBalance - initalBalance;
+                uint256 finalBalance = address(od).balance;
+                ar.closeGate();
+
+                uint256 rewards = finalBalance - initalBalance;
+                console.log("rewards recieved", rewards);
+                ar.onRewardsRecieved(rewards);
+
+                oracleError += rewards;
             }
         }
     }
