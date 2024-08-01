@@ -101,7 +101,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Returns the total ETH held by the contract, including both the balance of this contract and the funded ETH.
+     * @notice Returns the total ETH held by the contract, including both the balance of this contract and the staked ETH.
      * @return uint256 Total amount of ETH under the management of the contract.
      */
     function getTvlEth() public view returns (uint) {
@@ -109,7 +109,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Returns the total RPL held by the contract, including both the balance of this contract and the funded RPL.
+     * @notice Returns the total RPL held by the contract, including both the balance of this contract and the staked RPL.
      * @return uint256 Total amount of RPL under the management of the contract.
      */
     function getTvlRpl() public view returns (uint) {
