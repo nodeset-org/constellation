@@ -41,7 +41,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     string constant NAME = 'Constellation ETH';
     string constant SYMBOL = 'xrETH';
 
-    bool public enforceRplCoverageRatio;
     uint256 public liquidityReserveRatio;
     uint256 public maxWethRplRatio;
     uint256 public totalYieldDistributed;
@@ -72,11 +71,11 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
         liquidityReserveRatio = 0.1e5; // 10% of TVL
-        maxWethRplRatio = 0.15e18;
-        treasuryFee = 0.01e5;
-        nodeOperatorFee = 0.01e5;
+        maxWethRplRatio = 400e18; // 400% at start (4 ETH of xrETH for 1 ETH of xRPL)
 
-        enforceRplCoverageRatio = false;
+        // default fees with 14% rETH commission mean WETHVault share returns are equal to base ETH staking rewards
+        treasuryFee = 0.14788e5; 
+        nodeOperatorFee = 0.14788e5;
     }
 
     /**
@@ -98,7 +97,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             return;
         }
 
-        require(!enforceRplCoverageRatio || tvlRatioEthRpl(assets, true) < maxWethRplRatio, 'insufficient RPL coverage');
+        require(tvlRatioEthRpl(assets, true) < maxWethRplRatio, 'insufficient RPL coverage');
         super._deposit(caller, receiver, assets, shares);
 
         address payable pool = _directory.getAssetRouterAddress();
@@ -328,15 +327,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function setRplCoverageRatio(uint256 _rplCoverageRatio) external onlyShortTimelock {
         maxWethRplRatio = _rplCoverageRatio;
-    }
-
-    /**
-     * @notice Sets the enforcement status of the RPL coverage ratio.
-     * @dev This function allows the admin to enable or disable the enforcement of the RPL coverage ratio.
-     * @param _enforceRplCoverage True to enforce the RPL coverage ratio, false to disable enforcement.
-     */
-    function setEnforceRplCoverageRatio(bool _enforceRplCoverage) external onlyShortTimelock {
-        enforceRplCoverageRatio = _enforceRplCoverage;
     }
 
     /**
