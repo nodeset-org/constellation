@@ -216,7 +216,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         minipools.push(_expectedMinipoolAddress);
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        od.onMinipoolCreated(_expectedMinipoolAddress, subNodeOperator, bond);
+        od.onMinipoolCreated(_expectedMinipoolAddress, subNodeOperator);
         od.rebalanceRplStake(getTotalEthStaked() + bond);
 
         subNodeOperatorMinipools[subNodeOperator].push(_expectedMinipoolAddress);
@@ -317,7 +317,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         }
 
         IMinipool minipool = IMinipool(_minipool);
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(_subNodeOperator, bond);
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(_subNodeOperator);
         _stopTrackingMinipool(_minipool);
 
         minipool.close();
@@ -364,10 +364,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         IMinipool minipool = IMinipool(_minipool);
         minipool.distributeBalance(_rewardsOnly);
         if (minipool.getFinalised()) {
-            OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(
-                _subNodeOperator,
-                bond
-            );
+            OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(_subNodeOperator);
             _stopTrackingMinipool(_minipool);
         }
     }

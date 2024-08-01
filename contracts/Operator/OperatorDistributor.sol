@@ -37,16 +37,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     using Math for uint256;
 
-    // The total amount of Ether (ETH) funded or allocated by the contract.
-    // This variable keeps track of the ETH resources managed within this contract,
-    // Total amount of Ether (ETH) funded or allocated by the contract.
-    uint256 public fundedEth;
-
-    // The total amount of Rocket Pool tokens (RPL) funded or allocated by the contract.
-    // This field is used to track the RPL token balance managed by the contract,
-    // Total amount of Rocket Pool tokens (RPL) funded or allocated by the contract.
-    uint256 public fundedRpl;
-
     // Target ratio of ETH to RPL stake. 
     // RPL will be staked if the stake balance is below this and unstaked if the balance is above.
     uint256 public targetStakeRatio;
@@ -115,7 +105,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @return uint256 Total amount of ETH under the management of the contract.
      */
     function getTvlEth() public view returns (uint) {
-        return address(this).balance + fundedEth;
+        return address(this).balance + SuperNodeAccount(_directory.getSuperNodeAddress()).getTotalEthStaked();
     }
 
     /**
@@ -123,7 +113,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @return uint256 Total amount of RPL under the management of the contract.
      */
     function getTvlRpl() public view returns (uint) {
-        return IERC20(_directory.getRPLAddress()).balanceOf(address(this)) + fundedRpl;
+        return IERC20(_directory.getRPLAddress()).balanceOf(address(this)) + IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getTotalRPLStake();
     }
 
     /**
@@ -135,7 +125,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         _rebalanceLiquidity();
         console.log('provisionLiquiditiesForMinipoolCreation.post-RebalanceLiquidities');
         require(_bond == requiredLEBStaked, 'OperatorDistributor: Bad _bond amount, should be `requiredLEBStaked`');
-        fundedEth += _bond;
 
         address superNode = _directory.getSuperNodeAddress();
 
@@ -171,15 +160,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         uint256 targetStake = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
 
-        if (targetStake > rplStaked) {
-            // stake more
-            uint256 stakeIncrease = targetStake - rplStaked;
-            console.log('rebalanceRplStake.stakeIncrease', stakeIncrease);
-            uint256 actualStakeIncrease = _performTopUp(_nodeAccount, stakeIncrease);
-            console.log('rebalanceRplStake.actualStakeIncrease', stakeIncrease);
-            fundedRpl += actualStakeIncrease;
-        }
-
         if (targetStake < rplStaked) {
             uint256 elapsed = block.timestamp -
                 IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStakedTime(_nodeAccount);
@@ -195,7 +175,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 noShortfall
             ) {
                 // NOTE: to auditors: double check that all cases are covered such that withdrawRPL will not revert execution
-                fundedRpl -= excessRpl;
                 console.log('rebalanceRplStake.excessRpl', excessRpl);
                 AssetRouter(_directory.getDepositPoolAddress()).unstakeRpl(_nodeAccount, excessRpl);
             } else {
@@ -298,9 +277,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @notice Handles the creation of a minipool, registers the node, and logs the event.
      * @param newMinipoolAddress Address of the newly created minipool.
      * @param nodeAddress Address of the node operator.
-     * @param bond Amount of ETH bonded for the minipool.
      */
-    function onMinipoolCreated(address newMinipoolAddress, address nodeAddress, uint256 bond) external {
+    function onMinipoolCreated(address newMinipoolAddress, address nodeAddress) external {
         if (!_directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender)) {
             revert BadRole(Constants.CORE_PROTOCOL_ROLE, msg.sender);
         }
@@ -369,10 +347,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /**
      * @notice Handles the destruction of a minipool by a node operator.
      * @param _nodeOperator Address of the node operator.
-     * @param _bond Amount of ETH bonded that needs to be subtracted from the total funded ETH.
      */
-    function onNodeMinipoolDestroy(address _nodeOperator, uint256 _bond) external onlyProtocol {
-        fundedEth -= _bond;
+    function onNodeMinipoolDestroy(address _nodeOperator) external onlyProtocol {
         emit MinipoolDestroyed(_nodeOperator);
     }
 
