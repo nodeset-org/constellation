@@ -341,14 +341,18 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
             if (totalBalance < 8 ether) {
                 // track incoming eth
-                OperatorDistributor od = OperatorDistributor(_directory.getDepositPoolAddress());
                 AssetRouter ar = AssetRouter(_directory.getDepositPoolAddress());
                 ar.openGate();
-                uint256 initalBalance = address(od).balance;
-                minipool.distributeBalance(true);
-                uint256 finalBalance = address(od).balance;
-                ar.closeGate();
+                uint256 initalBalance = address(ar).balance;
+                
+                console.log("withdrawal address before skim", _directory.getDepositPoolAddress().balance);
+                ar.onClaimSkimmedRewards(minipool);
+                console.log("withdrawal address after skim", _directory.getDepositPoolAddress().balance);
 
+                uint256 finalBalance = address(ar).balance;
+                ar.closeGate();
+                console.log("finalBalance", finalBalance);
+                console.log("initalBalance", initalBalance);
                 uint256 rewards = finalBalance - initalBalance;
                 console.log("rewards recieved", rewards);
                 ar.onRewardsRecieved(rewards);

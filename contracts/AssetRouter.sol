@@ -19,7 +19,6 @@ import './Utils/Constants.sol';
 /// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
 /// ETH + RPL intakes from token mints and validator yields and sends to respective ERC4246 vaults.
 contract AssetRouter is UpgradeableBase {
-
     uint256 public balanceWeth;
     uint256 public balanceRpl;
 
@@ -63,7 +62,7 @@ contract AssetRouter is UpgradeableBase {
     /// @param _amount The amount of RPL tokens to unstake.
     /// @dev The tokens will be withdrawn from the Rocket Node Staking contract.
     function unstakeRpl(address _nodeAddress, uint256 _amount) external onlyProtocolOrAdmin {
-     //   balanceRpl -= _amount;
+        //   balanceRpl -= _amount;
         IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).withdrawRPL(_nodeAddress, _amount);
     }
 
@@ -76,7 +75,7 @@ contract AssetRouter is UpgradeableBase {
     function stakeRPLFor(address _nodeAddress, uint256 _amount) external onlyProtocolOrAdmin {
         SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), 0);
         SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), _amount);
-       // balanceRpl -= _amount;
+        // balanceRpl -= _amount;
         IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, _amount);
     }
 
@@ -180,6 +179,10 @@ contract AssetRouter is UpgradeableBase {
         balanceRpl -= _amount;
     }
 
+    function onClaimSkimmedRewards(IMinipool _minipool) external onlyProtocol {
+        _minipool.distributeBalance(false);
+    }
+
     function onRewardsRecieved(uint256 _amount) external onlyProtocol {
         IWETH weth = IWETH(_directory.getWETHAddress());
         weth.deposit{value: _amount}();
@@ -199,5 +202,4 @@ contract AssetRouter is UpgradeableBase {
     receive() external payable {
         require(_gateOpen);
     }
-
 }
