@@ -8,12 +8,11 @@ pragma solidity 0.8.17;
 // interface def here
 
 contract XRETHOracle is IXRETHOracle, UpgradeableBase {
-
     address public oracleService; // is gonna be rated
 
     constructor() initializer {}
 
-   /**
+    /**
      * @notice Initializes the Oracle service with the specified directory address.
      * @param _directoryAddress The address of the directory contract.
      * @param _oracleService The address of the oracle service.
@@ -30,4 +29,6 @@ contract XRETHOracle is IXRETHOracle, UpgradeableBase {
     function getTotalYieldAccrued() external view override returns (int256) {
         // rated oracle itegration here
     }
+
+    function getLastUpdatedTotalYieldAccrued() external view override returns (uint256) {}
 }

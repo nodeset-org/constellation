@@ -1,4 +1,4 @@
-// SPDX License Identifier: GPL v3
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
@@ -21,7 +21,6 @@ struct MerkleProofParams {
  * @notice An admin oracle to manage and update the total yield accrued.
  */
 contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
-
     event TotalYieldAccruedUpdated(int256 _amount);
 
     int256 internal _totalYieldAccrued;
@@ -29,7 +28,7 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
 
     constructor() initializer {}
 
-  /**
+    /**
      * @notice Initializes the Admin Oracle service with the specified directory address.
      * @param _directoryAddress The address of the directory contract.
      */
@@ -76,11 +75,7 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
      * @param _newTotalYieldAccrued The new total yield accrued.
      * @param _sigTimeStamp The timestamp of the signature.
      */
-    function setTotalYieldAccrued(
-        bytes calldata _sig,
-        int256 _newTotalYieldAccrued,
-        uint256 _sigTimeStamp
-    ) external {
+    function setTotalYieldAccrued(bytes calldata _sig, int256 _newTotalYieldAccrued, uint256 _sigTimeStamp) external {
         _setTotalYieldAccrued(_sig, _newTotalYieldAccrued, _sigTimeStamp);
     }
 
@@ -105,5 +100,9 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
             _merkleProofParams.amountETH,
             _merkleProofParams.merkleProof
         );
+    }
+
+    function getLastUpdatedTotalYieldAccrued() external view override returns (uint256) {
+        return _lastUpdatedTotalYieldAccrued;
     }
 }

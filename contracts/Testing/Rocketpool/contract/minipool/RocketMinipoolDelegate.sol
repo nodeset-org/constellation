@@ -499,6 +499,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     ///         split as rewards.
     /// @param _rewardsOnly If set to true, will revert if balance is not being treated as rewards
     function distributeBalance(bool _rewardsOnly) external override onlyInitialised {
+        console.log("in minipool distributeBalance");
         // Get node withdrawal address
         address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
         bool ownerCalling = msg.sender == nodeAddress || msg.sender == nodeWithdrawalAddress;
@@ -529,6 +530,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         } else {
             // Just a partial withdraw
             distributeSkimmedRewards();
+            console.log("skimming...");
             // If node operator is calling, save a tx by calling refund immediately
             if (ownerCalling && nodeRefundBalance > 0) {
                 _refund();
