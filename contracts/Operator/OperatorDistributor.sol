@@ -361,7 +361,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         } else {
             // the minipool is exited
             ar.onExitedMinipool(minipool);
-            this.onNodeMinipoolDestroy(sna.minipoolToOperator(address(minipool)));
+            this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
         }
     }
 
