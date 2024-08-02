@@ -8,6 +8,7 @@ import './OperatorDistributor.sol';
 
 import '../Whitelist/Whitelist.sol';
 import '../UpgradeableBase.sol';
+import '../AssetRouter.sol';
 
 import '../Interfaces/RocketPool/RocketTypes.sol';
 import '../Interfaces/RocketPool/IRocketNodeDeposit.sol';
@@ -389,6 +390,13 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         uint256[] calldata _amountETH,
         bytes32[][] calldata _merkleProof
     ) public {
+        address ar = _directory.getAssetRouterAddress();
+        IERC20 rpl = IERC20(_directory.getRPLAddress());
+
+        uint256 initialEthBalance = ar.balance;
+        uint256 initialRplBalance = rpl.balanceOf(ar);
+
+        AssetRouter(payable(ar)).openGate();
         IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
             _nodeAddress,
             _rewardIndex,
@@ -396,6 +404,18 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             _amountETH,
             _merkleProof
         );
+        AssetRouter(payable(ar)).closeGate();
+
+        uint256 finalEthBalance = ar.balance;
+        uint256 finalRplBalance = rpl.balanceOf(ar);
+
+        uint256 ethReward = finalEthBalance - initialEthBalance;
+        uint256 rplReward = finalRplBalance - initialRplBalance;
+
+        AssetRouter(payable(ar)).onEthRewardsRecieved(ethReward);
+        AssetRouter(payable(ar)).onRplRewardsRecieved(rplReward);
+
+
     }
 
     /**

@@ -344,7 +344,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 console.log('initalBalance', initalBalance);
                 uint256 rewards = finalBalance - initalBalance;
                 console.log('rewards recieved', rewards);
-                ar.onRewardsRecieved(rewards);
+                ar.onEthRewardsRecieved(rewards);
 
                 oracleError += rewards;
             } else {

@@ -192,4 +192,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     function onRplBalanceDecrease(uint256 _amount) external onlyProtocol {
         balanceRpl -= _amount;
     }
+
+    function getTreasuryPortion(uint256 _amount) external view returns (uint256) {
+        return _amount.mulDiv(treasuryFee, 1e5);
+    }
 }
