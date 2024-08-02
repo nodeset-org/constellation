@@ -42,9 +42,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(rplToken));
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
-        liquidityReserveRatio = 0.02e5;
+        liquidityReserveRatio = 0.02e18;
         minWethRplRatio = 0; // 0% by default
-        treasuryFee = 0.01e5;
+        treasuryFee = 0.01e18;
     }
 
     /**
@@ -100,7 +100,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
-
+        require(balanceRpl >= assets, 'Not enough liquidity to withdraw');
         // required violation of CHECKS/EFFECTS/INTERACTIONS
 
         balanceRpl -= assets;
@@ -131,7 +131,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns (uint256) {
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 fullBalance = totalAssets() + deposit;
-        uint256 requiredBalance = liquidityReserveRatio.mulDiv(fullBalance, 1e5, Math.Rounding.Up);
+        uint256 requiredBalance = liquidityReserveRatio.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
         return requiredBalance > currentBalance ? requiredBalance : 0;
     }
 
@@ -152,12 +152,12 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     /**
      * @notice Sets the treasurer fee basis points.
      * @dev This function allows the admin to update the fee basis points that the treasury will receive from the rewards.
-     * The treasury fee must be less than or equal to 100% (1e5 basis points).
+     * The treasury fee must be less than or equal to 100% (1e18 basis points).
      * @param _treasuryFee The new treasury fee in basis points.
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
     function setTreasuryFee(uint256 _treasuryFee) external onlyMediumTimelock {
-        require(_treasuryFee <= 1e5, 'Fee too high');
+        require(_treasuryFee <= 1e18, 'Fee too high');
         treasuryFee = _treasuryFee;
     }
 
@@ -165,23 +165,23 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @notice Update the WETH coverage ratio.
      * @dev This function allows the admin to adjust the WETH coverage ratio.
      * The ratio determines the minimum coverage required to ensure the contract's health and stability.
-     * It's expressed in base points, where 1e5 represents 100%.
-     * @param _wethCoverageRatio The new WETH coverage ratio to be set (in base points).
+     * It's expressed in base points, where 1e18 represents 100%.
+     * @param _minWethRplRatio The new WETH coverage ratio to be set (in base points).
      */
-    function setWETHCoverageRatio(uint256 _wethCoverageRatio) external onlyShortTimelock {
-        minWethRplRatio = _wethCoverageRatio;
+    function setMinWethRplRatio(uint256 _minWethRplRatio) external onlyShortTimelock {
+        minWethRplRatio = _minWethRplRatio;
     }
 
     /**
      * @notice Sets the collateralization ratio basis points.
      * @dev This function allows the admin to update the collateralization ratio which determines the level of collateral required for sufficent liquidity.
-     * The collateralization ratio must be a reasonable percentage, typically expressed in basis points (1e5 basis points = 100%).
+     * The collateralization ratio must be a reasonable percentage, typically expressed in basis points (1e18 basis points = 100%).
      * @param _liquidityReserveRatio The new collateralization ratio in basis points.
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
     function setLiquidityReserveRatio(uint256 _liquidityReserveRatio) external onlyShortTimelock {
         require(_liquidityReserveRatio >= 0, 'RPLVault: Collateralization ratio must be positive');
-        require(_liquidityReserveRatio <= 1e5, 'RPLVault: Collateralization ratio must be less than or equal to 100%');
+        require(_liquidityReserveRatio <= 1e18, 'RPLVault: Collateralization ratio must be less than or equal to 100%');
         liquidityReserveRatio = _liquidityReserveRatio;
     }
 
@@ -197,6 +197,6 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     function getTreasuryPortion(uint256 _amount) external view returns (uint256) {
-        return _amount.mulDiv(treasuryFee, 1e5);
+        return _amount.mulDiv(treasuryFee, 1e18);
     }
 }
