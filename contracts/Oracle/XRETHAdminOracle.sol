@@ -5,6 +5,7 @@ import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 import '../Interfaces/Oracles/IXRETHOracle.sol';
 import '../UpgradeableBase.sol';
 import '../Operator/SuperNodeAccount.sol';
+import '../Tokens/WETHVault.sol';
 
 pragma solidity 0.8.17;
 
@@ -62,9 +63,12 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
             'signer must have permission from admin oracle role'
         );
         require(_sigTimeStamp > _lastUpdatedTotalYieldAccrued, 'cannot update tya using old data');
-        _totalYieldAccrued = _newTotalYieldAccrued;
+        int256 treasuryPortion = WETHVault(_directory.getWETHVaultAddress()).getSignedNodeOperatorPortion(_newTotalYieldAccrued);
+        int256 noPortion = WETHVault(_directory.getWETHVaultAddress()).getSignedNodeOperatorPortion(_newTotalYieldAccrued);
+
+        _totalYieldAccrued = _newTotalYieldAccrued - treasuryPortion - noPortion;
         _lastUpdatedTotalYieldAccrued = block.timestamp;
-        emit TotalYieldAccruedUpdated(_newTotalYieldAccrued);
+        emit TotalYieldAccruedUpdated(_totalYieldAccrued);
 
         OperatorDistributor(_directory.getOperatorDistributorAddress()).resetOracleError();
     }

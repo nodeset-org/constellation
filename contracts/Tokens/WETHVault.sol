@@ -23,7 +23,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     uint256 public liquidityReserveRatio;
     uint256 public maxWethRplRatio;
-    uint256 public totalYieldDistributed;
 
     uint256 public treasuryFee; // Treasury fee in basis points
     uint256 public nodeOperatorFee; // NO fee in basis points
@@ -49,6 +48,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         liquidityReserveRatio = 0.1e18; // 10% of TVL
         maxWethRplRatio = 40e18; // 400% at start (4 ETH of xrETH for 1 ETH of xRPL)
+
 
         // default fees with 14% rETH commission mean WETHVault share returns are equal to base ETH staking rewards
         treasuryFee = 0.14788e18; 
@@ -131,7 +131,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         int256 oracleError = int256(OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleError());
         int256 totalUnrealizedAccrual = getOracle().getTotalYieldAccrued() - (lastUpdate == 0 ? int256(0) : oracleError);
 
-        int256 diff = totalUnrealizedAccrual - int(totalYieldDistributed);
+        int256 diff = totalUnrealizedAccrual;
         if (diff >= 0) {
             signed = false;
             distributableYield = uint256(diff);
@@ -270,7 +270,15 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         return _amount.mulDiv(treasuryFee, 1e18);
     }
 
+    function getSignedTreasuryPortion(int256 _amount) external view returns (int256) {
+        return _amount * int256(treasuryFee) / 1e18;
+    }
+
     function getNodeOperatorPortion(uint256 _amount) external view returns (uint256)  {
         return _amount.mulDiv(nodeOperatorFee, 1e18);
+    }
+
+    function getSignedNodeOperatorPortion(int256 _amount) external view returns (int256)  {
+        return _amount * int256(nodeOperatorFee) / 1e18;
     }
 }
