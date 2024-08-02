@@ -18,10 +18,8 @@ describe("xRPL", function () {
     expect(name).equals("Constellation RPL");
     expect(symbol).equals("xRPL");
     expect(await protocol.vCRPL.liquidityReserveRatio()).equals(ethers.utils.parseUnits("0.02", 5))
-    expect(await protocol.vCRPL.wethCoverageRatio()).equals(ethers.utils.parseUnits("1.75", 5))
-    expect(await protocol.vCRPL.enforceWethCoverageRatio()).equals(false)
+    expect(await protocol.vCRPL.minWethRplRatio()).equals(ethers.utils.parseUnits("1.75", 5))
     expect(await protocol.vCRPL.treasuryFee()).equals(ethers.utils.parseUnits("0.01", 5))
-
   })
 
   it("fail - tries to deposit as 'bad actor' involved in AML or other flavors of bad", async () => {

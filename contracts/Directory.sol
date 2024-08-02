@@ -94,7 +94,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.rplVault;
     }
 
-    function getDepositPoolAddress() public view returns (address payable) {
+    function getAssetRouterAddress() public view returns (address payable) {
         return _protocol.assetRouter;
     }
 

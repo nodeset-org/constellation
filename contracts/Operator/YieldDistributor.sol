@@ -15,6 +15,8 @@ import '../Interfaces/Oracles/IXRETHOracle.sol';
 import '../Interfaces/IWETH.sol';
 import '../Utils/Constants.sol';
 
+import './SuperNodeAccount.sol';
+
 import "hardhat/console.sol";
 
 struct Reward {
@@ -50,7 +52,7 @@ contract YieldDistributor is UpgradeableBase {
     uint256 public maxIntervalLengthSeconds; // NOs will have to wait at most this long for their payday
 
     uint256 public k; // steepness of the curve
-    uint256 public maxValidators; // max number of validators used to normalize x axis
+
 
     /**
      * @notice Initializes the contract with the specified directory address and sets the initial configurations.
@@ -66,7 +68,6 @@ contract YieldDistributor is UpgradeableBase {
         maxIntervalLengthSeconds = 30 days;
 
         k = 7;
-        maxValidators = 1;
     }
 
     /**
@@ -159,19 +160,19 @@ contract YieldDistributor is UpgradeableBase {
 
             uint256 fullEthReward = ((claim.amount * 1e18) / claim.numOperators) / 1e18;
 
-            console.log("full reward", i);
-            console.log(fullEthReward);
-            console.log(claim.amount);
+            console.log("full reward for interval", i, claim.amount);
+            console.log('fullEthReward (for running max minipools)', fullEthReward);
 
             uint256 operatorsPortion = ProtocolMath.exponentialFunction(
                 operator.currentValidatorCount,
-                maxValidators,
+                SuperNodeAccount(_directory.getSuperNodeAddress()).maxValidators(),
                 k,
                 1,
-                claim.amount,
+                fullEthReward,
                 1e18
             );
 
+            console.log('operator is running', operator.currentValidatorCount, 'so their actual reward is', operatorsPortion);
             totalReward += operatorsPortion;
             dustAccrued += fullEthReward - operatorsPortion;
             hasClaimed[_rewardee][i] = true;
@@ -248,16 +249,6 @@ contract YieldDistributor is UpgradeableBase {
         k = _k;
     }
 
-    /**
-     * @notice Sets the maximum numbder of allowed validators for each operator.
-     * @param _maxValidators The maximum number of validators to be considered in the reward calculation.
-     * @dev This function can only be called by the protocol admin. 
-     * Adjusting this parameter will change the reward distribution dynamics for validators.
-     */
-    function setMaxValidators(uint256 _maxValidators) public {
-        maxValidators = _maxValidators;
-    }
-
     /****
      * PRIVATE
      */
@@ -289,17 +280,6 @@ contract YieldDistributor is UpgradeableBase {
         _;
     }
 
-    /****
-     * RECEIVE
-     */
-
-    /**
-     * @notice Fallback function to receive ETH and convert it to WETH (Wrapped ETH). This is also used to trigger new intervals after enough time has elapsed
-     * @dev When ETH is sent to this contract, it is automatically wrapped into WETH and the corresponding amount is processed.
-     */
-    receive() external payable {
-        // mint weth
-        IWETH(_directory.getWETHAddress()).deposit{value: msg.value}();
-        _wethReceived(msg.value, false);
-    }
+    // Thank you for your donation to the hard-working operators
+    receive() external payable  { }
 }

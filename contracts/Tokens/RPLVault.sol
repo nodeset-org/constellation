@@ -21,13 +21,11 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     string constant NAME = 'Constellation RPL';
     string constant SYMBOL = 'xRPL'; // Vaulted Constellation RPL
 
-    bool public enforceWethCoverageRatio;
-
     uint256 public treasuryFee;
 
     uint256 public liquidityReserveRatio; // collateralization ratio
 
-    uint256 public wethCoverageRatio; // weth coverage ratio
+    uint256 public minWethRplRatio; // weth coverage ratio
 
     uint256 public balanceRpl;
 
@@ -45,8 +43,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
         liquidityReserveRatio = 0.02e5;
-        wethCoverageRatio = 1.75e5;
-        enforceWethCoverageRatio = false;
+        minWethRplRatio = 0; // 0% by default
         treasuryFee = 0.01e5;
     }
 
@@ -68,12 +65,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         }
 
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
-        require(
-            !enforceWethCoverageRatio || vweth.tvlRatioEthRpl() > wethCoverageRatio,
-            'insufficient weth coverage ratio'
-        );
+        require(vweth.tvlRatioEthRpl(assets, false) > minWethRplRatio, 'insufficient weth coverage ratio');
 
-        AssetRouter ar = AssetRouter(_directory.getDepositPoolAddress());
+        AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
 
         super._deposit(caller, receiver, assets, shares);
 
@@ -112,9 +106,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         balanceRpl -= assets;
 
         super._withdraw(caller, receiver, owner, assets, shares);
-
-        AssetRouter(_directory.getDepositPoolAddress()).sendRplToDistributors();
-
+        AssetRouter(_directory.getAssetRouterAddress()).sendRplToDistributors();
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
     }
 
@@ -124,8 +116,23 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function totalAssets() public view override returns (uint256) {
         return (balanceRpl +
-            AssetRouter(_directory.getDepositPoolAddress()).getTvlRpl() +
+            AssetRouter(_directory.getAssetRouterAddress()).getTvlRpl() +
             OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl());
+    }
+
+    /**
+     * @notice Calculates the required collateral after a specified deposit.
+     * @dev This function calculates the required collateral to ensure the contract remains sufficiently collateralized
+     * after a specified deposit amount. It compares the current balance with the required collateral based on
+     * the total assets, including the deposit.
+     * @param deposit The amount of the deposit to consider in the collateral calculation.
+     * @return The amount of collateral required after the specified deposit.
+     */
+    function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns (uint256) {
+        uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
+        uint256 fullBalance = totalAssets() + deposit;
+        uint256 requiredBalance = liquidityReserveRatio.mulDiv(fullBalance, 1e5, Math.Rounding.Up);
+        return requiredBalance > currentBalance ? requiredBalance : 0;
     }
 
     /**
@@ -137,11 +144,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @return The amount of asset required to maintain the desired collateralization ratio, or 0 if no additional collateral is needed.
      */
     function getRequiredCollateral() public view returns (uint256) {
-        uint256 fullBalance = totalAssets();
-
-        uint256 requiredBalance = liquidityReserveRatio.mulDiv(fullBalance, 1e5, Math.Rounding.Up);
-
-        return requiredBalance > balanceRpl ? requiredBalance : 0;
+        return getRequiredCollateralAfterDeposit(0);
     }
 
     /**ADMIN FUNCTIONS */
@@ -166,18 +169,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _wethCoverageRatio The new WETH coverage ratio to be set (in base points).
      */
     function setWETHCoverageRatio(uint256 _wethCoverageRatio) external onlyShortTimelock {
-        wethCoverageRatio = _wethCoverageRatio;
-    }
-
-    /**
-     * @notice Set the enforcement status of the WETH coverage ratio.
-     * @dev Allows the admin to toggle whether or not the contract should enforce the WETH coverage ratio.
-     * When enforced, certain operations will require that the WETH coverage ratio is met.
-     * This could be useful to ensure the contract's health and stability.
-     * @param _enforceWethCoverageRatio True if the WETH coverage ratio should be enforced, otherwise false.
-     */
-    function setEnforceWethCoverageRatio(bool _enforceWethCoverageRatio) external onlyMediumTimelock {
-        enforceWethCoverageRatio = _enforceWethCoverageRatio;
+        minWethRplRatio = _wethCoverageRatio;
     }
 
     /**

@@ -37,16 +37,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     using Math for uint256;
 
-    // The total amount of Ether (ETH) funded or allocated by the contract.
-    // This variable keeps track of the ETH resources managed within this contract,
-    // Total amount of Ether (ETH) funded or allocated by the contract.
-    uint256 public fundedEth;
-
-    // The total amount of Rocket Pool tokens (RPL) funded or allocated by the contract.
-    // This field is used to track the RPL token balance managed by the contract,
-    // Total amount of Rocket Pool tokens (RPL) funded or allocated by the contract.
-    uint256 public fundedRpl;
-
     // Target ratio of ETH to RPL stake.
     // RPL will be staked if the stake balance is below this and unstaked if the balance is above.
     uint256 public targetStakeRatio;
@@ -81,21 +71,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     /**
      * @notice Fallback function to handle incoming Ether transactions.
-     * @dev Automatically routes incoming ETH to the AssetRouter contract for distribution unless sent by the deposit pool directly.
      */
     receive() external payable {
-        address payable dp = _directory.getDepositPoolAddress();
-        console.log('fallback od initial');
-        console.log(address(this).balance);
-
-        if (msg.sender != dp) {
-            (bool success, ) = dp.call{value: msg.value}('');
-            require(success, 'low level call failed in od');
-            AssetRouter(dp).sendEthToDistributors();
-        }
-
-        console.log('fallback od final');
-        console.log(address(this).balance);
+        revert('To fund this contract, please deposit into WETHVault instead.');
     }
 
     /**
@@ -103,7 +81,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @dev Calls to external contracts for transferring balances and ensures successful execution of these calls.
      */
     function _rebalanceLiquidity() internal nonReentrant {
-        AssetRouter ar = AssetRouter(_directory.getDepositPoolAddress());
+        AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
 
         IWETH weth = IWETH(_directory.getWETHAddress());
         weth.deposit{value: balanceEth}();
@@ -121,19 +99,19 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Returns the total ETH held by the contract, including both the balance of this contract and the funded ETH.
+     * @notice Returns the total ETH held by the contract, including both the balance of this contract and the staked ETH.
      * @return uint256 Total amount of ETH under the management of the contract.
      */
     function getTvlEth() public view returns (uint) {
-        return balanceEth + fundedEth;
+        return balanceEth + SuperNodeAccount(_directory.getSuperNodeAddress()).getTotalEthStaked();
     }
 
     /**
-     * @notice Returns the total RPL held by the contract, including both the balance of this contract and the funded RPL.
+     * @notice Returns the total RPL held by the contract, including both the balance of this contract and the staked RPL.
      * @return uint256 Total amount of RPL under the management of the contract.
      */
     function getTvlRpl() public view returns (uint) {
-        return balanceRpl + fundedRpl;
+        return balanceRpl + IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getTotalRPLStake();
     }
 
     /**
@@ -145,13 +123,15 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         _rebalanceLiquidity();
         console.log('provisionLiquiditiesForMinipoolCreation.post-RebalanceLiquidities');
         require(_bond == requiredLEBStaked, 'OperatorDistributor: Bad _bond amount, should be `requiredLEBStaked`');
-        fundedEth += _bond;
 
         address superNode = _directory.getSuperNodeAddress();
 
         console.log('od.provisionLiquiditiesForMinipoolCreation.balanceEth', balanceEth);
         console.log('od.provisionLiquiditiesForMinipoolCreation.balance', address(this).balance);
-        console.log('od.provisionLiquiditiesForMinipoolCreation.balanceOf.weth', IERC20(_directory.getWETHAddress()).balanceOf(address(this)));
+        console.log(
+            'od.provisionLiquiditiesForMinipoolCreation.balanceOf.weth',
+            IERC20(_directory.getWETHAddress()).balanceOf(address(this))
+        );
 
         (bool success, bytes memory data) = superNode.call{value: _bond}('');
         if (!success) {
@@ -186,7 +166,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('rebalanceRplStake.targetStakeRatio', targetStakeRatio);
 
         uint256 targetStake = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
-        console.log("od.rebalanceRplStake.targetStake",targetStake);
+        console.log('od.rebalanceRplStake.targetStake', targetStake);
         if (targetStake > rplStaked) {
             // stake more
             uint256 stakeIncrease = targetStake - rplStaked;
@@ -194,9 +174,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             console.log('od.rebalanceRplStake.balanceOf', IERC20(_directory.getRPLAddress()).balanceOf(address(this)));
             console.log('od.rebalanceRplStake.balanceRpl', balanceRpl);
 
-            uint256 actualStakeIncrease = _performTopUp(_nodeAccount, stakeIncrease);
+            _performTopUp(_nodeAccount, stakeIncrease);
             console.log('rebalanceRplStake.actualStakeIncrease', stakeIncrease);
-            fundedRpl += actualStakeIncrease;
         }
 
         if (targetStake < rplStaked) {
@@ -214,10 +193,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 noShortfall
             ) {
                 // NOTE: to auditors: double check that all cases are covered such that withdrawRPL will not revert execution
-                fundedRpl -= excessRpl;
                 console.log('rebalanceRplStake.excessRpl', excessRpl);
                 balanceRpl += excessRpl;
-                AssetRouter(_directory.getDepositPoolAddress()).unstakeRpl(_nodeAccount, excessRpl);
+                AssetRouter(_directory.getAssetRouterAddress()).unstakeRpl(_nodeAccount, excessRpl);
             } else {
                 console.log('failed to rebalanceRplStake.excessRpl', excessRpl);
             }
@@ -238,8 +216,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             }
             // stakeRPLOnBehalfOf
             // transfer RPL to deposit pool
-            IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), _requiredStake);
-            AssetRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_superNode, _requiredStake);
+            IERC20(_directory.getRPLAddress()).transfer(_directory.getAssetRouterAddress(), _requiredStake);
+            AssetRouter(_directory.getAssetRouterAddress()).stakeRPLFor(_superNode, _requiredStake);
             balanceRpl -= _requiredStake;
             console.log('_performTopUp._requiredStake', _requiredStake);
             return _requiredStake;
@@ -250,8 +228,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             // stake what we have
             console.log('od._performTopup.balanceRpl', balanceRpl);
             console.log('od._performTopup.balanceOf', IERC20(_directory.getRPLAddress()).balanceOf(address(this)));
-            IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), balanceRpl);
-            AssetRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_superNode, balanceRpl);
+            IERC20(_directory.getRPLAddress()).transfer(_directory.getAssetRouterAddress(), balanceRpl);
+            AssetRouter(_directory.getAssetRouterAddress()).stakeRPLFor(_superNode, balanceRpl);
             balanceRpl = 0;
             console.log('_performTopUp.currentRplBalance', balanceRpl);
             return currentRplBalance;
@@ -325,9 +303,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @notice Handles the creation of a minipool, registers the node, and logs the event.
      * @param newMinipoolAddress Address of the newly created minipool.
      * @param nodeAddress Address of the node operator.
-     * @param bond Amount of ETH bonded for the minipool.
      */
-    function onMinipoolCreated(address newMinipoolAddress, address nodeAddress, uint256 bond) external {
+    function onMinipoolCreated(address newMinipoolAddress, address nodeAddress) external {
         if (!_directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender)) {
             revert BadRole(Constants.CORE_PROTOCOL_ROLE, msg.sender);
         }
@@ -347,24 +324,19 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         rebalanceRplStake(sna.getTotalEthStaked());
 
-        /**
-         * @dev We are only calling distributeBalance with a true flag to prevent griefing vectors. This ensures we
-         * are only collecting skimmed rewards and not doing anything related to full withdrawals or finalizations.
-         * One example is that if we pass false to distributeBalance, it opens a scenario where operators are forced to
-         * finalize due to having more than 8 ETH. This could result in slashings from griefing vectors.
-         */
         IMinipool minipool = sna.getNextMinipool();
         if (address(minipool) != address(0)) {
             uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
+            AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
             if (totalBalance < 8 ether) {
+                // minipool is still staking
                 // track incoming eth
-                AssetRouter ar = AssetRouter(_directory.getDepositPoolAddress());
                 ar.openGate();
                 uint256 initalBalance = address(ar).balance;
 
-                console.log('withdrawal address before skim', _directory.getDepositPoolAddress().balance);
+                console.log('withdrawal address before skim', _directory.getAssetRouterAddress().balance);
                 ar.onClaimSkimmedRewards(minipool);
-                console.log('withdrawal address after skim', _directory.getDepositPoolAddress().balance);
+                console.log('withdrawal address after skim', _directory.getAssetRouterAddress().balance);
 
                 uint256 finalBalance = address(ar).balance;
                 ar.closeGate();
@@ -375,6 +347,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 ar.onRewardsRecieved(rewards);
 
                 oracleError += rewards;
+            } else {
+                // the minipool is exited
+                ar.onExitedMinipool(minipool);
+                this.onNodeMinipoolDestroy(sna.minipoolToOperator(address(minipool)));
             }
         }
     }
@@ -409,10 +385,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /**
      * @notice Handles the destruction of a minipool by a node operator.
      * @param _nodeOperator Address of the node operator.
-     * @param _bond Amount of ETH bonded that needs to be subtracted from the total funded ETH.
      */
-    function onNodeMinipoolDestroy(address _nodeOperator, uint256 _bond) external onlyProtocol {
-        fundedEth -= _bond;
+    function onNodeMinipoolDestroy(address _nodeOperator) external onlyProtocol {
+        Whitelist(getDirectory().getWhitelistAddress()).removeValidator(_nodeOperator);
         emit MinipoolDestroyed(_nodeOperator);
     }
 

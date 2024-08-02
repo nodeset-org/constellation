@@ -296,6 +296,12 @@ export async function increaseEVMTime(seconds: number) {
   await ethers.provider.send('evm_mine', []);
 }
 
+/**
+ * Automatically registers new operators, adds the minimum necessary assets to the operator distributor,
+ * then creates and stakes one minipool for each of them.
+ * @param setupData 
+ * @param subNodeOperators
+ */
 export const registerNewValidator = async (setupData: SetupData, subNodeOperators: SignerWithAddress[]) => {
   const requiredEth = ethers.utils.parseEther('8').mul(subNodeOperators.length);
   if ((await setupData.protocol.operatorDistributor.balanceEth()).lt(requiredEth)) {
@@ -310,15 +316,6 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
   const { protocol, signers } = setupData;
 
   const bond = await setupData.protocol.superNode.bond();
-
-  // if (!(await protocol.superNode.hasSufficientLiquidity(bond.mul(subNodeOperators.length)))) {
-  //   console.log('not enough liquidity for ', subNodeOperators.length, ' calling prepareOperatorDistributionContract');
-  //   await prepareOperatorDistributionContract(setupData, subNodeOperators.length);
-  // }
-
-  // console.log('ETH balance of OD', await ethers.provider.getBalance(protocol.operatorDistributor.address)); // 17.46 ether
-  // console.log('RPL balance of OD', await setupData.rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)); // 720 RPL
-  // console.log('There is enough liquidity for', subNodeOperators.length);
   
   const minipools = []
   for (let i = 0; i < subNodeOperators.length; i++) {

@@ -66,12 +66,15 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     mapping(address => uint256) public minipoolIndex;
     // Mapping of sub-node operator address to their list of minipools
     mapping(address => address[]) public subNodeOperatorMinipools;
+    // Mapping of minipools to sub-node operator addresses
+    mapping(address => address) public minipoolToOperator;
     // Index for the current minipool being processed
     uint256 public currentMinipool;
 
     // admin settings
     uint256 public bond;
     uint256 public minimumNodeFee;
+    uint256 public maxValidators; // max number of validators each NO is allowed
 
     /// @notice Modifier to ensure a function can only be called once for lazy initialization
     modifier lazyInitializer() {
@@ -119,6 +122,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         adminServerSigExpiry = 1 days;
         minimumNodeFee = 14e16;
         bond = 8 ether;
+        maxValidators = 1;
     }
 
     /**
@@ -127,7 +131,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function lazyInitialize() external lazyInitializer {
         Directory directory = Directory(_directory);
         _registerNode('Australia/Brisbane');
-        address dp = directory.getDepositPoolAddress();
+        address dp = directory.getAssetRouterAddress();
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), dp, true);
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(true);
     }
@@ -182,6 +186,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             Whitelist(_directory.getWhitelistAddress()).getIsAddressInWhitelist(subNodeOperator),
             'sub node operator must be whitelisted'
         );
+        require(Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(subNodeOperator) < maxValidators,
+            'Sub node operator has created too many minipools already');
         require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
 
         _validateSigUsed(_sig);
@@ -216,10 +222,11 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         minipools.push(_expectedMinipoolAddress);
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        od.onMinipoolCreated(_expectedMinipoolAddress, subNodeOperator, bond);
+        od.onMinipoolCreated(_expectedMinipoolAddress, subNodeOperator);
         od.rebalanceRplStake(getTotalEthStaked() + bond);
 
         subNodeOperatorMinipools[subNodeOperator].push(_expectedMinipoolAddress);
+        minipoolToOperator[_expectedMinipoolAddress] = subNodeOperator;
 
         console.log('_createMinipool()');
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: bond}(
@@ -312,12 +319,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @param _minipool Address of the minipool to close.
      */
     function close(address _subNodeOperator, address _minipool) external hasConfig(_minipool) {
-        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
-            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
-        }
-
         IMinipool minipool = IMinipool(_minipool);
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(_subNodeOperator, bond);
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(_subNodeOperator);
         _stopTrackingMinipool(_minipool);
 
         minipool.close();
@@ -364,10 +367,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         IMinipool minipool = IMinipool(_minipool);
         minipool.distributeBalance(_rewardsOnly);
         if (minipool.getFinalised()) {
-            OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(
-                _subNodeOperator,
-                bond
-            );
+            OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(_subNodeOperator);
             _stopTrackingMinipool(_minipool);
         }
     }
@@ -534,5 +534,15 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     function setMinimumNodeFee(uint256 _newMinimumNodeFee) external onlyAdmin {
         minimumNodeFee = _newMinimumNodeFee;
+    }
+
+    /**
+     * @notice Sets the maximum numbder of allowed validators for each operator.
+     * @param _maxValidators The maximum number of validators to be considered in the reward calculation.
+     * @dev This function can only be called by the protocol admin. 
+     * Adjusting this parameter will change the reward distribution dynamics for validators.
+     */
+    function setMaxValidators(uint256 _maxValidators) public onlyMediumTimelock {
+        maxValidators = _maxValidators;
     }
 }

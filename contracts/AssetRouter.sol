@@ -183,6 +183,10 @@ contract AssetRouter is UpgradeableBase {
         _minipool.distributeBalance(true);
     }
 
+    function onExitedMinipool(IMinipool _minipool) external onlyProtocol {
+        _minipool.distributeBalance(false);
+    }
+
     function onRewardsRecieved(uint256 _amount) external onlyProtocol {
         IWETH weth = IWETH(_directory.getWETHAddress());
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
