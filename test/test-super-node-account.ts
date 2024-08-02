@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from "./test";
-import { approvedSalt, approveHasSignedExitMessageSig, approveSalt, assertAddOperator, predictDeploymentAddress, prepareOperatorDistributionContract, whitelistUserServerSig } from "./utils/utils";
+import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator, predictDeploymentAddress, prepareOperatorDistributionContract, whitelistUserServerSig } from "./utils/utils";
 import { generateDepositData } from "./rocketpool/_helpers/minipool";
 
 describe("SuperNodeAccount", function () {

@@ -68,21 +68,16 @@ describe("XRETHAdminOracle", function () {
             const chainId = network.chainId;
 
             const newTotalYield = ethers.utils.parseEther("100");
-            const treasuryFee = await protocol.vCWETH.getSignedTreasuryPortion(newTotalYield);
-            const noFee = await protocol.vCWETH.getSignedNodeOperatorPortion(newTotalYield);
-
-            console.log(treasuryFee)
-            console.log(noFee)
 
             const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "address", "uint256"], [newTotalYield, timestamp, oracle.address, chainId]);
             const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
 
 
             await oracle.connect(admin).setTotalYieldAccrued(signature, newTotalYield, timestamp);
-            expect(await oracle.getTotalYieldAccrued()).to.equal(newTotalYield.sub(treasuryFee.add(noFee)));
+            expect(await oracle.getTotalYieldAccrued()).to.equal(newTotalYield);
         });
 
-        it("Should set total yield accrued with valid signature adjusting for 0 fees", async function () {
+        it("Should set total yield accrued with valid signature adjusting for 0 fees (expect no impact)", async function () {
             const { protocol, signers } = await loadFixture(protocolFixture);
             const { oracle, directory } = protocol;
             const { admin, random } = signers;
@@ -102,9 +97,6 @@ describe("XRETHAdminOracle", function () {
             const treasuryFee = await protocol.vCWETH.getSignedTreasuryPortion(newTotalYield);
             const noFee = await protocol.vCWETH.getSignedNodeOperatorPortion(newTotalYield);
 
-            console.log(treasuryFee)
-            console.log(noFee)
-
             const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "address", "uint256"], [newTotalYield, timestamp, oracle.address, chainId]);
             const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
 
@@ -112,7 +104,7 @@ describe("XRETHAdminOracle", function () {
             expect(await oracle.getTotalYieldAccrued()).to.equal(newTotalYield);
         });
 
-        it("Should set total yield accrued with valid signature adjusting for 100% fees", async function () {
+        it("Should set total yield accrued with valid signature adjusting for 100% fees (expect no impact)", async function () {
             const { protocol, signers } = await loadFixture(protocolFixture);
             const { oracle, directory } = protocol;
             const { admin, random } = signers;
@@ -132,14 +124,11 @@ describe("XRETHAdminOracle", function () {
             const treasuryFee = await protocol.vCWETH.getSignedTreasuryPortion(newTotalYield);
             const noFee = await protocol.vCWETH.getSignedNodeOperatorPortion(newTotalYield);
 
-            console.log(treasuryFee)
-            console.log(noFee)
-
             const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "address", "uint256"], [newTotalYield, timestamp, oracle.address, chainId]);
             const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
 
             await oracle.connect(admin).setTotalYieldAccrued(signature, newTotalYield, timestamp);
-            expect(await oracle.getTotalYieldAccrued()).to.equal(0);
+            expect(await oracle.getTotalYieldAccrued()).to.equal(newTotalYield);
         });
 
         it("Should fail to set total yield accrued with invalid signature", async function () {
