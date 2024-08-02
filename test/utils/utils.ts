@@ -172,9 +172,9 @@ export const assertSingleTransferExists = async (
 export async function deployMinipool(setupData: SetupData, bondValue: BigNumber, subNodeOperator: string) {
   const salt = 3;
 
-  const depositData = await generateDepositData(setupData.protocol.superNode.address, salt);
-
   const {rawSalt, pepperedSalt} = await approvedSalt(salt, subNodeOperator);
+
+  const depositData = await generateDepositData(setupData.protocol.superNode.address, pepperedSalt);
 
   const config = {
     timezoneLocation: 'Australia/Brisbane',

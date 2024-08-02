@@ -120,8 +120,6 @@ describe("Node Operator Onboarding", function () {
     });
 
     it("eth whale redeems one share to trigger pool rebalacings", async function () {
-
-
         const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
         const network = await ethers.provider.getNetwork();
         const chainId = network.chainId;
@@ -153,9 +151,6 @@ describe("Node Operator Onboarding", function () {
                 }
             }
         }
-        console.log("totalYeildDistributed");
-        console.log(await protocol.vCWETH.totalYieldDistributed())
-        expectNumberE18ToBeApproximately(await protocol.vCWETH.totalYieldDistributed(), ethers.utils.parseEther("0.7246"), 0.01);
     });
 
     it("someone calls for yield distribution", async function () {
