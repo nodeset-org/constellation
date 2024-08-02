@@ -21,8 +21,6 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     string constant NAME = 'Constellation RPL';
     string constant SYMBOL = 'xRPL'; // Vaulted Constellation RPL
 
-    bool public enforceWethCoverageRatio;
-
     uint256 public treasuryFee;
 
     uint256 public principal; // Total principal amount (sum of all deposits)
@@ -30,7 +28,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     uint256 public liquidityReserveRatio; // collateralization ratio
 
-    uint256 public wethCoverageRatio; // weth coverage ratio
+    uint256 public minWethRplRatio; // weth coverage ratio
 
     constructor() initializer {}
 
@@ -46,8 +44,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
         liquidityReserveRatio = 0.02e5;
-        wethCoverageRatio = 1.75e5;
-        enforceWethCoverageRatio = false;
+        minWethRplRatio = 0; // 0% by default
         treasuryFee = 0.01e5;
     }
 
@@ -69,14 +66,11 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         }
 
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
-        require(
-            !enforceWethCoverageRatio || vweth.tvlRatioEthRpl() > wethCoverageRatio,
-            'insufficient weth coverage ratio'
-        );
+        require(vweth.tvlRatioEthRpl(assets, false) > minWethRplRatio, 'insufficient weth coverage ratio');
 
         principal += assets;
 
-        address payable pool = _directory.getDepositPoolAddress();
+        address payable pool = _directory.getAssetRouterAddress();
         _claimTreasuryFee();
         super._deposit(caller, receiver, assets, shares);
         SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
@@ -113,7 +107,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         principal -= assets;
 
         super._withdraw(caller, receiver, owner, assets, shares);
-        AssetRouter(_directory.getDepositPoolAddress()).sendRplToDistributors();
+        AssetRouter(_directory.getAssetRouterAddress()).sendRplToDistributors();
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
     }
 
@@ -127,7 +121,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     function currentIncomeFromRewards() public view returns (uint256) {
         unchecked {
             uint256 tvl = super.totalAssets() +
-                AssetRouter(_directory.getDepositPoolAddress()).getTvlRpl() +
+                AssetRouter(_directory.getAssetRouterAddress()).getTvlRpl() +
                 OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl();
 
             if (tvl < principal) {
@@ -153,7 +147,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     function totalAssets() public view override returns (uint256) {
         return
             (super.totalAssets() +
-                AssetRouter(_directory.getDepositPoolAddress()).getTvlRpl() +
+                AssetRouter(_directory.getAssetRouterAddress()).getTvlRpl() +
                 OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl()) -
             currentTreasuryIncomeFromRewards();
     }
@@ -207,18 +201,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _wethCoverageRatio The new WETH coverage ratio to be set (in base points).
      */
     function setWETHCoverageRatio(uint256 _wethCoverageRatio) external onlyShortTimelock {
-        wethCoverageRatio = _wethCoverageRatio;
-    }
-
-    /**
-     * @notice Set the enforcement status of the WETH coverage ratio.
-     * @dev Allows the admin to toggle whether or not the contract should enforce the WETH coverage ratio.
-     * When enforced, certain operations will require that the WETH coverage ratio is met.
-     * This could be useful to ensure the contract's health and stability.
-     * @param _enforceWethCoverageRatio True if the WETH coverage ratio should be enforced, otherwise false.
-     */
-    function setEnforceWethCoverageRatio(bool _enforceWethCoverageRatio) external onlyMediumTimelock {
-        enforceWethCoverageRatio = _enforceWethCoverageRatio;
+        minWethRplRatio = _wethCoverageRatio;
     }
 
     /**

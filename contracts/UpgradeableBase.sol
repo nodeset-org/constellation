@@ -28,7 +28,7 @@ abstract contract UpgradeableBase is UUPSUpgradeable, ReentrancyGuard {
     }
 
     modifier onlyDepositPool() {
-        require(msg.sender == _directory.getDepositPoolAddress(), 'Can only be called by Deposit Pool!');
+        require(msg.sender == _directory.getAssetRouterAddress(), 'Can only be called by Deposit Pool!');
         _;
     }
 
