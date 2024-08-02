@@ -193,6 +193,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         );
         require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
 
+        _salt = uint256(keccak256(abi.encodePacked(_salt, subNodeOperator)));
+
         _validateSigUsed(_sig);
         OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(bond);
         if (adminServerCheck) {

@@ -69,7 +69,7 @@ describe("Node Operator Onboarding", function () {
         expect(await protocol.superNode.getTotalEthMatched()).equals(BigInt(0));
         console.log('OD ETH balance: ', ethers.provider.getBalance(setupData.protocol.operatorDistributor.address));
         console.log('OD RPL balance: ', setupData.rocketPool.rplContract.balanceOf(setupData.protocol.operatorDistributor.address));
-        minipoolAddress = await deployMinipool(setupData, bondValue);
+        minipoolAddress = await deployMinipool(setupData, bondValue, signers.hyperdriver.address);
         console.log("operator flow minipoolAddress", minipoolAddress);
 
         // Assuming signers.hyperdriver.address and minipoolAddress are defined
@@ -120,8 +120,6 @@ describe("Node Operator Onboarding", function () {
     });
 
     it("eth whale redeems one share to trigger pool rebalacings", async function () {
-
-
         const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
         const network = await ethers.provider.getNetwork();
         const chainId = network.chainId;
@@ -153,9 +151,6 @@ describe("Node Operator Onboarding", function () {
                 }
             }
         }
-        console.log("totalYeildDistributed");
-        console.log(await protocol.vCWETH.totalYieldDistributed())
-        expectNumberE18ToBeApproximately(await protocol.vCWETH.totalYieldDistributed(), ethers.utils.parseEther("0.7246"), 0.01);
     });
 
     it("someone calls for yield distribution", async function () {

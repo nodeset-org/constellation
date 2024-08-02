@@ -23,7 +23,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     uint256 public liquidityReserveRatio;
     uint256 public maxWethRplRatio;
-    uint256 public totalYieldDistributed;
 
     uint256 public treasuryFee; // Treasury fee in basis points
     uint256 public nodeOperatorFee; // NO fee in basis points
@@ -128,7 +127,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         int256 oracleError = int256(OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleError());
         int256 totalUnrealizedAccrual = getOracle().getTotalYieldAccrued() - (lastUpdate == 0 ? int256(0) : oracleError);
 
-        int256 diff = totalUnrealizedAccrual - int(totalYieldDistributed);
+        int256 diff = totalUnrealizedAccrual;
         if (diff >= 0) {
             signed = false;
             distributableYield = uint256(diff);
