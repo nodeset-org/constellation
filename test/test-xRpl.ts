@@ -154,18 +154,33 @@ describe("xRPL", function () {
     const rocketMDM = await ethers.getContractAt("RocketMerkleDistributorMainnet", await protocol.directory.getRocketMerkleDistributorMainnetAddress());
     await rocketMDM.useMock();
 
+    const rocketVault = await ethers.getContractAt("RocketVaultInterface", await rocketPool.rockStorageContract.getAddress(await rocketMDM.rocketVaultKey()));
+
+    const rplReward = ethers.utils.parseEther("100");
+    const ethReward = ethers.utils.parseEther("100");
+
+    rocketPool.rplContract.connect(signers.rplWhale).transfer(rocketVault.address, rplReward);
+    await signers.ethWhale.sendTransaction({
+      to: rocketVault.address,
+      value: ethReward
+    })
+
     const rewardIndex = [0];
-    const amountRpl = [0];
-    const amountEth = [0];
+    const amountRpl = [rplReward];
+    const amountEth = [ethReward];
     const proof = [[ethers.utils.hexZeroPad("0x0", 32)], [ethers.utils.hexZeroPad("0x0", 32)]]
     await protocol.superNode.merkleClaim(protocol.superNode.address, rewardIndex, amountRpl, amountEth, proof)
 
-    expect(await protocol.vCRPL.totalAssets()).equals(depositAmount)
+    const expectedTreasuryPortion = await protocol.vCRPL.getTreasuryPortion(rplReward);
+    const expectedCommunityPortion = rplReward.sub(expectedTreasuryPortion)
+
+    expect(await protocol.vCRPL.totalAssets()).equals(depositAmount.add(expectedCommunityPortion))
     expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault);
     expect(await protocol.operatorDistributor.balanceRpl()).equals(surplusSentToOD);
 
     const shareValue = await protocol.vCRPL.convertToAssets(ethers.utils.parseEther("1"))
     const expectedRedeemValue = await protocol.vCRPL.previewRedeem(shareValue);
+
 
     let preBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     await protocol.vCRPL.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);

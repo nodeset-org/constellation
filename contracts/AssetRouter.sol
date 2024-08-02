@@ -248,4 +248,8 @@ contract AssetRouter is UpgradeableBase {
     receive() external payable {
         require(_gateOpen);
     }
+
+    fallback() external payable {
+        require(_gateOpen);
+    }
 }
