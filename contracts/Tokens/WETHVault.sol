@@ -47,12 +47,12 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(weth));
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
-        liquidityReserveRatio = 0.1e5; // 10% of TVL
+        liquidityReserveRatio = 0.1e18; // 10% of TVL
         maxWethRplRatio = 400e18; // 400% at start (4 ETH of xrETH for 1 ETH of xRPL)
 
         // default fees with 14% rETH commission mean WETHVault share returns are equal to base ETH staking rewards
-        treasuryFee = 0.14788e5; 
-        nodeOperatorFee = 0.14788e5;
+        treasuryFee = 0.14788e18; 
+        nodeOperatorFee = 0.14788e18;
     }
 
     /**
@@ -192,7 +192,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns (uint256) {
         uint256 fullBalance = totalAssets() + deposit;
-        uint256 requiredBalance = liquidityReserveRatio.mulDiv(fullBalance, 1e5, Math.Rounding.Up);
+        uint256 requiredBalance = liquidityReserveRatio.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
         return requiredBalance > balanceWeth ? requiredBalance : 0;
     }
 
@@ -223,7 +223,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _treasuryFee The new treasury fee in basis points.
      */
     function setTreasuryFee(uint256 _treasuryFee) external onlyMediumTimelock {
-        require(_treasuryFee <= 1e5, 'Fee too high');
+        require(_treasuryFee <= 1e18, 'Fee too high');
         treasuryFee = _treasuryFee;
     }
 
@@ -234,20 +234,20 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _nodeOperatorFee The new node operator fee in basis points.
      */
     function setNodeOperatorFee(uint256 _nodeOperatorFee) external onlyShortTimelock {
-        require(_nodeOperatorFee <= 1e5, 'Fee too high');
+        require(_nodeOperatorFee <= 1e18, 'Fee too high');
         nodeOperatorFee = _nodeOperatorFee;
     }
 
     /**
      * @notice Sets the collateralization ratio basis points.
      * @dev This function allows the admin to update the collateralization ratio which determines the level of collateral required.
-     * The collateralization ratio must be a reasonable percentage, typically expressed in basis points (1e5 basis points = 100%).
+     * The collateralization ratio must be a reasonable percentage, typically expressed in basis points (1e18 basis points = 100%).
      * @param _liquidityReserveRatio The new collateralization ratio in basis points.
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
     function setLiquidityReserveRatio(uint256 _liquidityReserveRatio) external onlyShortTimelock {
         require(_liquidityReserveRatio >= 0, 'WETHVault: Collateralization ratio must be positive');
-        require(_liquidityReserveRatio <= 1e5, 'WETHVault: Collateralization ratio must be less than or equal to 100%');
+        require(_liquidityReserveRatio <= 1e18, 'WETHVault: Collateralization ratio must be less than or equal to 100%');
         liquidityReserveRatio = _liquidityReserveRatio;
     }
 
@@ -260,10 +260,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     function getTreasuryPortion(uint256 _amount) external view returns (uint256) {
-        return _amount.mulDiv(treasuryFee, 1e5);
+        return _amount.mulDiv(treasuryFee, 1e18);
     }
 
     function getNodeOperatorPortion(uint256 _amount) external view returns (uint256)  {
-        return _amount.mulDiv(nodeOperatorFee, 1e5);
+        return _amount.mulDiv(nodeOperatorFee, 1e18);
     }
 }
