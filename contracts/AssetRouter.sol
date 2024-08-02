@@ -153,7 +153,10 @@ contract AssetRouter is UpgradeableBase {
             balanceRpl -= toRplVault;
         }
 
-        console.log('ar.sendRplToDistributors.balanceOf.rpl', IERC20(_directory.getRPLAddress()).balanceOf(address(this)));
+        console.log(
+            'ar.sendRplToDistributors.balanceOf.rpl',
+            IERC20(_directory.getRPLAddress()).balanceOf(address(this))
+        );
         console.log('ar.sendRplToDistributors.balanceRpl', balanceRpl);
         SafeERC20.safeTransfer(IERC20(address(rpl)), address(operatorDistributor), balanceRpl);
         operatorDistributor.onRplBalanceIncrease(balanceRpl);
@@ -171,7 +174,10 @@ contract AssetRouter is UpgradeableBase {
 
     function onRplBalanceIncrease(uint256 _amount) external onlyProtocol {
         balanceRpl += _amount;
-        console.log('ar.onRplBalanceIncrease.balanceOf.rpl', IERC20(_directory.getRPLAddress()).balanceOf(address(this)));
+        console.log(
+            'ar.onRplBalanceIncrease.balanceOf.rpl',
+            IERC20(_directory.getRPLAddress()).balanceOf(address(this))
+        );
         console.log('ar.onRplBalanceIncrease.balanceRpl', balanceRpl);
     }
 
@@ -187,7 +193,7 @@ contract AssetRouter is UpgradeableBase {
         _minipool.distributeBalance(false);
     }
 
-    function onRewardsRecieved(uint256 _amount) external onlyProtocol {
+    function onEthRewardsRecieved(uint256 _amount) external onlyProtocol {
         IWETH weth = IWETH(_directory.getWETHAddress());
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
 
@@ -207,10 +213,28 @@ contract AssetRouter is UpgradeableBase {
         uint256 communityPortion = _amount - treasuryPortion - nodeOperatorPortion;
 
         weth.deposit{value: communityPortion}();
-        console.log('onRewardsRecieved.communityPortion', communityPortion);
-        console.log('onRewardsRecieved.treasuryPortion', treasuryPortion);
-        console.log('onRewardsRecieved.nodeOperatorFee', nodeOperatorPortion);
+        console.log('onEthRewardsRecieved.communityPortion', communityPortion);
+        console.log('onEthRewardsRecieved.treasuryPortion', treasuryPortion);
+        console.log('onEthRewardsRecieved.nodeOperatorFee', nodeOperatorPortion);
         balanceWeth += communityPortion;
+    }
+
+    function onRplRewardsRecieved(uint256 _amount) external onlyProtocol {
+        IERC20 rpl = IERC20(_directory.getRPLAddress());
+        RPLVault vrpl = RPLVault(getDirectory().getRPLVaultAddress());
+
+        uint256 treasuryPortion = vrpl.getTreasuryPortion(_amount);
+
+        console.log('treasuryPortion', treasuryPortion);
+        console.log('_amount', _amount);
+
+        SafeERC20.safeTransfer(rpl, _directory.getTreasuryAddress(), treasuryPortion);
+
+        uint256 communityPortion = _amount - treasuryPortion;
+
+        console.log('onRplRewardsRecieved.communityPortion', communityPortion);
+        console.log('onRplRewardsRecieved.treasuryPortion', treasuryPortion);
+        balanceRpl += communityPortion;
     }
 
     function openGate() external onlyProtocol {

@@ -551,7 +551,7 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
     value: requiredEth,
   });
 
-  await setupData.protocol.depositPool.connect(protocolSigner).onRewardsRecieved(requiredEth)
+  await setupData.protocol.depositPool.connect(protocolSigner).onEthRewardsRecieved(requiredEth)
 
   await setupData.protocol.depositPool.connect(protocolSigner).closeGate();
   await setupData.protocol.depositPool.connect(protocolSigner).sendEthToDistributors();
