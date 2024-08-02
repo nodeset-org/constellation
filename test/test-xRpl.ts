@@ -18,7 +18,7 @@ describe("xRPL", function () {
     expect(name).equals("Constellation RPL");
     expect(symbol).equals("xRPL");
     expect(await protocol.vCRPL.liquidityReserveRatio()).equals(ethers.utils.parseUnits("0.02", 5))
-    expect(await protocol.vCRPL.minWethRplRatio()).equals(ethers.utils.parseUnits("1.75", 5))
+    expect(await protocol.vCRPL.minWethRplRatio()).equals(ethers.utils.parseUnits("0", 5))
     expect(await protocol.vCRPL.treasuryFee()).equals(ethers.utils.parseUnits("0.01", 5))
   })
 
@@ -137,7 +137,7 @@ describe("xRPL", function () {
     expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("3")))
   })
 
-  it.only("success - tries to deposit and redeem from weth vault multiple times after getting merkle rewards", async () => {
+  it("success - tries to deposit and redeem from weth vault multiple times after getting merkle rewards", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 

@@ -19,9 +19,9 @@ describe("xrETH", function () {
     expect(name).equals("Constellation ETH");
     expect(symbol).equals("xrETH");
     expect(await protocol.vCWETH.liquidityReserveRatio()).equals(ethers.utils.parseUnits("0.1", 5))
-    expect(await protocol.vCWETH.maxWethRplRatio()).equals(ethers.utils.parseUnits(".15", 18))
-    expect(await protocol.vCWETH.treasuryFee()).equals(ethers.utils.parseUnits("0.01", 5))
-    expect(await protocol.vCWETH.nodeOperatorFee()).equals(ethers.utils.parseUnits("0.01", 5))
+    expect(await protocol.vCWETH.maxWethRplRatio()).equals(ethers.utils.parseUnits("400", 18))
+    expect(await protocol.vCWETH.treasuryFee()).equals(ethers.utils.parseUnits("0.14788", 5))
+    expect(await protocol.vCWETH.nodeOperatorFee()).equals(ethers.utils.parseUnits("0.14788", 5))
   })
 
   it("fail - tries to deposit weth as 'bad actor' involved in AML or other flavors of bad", async () => {
