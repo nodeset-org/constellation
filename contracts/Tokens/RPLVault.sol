@@ -73,9 +73,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
         ar.onRplBalanceIncrease(assets);
         SafeERC20.safeTransfer(IERC20(asset()), address(ar), assets);
-        ar.sendRplToDistributors();
 
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
+        ar.sendRplToDistributors();
     }
 
     /**
@@ -106,8 +106,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         balanceRpl -= assets;
 
         super._withdraw(caller, receiver, owner, assets, shares);
-        AssetRouter(_directory.getAssetRouterAddress()).sendRplToDistributors();
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
+        AssetRouter(_directory.getAssetRouterAddress()).sendRplToDistributors();
     }
 
     /**
@@ -187,10 +187,13 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     function onRplBalanceIncrease(uint256 _amount) external onlyProtocol {
         balanceRpl += _amount;
+        console.log("rplVault.onRplBalanceIncrease.balanceRpl", balanceRpl);
+        console.log("rplVault.onRplBalanceIncrease.balacneOf.rpl", IERC20(asset()).balanceOf(address(this)));
     }
 
     function onRplBalanceDecrease(uint256 _amount) external onlyProtocol {
         balanceRpl -= _amount;
+        console.log("rplVault.onRplBalanceDecrease.", balanceRpl);
     }
 
     function getTreasuryPortion(uint256 _amount) external view returns (uint256) {

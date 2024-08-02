@@ -4,7 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { assertAddOperator, assertMultipleTransfers, assertSingleTransferExists } from "./utils/utils";
+import { assertAddOperator, assertMultipleTransfers, assertSingleTransferExists, expectNumberE18ToBeApproximately } from "./utils/utils";
 
 describe("xRPL", function () {
 
@@ -98,7 +98,7 @@ describe("xRPL", function () {
     ])
   })
 
-  it.only("success - tries to deposit and redeem from weth vault multiple times", async () => {
+  it("success - tries to deposit and redeem from weth vault multiple times", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
@@ -137,13 +137,13 @@ describe("xRPL", function () {
     expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("3")))
   })
 
-  it.only("success - tries to deposit and redeem from weth vault multiple times", async () => {
+  it.only("success - tries to deposit and redeem from weth vault multiple times after getting merkle rewards", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
-    const depositAmount = ethers.utils.parseEther("1000");
-    const expectedReserveInVault = ethers.utils.parseEther("20");
-    const surplusSentToOD = ethers.utils.parseEther("980");
+    const depositAmount = ethers.utils.parseEther("100000");
+    const expectedReserveInVault = ethers.utils.parseEther("2000");
+    const surplusSentToOD = ethers.utils.parseEther("98000");
 
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, depositAmount)
 
@@ -181,24 +181,23 @@ describe("xRPL", function () {
     const shareValue = await protocol.vCRPL.convertToAssets(ethers.utils.parseEther("1"))
     const expectedRedeemValue = await protocol.vCRPL.previewRedeem(shareValue);
 
-
     let preBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     await protocol.vCRPL.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     let postBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
-    expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("1")))
 
     preBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     await protocol.vCRPL.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     postBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
-    expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("2")))
 
     preBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     await protocol.vCRPL.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     postBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
-    expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("3")))
+
+    expect(await rocketPool.rplContract.balanceOf(await protocol.directory.getTreasuryAddress())).equals(expectedTreasuryPortion);
+
   })
 
   it("success - a random makes deposit, DP gets 10 rpl, random gets correct amount and so does admin, admin fails to withdraw again, DP gets 69 rpl, admin claims 1%", async () => {

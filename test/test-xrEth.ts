@@ -69,7 +69,7 @@ describe("xrETH", function () {
     expect(expectedxrETHInSystem).equals(actualxrETHInSystem)
   })
 
-  it.only("success - tries to deposit and redeem from weth vault multiple times", async () => {
+  it("success - tries to deposit and redeem from weth vault multiple times", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
@@ -108,7 +108,7 @@ describe("xrETH", function () {
 
   })
 
-  it.only("success - tries to deposit and redeem from weth vault multiple times with minipool reward claims", async () => {
+  it("success - tries to deposit and redeem from weth vault multiple times with minipool reward claims", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
     
