@@ -65,7 +65,7 @@ contract YieldDistributor is UpgradeableBase {
         super.initialize(_directory);
 
         currentIntervalGenesisTime = block.timestamp;
-        maxIntervalLengthSeconds = 30 days;
+        maxIntervalLengthSeconds = 7 days;
 
         k = 7;
     }

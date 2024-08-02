@@ -63,10 +63,8 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
             'signer must have permission from admin oracle role'
         );
         require(_sigTimeStamp > _lastUpdatedTotalYieldAccrued, 'cannot update tya using old data');
-        int256 treasuryPortion = WETHVault(_directory.getWETHVaultAddress()).getSignedNodeOperatorPortion(_newTotalYieldAccrued);
-        int256 noPortion = WETHVault(_directory.getWETHVaultAddress()).getSignedNodeOperatorPortion(_newTotalYieldAccrued);
 
-        _totalYieldAccrued = _newTotalYieldAccrued - treasuryPortion - noPortion;
+        _totalYieldAccrued = _newTotalYieldAccrued;
         _lastUpdatedTotalYieldAccrued = block.timestamp;
         emit TotalYieldAccruedUpdated(_totalYieldAccrued);
 
