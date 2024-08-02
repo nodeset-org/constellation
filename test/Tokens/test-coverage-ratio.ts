@@ -6,7 +6,7 @@ describe("CoverageRatio", async function () {
     describe("minting xWETH", async function() {
         describe("when minting from below the coverage ratio", async function() {
             describe("when minting stays below the coverage ratio", async function() {
-                it.only("should revert", async function() {
+                it("should revert", async function() {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
@@ -353,6 +353,7 @@ describe("CoverageRatio", async function () {
 
                     // Mint 100 xWETH (i.e. 200% ratio)
                     // Check that it passes
+                    await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
                     await expect(
                         protocol.vCWETH.connect(signers.ethWhale)
                             .deposit(ethers.utils.parseEther("100"), signers.ethWhale.address)
@@ -579,6 +580,7 @@ describe("CoverageRatio", async function () {
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it passes
                     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("10000"));
+                    await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("10000"));
                     await expect(
                         protocol.vCRPL.connect(signers.ethWhale)
                             .deposit(ethers.utils.parseEther("10000"), signers.ethWhale.address)
@@ -689,6 +691,7 @@ describe("CoverageRatio", async function () {
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it passes
                     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("10000"));
+                    await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("10000"));
                     await expect(
                         protocol.vCRPL.connect(signers.ethWhale)
                             .deposit(ethers.utils.parseEther("10000"), signers.ethWhale.address)
@@ -799,6 +802,7 @@ describe("CoverageRatio", async function () {
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it reverts
                     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("10000"));
+                    await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("10000"));
                     await expect(
                         protocol.vCRPL.connect(signers.ethWhale)
                             .deposit(ethers.utils.parseEther("10000"), signers.ethWhale.address)
@@ -836,6 +840,7 @@ describe("CoverageRatio", async function () {
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it passes
                     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("10000"));
+                    await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("10000"));
                     await expect(
                         protocol.vCRPL.connect(signers.ethWhale)
                             .deposit(ethers.utils.parseEther("10000"), signers.ethWhale.address)
@@ -873,6 +878,7 @@ describe("CoverageRatio", async function () {
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it passes
                     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("10000"));
+                    await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("10000"));
                     await expect(
                         protocol.vCRPL.connect(signers.ethWhale)
                             .deposit(ethers.utils.parseEther("10000"), signers.ethWhale.address)
