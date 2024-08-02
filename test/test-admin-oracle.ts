@@ -54,7 +54,7 @@ describe("XRETHAdminOracle", function () {
             expect(await oracle.getTotalYieldAccrued()).to.equal(0);
         });
 
-        it.only("Should set total yield accrued with valid signature", async function () {
+        it("Should set total yield accrued with valid signature", async function () {
             const { protocol, signers } = await loadFixture(protocolFixture);
             const { oracle, directory } = protocol;
             const { admin, random } = signers;
@@ -82,7 +82,7 @@ describe("XRETHAdminOracle", function () {
             expect(await oracle.getTotalYieldAccrued()).to.equal(newTotalYield.sub(treasuryFee.add(noFee)));
         });
 
-        it.only("Should set total yield accrued with valid signature adjusting for 0 fees", async function () {
+        it("Should set total yield accrued with valid signature adjusting for 0 fees", async function () {
             const { protocol, signers } = await loadFixture(protocolFixture);
             const { oracle, directory } = protocol;
             const { admin, random } = signers;
@@ -112,7 +112,7 @@ describe("XRETHAdminOracle", function () {
             expect(await oracle.getTotalYieldAccrued()).to.equal(newTotalYield);
         });
 
-        it.only("Should set total yield accrued with valid signature adjusting for 100% fees", async function () {
+        it("Should set total yield accrued with valid signature adjusting for 100% fees", async function () {
             const { protocol, signers } = await loadFixture(protocolFixture);
             const { oracle, directory } = protocol;
             const { admin, random } = signers;
