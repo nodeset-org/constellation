@@ -72,6 +72,9 @@ describe("xRPL", function () {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
+    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
+
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, ethers.utils.parseEther("1000000"));
     await assertAddOperator(setupData, signers.random);
 
@@ -84,7 +87,6 @@ describe("xRPL", function () {
     const expectedRplInSystem = ethers.utils.parseEther("1000000");
     const actualRplInSystem = await protocol.vCRPL.totalAssets();
     expect(expectedRplInSystem).equals(actualRplInSystem)
-
 
     await rocketPool.rplContract.connect(signers.random2).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
     console.log(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address));
@@ -201,7 +203,7 @@ describe("xRPL", function () {
 
   })
 
-  it("success - a random makes deposit, DP gets 10 rpl, random gets correct amount and so does admin, admin fails to withdraw again, DP gets 69 rpl, admin claims 1%", async () => {
+  it("success - a random makes deposit, DP gets 10 rpl of untracked RPL, random gets correct amount and admin gets nothing", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
@@ -225,10 +227,7 @@ describe("xRPL", function () {
     const tx = await protocol.vCRPL.connect(signers.random).redeem(ethers.utils.parseEther("1"), signers.random.address, signers.random.address);
     await assertMultipleTransfers(tx, [
       {
-        from: protocol.vCRPL.address, to: signers.random.address, value: BigNumber.from("1098999999999999999")
-      },
-      {
-        from: protocol.vCRPL.address, to: await protocol.directory.getTreasuryAddress(), value: ethers.utils.parseEther("0.1")
+        from: protocol.vCRPL.address, to: signers.random.address, value: ethers.utils.parseEther("1")
       },
     ])
 
