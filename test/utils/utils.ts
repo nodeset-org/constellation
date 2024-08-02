@@ -308,7 +308,7 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
   const { protocol, signers } = setupData;
 
   const bond = await setupData.protocol.superNode.bond();
-  
+
   const minipools = []
   for (let i = 0; i < subNodeOperators.length; i++) {
     console.log('setting up node operator %s of %s', i + 1, subNodeOperators.length);
@@ -535,7 +535,7 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   await setupData.protocol.wETH.connect(setupData.signers.ethWhale).deposit({ value: requiredEth });
   await setupData.protocol.wETH.connect(setupData.signers.ethWhale).approve(setupData.protocol.vCWETH.address, requiredEth);
   await setupData.protocol.vCWETH.connect(setupData.signers.ethWhale).deposit(requiredEth, setupData.signers.ethWhale.address);
-  
+
   /*
   await setupData.protocol.depositPool.connect(protocolSigner).openGate();
   await setupData.signers.admin.sendTransaction({
@@ -543,21 +543,21 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
     value: requiredEth,
   });
 
-  await setupData.protocol.depositPool.connect(protocolSigner).onEthRewardsRecieved(requiredEth)
+  await setupData.protocol.depositPool.connect(protocolSigner).onEthRewardsReceived(requiredEth)
 
   await setupData.protocol.depositPool.connect(protocolSigner).closeGate();
   await setupData.protocol.depositPool.connect(protocolSigner).sendEthToDistributors();
   await setupData.protocol.depositPool.connect(protocolSigner).sendRplToDistributors(); */
-  
+
 
   // send eth to the rocketpool deposit contract (mint rETH to signers[0])
-  
+
   const rplRequired = await setupData.protocol.operatorDistributor.calculateRplStakeShortfall(0, (ethers.utils.parseEther("32").mul(BigNumber.from(numOperators))).sub(depositAmount));
   console.log('rplRequired', rplRequired);
   const protocolSigner = setupData.signers.protocolSigner;
   await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequired);
   await setupData.protocol.operatorDistributor.connect(protocolSigner).onRplBalanceIncrease(rplRequired)
-  
+
   return requiredEth;
 }
 

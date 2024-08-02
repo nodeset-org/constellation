@@ -344,7 +344,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             // minipool is still staking
             // track incoming eth
             ar.openGate();
-            uint256 initalBalance = address(ar).balance;
+            uint256 initialBalance = address(ar).balance;
 
             console.log('withdrawal address before skim', _directory.getAssetRouterAddress().balance);
             ar.onClaimSkimmedRewards(minipool);
@@ -353,10 +353,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             uint256 finalBalance = address(ar).balance;
             ar.closeGate();
             console.log('finalBalance', finalBalance);
-            console.log('initalBalance', initalBalance);
-            uint256 rewards = finalBalance - initalBalance;
+            console.log('initialBalance', initialBalance);
+            uint256 rewards = finalBalance - initialBalance;
             console.log('rewards recieved', rewards);
-            ar.onEthRewardsRecieved(rewards);
+            ar.onEthRewardsReceived(rewards);
 
             oracleError += rewards;
         } else {

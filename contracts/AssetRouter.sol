@@ -193,7 +193,7 @@ contract AssetRouter is UpgradeableBase {
         _minipool.distributeBalance(false);
     }
 
-    function onEthRewardsRecieved(uint256 _amount) external onlyProtocol {
+    function onEthRewardsReceived(uint256 _amount) external onlyProtocol {
         IWETH weth = IWETH(_directory.getWETHAddress());
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
 
@@ -213,9 +213,9 @@ contract AssetRouter is UpgradeableBase {
         uint256 communityPortion = _amount - treasuryPortion - nodeOperatorPortion;
 
         weth.deposit{value: communityPortion}();
-        console.log('onEthRewardsRecieved.communityPortion', communityPortion);
-        console.log('onEthRewardsRecieved.treasuryPortion', treasuryPortion);
-        console.log('onEthRewardsRecieved.nodeOperatorFee', nodeOperatorPortion);
+        console.log('onEthRewardsReceived.communityPortion', communityPortion);
+        console.log('onEthRewardsReceived.treasuryPortion', treasuryPortion);
+        console.log('onEthRewardsReceived.nodeOperatorFee', nodeOperatorPortion);
         balanceWeth += communityPortion;
     }
 
