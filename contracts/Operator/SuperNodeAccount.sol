@@ -138,6 +138,14 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /**
+     * @notice Returns the total number of Constellation minipools.
+     * @return uint256 The total number of Constellation minipools.
+     */
+    function minipoolCount() external view returns (uint256) {
+        return minipools.length;
+    }
+
+    /**
      * @notice This function is responsible for the creation and initialization of a minipool based on the validator's configuration.
      *         It requires that the calling node operator is whitelisted and that the signature provided for the minipool creation is valid.
      *         It also checks for sufficient liquidity (both RPL and ETH) before proceeding with the creation.
@@ -201,7 +209,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             require(block.timestamp - _sigGenesisTime < adminServerSigExpiry, 'as sig expired');
             console.log('_createMinipool: message hash');
             console.logBytes32(
-                keccak256(abi.encodePacked(_expectedMinipoolAddress, _salt, address(this), block.chainid))
+                keccak256(
+                    abi.encodePacked(_expectedMinipoolAddress, _salt, _sigGenesisTime, address(this), block.chainid)
+                )
             );
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
