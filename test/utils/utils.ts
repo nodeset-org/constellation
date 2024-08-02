@@ -303,10 +303,13 @@ export async function increaseEVMTime(seconds: number) {
  * @param subNodeOperators
  */
 export const registerNewValidator = async (setupData: SetupData, subNodeOperators: SignerWithAddress[]) => {
+  const requiredEth = ethers.utils.parseEther('8').mul(subNodeOperators.length);
+
   const { protocol, signers } = setupData;
 
   const bond = await setupData.protocol.superNode.bond();
-  
+
+  const minipools = []
   for (let i = 0; i < subNodeOperators.length; i++) {
     console.log('setting up node operator %s of %s', i + 1, subNodeOperators.length);
     console.log('ETH balance of OD', await ethers.provider.getBalance(protocol.operatorDistributor.address));
@@ -334,6 +337,8 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
       salt: salt,
       expectedMinipoolAddress: depositData.minipoolAddress,
     };
+
+    minipools.push(depositData.minipoolAddress)
 
     await setupData.rocketPool.rocketDepositPoolContract.deposit({
       value: ethers.utils.parseEther('32'),
@@ -363,6 +368,8 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
     await protocol.superNode.connect(nodeOperator).stake(depositDataStake.depositData.signature, depositDataStake.depositDataRoot, config.expectedMinipoolAddress);
     console.log("finsihed...", depositDataStake.depositData.signature);
   }
+
+  return minipools;
 };
 
 export const approveHasSignedExitMessageSig = async (
@@ -503,18 +510,55 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   console.log('REQUIRE COLLAT', vaultMinimum);
   const requiredEth = depositAmount
     .add(vaultMinimum)
-    .mul(ethers.utils.parseUnits('1.1', 5))
-    .div(ethers.utils.parseUnits('1', 5));
+    .mul((await setupData.protocol.vCWETH.liquidityReserveRatio()).mul(10))
+    .div(ethers.utils.parseUnits('1', 5))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 2)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 3)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 4)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 5)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 6)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 7)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 8)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 9)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 10)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 11)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 12)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 13)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 14)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 15)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 16)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 17)))
+    .add(depositAmount.div(ethers.utils.parseUnits("1", 18)))
+    .add(ethers.constants.One)
   console.log('REQUIRE+ETH', requiredEth);
+
+  await setupData.protocol.wETH.connect(setupData.signers.ethWhale).deposit({ value: requiredEth });
+  await setupData.protocol.wETH.connect(setupData.signers.ethWhale).approve(setupData.protocol.vCWETH.address, requiredEth);
+  await setupData.protocol.vCWETH.connect(setupData.signers.ethWhale).deposit(requiredEth, setupData.signers.ethWhale.address);
+
+  /*
+  await setupData.protocol.depositPool.connect(protocolSigner).openGate();
   await setupData.signers.admin.sendTransaction({
     to: setupData.protocol.operatorDistributor.address,
     value: requiredEth,
   });
+
+  await setupData.protocol.depositPool.connect(protocolSigner).onEthRewardsReceived(requiredEth)
+
+  await setupData.protocol.depositPool.connect(protocolSigner).closeGate();
+  await setupData.protocol.depositPool.connect(protocolSigner).sendEthToDistributors();
+  await setupData.protocol.depositPool.connect(protocolSigner).sendRplToDistributors(); */
+
+
   // send eth to the rocketpool deposit contract (mint rETH to signers[0])
 
   const rplRequired = await setupData.protocol.operatorDistributor.calculateRplStakeShortfall(0, (ethers.utils.parseEther("32").mul(BigNumber.from(numOperators))).sub(depositAmount));
   console.log('rplRequired', rplRequired);
+  const protocolSigner = setupData.signers.protocolSigner;
   await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequired);
+  await setupData.protocol.operatorDistributor.connect(protocolSigner).onRplBalanceIncrease(rplRequired)
+
+  return requiredEth;
 }
 
 export async function getNextContractAddress(signer: SignerWithAddress, offset = 0) {

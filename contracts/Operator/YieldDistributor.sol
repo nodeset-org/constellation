@@ -197,7 +197,6 @@ contract YieldDistributor is UpgradeableBase {
      */
     function finalizeInterval() public onlyProtocolOrAdmin {
         console.log("calling claim node operator fee");
-        WETHVault(_directory.getWETHVaultAddress()).claimFees();
         _finalizeIntervalVoidClaim();
     }
 

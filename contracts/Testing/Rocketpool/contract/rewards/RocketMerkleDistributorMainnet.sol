@@ -10,6 +10,8 @@ import '../../interface/rewards/RocketSmoothingPoolInterface.sol';
 import '../../interface/RocketVaultWithdrawerInterface.sol';
 import '../../interface/node/RocketNodeManagerInterface.sol';
 
+import "hardhat/console.sol";
+
 import '@openzeppelin/contracts/utils/cryptography/MerkleProof.sol';
 
 /// @dev On mainnet, the relay and the distributor are the same contract as there is no need for an intermediate contract to
@@ -22,11 +24,22 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
     uint256 constant network = 0;
 
     // Immutables
-    bytes32 immutable rocketVaultKey;
-    bytes32 immutable rocketTokenRPLKey;
+    bytes32 public immutable rocketVaultKey;
+    bytes32 public immutable rocketTokenRPLKey;
 
     // Allow receiving ETH
     receive() external payable {}
+
+    // mock mode:
+    bool public isMocking;
+
+    function useMock() public {
+        isMocking = true;
+    }
+
+    function disableMock() public {
+        isMocking = false;
+    }
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -116,7 +129,10 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
             }
             // Distribute ETH
             if (totalAmountETH > 0) {
+                console.log("caller of withdraw etehr", address(this));
                 rocketVault.withdrawEther(totalAmountETH);
+                console.log("balance ether", address(this).balance);
+                console.log("totalAmountETH",totalAmountETH);
                 (bool result, ) = withdrawalAddress.call{value: totalAmountETH}('');
                 require(result, 'Failed to claim ETH');
             }
@@ -144,6 +160,7 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
         uint256[] calldata _amountETH,
         bytes32[][] calldata _merkleProof
     ) internal {
+        if (isMocking) return;
         // Set initial parameters to the first reward index in the array
         uint256 indexWordIndex = _rewardIndex[0] / 256;
         bytes32 claimedWordKey = keccak256(abi.encodePacked('rewards.interval.claimed', _nodeAddress, indexWordIndex));
@@ -204,5 +221,7 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
     }
 
     // Allow receiving ETH from RocketVault, no action required
-    function receiveVaultWithdrawalETH() external payable override {}
+    function receiveVaultWithdrawalETH() external payable override {
+        console.log("in receiveVaultWithdrawalETH");
+    }
 }

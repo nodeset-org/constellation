@@ -8,6 +8,7 @@ import './OperatorDistributor.sol';
 
 import '../Whitelist/Whitelist.sol';
 import '../UpgradeableBase.sol';
+import '../AssetRouter.sol';
 
 import '../Interfaces/RocketPool/RocketTypes.sol';
 import '../Interfaces/RocketPool/IRocketNodeDeposit.sol';
@@ -186,8 +187,10 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             Whitelist(_directory.getWhitelistAddress()).getIsAddressInWhitelist(subNodeOperator),
             'sub node operator must be whitelisted'
         );
-        require(Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(subNodeOperator) < maxValidators,
-            'Sub node operator has created too many minipools already');
+        require(
+            Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(subNodeOperator) < maxValidators,
+            'Sub node operator has created too many minipools already'
+        );
         require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
 
         _validateSigUsed(_sig);
@@ -389,6 +392,13 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         uint256[] calldata _amountETH,
         bytes32[][] calldata _merkleProof
     ) public {
+        address ar = _directory.getAssetRouterAddress();
+        IERC20 rpl = IERC20(_directory.getRPLAddress());
+
+        uint256 initialEthBalance = ar.balance;
+        uint256 initialRplBalance = rpl.balanceOf(ar);
+
+        AssetRouter(payable(ar)).openGate();
         IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
             _nodeAddress,
             _rewardIndex,
@@ -396,6 +406,16 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             _amountETH,
             _merkleProof
         );
+        AssetRouter(payable(ar)).closeGate();
+
+        uint256 finalEthBalance = ar.balance;
+        uint256 finalRplBalance = rpl.balanceOf(ar);
+
+        uint256 ethReward = finalEthBalance - initialEthBalance;
+        uint256 rplReward = finalRplBalance - initialRplBalance;
+
+        AssetRouter(payable(ar)).onEthRewardsReceived(ethReward);
+        AssetRouter(payable(ar)).onRplRewardsRecieved(rplReward);
     }
 
     /**
@@ -495,7 +515,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     /**
      * @notice Checks if there is sufficient liquidity in the protocol to cover a specified bond amount.
-     * @dev This function helps ensure that there are enough resources (both RPL and ETH) available in the system to cover the bond required for creating or operating a minipool. 
+     * @dev This function helps ensure that there are enough resources (both RPL and ETH) available in the system to cover the bond required for creating or operating a minipool.
      * It is crucial for maintaining financial stability and operational continuity.
      * @param _bond The bond amount in wei for which liquidity needs to be checked.
      * @return bool Returns true if there is sufficient liquidity to cover the bond; false otherwise.
@@ -506,7 +526,10 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         uint256 rplStaking = rocketNodeStaking.getNodeRPLStake(address(this));
         uint256 newEthBorrowed = 32 ether - _bond;
         console.log('newEthBorrowed', newEthBorrowed);
-        uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(rplStaking, getTotalEthMatched() + newEthBorrowed);
+        uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(
+            rplStaking,
+            getTotalEthMatched() + newEthBorrowed
+        );
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired && od.balance >= _bond;
     }
 
@@ -539,7 +562,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     /**
      * @notice Sets the maximum numbder of allowed validators for each operator.
      * @param _maxValidators The maximum number of validators to be considered in the reward calculation.
-     * @dev This function can only be called by the protocol admin. 
+     * @dev This function can only be called by the protocol admin.
      * Adjusting this parameter will change the reward distribution dynamics for validators.
      */
     function setMaxValidators(uint256 _maxValidators) public onlyMediumTimelock {
