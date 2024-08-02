@@ -235,7 +235,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * This fee and the total fee must not exceed 100%.
      * @param _nodeOperatorFee The new node operator fee in basis points.
      */
-    function setNodeOperatorFee(uint256 _nodeOperatorFee) external onlyShortTimelock {
+    function setNodeOperatorFee(uint256 _nodeOperatorFee) external onlyMediumTimelock {
         require(_nodeOperatorFee <= 1e18, 'Fee too high');
         require(treasuryFee + _nodeOperatorFee <= 1e18, 'Total fees cannot exceed 100%');
         nodeOperatorFee = _nodeOperatorFee;
@@ -248,7 +248,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _nodeOperatorFee The new node operator fee in basis points.
      * @param _treasuryFee The new treasury fee in basis points.
      */
-    function setProtocolFees(uint256 _nodeOperatorFee, uint256 _treasuryFee) external onlyShortTimelock {
+    function setProtocolFees(uint256 _nodeOperatorFee, uint256 _treasuryFee) external onlyMediumTimelock {
         require(_treasuryFee <= 1e18, 'Fee too high');
         require(_nodeOperatorFee <= 1e18, 'Fee too high');
         require(_treasuryFee + _nodeOperatorFee <= 1e18, 'Total fees cannot exceed 100%');
