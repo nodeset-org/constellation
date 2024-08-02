@@ -11,6 +11,7 @@ import { mintRPL } from '../rocketpool/_helpers/tokens';
 import { userDeposit } from '../rocketpool/_helpers/deposit';
 import { ContractTransaction } from '@ethersproject/contracts';
 import { Contract, EventFilter, utils } from 'ethers';
+import seedrandom from 'seedrandom';
 
 // optionally include the names of the accounts
 export const printBalances = async (accounts: string[], opts: any = {}) => {
@@ -525,8 +526,8 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   console.log('REQUIRE COLLAT', vaultMinimum);
   const requiredEth = depositAmount
     .add(vaultMinimum)
-    .mul((await setupData.protocol.vCWETH.liquidityReserveRatio()).mul(10))
-    .div(ethers.utils.parseUnits('1', 5))
+    .mul((await setupData.protocol.vCWETH.liquidityReserveRatio())
+    .div(ethers.utils.parseUnits('1', 17)))
     .add(depositAmount.div(ethers.utils.parseUnits("1", 2)))
     .add(depositAmount.div(ethers.utils.parseUnits("1", 3)))
     .add(depositAmount.div(ethers.utils.parseUnits("1", 4)))
@@ -567,7 +568,13 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
 
   // send eth to the rocketpool deposit contract (mint rETH to signers[0])
 
-  const rplRequired = await setupData.protocol.operatorDistributor.calculateRplStakeShortfall(0, (ethers.utils.parseEther("32").mul(BigNumber.from(numOperators))).sub(depositAmount));
+  const rplStaked = await setupData.rocketPool.rocketNodeStakingContract.getNodeRPLStake(setupData.protocol.superNode.address)
+  const ethMatched = await setupData.rocketPool.rocketNodeStakingContract.getNodeETHMatched(setupData.protocol.superNode.address)
+
+  const rplRequired = (await setupData.protocol.operatorDistributor.calculateRplStakeShortfall(
+    rplStaked, 
+    ethMatched.add((ethers.utils.parseEther("32").mul(BigNumber.from(numOperators))).sub(depositAmount))
+  ));
   console.log('rplRequired', rplRequired);
   const protocolSigner = setupData.signers.protocolSigner;
   await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequired);
