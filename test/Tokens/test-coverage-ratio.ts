@@ -16,40 +16,38 @@ describe("CoverageRatio", async function () {
     describe("minting xWETH", async function() {
         describe("when minting from below the coverage ratio", async function() {
             describe("when minting stays below the coverage ratio", async function() {
-                it.only("should revert", async function() {
+                it("should revert", async function() {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    // Disable enforceRplCoverageRatio
-                    await protocol.vCWETH.connect(signers.admin).setEnforceRplCoverageRatio(false);
-                    // Disable enforceWethCoverageRatio
-                    await protocol.vCRPL.connect(signers.admin).setEnforceWethCoverageRatio(false);
-                   
+                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+
                     // Mint 1000 xWETH + 100,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
-                    // await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
-                    // await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
 
-                    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("100000"));
-                    await protocol.vCRPL.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100000"), signers.ethWhale.address);
-                    
-                    // // Set minWethRplRatio to 200%
-                    // await protocol.vCRPL.setWETHCoverageRatio(2e18);
-                    // // Set maxWethRplRatio to 300%
-                    // await protocol.vCWETH.setRplCoverageRatio(3e18);
+                    // Why do we need to deposit to wETH?
+                    await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
+                    await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
+                    await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
 
-                    // // Enable enforceWethCoverageRatio
-                    // await protocol.vCRPL.connect(signers.deployer).setEnforceWethCoverageRatio(true);
-                    // // Enable enforceRplCoverageRatio
-                    // await protocol.vCWETH.connect(signers.deployer).setEnforceRplCoverageRatio(true);
+                    const rplMintAmount = ethers.utils.parseEther("100000");
+                    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
+                    await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
+                    await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
 
-                    // // Mint 1 xWETH
-                    // // Check if it reverts
-                    // await expect(
-                    //     protocol.vCWETH.connect(signers.ethWhale)
-                    //         .deposit(ethers.utils.parseEther("1"), signers.ethWhale.address)
-                    // ).to.be.revertedWith("signer must have permission from admin oracle role");
+                    // Set minWethRplRatio to 200%
+                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(2e5));
+                    // Set maxWethRplRatio to 300%
+                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from(3e5));
+
+                    // Mint 1 xWETH
+                    // Check if it reverts
+                    await expect(
+                        protocol.vCWETH.connect(signers.ethWhale)
+                            .deposit(ethers.utils.parseEther("1"), signers.ethWhale.address)
+                    ).to.be.revertedWith("insufficient RPL coverage");
                 });
             });
             describe("when minting hits the bottom threshold (minWethRplRatio)", async function() {
