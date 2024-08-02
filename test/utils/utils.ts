@@ -169,10 +169,12 @@ export const assertSingleTransferExists = async (
   }
 };
 
-export async function deployMinipool(setupData: SetupData, bondValue: BigNumber) {
+export async function deployMinipool(setupData: SetupData, bondValue: BigNumber, subNodeOperator: string) {
   const salt = 3;
 
-  const depositData = await generateDepositData(setupData.protocol.superNode.address, salt);
+  const {rawSalt, pepperedSalt} = await approvedSalt(salt, subNodeOperator);
+
+  const depositData = await generateDepositData(setupData.protocol.superNode.address, pepperedSalt);
 
   const config = {
     timezoneLocation: 'Australia/Brisbane',
@@ -181,7 +183,7 @@ export async function deployMinipool(setupData: SetupData, bondValue: BigNumber)
     validatorPubkey: depositData.depositData.pubkey,
     validatorSignature: depositData.depositData.signature,
     depositDataRoot: depositData.depositDataRoot,
-    salt: salt,
+    salt: pepperedSalt,
     expectedMinipoolAddress: depositData.minipoolAddress,
   };
   console.log('fdasdfa;as');
@@ -189,7 +191,7 @@ export async function deployMinipool(setupData: SetupData, bondValue: BigNumber)
   const { sig, timestamp } = await approveHasSignedExitMessageSig(
     setupData,
     '0x' + config.expectedMinipoolAddress,
-    config.salt
+    config.salt,
   );
 
   // can probz delete this line
@@ -198,7 +200,7 @@ export async function deployMinipool(setupData: SetupData, bondValue: BigNumber)
   //})
 
   console.log('aljsdf;as');
-  await setupData.protocol.superNode.connect(setupData.signers.hyperdriver).createMinipool(config.validatorPubkey, config.validatorSignature, config.depositDataRoot, config.salt, config.expectedMinipoolAddress, timestamp, sig, { value: ethers.utils.parseEther('1') });
+  await setupData.protocol.superNode.connect(setupData.signers.hyperdriver).createMinipool(config.validatorPubkey, config.validatorSignature, config.depositDataRoot, rawSalt, config.expectedMinipoolAddress, timestamp, sig, { value: ethers.utils.parseEther('1') });
 
   console.log('aljsdf;as');
 
@@ -325,8 +327,11 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
       await assertAddOperator(setupData, nodeOperator);
     }
 
-    const depositData = await generateDepositData(protocol.superNode.address, salt);
+    const {rawSalt, pepperedSalt} = await approvedSalt(salt, nodeOperator.address);
 
+    const depositData = await generateDepositData(protocol.superNode.address, pepperedSalt);
+
+    
     const config = {
       timezoneLocation: 'Australia/Brisbane',
       bondAmount: bond,
@@ -334,7 +339,7 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
       validatorPubkey: depositData.depositData.pubkey,
       validatorSignature: depositData.depositData.signature,
       depositDataRoot: depositData.depositDataRoot,
-      salt: salt,
+      salt: pepperedSalt,
       expectedMinipoolAddress: depositData.minipoolAddress,
     };
 
@@ -345,16 +350,17 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
     });
     await setupData.rocketPool.rocketDepositPoolContract.assignDeposits();
 
+
     const { sig, timestamp } = await approveHasSignedExitMessageSig(
       setupData,
       '0x' + config.expectedMinipoolAddress,
-      config.salt
+      config.salt,
     );
     console.log('ETH balance of OD before create for operator ', i, await ethers.provider.getBalance(protocol.operatorDistributor.address));
     console.log('RPL balance of OD before create operator ', i, await setupData.rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address));
     await protocol.superNode
       .connect(nodeOperator)
-      .createMinipool(config.validatorPubkey, config.validatorSignature, config.depositDataRoot, config.salt, config.expectedMinipoolAddress, timestamp, sig, { value: ethers.utils.parseEther('1') });
+      .createMinipool(config.validatorPubkey, config.validatorSignature, config.depositDataRoot, rawSalt, config.expectedMinipoolAddress, timestamp, sig, { value: ethers.utils.parseEther('1') });
 
     // Simulate the passage of a day
     const oneDayInSeconds = 24 * 60 * 60;
@@ -372,10 +378,19 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
   return minipools;
 };
 
+export const approvedSalt = async (
+  salt: number,
+  subNodeOperator: string
+) => {
+  const subNodeOpSalt = ethers.utils.keccak256(ethers.utils.solidityPack(['uint256', 'address'], [salt, subNodeOperator]));
+  const subNodeOpSaltBigNumber = ethers.BigNumber.from(subNodeOpSalt);
+  return {rawSalt: salt, pepperedSalt: subNodeOpSaltBigNumber};
+}
+
 export const approveHasSignedExitMessageSig = async (
   setupData: SetupData,
   expectedMinipoolAddress: string,
-  salt: number
+  salt: BigNumber,
 ) => {
   const goodSigner = setupData.signers.adminServer;
   const role = await setupData.protocol.directory.hasRole(
