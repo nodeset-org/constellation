@@ -23,13 +23,13 @@ import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/Oracles/IXRETHOracle.sol';
 import '../Interfaces/IWETH.sol';
 
+import '../Tokens/WETHVault.sol';
+
 import '../Utils/ProtocolMath.sol';
 import '../Utils/Constants.sol';
 import '../Utils/Errors.sol';
 
 import 'hardhat/console.sol';
-
-// WE NOW ASSUME WE ONLY SUPPORT STAKING WITH LEB8s
 
 /**
  * @title SuperNodeAccount
@@ -63,12 +63,19 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     // List of all minipools
     address[] public minipools;
+
+    struct Minipool {
+        address subNodeOperator;
+        uint256 treasuryFee;
+        uint256 noFee;
+    }
+
     // Mapping of minipool address to its index in the minipools array
     mapping(address => uint256) public minipoolIndex;
     // Mapping of sub-node operator address to their list of minipools
     mapping(address => address[]) public subNodeOperatorMinipools;
     // Mapping of minipools to sub-node operator addresses
-    mapping(address => address) public minipoolToOperator;
+    mapping(address => Minipool) public minipoolData;
     // Index for the current minipool being processed
     uint256 public currentMinipool;
 
@@ -241,7 +248,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         od.rebalanceRplStake(getTotalEthStaked() + bond);
 
         subNodeOperatorMinipools[subNodeOperator].push(_expectedMinipoolAddress);
-        minipoolToOperator[_expectedMinipoolAddress] = subNodeOperator;
+        WETHVault wethVault = WETHVault(getDirectory().getWETHVaultAddress());
+        minipoolData[_expectedMinipoolAddress] = Minipool(subNodeOperator, wethVault.treasuryFee(), wethVault.nodeOperatorFee());
 
         console.log('_createMinipool()');
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: bond}(
@@ -507,6 +515,10 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      */
     function setLockUpTime(uint256 _newLockUpTime) external onlyShortTimelock {
         lockUpTime = _newLockUpTime;
+    }
+
+    function getSubNodeOpFromMinipool(address minipoolAddress) public view returns (address) {
+        return minipoolData[minipoolAddress].subNodeOperator;
     }
 
     /**

@@ -220,7 +220,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     /**
      * @notice Sets the treasury fee in basis points.
      * @dev This function allows the admin to update the treasury fee, which is calculated in basis points.
-     * The fee must not exceed 100%.
+     * This fee and the total fee must not exceed 100%.
      * @param _treasuryFee The new treasury fee in basis points.
      */
     function setTreasuryFee(uint256 _treasuryFee) external onlyMediumTimelock {
@@ -232,13 +232,28 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     /**
      * @notice Sets the node operator fee in basis points.
      * @dev This function allows the admin to update the node operator fee, which is calculated in basis points.
-     * The fee must not exceed 100%.
+     * This fee and the total fee must not exceed 100%.
      * @param _nodeOperatorFee The new node operator fee in basis points.
      */
-    function setNodeOperatorFee(uint256 _nodeOperatorFee) external onlyShortTimelock {
+    function setNodeOperatorFee(uint256 _nodeOperatorFee) external onlyMediumTimelock {
         require(_nodeOperatorFee <= 1e18, 'Fee too high');
         require(treasuryFee + _nodeOperatorFee <= 1e18, 'Total fees cannot exceed 100%');
         nodeOperatorFee = _nodeOperatorFee;
+    }
+
+    /**
+     * @notice Sets protocol fees in basis points.
+     * @dev This function allows the admin to update the node operator fee, which is calculated in basis points.
+     * The total fee must not exceed 100%.
+     * @param _nodeOperatorFee The new node operator fee in basis points.
+     * @param _treasuryFee The new treasury fee in basis points.
+     */
+    function setProtocolFees(uint256 _nodeOperatorFee, uint256 _treasuryFee) external onlyMediumTimelock {
+        require(_treasuryFee <= 1e18, 'Fee too high');
+        require(_nodeOperatorFee <= 1e18, 'Fee too high');
+        require(_treasuryFee + _nodeOperatorFee <= 1e18, 'Total fees cannot exceed 100%');
+        nodeOperatorFee = _nodeOperatorFee;
+        treasuryFee = _treasuryFee;
     }
 
     /**
@@ -267,7 +282,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     function getSignedTreasuryPortion(int256 _amount) external view returns (int256) {
-        return _amount * int256(treasuryFee) / 1e5;
+        return _amount * int256(treasuryFee) / 1e18;
     }
 
     function getNodeOperatorPortion(uint256 _amount) external view returns (uint256)  {
@@ -275,6 +290,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     function getSignedNodeOperatorPortion(int256 _amount) external view returns (int256)  {
-        return _amount * int256(nodeOperatorFee) / 1e5;
+        return _amount * int256(nodeOperatorFee) / 1e18;
     }
 }
