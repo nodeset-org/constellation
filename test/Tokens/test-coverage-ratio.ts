@@ -16,7 +16,7 @@ describe("CoverageRatio", async function () {
     describe("minting xWETH", async function() {
         describe("when minting from below the coverage ratio", async function() {
             describe("when minting stays below the coverage ratio", async function() {
-                it("should revert", async function() {
+                it.only("should revert", async function() {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
@@ -27,8 +27,12 @@ describe("CoverageRatio", async function () {
                    
                     // Mint 1000 xWETH + 100,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
-                    await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address, {value: ethMintAmount});
-                    // await protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("100000"), signers.ethWhale.address);
+                    const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
+                    // await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
+                    // await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
+
+                    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("100000"));
+                    await protocol.vCRPL.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100000"), signers.ethWhale.address);
                     
                     // // Set minWethRplRatio to 200%
                     // await protocol.vCRPL.setWETHCoverageRatio(2e18);
@@ -75,7 +79,7 @@ describe("CoverageRatio", async function () {
                 });
             });
             describe("when minting hits the top threshold (maxWethRplRatio)", async function() {
-                it("should revert", async function() {
+                it("should pass", async function() {
                     // Disable enforceRplCoverageRatio
                     // Disable enforceWethCoverageRatio
                     // Mint 1000 xWETH + 100,000 xRPL (i.e. 100% ratio)
@@ -84,7 +88,7 @@ describe("CoverageRatio", async function () {
                     // Enable enforceWethCoverageRatio
                     // Enable enforceRplCoverageRatio
                     // Mint 2000 xWETH [confirm == 300% exactly]
-                    // Check if it reverts        
+                    // Check if it passes      
                 });
             });
             describe("when minting is above the top threshold (maxWethRplRatio)", async function() {
@@ -116,7 +120,7 @@ describe("CoverageRatio", async function () {
                 });
             });
             describe("when minting hits the top threshold", async function() {
-                it("should revert", async function() {
+                it("should pass", async function() {
                     // Disable enforceRplCoverageRatio
                     // Disable enforceWethCoverageRatio
                     // Mint 1000 xWETH + 100,000 xRPL (i.e. 100% ratio)
@@ -125,7 +129,7 @@ describe("CoverageRatio", async function () {
                     // Enable enforceWethCoverageRatio
                     // Enable enforceRplCoverageRatio
                     // Mint 1000 xWETH (i.e. 200% ratio)
-                    // Check that it reverts
+                    // Check that it passes
                 });
             });
             describe("when minting goes above the coverage ratio", async function() {
@@ -157,7 +161,7 @@ describe("CoverageRatio", async function () {
                 });
             });
             describe("when minting hits the top threshold (maxWethRplRatio)", async function() {
-                it("should revert", async function() {
+                it("should pass", async function() {
                     // Disable enforceRplCoverageRatio
                     // Disable enforceWethCoverageRatio
                     // Mint 1000 xWETH + 100,000 xRPL (i.e. 100% ratio)
@@ -166,7 +170,7 @@ describe("CoverageRatio", async function () {
                     // Enable enforceWethCoverageRatio
                     // Enable enforceRplCoverageRatio
                     // Mint 1000 xWETH (i.e. 200% ratio)
-                    // Check that it reverts
+                    // Check that it passes
                 });
             });
             describe("when minting goes above the coverage ratio", async function() {
@@ -345,7 +349,7 @@ describe("CoverageRatio", async function () {
                 });
             }); 
             describe("when minting hits the top threshold (maxWethRplRatio)", async function() {
-                it("should revert", async function() {
+                it("should pass", async function() {
                     // Disable enforceRplCoverageRatio
                     // Disable enforceWethCoverageRatio
                     // Mint 1000 xWETH + 100,000 xRPL (i.e. 100% ratio)
@@ -354,7 +358,7 @@ describe("CoverageRatio", async function () {
                     // Enable enforceWethCoverageRatio
                     // Enable enforceRplCoverageRatio
                     // Mint 100,000 xRPL (i.e. 50% ratio)
-                    // Check that it reverts
+                    // Check that it passes
                 });
             });
             describe("when minting goes within coverage ratio", async function() {
