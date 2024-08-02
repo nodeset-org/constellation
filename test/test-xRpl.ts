@@ -154,7 +154,8 @@ describe("xRPL", function () {
     const rocketMDM = await ethers.getContractAt("RocketMerkleDistributorMainnet", await protocol.directory.getRocketMerkleDistributorMainnetAddress());
     await rocketMDM.useMock();
 
-    const rocketVault = await ethers.getContractAt("RocketVaultInterface", await rocketPool.rockStorageContract.getAddress(await rocketMDM.rocketVaultKey()));
+    const rocketVault = await ethers.getContractAt("RocketVault", await rocketPool.rockStorageContract.getAddress(await rocketMDM.rocketVaultKey()));
+    rocketVault.useMock();
 
     const rplReward = ethers.utils.parseEther("100");
     const ethReward = ethers.utils.parseEther("100");
