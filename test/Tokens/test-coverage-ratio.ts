@@ -6,12 +6,12 @@ describe("CoverageRatio", async function () {
     describe("minting xWETH", async function() {
         describe("when minting from below the coverage ratio", async function() {
             describe("when minting stays below the coverage ratio", async function() {
-                it("should revert", async function() {
+                it.only("should revert", async function() {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -28,9 +28,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
 
                     // Set minWethRplRatio to 200%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("2000000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("2000000000000000000"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
 
                     // Mint 1 xWETH
                     // Check if it reverts
@@ -46,8 +46,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -64,9 +64,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
 
                     // Set minWethRplRatio to 200%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("2000000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("2000000000000000000"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
                     
                     // Mint 100 xWETH 
                     // Check if it reverts                    
@@ -81,8 +81,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
                    
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -99,9 +99,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
 
                     // Set minWethRplRatio to 101%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("1010000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("1010000000000000000"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
                     
                     // Mint 100 xWETH (i.e. 200% ratio)
                     // Check that it passes      
@@ -116,8 +116,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
@@ -133,9 +133,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
 
                     // Set minWethRplRatio to 200%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("2000000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("2000000000000000000"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
 
 
                     // Mint 2000 xWETH [confirm == 300% exactly]
@@ -151,8 +151,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
@@ -168,9 +168,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                     
                     // Set minWethRplRatio to 101%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("1010000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("1010000000000000000"));
                     // Set maxWethRplRatio to 102%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("1020000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("1020000000000000000"));
 
 
                     // Mint 100 xWETH (i.e. 200% ratio)
@@ -188,8 +188,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
@@ -205,9 +205,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                     
                     // Set minWethRplRatio to 100%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("1000000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("1000000000000000000"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
 
 
                     // Mint 100 xWETH (i.e. 200% ratio)
@@ -223,8 +223,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -241,9 +241,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
 
                     // Set minWethRplRatio to 100%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("1000000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("1000000000000000000"));
                     // Set maxWethRplRatio to 200%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("2000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("2000000000000000000"));
 
 
                     // Mint 100 xWETH (i.e. 200% ratio)
@@ -259,8 +259,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -277,9 +277,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
 
                     // Set minWethRplRatio to 100%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("1000000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("1000000000000000000"));
                     // Set maxWethRplRatio to 200%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("2000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("2000000000000000000"));
 
 
                     // Mint 2000 xWETH (i.e. 300% ratio)
@@ -297,8 +297,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
@@ -313,9 +313,9 @@ describe("CoverageRatio", async function () {
                     await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                     // Set minWethRplRatio to 50%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from('500000000000000000'));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from('500000000000000000'));
                     // Set maxWethRplRatio to 200%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from('2000000000000000000'));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from('2000000000000000000'));
 
                     // Mint 1 xWETH 
                     // Check that it passes
@@ -330,8 +330,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
@@ -347,9 +347,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                     
                     // Set minWethRplRatio to 50%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("500000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("500000000000000000"));
                     // Set maxWethRplRatio to 200%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("2000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("2000000000000000000"));
 
                     // Mint 100 xWETH (i.e. 200% ratio)
                     // Check that it passes
@@ -364,8 +364,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
@@ -381,9 +381,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                     
                     // Set minWethRplRatio to 50%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("500000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("500000000000000000"));
                     // Set maxWethRplRatio to 101%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("101000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("101000000000000000"));
 
                     // Mint 100 xWETH (i.e. 200% ratio)
                     // Check that it reverts
@@ -402,8 +402,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
@@ -419,9 +419,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                     
                     // Set minWethRplRatio to 50%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("500000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("500000000000000000"));
                     // Set maxWethRplRatio to 100%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("1000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("1000000000000000000"));
 
                     // Mint 1 xWETH
                     // Check that it reverts
@@ -439,8 +439,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
@@ -456,9 +456,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                     
                     // Set minWethRplRatio to 50%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("500000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("500000000000000000"));
                     // Set maxWethRplRatio to 55%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("550000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("550000000000000000"));
 
                     // Mint 1 xWETH
                     // Check that it reverts
@@ -478,8 +478,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -496,9 +496,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                     
                     // Set minWethRplRatio to 200%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("2000000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("2000000000000000000"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it reverts
@@ -517,8 +517,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -535,9 +535,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                     
                     // Set minWethRplRatio to 100%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("1000000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("1000000000000000000"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it reverts
@@ -554,8 +554,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -572,9 +572,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                    
                     // Set minWethRplRatio to 1%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("100000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("100000000000000000"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it passes
@@ -590,8 +590,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -608,9 +608,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
 
                     // Set minWethRplRatio to 50%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("500000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("500000000000000000"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it reverts
@@ -626,8 +626,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -644,9 +644,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
 
                     // Set minWethRplRatio to 75%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("750000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("750000000000000000"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it reverts
@@ -664,8 +664,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -682,9 +682,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                    
                     // Set minWethRplRatio to 10%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("100000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("100000000000000000"));
                     // Set maxWethRplRatio to 100%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("1000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("1000000000000000000"));
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it passes
@@ -700,8 +700,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -718,9 +718,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                     
                     // Set minWethRplRatio to 50%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("500000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("500000000000000000"));
                     // Set maxWethRplRatio to 100%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("1000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("1000000000000000000"));
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it reverts
@@ -736,8 +736,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -754,9 +754,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                     
                     // Set minWethRplRatio to 75%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("750000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("750000000000000000"));
                     // Set maxWethRplRatio to 100%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("1000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("1000000000000000000"));
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it reverts
@@ -774,8 +774,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -792,9 +792,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                    
                     // Set minWethRplRatio to 1%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("100000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("100000000000000000"));
                     // Set maxWethRplRatio to 20%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from(2e4));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from(2e4));
                     
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it reverts
@@ -810,8 +810,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -828,9 +828,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                     
                     // Set minWethRplRatio to 1%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("100000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("100000000000000000"));
                     // Set maxWethRplRatio to 70%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("7000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("7000000000000000000"));
 
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
@@ -847,8 +847,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -865,9 +865,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
 
                     // Set minWethRplRatio to 1%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("100000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("100000000000000000"));
                     // Set maxWethRplRatio to 70%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("7000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("7000000000000000000"));
 
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
@@ -884,8 +884,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -902,9 +902,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                    
                     // Set minWethRplRatio to 50%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("500000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("500000000000000000"));
                     // Set maxWethRplRatio to 70%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("7000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("7000000000000000000"));
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it reverts
@@ -920,8 +920,8 @@ describe("CoverageRatio", async function () {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from(0));
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.constants.MaxUint256);
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -938,9 +938,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                     
                     // Set minWethRplRatio to 55%
-                    await protocol.vCRPL.connect(signers.admin).setWETHCoverageRatio(ethers.BigNumber.from("5500000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("5500000000000000000"));
                     // Set maxWethRplRatio to 70%
-                    await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(ethers.BigNumber.from("7000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("7000000000000000000"));
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it reverts
