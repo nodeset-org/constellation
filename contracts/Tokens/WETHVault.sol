@@ -267,7 +267,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     function getSignedTreasuryPortion(int256 _amount) external view returns (int256) {
-        return _amount * int256(treasuryFee) / 1e5;
+        return _amount * int256(treasuryFee) / 1e18;
     }
 
     function getNodeOperatorPortion(uint256 _amount) external view returns (uint256)  {
@@ -275,6 +275,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     function getSignedNodeOperatorPortion(int256 _amount) external view returns (int256)  {
-        return _amount * int256(nodeOperatorFee) / 1e5;
+        return _amount * int256(nodeOperatorFee) / 1e18;
     }
 }
