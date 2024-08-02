@@ -224,6 +224,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function setTreasuryFee(uint256 _treasuryFee) external onlyMediumTimelock {
         require(_treasuryFee <= 1e18, 'Fee too high');
+        require(_treasuryFee + nodeOperatorFee <= 1e18, 'Total fees cannot exceed 100%');
         treasuryFee = _treasuryFee;
     }
 
@@ -235,6 +236,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function setNodeOperatorFee(uint256 _nodeOperatorFee) external onlyShortTimelock {
         require(_nodeOperatorFee <= 1e18, 'Fee too high');
+        require(treasuryFee + _nodeOperatorFee <= 1e18, 'Total fees cannot exceed 100%');
         nodeOperatorFee = _nodeOperatorFee;
     }
 
