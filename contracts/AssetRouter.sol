@@ -196,6 +196,7 @@ contract AssetRouter is UpgradeableBase {
     function onEthRewardsReceived(uint256 _amount) external onlyProtocol {
         IWETH weth = IWETH(_directory.getWETHAddress());
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
+        OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
 
         uint256 treasuryPortion = vweth.getTreasuryPortion(_amount);
         uint256 nodeOperatorPortion = vweth.getNodeOperatorPortion(_amount);
@@ -217,6 +218,7 @@ contract AssetRouter is UpgradeableBase {
         console.log('onEthRewardsReceived.treasuryPortion', treasuryPortion);
         console.log('onEthRewardsReceived.nodeOperatorFee', nodeOperatorPortion);
         balanceWeth += communityPortion;
+        od.onIncreaseOracleError(communityPortion);
     }
 
     function onRplRewardsRecieved(uint256 _amount) external onlyProtocol {

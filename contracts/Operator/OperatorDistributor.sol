@@ -358,7 +358,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             console.log('rewards recieved', rewards);
             ar.onEthRewardsReceived(rewards);
 
-            oracleError += rewards;
         } else {
             // the minipool is exited
             ar.onExitedMinipool(minipool);
@@ -407,6 +406,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      */
     function resetOracleError() external onlyProtocol {
         oracleError = 0;
+    }
+
+    function onIncreaseOracleError(uint256 _amount) external onlyProtocol {
+        oracleError += _amount;
     }
 
     function onEthBalanceIncrease(uint256 _amount) external payable onlyProtocol {
