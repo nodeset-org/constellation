@@ -74,7 +74,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             return;
         }
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
-        uint256 ratio = tvlRatioEthRpl(assets, true);
         require(tvlRatioEthRpl(assets, true) < maxWethRplRatio, 'insufficient RPL coverage');
         super._deposit(caller, receiver, assets, shares);
 

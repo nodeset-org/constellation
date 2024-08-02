@@ -65,7 +65,6 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         }
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
 
-        uint256 ratio = vweth.tvlRatioEthRpl(assets, false);
         require(vweth.tvlRatioEthRpl(assets, false) > minWethRplRatio, 'insufficient weth coverage ratio');
 
         AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
