@@ -72,19 +72,21 @@ describe("xRPL", function () {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
+    const deposit = ethers.utils.parseEther("1000000");
+
     await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
     await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
-    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, ethers.utils.parseEther("1000000"));
+    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, deposit);
     await assertAddOperator(setupData, signers.random);
 
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random2.address, ethers.utils.parseEther("100"));
     await assertAddOperator(setupData, signers.random2);
 
-    await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("1000000"));
-    await protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("1000000"), signers.random.address);
+    await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, deposit);
+    await protocol.vCRPL.connect(signers.random).deposit(deposit, signers.random.address);
 
-    const expectedRplInSystem = ethers.utils.parseEther("1000000");
+    const expectedRplInSystem = deposit;
     const actualRplInSystem = await protocol.vCRPL.totalAssets();
     expect(expectedRplInSystem).equals(actualRplInSystem)
 
