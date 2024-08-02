@@ -325,33 +325,44 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         rebalanceRplStake(sna.getTotalEthStaked());
 
         IMinipool minipool = sna.getNextMinipool();
-        if (address(minipool) != address(0)) {
-            uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
-            AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
-            if (totalBalance < 8 ether) {
-                // minipool is still staking
-                // track incoming eth
-                ar.openGate();
-                uint256 initalBalance = address(ar).balance;
+        if (address(minipool) == address(0)) {
+            return;
+        }
 
-                console.log('withdrawal address before skim', _directory.getAssetRouterAddress().balance);
-                ar.onClaimSkimmedRewards(minipool);
-                console.log('withdrawal address after skim', _directory.getAssetRouterAddress().balance);
+        MinipoolStatus status = minipool.getStatus();
+        if (minipool.getFinalised() || status != MinipoolStatus.Staking) {
+            return;
+        }
 
-                uint256 finalBalance = address(ar).balance;
-                ar.closeGate();
-                console.log('finalBalance', finalBalance);
-                console.log('initalBalance', initalBalance);
-                uint256 rewards = finalBalance - initalBalance;
-                console.log('rewards recieved', rewards);
-                ar.onEthRewardsRecieved(rewards);
+        uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
+        if (totalBalance == 0) {
+            return;
+        }
 
-                oracleError += rewards;
-            } else {
-                // the minipool is exited
-                ar.onExitedMinipool(minipool);
-                this.onNodeMinipoolDestroy(sna.minipoolToOperator(address(minipool)));
-            }
+        AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
+        if (totalBalance < 8 ether) {
+            // minipool is still staking
+            // track incoming eth
+            ar.openGate();
+            uint256 initalBalance = address(ar).balance;
+
+            console.log('withdrawal address before skim', _directory.getAssetRouterAddress().balance);
+            ar.onClaimSkimmedRewards(minipool);
+            console.log('withdrawal address after skim', _directory.getAssetRouterAddress().balance);
+
+            uint256 finalBalance = address(ar).balance;
+            ar.closeGate();
+            console.log('finalBalance', finalBalance);
+            console.log('initalBalance', initalBalance);
+            uint256 rewards = finalBalance - initalBalance;
+            console.log('rewards recieved', rewards);
+            ar.onEthRewardsRecieved(rewards);
+
+            oracleError += rewards;
+        } else {
+            // the minipool is exited
+            ar.onExitedMinipool(minipool);
+            this.onNodeMinipoolDestroy(sna.minipoolToOperator(address(minipool)));
         }
     }
 
