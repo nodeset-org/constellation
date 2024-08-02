@@ -48,7 +48,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
         liquidityReserveRatio = 0.1e18; // 10% of TVL
-        maxWethRplRatio = 400e18; // 400% at start (4 ETH of xrETH for 1 ETH of xRPL)
+        maxWethRplRatio = 40e18; // 400% at start (4 ETH of xrETH for 1 ETH of xRPL)
 
         // default fees with 14% rETH commission mean WETHVault share returns are equal to base ETH staking rewards
         treasuryFee = 0.14788e18; 
@@ -74,7 +74,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             return;
         }
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
-
+        uint256 ratio = tvlRatioEthRpl(assets, true);
+        console.log('ratio', ratio);
+        console.log('maxWethRplRatio', maxWethRplRatio);
+        console.log('requireCheck', ratio < maxWethRplRatio);
         require(tvlRatioEthRpl(assets, true) < maxWethRplRatio, 'insufficient RPL coverage');
         super._deposit(caller, receiver, assets, shares);
 
