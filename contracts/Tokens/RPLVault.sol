@@ -100,7 +100,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
-
+        require(balanceRpl >= assets, 'Not enough liquidity to withdraw');
         // required violation of CHECKS/EFFECTS/INTERACTIONS
 
         balanceRpl -= assets;
@@ -166,10 +166,10 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @dev This function allows the admin to adjust the WETH coverage ratio.
      * The ratio determines the minimum coverage required to ensure the contract's health and stability.
      * It's expressed in base points, where 1e18 represents 100%.
-     * @param _wethCoverageRatio The new WETH coverage ratio to be set (in base points).
+     * @param _minWethRplRatio The new WETH coverage ratio to be set (in base points).
      */
-    function setWETHCoverageRatio(uint256 _wethCoverageRatio) external onlyShortTimelock {
-        minWethRplRatio = _wethCoverageRatio;
+    function setMinWethRplRatio(uint256 _minWethRplRatio) external onlyShortTimelock {
+        minWethRplRatio = _minWethRplRatio;
     }
 
     /**

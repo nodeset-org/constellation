@@ -107,7 +107,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
+        require(balanceWeth >= assets, 'Not enough liquidity to withdraw');
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
+
 
         balanceWeth -= assets;
 
@@ -210,10 +212,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     /**
      * @notice Sets the RPL coverage ratio for the vault.
      * @dev This function allows the admin to update the RPL coverage ratio, which determines the minimum RPL coverage required for the vault's health.
-     * @param _rplCoverageRatio The new RPL coverage ratio to be set.
+     * @param _maxWethRplRatio The new RPL coverage ratio to be set.
      */
-    function setRplCoverageRatio(uint256 _rplCoverageRatio) external onlyShortTimelock {
-        maxWethRplRatio = _rplCoverageRatio;
+    function setMaxWethRplRatio(uint256 _maxWethRplRatio) external onlyShortTimelock {
+        maxWethRplRatio = _maxWethRplRatio;
     }
 
     /**
