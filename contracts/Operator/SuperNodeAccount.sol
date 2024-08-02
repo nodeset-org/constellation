@@ -239,8 +239,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         subNodeOperatorMinipools[subNodeOperator].push(_expectedMinipoolAddress);
         WETHVault wethVault = WETHVault(getDirectory().getWETHVaultAddress());
-        minipoolData[_expectedMinipoolAddress] = 
-            Minipool(subNodeOperator, wethVault.treasuryFee(), wethVault.nodeOperatorFee());
+        minipoolData[_expectedMinipoolAddress] = Minipool(subNodeOperator, wethVault.treasuryFee(), wethVault.nodeOperatorFee());
 
         console.log('_createMinipool()');
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: bond}(
