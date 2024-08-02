@@ -91,7 +91,7 @@ describe("Operator Distributor", function () {
 		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
 
 		// getSettingUint('node.per.minipool.stake.minimum');
-		await rocketPool.rockStorageContract.setUint("0x2667306bf1c3fdbd6985406babb7b6f4af682212c96c7461d13f2c6e46339fe5", ethers.utils.parseEther(".3"));
+		//await rocketPool.rockStorageContract.setUint("0x2667306bf1c3fdbd6985406babb7b6f4af682212c96c7461d13f2c6e46339fe5", ethers.utils.parseEther(".3"));
 
 		await operatorDistributor.connect(admin).setTargetStakeRatio(ethers.utils.parseEther("1"));
 
@@ -99,7 +99,7 @@ describe("Operator Distributor", function () {
 
 		let initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
 		expect(initialRplStake).equals(0)
-		await prepareOperatorDistributionContract(setupData, 2);
+		await prepareOperatorDistributionContract(setupData, 1);
 		await registerNewValidator(setupData, [signers.random]);
 		console.log("p=rpl stake after depo", await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address));
 
