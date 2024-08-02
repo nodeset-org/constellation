@@ -68,7 +68,7 @@ describe("xRPL", function () {
     expect(expectedRplInSystem).equals(actualRplInSystem)
   })
 
-  it("success - tries to deposit 100 rpl then withdraws 100 rpl immediately", async () => {
+  it("success - tries to deposit 100, then 1000000 rpl, then withdraws 100 rpl immediately", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 

@@ -19,7 +19,7 @@ describe("xrETH", function () {
     expect(name).equals("Constellation ETH");
     expect(symbol).equals("xrETH");
     expect(await protocol.vCWETH.liquidityReserveRatio()).equals(ethers.utils.parseUnits("0.1", 18))
-    expect(await protocol.vCWETH.maxWethRplRatio()).equals(ethers.utils.parseUnits("400", 18))
+    expect(await protocol.vCWETH.maxWethRplRatio()).equals(ethers.utils.parseUnits("40", 18))
     expect(await protocol.vCWETH.treasuryFee()).equals(ethers.utils.parseUnits("0.14788", 18))
     expect(await protocol.vCWETH.nodeOperatorFee()).equals(ethers.utils.parseUnits("0.14788", 18))
   })
@@ -190,7 +190,7 @@ describe("xrETH", function () {
       const { protocol, signers } = await loadFixture(protocolFixture);
 
       const tvlCoverageRatio = ethers.utils.parseEther("0.1542069");
-      await protocol.vCWETH.connect(signers.admin).setRplCoverageRatio(tvlCoverageRatio);
+      await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(tvlCoverageRatio);
 
       const tvlCoverageRatioFromContract = await protocol.vCWETH.maxWethRplRatio();
       expect(tvlCoverageRatioFromContract).equals(tvlCoverageRatio);
@@ -200,7 +200,7 @@ describe("xrETH", function () {
       const { protocol, signers } = await loadFixture(protocolFixture);
 
       const tvlCoverageRatio = ethers.utils.parseEther("0.1542069");
-      await expect(protocol.vCWETH.connect(signers.ethWhale).setRplCoverageRatio(tvlCoverageRatio)).to.be.revertedWith("Can only be called by short timelock!");
+      await expect(protocol.vCWETH.connect(signers.ethWhale).setMaxWethRplRatio(tvlCoverageRatio)).to.be.revertedWith("Can only be called by short timelock!");
     });
   });
 
