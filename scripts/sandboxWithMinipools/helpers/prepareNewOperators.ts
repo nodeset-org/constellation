@@ -7,6 +7,7 @@ import { types } from '@chainsafe/lodestar-types/lib/ssz/presets/mainnet';
 import { DepositData } from '@chainsafe/lodestar-types';
 import { keccak256 } from 'ethereumjs-util';
 import { bls12_381 as bls } from '@noble/curves/bls12-381';
+import { singleQuote } from '../../../prettier.config';
 
 export const prepareNewOperators = async (setupData: SetupData): Promise<[SetupData, NewOperator[]]> => {
   console.log('Preparing new operators...');
@@ -75,7 +76,8 @@ const makeOperator = async (signerKey: keyof Signers, setupData: SetupData, salt
   const exitMessageSignature = await approveHasSignedExitMessageSig(
     setupData,
     '0x' + expectedMinipoolAddress,
-    salt
+    salt,
+    signer.address
   );
 
   return {

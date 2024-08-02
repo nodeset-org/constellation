@@ -169,7 +169,7 @@ export const assertSingleTransferExists = async (
   }
 };
 
-export async function deployMinipool(setupData: SetupData, bondValue: BigNumber) {
+export async function deployMinipool(setupData: SetupData, bondValue: BigNumber, subNodeOperator: string) {
   const salt = 3;
 
   const depositData = await generateDepositData(setupData.protocol.superNode.address, salt);
@@ -189,7 +189,8 @@ export async function deployMinipool(setupData: SetupData, bondValue: BigNumber)
   const { sig, timestamp } = await approveHasSignedExitMessageSig(
     setupData,
     '0x' + config.expectedMinipoolAddress,
-    config.salt
+    config.salt,
+    subNodeOperator
   );
 
   // can probz delete this line
@@ -348,7 +349,8 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
     const { sig, timestamp } = await approveHasSignedExitMessageSig(
       setupData,
       '0x' + config.expectedMinipoolAddress,
-      config.salt
+      config.salt,
+      nodeOperator.address
     );
     console.log('ETH balance of OD before create for operator ', i, await ethers.provider.getBalance(protocol.operatorDistributor.address));
     console.log('RPL balance of OD before create operator ', i, await setupData.rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address));
@@ -372,10 +374,19 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
   return minipools;
 };
 
+export const approvedSalt = async (
+  salt: number,
+  subNodeOperator: string
+) => {
+  const subNodeOpSalt = ethers.utils.keccak256(ethers.utils.solidityPack(['uint256', 'address'], [salt, subNodeOperator]));
+  const subNodeOpSaltBigNumber = ethers.BigNumber.from(subNodeOpSalt);
+  return {rawSalt: salt, pepperedSalt: subNodeOpSaltBigNumber};
+}
+
 export const approveHasSignedExitMessageSig = async (
   setupData: SetupData,
   expectedMinipoolAddress: string,
-  salt: number
+  salt: BigNumber,
 ) => {
   const goodSigner = setupData.signers.adminServer;
   const role = await setupData.protocol.directory.hasRole(

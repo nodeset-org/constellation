@@ -98,7 +98,7 @@ describe("xRPL", function () {
     ])
   })
 
-  it("success - tries to deposit and redeem from weth vault multiple times", async () => {
+  it("success - tries to deposit and redeem from rpl vault multiple times", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 

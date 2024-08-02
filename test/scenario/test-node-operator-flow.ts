@@ -69,7 +69,7 @@ describe("Node Operator Onboarding", function () {
         expect(await protocol.superNode.getTotalEthMatched()).equals(BigInt(0));
         console.log('OD ETH balance: ', ethers.provider.getBalance(setupData.protocol.operatorDistributor.address));
         console.log('OD RPL balance: ', setupData.rocketPool.rplContract.balanceOf(setupData.protocol.operatorDistributor.address));
-        minipoolAddress = await deployMinipool(setupData, bondValue);
+        minipoolAddress = await deployMinipool(setupData, bondValue, signers.hyperdriver.address);
         console.log("operator flow minipoolAddress", minipoolAddress);
 
         // Assuming signers.hyperdriver.address and minipoolAddress are defined
