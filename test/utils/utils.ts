@@ -304,14 +304,6 @@ export async function increaseEVMTime(seconds: number) {
  */
 export const registerNewValidator = async (setupData: SetupData, subNodeOperators: SignerWithAddress[]) => {
   const requiredEth = ethers.utils.parseEther('8').mul(subNodeOperators.length);
-  if ((await setupData.protocol.operatorDistributor.balanceEth()).lt(requiredEth)) {
-    throw new Error(
-      `Not enough eth in operatorDistributor contract to register ${subNodeOperators.length
-      } validators. Required ${ethers.utils.formatEther(requiredEth)} eth but only have ${ethers.utils.formatEther(
-        await setupData.protocol.operatorDistributor.balanceEth()
-      )} eth`
-    );
-  }
 
   const { protocol, signers } = setupData;
 
