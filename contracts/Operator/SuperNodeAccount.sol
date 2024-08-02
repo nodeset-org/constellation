@@ -23,13 +23,13 @@ import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/Oracles/IXRETHOracle.sol';
 import '../Interfaces/IWETH.sol';
 
+import '../Tokens/WETHVault.sol';
+
 import '../Utils/ProtocolMath.sol';
 import '../Utils/Constants.sol';
 import '../Utils/Errors.sol';
 
 import 'hardhat/console.sol';
-
-// WE NOW ASSUME WE ONLY SUPPORT STAKING WITH LEB8s
 
 /**
  * @title SuperNodeAccount
@@ -63,12 +63,29 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     // List of all minipools
     address[] public minipools;
+
+    struct Minipool {
+        address subNodeOperator;
+        uint256 treasuryFee;
+        uint256 noFee;
+    }
+
+    struct CreateMinipoolConfig {
+        bytes validatorPubkey;
+        bytes validatorSignature;
+        bytes32 depositDataRoot;
+        uint256 salt;
+        address expectedMinipoolAddress;
+        uint256 sigGenesisTime;
+        bytes sig;
+    }
+
     // Mapping of minipool address to its index in the minipools array
     mapping(address => uint256) public minipoolIndex;
     // Mapping of sub-node operator address to their list of minipools
     mapping(address => address[]) public subNodeOperatorMinipools;
     // Mapping of minipools to sub-node operator addresses
-    mapping(address => address) public minipoolToOperator;
+    mapping(address => Minipool) public minipoolData;
     // Index for the current minipool being processed
     uint256 public currentMinipool;
 
@@ -138,6 +155,14 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /**
+     * @notice Returns the total number of Constellation minipools.
+     * @return uint256 The total number of Constellation minipools.
+     */
+    function minipoolCount() external view returns (uint256) {
+        return minipools.length;
+    }
+
+    /**
      * @notice This function is responsible for the creation and initialization of a minipool based on the validator's configuration.
      *         It requires that the calling node operator is whitelisted and that the signature provided for the minipool creation is valid.
      *         It also checks for sufficient liquidity (both RPL and ETH) before proceeding with the creation.
@@ -164,21 +189,15 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      *        - depositDataRoot: Root hash of the deposit data.
      *        - salt: Random nonce used for generating the expected minipool address.
      *        - expectedMinipoolAddress: Precomputed address expected to be generated for the new minipool.
-     * @param _sig The signature provided for minipool creation, used for admin verification if pre-signed exit message checks are enabled.
+     * @notice _config.sig The signature provided for minipool creation, used for admin verification if pre-signed exit message checks are enabled.
      */
     function createMinipool(
-        bytes calldata _validatorPubkey,
-        bytes calldata _validatorSignature,
-        bytes32 _depositDataRoot,
-        uint256 _salt,
-        address _expectedMinipoolAddress,
-        uint256 _sigGenesisTime,
-        bytes memory _sig
+        CreateMinipoolConfig calldata _config
     ) public payable {
         require(msg.value == lockThreshold, 'SuperNode: must set the message value to lockThreshold');
         require(
             IRocketMinipoolManager(_directory.getRocketMinipoolManagerAddress()).getMinipoolExists(
-                _expectedMinipoolAddress
+                _config.expectedMinipoolAddress
             ) == false,
             'minipool already initialized'
         );
@@ -193,23 +212,23 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         );
         require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
 
-        _salt = uint256(keccak256(abi.encodePacked(_salt, subNodeOperator)));
+        uint256 salt = uint256(keccak256(abi.encodePacked(_config.salt, subNodeOperator)));
 
-        _validateSigUsed(_sig);
+        _validateSigUsed(_config.sig);
         OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(bond);
         if (adminServerCheck) {
-            require(block.timestamp - _sigGenesisTime < adminServerSigExpiry, 'as sig expired');
+            require(block.timestamp - _config.sigGenesisTime < adminServerSigExpiry, 'as sig expired');
             console.log('_createMinipool: message hash');
             console.logBytes32(
-                keccak256(abi.encodePacked(_expectedMinipoolAddress, _salt, address(this), block.chainid))
+                keccak256(abi.encodePacked(_config.expectedMinipoolAddress, salt, address(this), block.chainid))
             );
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
                     keccak256(
-                        abi.encodePacked(_expectedMinipoolAddress, _salt, _sigGenesisTime, address(this), block.chainid)
+                        abi.encodePacked(_config.expectedMinipoolAddress, salt, _config.sigGenesisTime, address(this), block.chainid)
                     )
                 ),
-                _sig
+                _config.sig
             );
             require(
                 _directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress),
@@ -217,33 +236,34 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             );
         }
 
-        subNodeOperatorHasMinipool[keccak256(abi.encodePacked(subNodeOperator, _expectedMinipoolAddress))] = true;
+        subNodeOperatorHasMinipool[keccak256(abi.encodePacked(subNodeOperator, _config.expectedMinipoolAddress))] = true;
 
-        lockedEth[_expectedMinipoolAddress] = msg.value;
+        lockedEth[_config.expectedMinipoolAddress] = msg.value;
         totalEthLocked += msg.value;
-        lockStarted[_expectedMinipoolAddress] = block.timestamp;
+        lockStarted[_config.expectedMinipoolAddress] = block.timestamp;
 
-        minipoolIndex[_expectedMinipoolAddress] = minipools.length;
-        minipools.push(_expectedMinipoolAddress);
+        minipoolIndex[_config.expectedMinipoolAddress] = minipools.length;
+        minipools.push(_config.expectedMinipoolAddress);
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        od.onMinipoolCreated(_expectedMinipoolAddress, subNodeOperator);
+        od.onMinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator);
         od.rebalanceRplStake(getTotalEthStaked() + bond);
 
-        subNodeOperatorMinipools[subNodeOperator].push(_expectedMinipoolAddress);
-        minipoolToOperator[_expectedMinipoolAddress] = subNodeOperator;
+        subNodeOperatorMinipools[subNodeOperator].push(_config.expectedMinipoolAddress);
+        WETHVault wethVault = WETHVault(getDirectory().getWETHVaultAddress());
+        minipoolData[_config.expectedMinipoolAddress] = Minipool(subNodeOperator, wethVault.treasuryFee(), wethVault.nodeOperatorFee());
 
         console.log('_createMinipool()');
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: bond}(
             bond,
             minimumNodeFee,
-            _validatorPubkey,
-            _validatorSignature,
-            _depositDataRoot,
-            _salt,
-            _expectedMinipoolAddress
+            _config.validatorPubkey,
+            _config.validatorSignature,
+            _config.depositDataRoot,
+            salt,
+            _config.expectedMinipoolAddress
         );
-        IMinipool minipool = IMinipool(_expectedMinipoolAddress);
+        IMinipool minipool = IMinipool(_config.expectedMinipoolAddress);
         console.log('_createMinipool.status', uint256(minipool.getStatus()));
         console.log('finished creating minipool without revert from deposit to casper');
     }
@@ -497,6 +517,10 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      */
     function setLockUpTime(uint256 _newLockUpTime) external onlyShortTimelock {
         lockUpTime = _newLockUpTime;
+    }
+
+    function getSubNodeOpFromMinipool(address minipoolAddress) public view returns (address) {
+        return minipoolData[minipoolAddress].subNodeOperator;
     }
 
     /**

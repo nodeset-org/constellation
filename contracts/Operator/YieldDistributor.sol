@@ -65,7 +65,7 @@ contract YieldDistributor is UpgradeableBase {
         super.initialize(_directory);
 
         currentIntervalGenesisTime = block.timestamp;
-        maxIntervalLengthSeconds = 30 days;
+        maxIntervalLengthSeconds = 7 days;
 
         k = 7;
     }
@@ -181,7 +181,8 @@ contract YieldDistributor is UpgradeableBase {
         // send weth to rewardee
 
         if (isWhitelisted) {
-            SafeERC20.safeTransfer(IWETH(_directory.getWETHAddress()), _rewardee, totalReward);
+            (bool success, ) = _rewardee.call{value: totalReward}("");
+            require(success, "_rewardee failed to claim");
         } else {
             dustAccrued += totalReward;
         }
@@ -280,6 +281,12 @@ contract YieldDistributor is UpgradeableBase {
         _;
     }
 
+    /**
+     * @notice Fallback function to receive ETH and convert it to WETH (Wrapped ETH). This is also used to trigger new intervals after enough time has elapsed
+     * @dev When ETH is sent to this contract, it is automatically wrapped into WETH and the corresponding amount is processed.
+     */
     // Thank you for your donation to the hard-working operators
-    receive() external payable  { }
+    receive() external payable  { 
+        _wethReceived(msg.value, false);
+    }
 }
