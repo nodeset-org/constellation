@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
-import { assertAddOperator, evaluateModel, expectNumberE18ToBeApproximately, registerNewValidator } from "./utils/utils";
+import { assertAddOperator, evaluateModel, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, registerNewValidator } from "./utils/utils";
 
 describe("Yield Distributor", function () {
   describe("Setters", function () {
@@ -35,25 +35,35 @@ describe("Yield Distributor", function () {
 
     const totalEthYield = ethers.utils.parseEther("1");
 
+    console.log("simulating reward");
     await simulateYield(setupData, totalEthYield);
 
-    const wethBalance = await protocol.wETH.balanceOf(protocol.yieldDistributor.address);
+    console.log("checking balance");
+    const wethBalance = await ethers.provider.getBalance(yieldDistributor.address)
     expect(wethBalance).to.equal(totalEthYield);
 
+    console.log("finalizing interval")
     await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
 
     const operators = [signers.random, signers.random2, signers.random3];
+    await prepareOperatorDistributionContract(setupData, 3);
     await registerNewValidator(setupData, operators);
 
+    const expectedReward = ethers.BigNumber.from("333333333333333332");
+
+    expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).equals(totalEthYield);
     const tx1 = await protocol.yieldDistributor.connect(signers.ethWhale).harvest(signers.random.address, 1, 1);
+    expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).equals(totalEthYield.sub(expectedReward));
     const tx2 = await protocol.yieldDistributor.connect(signers.ethWhale).harvest(signers.random2.address, 1, 1);
+    expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).equals(totalEthYield.sub(expectedReward.add(expectedReward)));
     const tx3 = await protocol.yieldDistributor.connect(signers.ethWhale).harvest(signers.random3.address, 1, 1);
+    expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).equals(4); // dust
+
 
     expectNumberE18ToBeApproximately(await ethers.provider.getBalance(protocol.yieldDistributor.address), ethers.BigNumber.from("0"), 0.0001);
 
     // TODO: fix precision on typescript model
     //const expectedReward = ethers.utils.parseEther(evaluateModel(1, 7, 1/operators.length).toFixed(18).toString());
-    const expectedReward = "333333333333333332";
 
     await expect(tx1).to.emit(yieldDistributor, "RewardDistributed")
       .withArgs([signers.random.address, expectedReward]);
@@ -74,11 +84,12 @@ describe("Yield Distributor", function () {
 
     await simulateYield(setupData, totalEthYield);
 
-    const wethBalance = await protocol.wETH.balanceOf(protocol.yieldDistributor.address);
+    const wethBalance = await ethers.provider.getBalance(yieldDistributor.address)
     expect(wethBalance).to.equal(totalEthYield);
 
     await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
 
+    await prepareOperatorDistributionContract(setupData, 3);
     await registerNewValidator(setupData, [signers.random, signers.random2, signers.random3]);
 
     // update operator controllers for each operator

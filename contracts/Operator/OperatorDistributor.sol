@@ -254,7 +254,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('price', ethPriceInRpl);
         uint256 matchedStakeRatio = _existingRplStake == 0
             ? 0
-            : (_rpEthMatched * ethPriceInRpl * 1e18) / _existingRplStake;
+            : ((_rpEthMatched * ethPriceInRpl * 1e18) / _existingRplStake) / 1e18;
         console.log('matchedStakeRatio', matchedStakeRatio);
         console.log('minimumStakeRatio', minimumStakeRatio);
         if (matchedStakeRatio < minimumStakeRatio) {
@@ -264,7 +264,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         } else {
             requiredStakeRpl = 0;
         }
-        return requiredStakeRpl;
     }
 
     /**
