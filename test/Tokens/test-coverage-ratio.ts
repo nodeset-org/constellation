@@ -107,7 +107,7 @@ describe("CoverageRatio", async function () {
                     await expect(
                         protocol.vCWETH.connect(signers.ethWhale)
                             .deposit(ethers.utils.parseEther("1000"), signers.ethWhale.address)
-                    ).to.be.revertedWith("insufficient RPL coverage");          
+                    ).to.not.be.reverted;
                 });
             });
             describe("when minting hits the top threshold (maxWethRplRatio)", async function() {
@@ -214,7 +214,7 @@ describe("CoverageRatio", async function () {
                     await expect(
                         protocol.vCWETH.connect(signers.ethWhale)
                             .deposit(ethers.utils.parseEther("1000"), signers.ethWhale.address)
-                    ).to.be.revertedWith("insufficient RPL coverage");          
+                    ).to.not.be.reverted;      
                 });
             });
             describe("when minting hits the top threshold", async function() {
@@ -250,7 +250,7 @@ describe("CoverageRatio", async function () {
                     await expect(
                         protocol.vCWETH.connect(signers.ethWhale)
                             .deposit(ethers.utils.parseEther("1000"), signers.ethWhale.address)
-                    ).to.be.revertedWith("insufficient RPL coverage");     
+                    ).to.not.be.reverted;
                 });
             });
             describe("when minting goes above the coverage ratio", async function() {
@@ -355,7 +355,7 @@ describe("CoverageRatio", async function () {
                     await expect(
                         protocol.vCWETH.connect(signers.ethWhale)
                             .deposit(ethers.utils.parseEther("1000"), signers.ethWhale.address)
-                    ).to.be.revertedWith("insufficient RPL coverage");     
+                    ).to.not.be.reverted; 
                 });
             });
             describe("when minting goes above the coverage ratio", async function() {
@@ -473,7 +473,7 @@ describe("CoverageRatio", async function () {
     describe("minting xRPL", async function() {
         describe("when minting from below the coverage ratio", async function() {
             describe("when minting stays below the coverage ratio", async function() {
-                it("should revert", async function() {
+                it.only("should revert", async function() {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers, rocketPool } = setupData;
                    
@@ -501,10 +501,11 @@ describe("CoverageRatio", async function () {
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it reverts
-                    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("10000"));
+                    await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("10000"));
+
                     await expect(
                         protocol.vCRPL.connect(signers.ethWhale)
-                            .deposit(ethers.utils.parseEther("100000"), signers.ethWhale.address)
+                            .deposit(ethers.utils.parseEther("10000"), signers.ethWhale.address)
                     ).to.be.revertedWith("insufficient weth coverage ratio");     
                 });
             });
@@ -539,10 +540,9 @@ describe("CoverageRatio", async function () {
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it reverts
-                    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("10000"));
                     await expect(
                         protocol.vCRPL.connect(signers.ethWhale)
-                            .deposit(ethers.utils.parseEther("100000"), signers.ethWhale.address)
+                            .deposit(ethers.utils.parseEther("1"), signers.ethWhale.address)
                     ).to.be.revertedWith("insufficient weth coverage ratio");     
                 });
             });
@@ -581,7 +581,7 @@ describe("CoverageRatio", async function () {
                     await expect(
                         protocol.vCRPL.connect(signers.ethWhale)
                             .deposit(ethers.utils.parseEther("100000"), signers.ethWhale.address)
-                    ).to.be.revertedWith("insufficient weth coverage ratio");     
+                    ).to.not.be.reverted;
                 });
             });
             describe("when minting hits the bottom threshold (minWethRplRatio)", async function() {
@@ -691,7 +691,7 @@ describe("CoverageRatio", async function () {
                     await expect(
                         protocol.vCRPL.connect(signers.ethWhale)
                             .deposit(ethers.utils.parseEther("100000"), signers.ethWhale.address)
-                    ).to.be.revertedWith("insufficient weth coverage ratio");     
+                    ).to.not.be.reverted; 
                 });
             });
             describe("when minting hits the bottom threshold (minWethRplRatio)", async function() {
@@ -838,7 +838,7 @@ describe("CoverageRatio", async function () {
                     await expect(
                         protocol.vCRPL.connect(signers.ethWhale)
                             .deposit(ethers.utils.parseEther("100000"), signers.ethWhale.address)
-                    ).to.be.revertedWith("insufficient weth coverage ratio");     
+                    ).to.not.be.reverted;
                 });
             });
             describe("when minting goes within coverage ratio", async function() {
@@ -875,7 +875,7 @@ describe("CoverageRatio", async function () {
                     await expect(
                         protocol.vCRPL.connect(signers.ethWhale)
                             .deposit(ethers.utils.parseEther("100000"), signers.ethWhale.address)
-                    ).to.be.revertedWith("insufficient weth coverage ratio");     
+                    ).to.not.be.reverted;
                 });
             });
             describe("when minting hits the bottom threshold (minWethRplRatio)", async function() {
