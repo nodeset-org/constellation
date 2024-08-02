@@ -87,15 +87,12 @@ contract AssetRouter is UpgradeableBase {
         OperatorDistributor operatorDistributor = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         console.log('sendEthToDistributors.C');
 
-        // Calculate required capital and total balance
         uint256 requiredCapital = vweth.getRequiredCollateral();
         console.log('sendEthToDistributors.D');
         console.log(requiredCapital);
 
         if (balanceWeth >= requiredCapital) {
             console.log('sendEthToDistributors.E');
-
-            // Send required capital in WETH to vault and surplus ETH to operator distributor
 
             balanceWeth -= requiredCapital;
             vweth.onWethBalanceIncrease(requiredCapital);
@@ -115,7 +112,6 @@ contract AssetRouter is UpgradeableBase {
         } else {
             console.log('sendEthToDistributors.G');
 
-            // If not enough ETH balance, convert the shortfall in WETH back to ETH and send it
             uint256 shortfall = balanceWeth;
             balanceWeth = 0;
             vweth.onWethBalanceIncrease(shortfall);
@@ -138,29 +134,33 @@ contract AssetRouter is UpgradeableBase {
 
         // Fetch the required capital in RPL and the total RPL balance of the contract
         uint256 requiredCapital = vrpl.getRequiredCollateral();
-        uint256 totalBalance = balanceRpl;
         console.log('sendRplToDistributors.C');
 
-        // Determine the amount to send to the RPLVault
-        uint256 toRplVault = (totalBalance >= requiredCapital) ? requiredCapital : totalBalance;
-        console.log('sendRplToDistributors.D');
-
         // Transfer RPL to the RPLVault
-        if (toRplVault > 0) {
+        if (balanceRpl >= requiredCapital) {
             console.log('sendRplToDistributors.E');
-            SafeERC20.safeTransfer(IERC20(address(rpl)), address(vrpl), toRplVault);
-            vrpl.onRplBalanceIncrease(toRplVault);
-            balanceRpl -= toRplVault;
+
+            balanceRpl -= requiredCapital;
+            SafeERC20.safeTransfer(IERC20(address(rpl)), address(vrpl), requiredCapital);
+            vrpl.onRplBalanceIncrease(requiredCapital);
+
+            console.log('sendRplToDistributors.E2');
+
+            uint256 surplus = balanceRpl;
+            console.log('sendRplToDistributors.E3');
+
+            balanceRpl = 0;
+            SafeERC20.safeTransfer(IERC20(address(rpl)), address(operatorDistributor), surplus);
+            operatorDistributor.onRplBalanceIncrease(surplus);
+
+            console.log('sendRplToDistributors.F');
+        } else {
+            uint256 shortfall = balanceRpl;
+            balanceRpl = 0;
+            SafeERC20.safeTransfer(IERC20(address(rpl)), address(vrpl), shortfall);
+            vrpl.onRplBalanceIncrease(shortfall);
         }
 
-        console.log(
-            'ar.sendRplToDistributors.balanceOf.rpl',
-            IERC20(_directory.getRPLAddress()).balanceOf(address(this))
-        );
-        console.log('ar.sendRplToDistributors.balanceRpl', balanceRpl);
-        SafeERC20.safeTransfer(IERC20(address(rpl)), address(operatorDistributor), balanceRpl);
-        operatorDistributor.onRplBalanceIncrease(balanceRpl);
-        balanceRpl = 0;
         console.log('sendRplToDistributors.G');
     }
 
