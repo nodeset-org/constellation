@@ -1,4 +1,4 @@
-// SPDX License Identifier: GPL v3
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
