@@ -406,14 +406,12 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @notice Claims rewards for a node based on a Merkle proof, distributing specified amounts of RPL and ETH.
      * @dev This function interfaces with the RocketMerkleDistributorMainnet to allow nodes to claim their rewards.
      *      The rewards are determined by a Merkle proof which validates the amounts to be claimed.
-     * @param _nodeAddress Address of the node claiming the rewards.
      * @param _rewardIndex Array of indices in the Merkle tree corresponding to reward entries.
      * @param _amountRPL Array of amounts of RPL tokens to claim.
      * @param _amountETH Array of amounts of ETH to claim.
      * @param _merkleProof Array of Merkle proofs for each reward entry.
      */
     function merkleClaim(
-        address _nodeAddress,
         uint256[] calldata _rewardIndex,
         uint256[] calldata _amountRPL,
         uint256[] calldata _amountETH,
@@ -428,7 +426,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         AssetRouter(payable(ar)).openGate();
         IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
-            _nodeAddress,
+            address(this),
             _rewardIndex,
             _amountRPL,
             _amountETH,
