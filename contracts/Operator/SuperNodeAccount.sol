@@ -511,8 +511,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Enables the server-admin approved sigs
-     * @dev This function can be called by an admin to activate the needing approval for admin-server
+     * @notice Enables or disables the ability for sub node operators to change minipool delegates
+     * @dev Admin-only
      */
     function setAllowSubNodeOpDelegateChanges(bool newValue) external onlyAdmin {
         allowSubOpDelegateChanges = newValue;
@@ -528,7 +528,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     /**
      * @notice Sets a new lock threshold.
-     * @dev Only callable by the contract owner or authorized admin.
      * @param _newLockThreshold The new lock threshold value in wei.
      */
     function setLockAmount(uint256 _newLockThreshold) external onlyShortTimelock {
@@ -537,7 +536,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     /**
      * @notice Sets a new lock-up time.
-     * @dev Only callable by the contract owner or authorized admin.
      * @param _newLockUpTime The new lock-up time in seconds.
      */
     function setLockUpTime(uint256 _newLockUpTime) external onlyShortTimelock {
@@ -552,21 +550,20 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @return uint256 The amount of ETH bonded with this node from WETHVault deposits.
      */
     function getTotalEthStaked() public view returns (uint256) {
-        Directory directory = getDirectory();
-        return IRocketNodeStaking(directory.getRocketNodeStakingAddress()).getNodeETHProvided(address(this));
+        return IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).getNodeETHProvided(address(this));
     }
 
     /**
      * @return uint256 The amount of ETH matched with this node from the rETH deposit pool
      */
     function getTotalEthMatched() public view returns (uint256) {
-        Directory directory = getDirectory();
-        return IRocketNodeStaking(directory.getRocketNodeStakingAddress()).getNodeETHMatched(address(this));
+        return IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).getNodeETHMatched(address(this));
     }
 
     /**
      * @notice Checks if there is sufficient liquidity in the protocol to cover a specified bond amount.
-     * @dev This function helps ensure that there are enough resources (both RPL and ETH) available in the system to cover the bond required for creating or operating a minipool.
+     * @dev This function helps ensure that there are enough resources (both RPL and ETH) available 
+     * in the system to cover the bonds required for creating or operating a minipool.
      * It is crucial for maintaining financial stability and operational continuity.
      * @param _bond The bond amount in wei for which liquidity needs to be checked.
      * @return bool Returns true if there is sufficient liquidity to cover the bond; false otherwise.
@@ -584,12 +581,15 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired && od.balance >= _bond;
     }
 
+    // Must receive ETH from OD for staking during the createMinipool process (pre-staking minipools)
+    // If ETH is received otherwise, it won't be returned!
     receive() external payable {}
 
     /**
      * @notice Retrieves the next minipool in the sequence to process tasks such as reward distribution or updates.
-     * @dev This function helps in managing the rotation and handling of different minipools within the system. It ensures that operations are spread evenly and systematically across all active minipools.
-     * @return IMinipool Returns the address of the next minipool to process. Returns the zero address if there are no minipools left to process.
+     * @dev This function helps in managing the rotation and handling of different minipools within the system. 
+     * It ensures that operations are spread evenly and systematically across all active minipools.
+     * @return IMinipool Returns the address of the next minipool to process. Returns the zero address if there are no minipools.
      */
     function getNextMinipool() external onlyProtocol returns (IMinipool) {
         if (minipools.length == 0) {
@@ -598,14 +598,26 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         return IMinipool(minipools[currentMinipool++ % minipools.length]);
     }
 
+    /**
+     * @notice Sets a new admin sig expiry time.
+     * @param _newExpiry The new sig expiry time in seconds.
+     */
     function setAdminServerSigExpiry(uint256 _newExpiry) external onlyAdmin {
         adminServerSigExpiry = _newExpiry;
     }
 
+    /**
+     * @notice Sets the bond amount used for new minipools.
+     * @param _newBond The new bond amount in wei.
+     */
     function setBond(uint256 _newBond) external onlyAdmin {
         bond = _newBond;
     }
 
+    /**
+     * @notice Sets the minimum node fee used for new minipools.
+     * @param _newMinimumNodeFee The new minimum node fee.
+     */
     function setMinimumNodeFee(uint256 _newMinimumNodeFee) external onlyAdmin {
         minimumNodeFee = _newMinimumNodeFee;
     }
