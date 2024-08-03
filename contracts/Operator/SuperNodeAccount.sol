@@ -480,7 +480,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         merkleClaimNonce++;
 
         AssetRouter(payable(ar)).onEthRewardsReceived(ethReward, _config.avgTreasuryFee, _config.avgNoFe);
-        AssetRouter(payable(ar)).onRplRewardsRecieved(rplReward, _config.avgTreasuryFee);
+        AssetRouter(payable(ar)).onRplRewardsRecieved(rplReward);
     }
 
     /**

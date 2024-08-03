@@ -350,9 +350,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             console.log('withdrawal address after skim', _directory.getAssetRouterAddress().balance);
         } else {
             // the minipool is exited
-            ar.openGate();
             ar.onExitedMinipool(minipool);
-            ar.closeGate();
             this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
         }
 

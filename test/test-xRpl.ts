@@ -177,6 +177,7 @@ describe("xRPL", function () {
 
 
     const treasuryFee = await setupData.protocol.vCWETH.treasuryFee();
+    const noFee = treasuryFee;
     const expectedTreasuryPortion = rplReward.mul(treasuryFee).div(ethers.utils.parseEther("1")); 
     const expectedCommunityPortion = rplReward.sub(expectedTreasuryPortion)
 
@@ -206,7 +207,7 @@ describe("xRPL", function () {
     await protocol.superNode.merkleClaim(protocol.superNode.address, rewardIndex, amountRpl, amountEth, proof, await createMerkleSig(
       setupData,
       treasuryFee,
-      treasuryFee
+      noFee
     ))
 
 
