@@ -221,14 +221,13 @@ contract AssetRouter is UpgradeableBase {
         od.onIncreaseOracleError(communityPortion);
     }
 
-    function onRplRewardsRecieved(uint256 _amount) external onlyProtocol {
-        IERC20 rpl = IERC20(_directory.getRPLAddress());
-        RPLVault vrpl = RPLVault(getDirectory().getRPLVaultAddress());
-        uint256 treasuryPortion = _amount.mulDiv(vrpl.treasuryFee(), 1e18);
+    function onRplRewardsRecieved(uint256 _amount, uint256 avgTreasuryFee) external onlyProtocol {
+        uint256 treasuryPortion = _amount.mulDiv(avgTreasuryFee, 1e18);
 
         console.log('treasuryPortion', treasuryPortion);
         console.log('_amount', _amount);
 
+        IERC20 rpl = IERC20(_directory.getRPLAddress());
         SafeERC20.safeTransfer(rpl, _directory.getTreasuryAddress(), treasuryPortion);
 
         uint256 communityPortion = _amount - treasuryPortion;

@@ -361,7 +361,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 rewards = finalBalance - initialBalance;
         console.log('rewards recieved', rewards);
 
-        (, uint256 treasuryFee, uint256 noFee) = sna.minipoolData(address(minipool));
+        (, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));
 
         ar.onEthRewardsReceived(rewards, treasuryFee, noFee);
     }

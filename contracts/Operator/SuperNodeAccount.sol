@@ -36,6 +36,7 @@ struct MerkleRewardsConfig {
     uint256 sigGenesisTime;
     uint256 avgTreasuryFee;
     uint256 avgNoFe;
+    uint256 avgRplTreasuryFee;
 }
 
 /**
@@ -77,8 +78,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     struct Minipool {
         address subNodeOperator;
-        uint256 treasuryFee;
+        uint256 ethTreasuryFee;
         uint256 noFee;
+        uint256 rplTreasuryFee;
     }
 
     struct CreateMinipoolConfig {
@@ -272,7 +274,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         minipoolData[_config.expectedMinipoolAddress] = Minipool(
             subNodeOperator,
             wethVault.treasuryFee(),
-            wethVault.nodeOperatorFee()
+            wethVault.nodeOperatorFee(),
+            RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee()
         );
 
         console.log('_createMinipool()');
@@ -480,7 +483,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         merkleClaimNonce++;
 
         AssetRouter(payable(ar)).onEthRewardsReceived(ethReward, _config.avgTreasuryFee, _config.avgNoFe);
-        AssetRouter(payable(ar)).onRplRewardsRecieved(rplReward);
+        AssetRouter(payable(ar)).onRplRewardsRecieved(rplReward, _config.avgRplTreasuryFee);
     }
 
     /**
