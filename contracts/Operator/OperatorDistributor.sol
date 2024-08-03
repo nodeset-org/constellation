@@ -360,7 +360,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('initialBalance', initialBalance);
         uint256 rewards = finalBalance - initialBalance;
         console.log('rewards recieved', rewards);
-        ar.onEthRewardsReceived(rewards, address(minipool));
+
+        (, uint256 treasuryFee, uint256 noFee) = sna.minipoolData(minipool);
+
+        ar.onEthRewardsReceived(rewards, treasuryFee, noFee);
     }
 
     /**

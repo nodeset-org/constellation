@@ -193,13 +193,11 @@ contract AssetRouter is UpgradeableBase {
         _minipool.distributeBalance(false);
     }
 
-    function onEthRewardsReceived(uint256 _amount, address minipool) external onlyProtocol {
+    function onEthRewardsReceived(uint256 _amount, uint256 treasuryFee, uint256 noFee) external onlyProtocol {
         IWETH weth = IWETH(_directory.getWETHAddress());
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
 
-        SuperNodeAccount sna = SuperNodeAccount(getDirectory().getSuperNodeAddress());
-        (, uint256 treasuryFee, uint256 noFee) = sna.minipoolData(minipool);
         uint256 treasuryPortion = _amount.mulDiv(treasuryFee, 1e18);
         uint256 nodeOperatorPortion = _amount.mulDiv(noFee, 1e18);
 

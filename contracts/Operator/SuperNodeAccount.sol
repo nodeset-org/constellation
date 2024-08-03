@@ -412,7 +412,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         uint256[] calldata _rewardIndex,
         uint256[] calldata _amountRPL,
         uint256[] calldata _amountETH,
-        bytes32[][] calldata _merkleProof
+        bytes32[][] calldata _merkleProof, 
+        bytes sig
     ) public {
         address ar = _directory.getAssetRouterAddress();
         IERC20 rpl = IERC20(_directory.getRPLAddress());
@@ -436,7 +437,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         uint256 ethReward = finalEthBalance - initialEthBalance;
         uint256 rplReward = finalRplBalance - initialRplBalance;
 
-        AssetRouter(payable(ar)).onEthRewardsReceived(ethReward);
+        AssetRouter(payable(ar)).onEthRewardsReceived(ethReward, avgTreasuryFee, avgNoFee);
         AssetRouter(payable(ar)).onRplRewardsRecieved(rplReward);
     }
 
