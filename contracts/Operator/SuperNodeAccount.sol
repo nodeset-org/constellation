@@ -107,6 +107,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     uint256 public bond;
     uint256 public minimumNodeFee;
     uint256 public maxValidators; // max number of validators each NO is allowed
+    bool public allowSubOpDelegateChanges;
 
     /// @notice Modifier to ensure a function can only be called once for lazy initialization
     modifier lazyInitializer() {
@@ -126,12 +127,16 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /// @notice Modifier to ensure a function can only be called by a sub-node operator or admin of a specific minipool
-    modifier onlySubNodeOperatorOrAdmin(address _minipool) {
-        require(
-            _directory.hasRole(Constants.ADMIN_ROLE, msg.sender) ||
-                subNodeOperatorHasMinipool[keccak256(abi.encodePacked(msg.sender, _minipool))],
-            'Can only be called by SubNodeOperator!'
-        );
+    modifier onlyAdminOrAllowedSNO(address _minipool) {
+        if(allowSubOpDelegateChanges) { 
+            require(
+                _directory.hasRole(Constants.ADMIN_ROLE, msg.sender) || 
+                    subNodeOperatorHasMinipool[keccak256(abi.encodePacked(msg.sender, _minipool))],
+                'Can only be called by admin or sub node operator'
+            );
+        } else {
+            require(_directory.hasRole(Constants.ADMIN_ROLE, msg.sender), 'Minipool delegate changes only allowed by admin');
+        }
         _;
     }
 
@@ -156,6 +161,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         minimumNodeFee = 14e16;
         bond = 8 ether;
         maxValidators = 1;
+        allowSubOpDelegateChanges = false;
     }
 
     /**
@@ -462,11 +468,11 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Allows sub-node operators or admins to delegate an upgrade to the minipool's contract.
+     * @notice Allows dmins to delegate an upgrade to the minipool's contract.
      * @dev This function provides a mechanism for delegated upgrades of minipools, enhancing flexibility in maintenance and upgrades.
      * @param _minipool Address of the minipool which is to be upgraded.
      */
-    function delegateUpgrade(address _minipool) external onlySubNodeOperatorOrAdmin(_minipool) hasConfig(_minipool) {
+    function delegateUpgrade(address _minipool) external onlyAdminOrAllowedSNO(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateUpgrade();
     }
@@ -476,7 +482,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev Provides a rollback mechanism for previously delegated upgrades, ensuring that upgrades can be reversed if necessary.
      * @param _minipool Address of the minipool whose upgrade is to be rolled back.
      */
-    function delegateRollback(address _minipool) external onlySubNodeOperatorOrAdmin(_minipool) hasConfig(_minipool) {
+    function delegateRollback(address _minipool) external onlyAdminOrAllowedSNO(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateRollback();
     }
@@ -490,7 +496,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function setUseLatestDelegate(
         bool _setting,
         address _minipool
-    ) external onlySubNodeOperatorOrAdmin(_minipool) hasConfig(_minipool) {
+    ) external onlyAdminOrAllowedSNO(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.setUseLatestDelegate(_setting);
     }
@@ -510,16 +516,16 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @notice Enables the server-admin approved sigs
      * @dev This function can be called by an admin to activate the needing approval for admin-server
      */
-    function useAdminServerCheck() external onlyAdmin {
-        adminServerCheck = true;
+    function setAllowSubNodeOpDelegateChanges(bool newValue) external onlyAdmin {
+        allowSubOpDelegateChanges = newValue;
     }
 
     /**
-     * @notice Disables the server-admin approved sigs
-     * @dev This function can be called by an admin to deactivate the needing approval for admin-server
+     * @notice Enables or disables the server-admin approved sigs for creating minipools
+     * @dev This function can only be called by an admin
      */
-    function disableAdminServerCheck() external onlyAdmin {
-        adminServerCheck = false;
+    function setAdminServerCheck(bool newValue) external onlyAdmin {
+        adminServerCheck = newValue;
     }
 
     /**

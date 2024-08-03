@@ -295,7 +295,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * like claiming NO fees or depositing/withdrawing from the token vaults.
      */
     function processNextMinipool() external {
-        _processNextMinipool(SuperNodeAccount(getDirectory().getSuperNodeAddress()).getNextMinipool());
+        processMinipool(SuperNodeAccount(getDirectory().getSuperNodeAddress()).getNextMinipool());
     }
 
     /**
@@ -318,7 +318,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /**
      * @dev Processes a single minipool by performing RPL top-up and distributing balance if certain conditions are met.
      */
-    function _processNextMinipool(IMinipool minipool) public {
+    function processMinipool(IMinipool minipool) public {
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
 
         rebalanceRplStake(sna.getTotalEthStaked());
