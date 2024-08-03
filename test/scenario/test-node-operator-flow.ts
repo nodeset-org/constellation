@@ -178,7 +178,7 @@ describe("Node Operator Onboarding", function () {
 
         const currentInterval = (await protocol.yieldDistributor.currentInterval()).sub(1);
 
-        console.log(await protocol.yieldDistributor.getClaims())
+        console.log(await protocol.yieldDistributor.getIntervals())
 
         const tx = await protocol.yieldDistributor.connect(signers.random).harvest(signers.hyperdriver.address, 0, currentInterval);
         const receipt = await tx.wait();

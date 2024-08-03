@@ -24,8 +24,8 @@ struct Reward {
     uint eth;
 }
 
-/// @notice Claims get filed by the protcol and distributed upon request
-struct Claim {
+/// @notice Intervals are calculated by the protcol and distributed upon request
+struct Interval {
     uint256 amount; // amount wei of protocol yield accrued since last interval
     uint256 numOperators; // length of node operators active in the interval
 }
@@ -44,7 +44,7 @@ contract YieldDistributor is UpgradeableBase {
     /// This is claimable by the Treasury
     uint256 public dustAccrued;
 
-    mapping(uint256 => Claim) public claims; // claimable yield per interval (in wei)
+    mapping(uint256 => Interval) public intervals; // all intervals
     mapping(address => mapping(uint256 => bool)) public hasClaimed; // whether an operator has claimed for a given interval
 
     uint256 public currentInterval;
@@ -95,7 +95,7 @@ contract YieldDistributor is UpgradeableBase {
 
         // if elapsed time since last interval is greater than maxIntervalLengthSeconds, start a new interval
         if (block.timestamp - currentIntervalGenesisTime > maxIntervalLengthSeconds) {
-            if(voidClaim) { /// @dev void claim means there is no admin claim
+            if(voidClaim) { /// @dev void claim means there is no claim
                 _finalizeIntervalVoidClaim();
             } else {
                 finalizeInterval();
@@ -108,16 +108,15 @@ contract YieldDistributor is UpgradeableBase {
      */
 
     /**
-     * @notice Retrieves all claims from the beginning up to and including the current interval.
-     *
-     * @return _claims An array containing all claims up to the current interval.
+     * @notice Retrieves all intervals from the beginning up to and including the current interval.
+     * @return _intervals An array containing all claims up to the current interval.
      */
-    function getClaims() public view returns (Claim[] memory) {
-        Claim[] memory _claims = new Claim[](currentInterval + 1);
+    function getIntervals() public view returns (Interval[] memory) {
+        Interval[] memory _intervals = new Interval[](currentInterval + 1);
         for (uint256 i = 0; i <= currentInterval; i++) {
-            _claims[i] = claims[i];
+            _intervals[i] = intervals[i];
         }
-        return _claims;
+        return _intervals;
     }
 
     /****
@@ -158,11 +157,11 @@ contract YieldDistributor is UpgradeableBase {
                 continue;
             }
 
-            Claim memory claim = claims[i];
+            Interval memory interval = intervals[i];
 
-            uint256 fullEthReward = ((claim.amount * 1e18) / claim.numOperators) / 1e18;
+            uint256 fullEthReward = ((interval.amount * 1e18) / interval.numOperators) / 1e18;
 
-            console.log("full reward for interval", i, claim.amount);
+            console.log("full reward for interval", i, interval.amount);
             console.log('fullEthReward (for running max minipools)', fullEthReward);
 
             uint256 operatorsPortion = ProtocolMath.exponentialFunction(
@@ -209,7 +208,7 @@ contract YieldDistributor is UpgradeableBase {
         }
         Whitelist whitelist = getWhitelist();
 
-        claims[currentInterval] = Claim(yieldAccruedInInterval, whitelist.numOperators());
+        intervals[currentInterval] = Interval(yieldAccruedInInterval, whitelist.numOperators());
 
         currentInterval++;
         currentIntervalGenesisTime = block.timestamp;
