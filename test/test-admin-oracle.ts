@@ -94,8 +94,6 @@ describe("XRETHAdminOracle", function () {
             await protocol.vCWETH.connect(signers.admin).setNodeOperatorFee(0);
 
             const newTotalYield = ethers.utils.parseEther("100");
-            const treasuryFee = await protocol.vCWETH.getSignedTreasuryPortion(newTotalYield);
-            const noFee = await protocol.vCWETH.getSignedNodeOperatorPortion(newTotalYield);
 
             const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "address", "uint256"], [newTotalYield, timestamp, oracle.address, chainId]);
             const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
@@ -121,8 +119,6 @@ describe("XRETHAdminOracle", function () {
             await protocol.vCWETH.connect(signers.admin).setTreasuryFee(ethers.utils.parseEther("1"));
 
             const newTotalYield = ethers.utils.parseEther("100");
-            const treasuryFee = await protocol.vCWETH.getSignedTreasuryPortion(newTotalYield);
-            const noFee = await protocol.vCWETH.getSignedNodeOperatorPortion(newTotalYield);
 
             const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "address", "uint256"], [newTotalYield, timestamp, oracle.address, chainId]);
             const signature = await random.signMessage(ethers.utils.arrayify(messageHash));

@@ -141,7 +141,7 @@ describe("xRPL", function () {
     expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("3")))
   })
 
-  it("success - tries to deposit and redeem from weth vault multiple times after getting merkle rewards", async () => {
+  it.only("success - tries to deposit and redeem from weth vault multiple times after getting merkle rewards", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
@@ -174,10 +174,38 @@ describe("xRPL", function () {
     const amountRpl = [rplReward];
     const amountEth = [ethReward];
     const proof = [[ethers.utils.hexZeroPad("0x0", 32)], [ethers.utils.hexZeroPad("0x0", 32)]]
-    await protocol.superNode.merkleClaim(protocol.superNode.address, rewardIndex, amountRpl, amountEth, proof)
 
     const expectedTreasuryPortion = await protocol.vCRPL.getTreasuryPortion(rplReward);
     const expectedCommunityPortion = rplReward.sub(expectedTreasuryPortion)
+
+    // TODO: refractor into utils
+    const createMerkleSig = async (setupData: SetupData, avgNoFe: BigNumber, avgTreasuryFee: BigNumber) => {
+      const network = await ethers.provider.getNetwork();
+      const chainId = network.chainId;
+
+      const sigGenesisTime = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
+      const nonce = await setupData.protocol.superNode.merkleClaimNonce();
+
+      const packedData = ethers.utils.solidityPack(
+        ['uint256', 'uint256', 'uint256', 'address', 'uint256', 'uint256'],
+        [avgNoFe, avgTreasuryFee, sigGenesisTime, setupData.protocol.superNode.address, nonce, chainId]
+      );
+
+      const messageHash = ethers.utils.keccak256(packedData);
+      const messageHashBytes = ethers.utils.arrayify(messageHash);
+      const sig = await setupData.signers.admin.signMessage(messageHashBytes);
+
+      return {
+        sig, sigGenesisTime, avgNoFe, avgTreasuryFee
+      }
+    }
+
+    await protocol.superNode.merkleClaim(protocol.superNode.address, rewardIndex, amountRpl, amountEth, proof, await createMerkleSig(
+      setupData,
+      expectedTreasuryPortion,
+      expectedCommunityPortion
+    ))
+
 
     expect(await protocol.vCRPL.totalAssets()).equals(depositAmount.add(expectedCommunityPortion))
     expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault);

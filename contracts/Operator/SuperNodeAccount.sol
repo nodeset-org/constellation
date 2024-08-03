@@ -31,6 +31,13 @@ import '../Utils/Errors.sol';
 
 import 'hardhat/console.sol';
 
+struct MerkleRewardsConfig {
+    bytes sig;
+    uint256 sigGenesisTime;
+    uint256 avgTreasuryFee;
+    uint256 avgNoFe;
+}
+
 /**
  * @title SuperNodeAccount
  * @author Theodore Clapp, Mike Leach
@@ -58,6 +65,10 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     uint256 public lockThreshold;
     // Lock-up time in seconds
     uint256 public lockUpTime;
+
+    uint256 public merkleClaimNonce;
+    mapping(bytes32 => bool) public merkleClaimSigUsed;
+    uint256 public merkleClaimSigExpiry;
 
     bool lazyInit;
 
@@ -99,6 +110,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         require(!lazyInit, 'already lazily initialized');
         _;
         lazyInit = true;
+        merkleClaimSigExpiry = 1 days;
     }
 
     /// @notice Modifier to ensure a function can only be called by a sub-node operator of a specific minipool
@@ -191,9 +203,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      *        - expectedMinipoolAddress: Precomputed address expected to be generated for the new minipool.
      * @notice _config.sig The signature provided for minipool creation, used for admin verification if pre-signed exit message checks are enabled.
      */
-    function createMinipool(
-        CreateMinipoolConfig calldata _config
-    ) public payable {
+    function createMinipool(CreateMinipoolConfig calldata _config) public payable {
         require(msg.value == lockThreshold, 'SuperNode: must set the message value to lockThreshold');
         require(
             IRocketMinipoolManager(_directory.getRocketMinipoolManagerAddress()).getMinipoolExists(
@@ -225,7 +235,13 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
                     keccak256(
-                        abi.encodePacked(_config.expectedMinipoolAddress, salt, _config.sigGenesisTime, address(this), block.chainid)
+                        abi.encodePacked(
+                            _config.expectedMinipoolAddress,
+                            salt,
+                            _config.sigGenesisTime,
+                            address(this),
+                            block.chainid
+                        )
                     )
                 ),
                 _config.sig
@@ -236,7 +252,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             );
         }
 
-        subNodeOperatorHasMinipool[keccak256(abi.encodePacked(subNodeOperator, _config.expectedMinipoolAddress))] = true;
+        subNodeOperatorHasMinipool[
+            keccak256(abi.encodePacked(subNodeOperator, _config.expectedMinipoolAddress))
+        ] = true;
 
         lockedEth[_config.expectedMinipoolAddress] = msg.value;
         totalEthLocked += msg.value;
@@ -251,7 +269,11 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         subNodeOperatorMinipools[subNodeOperator].push(_config.expectedMinipoolAddress);
         WETHVault wethVault = WETHVault(getDirectory().getWETHVaultAddress());
-        minipoolData[_config.expectedMinipoolAddress] = Minipool(subNodeOperator, wethVault.treasuryFee(), wethVault.nodeOperatorFee());
+        minipoolData[_config.expectedMinipoolAddress] = Minipool(
+            subNodeOperator,
+            wethVault.treasuryFee(),
+            wethVault.nodeOperatorFee()
+        );
 
         console.log('_createMinipool()');
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: bond}(
@@ -412,8 +434,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         uint256[] calldata _rewardIndex,
         uint256[] calldata _amountRPL,
         uint256[] calldata _amountETH,
-        bytes32[][] calldata _merkleProof, 
-        bytes sig
+        bytes32[][] calldata _merkleProof,
+        MerkleRewardsConfig calldata _config
     ) public {
         address ar = _directory.getAssetRouterAddress();
         IERC20 rpl = IERC20(_directory.getRPLAddress());
@@ -437,7 +459,22 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         uint256 ethReward = finalEthBalance - initialEthBalance;
         uint256 rplReward = finalRplBalance - initialRplBalance;
 
-        AssetRouter(payable(ar)).onEthRewardsReceived(ethReward, avgTreasuryFee, avgNoFee);
+        bytes32 messageHash = keccak256(abi.encodePacked(_config.avgTreasuryFee, _config.avgNoFe, _config.sigGenesisTime, address(this), merkleClaimNonce, block.chainid));
+        require(!merkleClaimSigUsed[messageHash], "merkle sig already used");
+        address recoveredAddress = ECDSA.recover(
+            ECDSA.toEthSignedMessageHash(
+                messageHash
+            ),
+            _config.sig
+        );
+        require(
+            _directory.hasRole(Constants.ADMIN_ORACLE_ROLE, recoveredAddress),
+            'merkleClaim: signer must have permission from admin oracle role'
+        );
+        require(block.timestamp - _config.sigGenesisTime > merkleClaimSigExpiry, "merkle sig expired");
+        merkleClaimNonce++;
+
+        AssetRouter(payable(ar)).onEthRewardsReceived(ethReward, _config.avgTreasuryFee, _config.avgNoFe);
         AssetRouter(payable(ar)).onRplRewardsRecieved(rplReward);
     }
 

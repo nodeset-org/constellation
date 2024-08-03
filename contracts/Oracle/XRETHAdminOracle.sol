@@ -84,23 +84,25 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
     /**
      * @notice Sets the total yield accrued and claims rewards using a Merkle proof.
      * @param _merkleProofParams The Merkle proof parameters.
-     * @param _sig The signature.
+     * @param _sig0 The signature.
      * @param _newTotalYieldAccrued The new total yield accrued.
-     * @param _sigTimeStamp The timestamp of the signature.
+     * @param _sigTimeStamp0 The timestamp of the signature.
      */
     function setTotalYieldAccruedAndClaim(
         MerkleProofParams calldata _merkleProofParams,
-        bytes calldata _sig,
+        bytes calldata _sig0,
         int256 _newTotalYieldAccrued,
-        uint256 _sigTimeStamp
+        uint256 _sigTimeStamp0,
+        MerkleRewardsConfig calldata _config
     ) external {
-        _setTotalYieldAccrued(_sig, _newTotalYieldAccrued, _sigTimeStamp);
+        _setTotalYieldAccrued(_sig0, _newTotalYieldAccrued, _sigTimeStamp0);
         SuperNodeAccount(_directory.getSuperNodeAddress()).merkleClaim(
             _merkleProofParams.nodeAddress,
             _merkleProofParams.rewardIndex,
             _merkleProofParams.amountRPL,
             _merkleProofParams.amountETH,
-            _merkleProofParams.merkleProof
+            _merkleProofParams.merkleProof,
+            _config
         );
     }
 

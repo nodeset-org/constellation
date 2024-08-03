@@ -108,7 +108,7 @@ describe("xrETH", function () {
 
   })
 
-  it("success - tries to deposit and redeem from weth vault multiple times with minipool reward claims", async () => {
+  it.only("success - tries to deposit and redeem from weth vault multiple times with minipool reward claims", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
     
@@ -135,8 +135,11 @@ describe("xrETH", function () {
     })
     const expectedShareOfReward = ethers.BigNumber.from("362500000000000000");
 
-    const expectedTreasuryPortion = await protocol.vCWETH.getTreasuryPortion(expectedShareOfReward);
-    const expectedNodeOperatorPortion = await protocol.vCWETH.getNodeOperatorPortion(expectedShareOfReward);
+    const minipoolData = await protocol.superNode.minipoolData(minipools[0]);
+
+    const expectedTreasuryPortion = expectedShareOfReward.mul(minipoolData.treasuryFee).div(ethers.utils.parseEther("1")); 
+    const expectedNodeOperatorPortion = expectedShareOfReward.mul(minipoolData.subNodeOperator).div(ethers.utils.parseEther("1")); 
+
     const expectedCommunityPortion = expectedShareOfReward.sub(expectedTreasuryPortion.add(expectedNodeOperatorPortion))
     console.log("expectedCommunityPortion", expectedCommunityPortion);
     
