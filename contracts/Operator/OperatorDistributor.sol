@@ -339,29 +339,28 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         }
 
         AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
+        ar.openGate();
+        uint256 initialBalance = address(ar).balance;
+
+        
         if (totalBalance < 8 ether) {
             // minipool is still staking
-            // track incoming eth
-            ar.openGate();
-            uint256 initialBalance = address(ar).balance;
-
             console.log('withdrawal address before skim', _directory.getAssetRouterAddress().balance);
             ar.onClaimSkimmedRewards(minipool);
             console.log('withdrawal address after skim', _directory.getAssetRouterAddress().balance);
-
-            uint256 finalBalance = address(ar).balance;
-            ar.closeGate();
-            console.log('finalBalance', finalBalance);
-            console.log('initialBalance', initialBalance);
-            uint256 rewards = finalBalance - initialBalance;
-            console.log('rewards recieved', rewards);
-            ar.onEthRewardsReceived(rewards);
-
         } else {
             // the minipool is exited
             ar.onExitedMinipool(minipool);
             this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
         }
+
+        uint256 finalBalance = address(ar).balance;
+        ar.closeGate();
+        console.log('finalBalance', finalBalance);
+        console.log('initialBalance', initialBalance);
+        uint256 rewards = finalBalance - initialBalance;
+        console.log('rewards recieved', rewards);
+        ar.onEthRewardsReceived(rewards, address(minipool));
     }
 
     /**
