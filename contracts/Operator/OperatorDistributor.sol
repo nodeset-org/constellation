@@ -295,7 +295,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * like claiming NO fees or depositing/withdrawing from the token vaults.
      */
     function processNextMinipool() external {
-        _processNextMinipool();
+        processMinipool(SuperNodeAccount(getDirectory().getSuperNodeAddress()).getNextMinipool());
     }
 
     /**
@@ -318,12 +318,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /**
      * @dev Processes a single minipool by performing RPL top-up and distributing balance if certain conditions are met.
      */
-    function _processNextMinipool() internal {
+    function processMinipool(IMinipool minipool) public {
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
 
         rebalanceRplStake(sna.getTotalEthStaked());
 
-        IMinipool minipool = sna.getNextMinipool();
         if (address(minipool) == address(0)) {
             return;
         }
@@ -341,7 +340,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
         ar.openGate();
         uint256 initialBalance = address(ar).balance;
-
         
         if (totalBalance < 8 ether) {
             // minipool is still staking
@@ -350,9 +348,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             console.log('withdrawal address after skim', _directory.getAssetRouterAddress().balance);
         } else {
             // the minipool is exited
-            ar.openGate();
             ar.onExitedMinipool(minipool);
-            ar.closeGate();
             this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
         }
 
@@ -363,7 +359,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 rewards = finalBalance - initialBalance;
         console.log('rewards recieved', rewards);
 
-        (, uint256 treasuryFee, uint256 noFee) = sna.minipoolData(address(minipool));
+        (, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));
 
         ar.onEthRewardsReceived(rewards, treasuryFee, noFee);
     }

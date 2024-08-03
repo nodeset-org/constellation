@@ -195,7 +195,6 @@ contract AssetRouter is UpgradeableBase {
 
     function onEthRewardsReceived(uint256 _amount, uint256 treasuryFee, uint256 noFee) external onlyProtocol {
         IWETH weth = IWETH(_directory.getWETHAddress());
-        WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
 
         uint256 treasuryPortion = _amount.mulDiv(treasuryFee, 1e18);
@@ -222,15 +221,13 @@ contract AssetRouter is UpgradeableBase {
         od.onIncreaseOracleError(communityPortion);
     }
 
-    function onRplRewardsRecieved(uint256 _amount, uint256 treasuryFee) external onlyProtocol {
-        IERC20 rpl = IERC20(_directory.getRPLAddress());
-        RPLVault vrpl = RPLVault(getDirectory().getRPLVaultAddress());
-
-        uint256 treasuryPortion = _amount.mulDiv(treasuryFee, 1e18);
+    function onRplRewardsRecieved(uint256 _amount, uint256 avgTreasuryFee) external onlyProtocol {
+        uint256 treasuryPortion = _amount.mulDiv(avgTreasuryFee, 1e18);
 
         console.log('treasuryPortion', treasuryPortion);
         console.log('_amount', _amount);
 
+        IERC20 rpl = IERC20(_directory.getRPLAddress());
         SafeERC20.safeTransfer(rpl, _directory.getTreasuryAddress(), treasuryPortion);
 
         uint256 communityPortion = _amount - treasuryPortion;

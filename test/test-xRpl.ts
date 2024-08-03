@@ -4,7 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { assertAddOperator, assertMultipleTransfers, assertSingleTransferExists, expectNumberE18ToBeApproximately } from "./utils/utils";
+import { assertAddOperator, assertMultipleTransfers, createMerkleSig } from "./utils/utils";
 
 describe("xRPL", function () {
 
@@ -176,39 +176,21 @@ describe("xRPL", function () {
     const proof = [[ethers.utils.hexZeroPad("0x0", 32)], [ethers.utils.hexZeroPad("0x0", 32)]]
 
 
-    const treasuryFee = await setupData.protocol.vCWETH.treasuryFee();
-    const expectedTreasuryPortion = rplReward.mul(treasuryFee).div(ethers.utils.parseEther("1")); 
+    const ethTreasuryFee = await setupData.protocol.vCWETH.treasuryFee();
+    const ethOperatorFee = await setupData.protocol.vCWETH.nodeOperatorFee();
+    const rplTreasuryFee = await setupData.protocol.vCRPL.treasuryFee();
+    const expectedTreasuryPortion = rplReward.mul(rplTreasuryFee).div(ethers.utils.parseEther("1")); 
     const expectedCommunityPortion = rplReward.sub(expectedTreasuryPortion)
 
-    // TODO: refractor into utils
-    const createMerkleSig = async (setupData: SetupData, avgNoFe: BigNumber, avgTreasuryFee: BigNumber) => {
-      const network = await ethers.provider.getNetwork();
-      const chainId = network.chainId;
+    
 
-      const sigGenesisTime = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
-      const nonce = await setupData.protocol.superNode.merkleClaimNonce();
 
-      const packedData = ethers.utils.solidityPack(
-        ['uint256', 'uint256', 'uint256', 'address', 'uint256', 'uint256'],
-        [avgTreasuryFee, avgNoFe, sigGenesisTime, setupData.protocol.superNode.address, nonce, chainId]
-      );
-
-      const messageHash = ethers.utils.keccak256(packedData);
-
-      const messageHashBytes = ethers.utils.arrayify(messageHash);
-      const sig = await setupData.signers.admin.signMessage(messageHashBytes);
-
-      return {
-        sig, sigGenesisTime, avgNoFe, avgTreasuryFee
-      }
-    }
-
-    await protocol.superNode.merkleClaim(protocol.superNode.address, rewardIndex, amountRpl, amountEth, proof, await createMerkleSig(
+    await protocol.superNode.merkleClaim(rewardIndex, amountRpl, amountEth, proof, await createMerkleSig(
       setupData,
-      treasuryFee,
-      treasuryFee
-    ))
-
+      ethTreasuryFee,
+      ethOperatorFee,
+      rplTreasuryFee
+    ));
 
     expect(await protocol.vCRPL.totalAssets()).equals(depositAmount.add(expectedCommunityPortion))
     expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault);

@@ -4,7 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber as BN } from "ethers";
-import { assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract, registerNewValidator } from "./utils/utils";
+import { assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract, registerNewValidator, createMerkleSig } from "./utils/utils";
 import { parseRewardsMap } from "./utils/merkleClaim";
 import { submitRewards } from "./rocketpool/rewards/scenario-submit-rewards";
 
@@ -160,7 +160,7 @@ describe(`AssetRouter`, () => {
             [address: string]: any;
         }
     
-        it.skip("run proof", async () => {
+        it.skip("TODO: old proof test needs to be adjusted to SuperNode", async () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
     
@@ -237,11 +237,15 @@ describe(`AssetRouter`, () => {
     
             // Perform the Merkle Claim for each validator
             await protocol.superNode.merkleClaim(
-                protocol.superNode.address,
                 [0],
                 amountsRPL0,
                 amountsETH0,
-                proofs0
+                proofs0,
+                await createMerkleSig(setupData, 
+                    await setupData.protocol.vCWETH.treasuryFee(), 
+                    await setupData.protocol.vCWETH.nodeOperatorFee(), 
+                    await setupData.protocol.vCRPL.treasuryFee() 
+                )
             );
     
         });
