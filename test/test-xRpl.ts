@@ -179,7 +179,7 @@ describe("xRPL", function () {
     const ethTreasuryFee = await setupData.protocol.vCWETH.treasuryFee();
     const ethOperatorFee = await setupData.protocol.vCWETH.nodeOperatorFee();
     const rplTreasuryFee = await setupData.protocol.vCRPL.treasuryFee();
-    const expectedTreasuryPortion = rplReward.mul(ethTreasuryFee).div(ethers.utils.parseEther("1")); 
+    const expectedTreasuryPortion = rplReward.mul(rplTreasuryFee).div(ethers.utils.parseEther("1")); 
     const expectedCommunityPortion = rplReward.sub(expectedTreasuryPortion)
 
     // TODO: refractor into utils
