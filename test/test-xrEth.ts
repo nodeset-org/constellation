@@ -139,7 +139,7 @@ describe("xrETH", function () {
 
     console.log("minipoolData", minipoolData)
 
-    const expectedTreasuryPortion = expectedShareOfReward.mul(minipoolData.treasuryFee).div(ethers.utils.parseEther("1")); 
+    const expectedTreasuryPortion = expectedShareOfReward.mul(minipoolData.ethTreasuryFee).div(ethers.utils.parseEther("1")); 
     const expectedNodeOperatorPortion = expectedShareOfReward.mul(minipoolData.noFee).div(ethers.utils.parseEther("1")); 
 
     const expectedCommunityPortion = expectedShareOfReward.sub(expectedTreasuryPortion.add(expectedNodeOperatorPortion))

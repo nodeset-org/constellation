@@ -34,8 +34,8 @@ import 'hardhat/console.sol';
 struct MerkleRewardsConfig {
     bytes sig;
     uint256 sigGenesisTime;
-    uint256 avgTreasuryFee;
-    uint256 avgNoFe;
+    uint256 avgEthTreasuryFee;
+    uint256 avgEthOperatorFee;
     uint256 avgRplTreasuryFee;
 }
 
@@ -464,8 +464,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         bytes32 messageHash = keccak256(
             abi.encodePacked(
-                _config.avgTreasuryFee,
-                _config.avgNoFe,
+                _config.avgEthTreasuryFee,
+                _config.avgEthOperatorFee,
                 _config.sigGenesisTime,
                 address(this),
                 merkleClaimNonce,
@@ -482,7 +482,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         require(block.timestamp - _config.sigGenesisTime < merkleClaimSigExpiry, 'merkle sig expired');
         merkleClaimNonce++;
 
-        AssetRouter(payable(ar)).onEthRewardsReceived(ethReward, _config.avgTreasuryFee, _config.avgNoFe);
+        AssetRouter(payable(ar)).onEthRewardsReceived(ethReward, _config.avgEthTreasuryFee, _config.avgEthOperatorFee);
         AssetRouter(payable(ar)).onRplRewardsRecieved(rplReward, _config.avgRplTreasuryFee);
     }
 
