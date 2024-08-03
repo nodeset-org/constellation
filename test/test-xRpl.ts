@@ -183,7 +183,7 @@ describe("xRPL", function () {
     const expectedCommunityPortion = rplReward.sub(expectedTreasuryPortion)
 
     // TODO: refractor into utils
-    const createMerkleSig = async (setupData: SetupData, avgEthTreasuryFee: BigNumber, avgEthOperatorFee: BigNumber, avgRplFee: BigNumber) => {
+    const createMerkleSig = async (setupData: SetupData, avgEthTreasuryFee: BigNumber, avgEthOperatorFee: BigNumber, avgRplTreasuryFee: BigNumber) => {
       const network = await ethers.provider.getNetwork();
       const chainId = network.chainId;
 
@@ -192,7 +192,7 @@ describe("xRPL", function () {
 
       const packedData = ethers.utils.solidityPack(
         ['uint256', 'uint256', 'uint256', 'uint256', 'address', 'uint256', 'uint256'],
-        [avgEthTreasuryFee, avgEthOperatorFee, avgRplFee, sigGenesisTime, setupData.protocol.superNode.address, nonce, chainId]
+        [avgEthTreasuryFee, avgEthOperatorFee, avgRplTreasuryFee, sigGenesisTime, setupData.protocol.superNode.address, nonce, chainId]
       );
 
       const messageHash = ethers.utils.keccak256(packedData);
@@ -200,9 +200,7 @@ describe("xRPL", function () {
       const messageHashBytes = ethers.utils.arrayify(messageHash);
       const sig = await setupData.signers.admin.signMessage(messageHashBytes);
 
-      return {
-        sig, sigGenesisTime, avgEthTreasuryFee, avgEthOperatorFee, avgRplFee
-      }
+      return { sig, sigGenesisTime, avgEthTreasuryFee, avgEthOperatorFee, avgRplTreasuryFee};
     }
 
     await protocol.superNode.merkleClaim(protocol.superNode.address, rewardIndex, amountRpl, amountEth, proof, await createMerkleSig(
@@ -211,7 +209,6 @@ describe("xRPL", function () {
       ethOperatorFee,
       rplTreasuryFee
     ));
-
 
     expect(await protocol.vCRPL.totalAssets()).equals(depositAmount.add(expectedCommunityPortion))
     expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault);
