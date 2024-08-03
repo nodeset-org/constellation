@@ -93,7 +93,7 @@ describe("Operator Distributor", function () {
 
 		await operatorDistributor.connect(admin).setTargetStakeRatio(ethers.utils.parseEther("1"));
 
-		await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, ethers.utils.parseEther("5000"));
+		await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.assetRouter.address, ethers.utils.parseEther("5000"));
 
 		let initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
 		expect(initialRplStake).equals(0)
@@ -119,7 +119,7 @@ describe("Operator Distributor", function () {
 
 		await operatorDistributor.connect(admin).setTargetStakeRatio(ethers.utils.parseEther(".5"));
 
-		await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, ethers.utils.parseEther("5000"));
+		await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.assetRouter.address, ethers.utils.parseEther("5000"));
 
 		let initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
 		expect(initialRplStake).equals(0)

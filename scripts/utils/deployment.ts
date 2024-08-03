@@ -263,7 +263,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     expect(await directory.getTreasuryAddress()).to.equal(treasury.address);
     await directory.connect(signers.admin).setTreasury(deployer.address);
 
-    const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
+    const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, assetRouter: depositPool, operatorDistributor, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
 
     // send all rpl from admin to rplWhale
     const rplWhaleBalance = await rplContract.balanceOf(signers.deployer.address);

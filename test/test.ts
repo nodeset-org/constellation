@@ -44,7 +44,7 @@ export type Protocol = {
   whitelist: Contract;
   vCWETH: WETHVault;
   vCRPL: RPLVault;
-  depositPool: AssetRouter;
+  assetRouter: AssetRouter;
   operatorDistributor: OperatorDistributor;
   yieldDistributor: YieldDistributor;
   oracle: XRETHAdminOracle;

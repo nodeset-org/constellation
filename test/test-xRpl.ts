@@ -48,7 +48,7 @@ describe("xRPL", function () {
     }
 
     const expectedRplInDP = ethers.utils.parseEther("0");
-    const actualRplInDP = await rocketPool.rplContract.balanceOf(protocol.depositPool.address);
+    const actualRplInDP = await rocketPool.rplContract.balanceOf(protocol.assetRouter.address);
     expect(expectedRplInDP).equals(actualRplInDP)
 
   })
@@ -234,7 +234,7 @@ describe("xRPL", function () {
 
 
     // incoming funds to DP
-    await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, ethers.utils.parseEther("10"));
+    await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.assetRouter.address, ethers.utils.parseEther("10"));
 
     // random should be able to withdraw shares worth 10% more, aka, withdraw will trade one share for 1.1 - 1% admin fee RPL
     // admin should be allowed to take 1% of the 10 RPL that landed

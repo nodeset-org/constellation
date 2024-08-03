@@ -61,20 +61,12 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      */
     function initialize(address _directory) public override initializer {
         super.initialize(_directory);
-        // defaulting these to 8eth to only allow LEB8 minipools
         targetStakeRatio = 0.6e18; // 60% of bonded ETH by default.
         minimumStakeRatio = 0.15e18; // 15% of matched ETH by default
     }
 
     /**
-     * @notice Fallback function to handle incoming Ether transactions.
-     */
-    receive() external payable {
-        revert('To fund this contract, please deposit into WETHVault instead.');
-    }
-
-    /**
-     * @notice Rebalances liquidity by transferring all collected ETH and RPL tokens to the deposit pool.
+     * @notice Rebalances liquidity by transferring all collected ETH and RPL tokens to the AssetRouter.
      * @dev Calls to external contracts for transferring balances and ensures successful execution of these calls.
      */
     function _rebalanceLiquidity() internal nonReentrant {
@@ -211,8 +203,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             if (_requiredStake == 0) {
                 return 0;
             }
-            // stakeRPLOnBehalfOf
-            // transfer RPL to deposit pool
+            // transfer RPL to asset router
             IERC20(_directory.getRPLAddress()).transfer(_directory.getAssetRouterAddress(), _requiredStake);
             AssetRouter(_directory.getAssetRouterAddress()).stakeRPLFor(_superNode, _requiredStake);
             balanceRpl -= _requiredStake;

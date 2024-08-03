@@ -57,7 +57,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Handles deposits into the vault, ensuring compliance with RPL coverage ratio and distribution of fees.
-     * @dev This function first checks if the RPL coverage ratio is above the threshold, and then continues with the deposit process. It updates the depositor's position, and distributes the assets to the deposit pool.
+     * @dev This function first checks if the RPL coverage ratio is below the maximum threshold, and then continues with the deposit process. 
+     * It updates the depositor's position, and distributes the assets to the OperatorDistributor for utilization.
      * @param caller The address initiating the deposit.
      * @param receiver The address designated to receive the issued shares for the deposit.
      * @param assets The amount of assets being deposited.
@@ -88,7 +89,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     /**
      * @notice Handles withdrawals from the vault, updating the position and distributing fees to operators and the treasury.
      * @dev This function calculates and records any capital gains or losses, updates the owner's position, and distributes the assets to the receiver.
-     * It also transfers the assets from the deposit pool. May revert if the liquidity reserves are too low.
+     * It also transfers the assets from the AssetRouter. May revert if the liquidity reserves are too low.
      * @param caller The address initiating the withdrawal.
      * @param receiver The address designated to receive the withdrawn assets.
      * @param owner The address that owns the shares being redeemed.
@@ -149,7 +150,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     /**
      * @notice Returns the total assets managed by this vault.
      * @dev This function calculates the total assets by summing the vault's own assets, the distributable yield,
-     * and the assets held in the deposit pool and Operator Distributor. It then subtracts the treasury and node operator incomes to get the net total assets.
+     * and the assets held in the AssetRouter and OperatorDistributor. It then subtracts the treasury and node operator incomes to get the net total assets.
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {

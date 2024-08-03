@@ -27,9 +27,9 @@ const getOperatorSetupIterator = (setupData: SetupData) => async (operator: NewO
     const amountToBeStaked = ethers.utils.parseUnits('1000', await rocketPool.rplContract.decimals());
     console.log('amount of RPL to be staked', amountToBeStaked);
     
-    await rocketPool.rplContract.connect(rplWhale).transfer(protocol.depositPool.address, amountToBeStaked);
+    await rocketPool.rplContract.connect(rplWhale).transfer(protocol.assetRouter.address, amountToBeStaked);
     
-    await protocol.depositPool.connect(admin).stakeRPLFor(protocol.superNode.address, amountToBeStaked);
+    await protocol.assetRouter.connect(admin).stakeRPLFor(protocol.superNode.address, amountToBeStaked);
     
     console.log('transferred and staked RPL', amountToBeStaked);
 

@@ -507,7 +507,7 @@ export const registerNewValidatorDeprecated = async (setupData: SetupData, nodeO
 
     await rocketPool.rockStorageContract
       .connect(nodeOperator)
-      .setWithdrawalAddress(nodeOperator.address, setupData.protocol.depositPool.address, true);
+      .setWithdrawalAddress(nodeOperator.address, setupData.protocol.assetRouter.address, true);
 
     // NO sets smoothing pool registration state to true
     await rocketPool.rocketNodeManagerContract.connect(nodeOperator).setSmoothingPoolRegistrationState(true);

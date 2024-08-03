@@ -22,10 +22,10 @@ describe(`AssetRouter`, () => {
             console.log("assetroutertest.AB")
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
-            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
+            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.assetRouter.address, amountStaked);
 
             const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
-            await protocol.depositPool.connect(signers.admin).stakeRPLFor(protocol.superNode.address, amountStaked)
+            await protocol.assetRouter.connect(signers.admin).stakeRPLFor(protocol.superNode.address, amountStaked)
             const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(finalStake.sub(initialStake)).equals(amountStaked);
@@ -40,10 +40,10 @@ describe(`AssetRouter`, () => {
             await registerNewValidator(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
-            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
+            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.assetRouter.address, amountStaked);
 
             const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
-            await protocol.depositPool.connect(signers.protocolSigner).stakeRPLFor(protocol.superNode.address, amountStaked)
+            await protocol.assetRouter.connect(signers.protocolSigner).stakeRPLFor(protocol.superNode.address, amountStaked)
             const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(finalStake.sub(initialStake)).equals(amountStaked);
@@ -58,10 +58,10 @@ describe(`AssetRouter`, () => {
             await registerNewValidator(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
-            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
+            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.assetRouter.address, amountStaked);
 
             const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
-            await expect(protocol.depositPool.connect(signers.deployer).stakeRPLFor(protocol.superNode.address, amountStaked)).to.be.revertedWith("Can only be called by Protocol or Admin!")
+            await expect(protocol.assetRouter.connect(signers.deployer).stakeRPLFor(protocol.superNode.address, amountStaked)).to.be.revertedWith("Can only be called by Protocol or Admin!")
             const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(finalStake.sub(initialStake)).equals(0);
@@ -78,10 +78,10 @@ describe(`AssetRouter`, () => {
             await registerNewValidator(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
-            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
+            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.assetRouter.address, amountStaked);
 
             const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
-            await protocol.depositPool.connect(signers.admin).stakeRPLFor(protocol.superNode.address, amountStaked)
+            await protocol.assetRouter.connect(signers.admin).stakeRPLFor(protocol.superNode.address, amountStaked)
             const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(finalStake.sub(initialStake)).equals(amountStaked);
@@ -92,7 +92,7 @@ describe(`AssetRouter`, () => {
 
             const amountUnstaked = ethers.utils.parseUnits("70", await rp.rplContract.decimals());
             const initialStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
-            await protocol.depositPool.connect(signers.admin).unstakeRpl(protocol.superNode.address, amountUnstaked)
+            await protocol.assetRouter.connect(signers.admin).unstakeRpl(protocol.superNode.address, amountUnstaked)
             const finalStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(initialStake2.sub(finalStake2)).equals(amountUnstaked);
@@ -106,10 +106,10 @@ describe(`AssetRouter`, () => {
             await registerNewValidator(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
-            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
+            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.assetRouter.address, amountStaked);
 
             const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
-            await protocol.depositPool.connect(signers.protocolSigner).stakeRPLFor(protocol.superNode.address, amountStaked)
+            await protocol.assetRouter.connect(signers.protocolSigner).stakeRPLFor(protocol.superNode.address, amountStaked)
             const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(finalStake.sub(initialStake)).equals(amountStaked);
@@ -120,7 +120,7 @@ describe(`AssetRouter`, () => {
 
             const amountUnstaked = ethers.utils.parseUnits("70", await rp.rplContract.decimals());
             const initialStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
-            await protocol.depositPool.connect(signers.protocolSigner).unstakeRpl(protocol.superNode.address, amountUnstaked)
+            await protocol.assetRouter.connect(signers.protocolSigner).unstakeRpl(protocol.superNode.address, amountUnstaked)
             const finalStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(initialStake2.sub(finalStake2)).equals(amountUnstaked);
@@ -134,10 +134,10 @@ describe(`AssetRouter`, () => {
             await registerNewValidator(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
-            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.depositPool.address, amountStaked);
+            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.assetRouter.address, amountStaked);
 
             const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
-            await protocol.depositPool.connect(signers.protocolSigner).stakeRPLFor(protocol.superNode.address, amountStaked)
+            await protocol.assetRouter.connect(signers.protocolSigner).stakeRPLFor(protocol.superNode.address, amountStaked)
             const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(finalStake.sub(initialStake)).equals(amountStaked);
@@ -148,7 +148,7 @@ describe(`AssetRouter`, () => {
 
             const amountUnstaked = ethers.utils.parseUnits("70", await rp.rplContract.decimals());
             const initialStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
-            await expect(protocol.depositPool.unstakeRpl(protocol.superNode.address, amountUnstaked)).to.be.revertedWith("Can only be called by Protocol or Admin!")
+            await expect(protocol.assetRouter.unstakeRpl(protocol.superNode.address, amountUnstaked)).to.be.revertedWith("Can only be called by Protocol or Admin!")
             const finalStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(initialStake2.sub(finalStake2)).equals(0);
