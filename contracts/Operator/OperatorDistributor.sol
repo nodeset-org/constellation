@@ -21,7 +21,8 @@ import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
 /**
  * @title OperatorDistributor
  * @author Theodore Clapp, Mike Leach
- * @dev Manages distribution and staking of ETH and RPL tokens for node operators in a decentralized network.
+ * @dev Manages distribution and staking of ETH and RPL tokens for 
+ * decentralized node operators to stake with a single Rocket Pool "supernode".
  * Inherits from UpgradeableBase and Errors to use their functionalities for upgradeability and error handling.
  */
 contract OperatorDistributor is UpgradeableBase, Errors {
@@ -37,15 +38,12 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     using Math for uint256;
 
-    // Target ratio of ETH to RPL stake.
+    // Target ratio of SuperNode's bonded ETH to RPL stake.
     // RPL will be staked if the stake balance is below this and unstaked if the balance is above.
     uint256 public targetStakeRatio;
 
-    // Minimum ratio of ETH to RPL stake.
+    // Minimum ratio of matched rETH to RPL stake allowed in the node.
     uint256 public minimumStakeRatio;
-
-    // Required amount of ETH staked for a minipool to be active.
-    uint256 public requiredLEBStaked;
 
     // The amount the oracle has already included in its summation
     uint256 public oracleError;
@@ -66,7 +64,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         // defaulting these to 8eth to only allow LEB8 minipools
         targetStakeRatio = 0.6e18; // 60% of bonded ETH by default.
         minimumStakeRatio = 0.15e18; // 15% of matched ETH by default
-        requiredLEBStaked = 8 ether; // Default to 8 ETH to align with specific minipool configurations.
     }
 
     /**
@@ -122,7 +119,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('provisionLiquiditiesForMinipoolCreation.pre-RebalanceLiquidities');
         _rebalanceLiquidity();
         console.log('provisionLiquiditiesForMinipoolCreation.post-RebalanceLiquidities');
-        require(_bond == requiredLEBStaked, 'OperatorDistributor: Bad _bond amount, should be `requiredLEBStaked`');
+        require(_bond == SuperNodeAccount(getDirectory().getSuperNodeAddress()).bond(), 'OperatorDistributor: Bad _bond amount, should be `SuperNodeAccount.bond`');
 
         address superNode = _directory.getSuperNodeAddress();
 
@@ -362,14 +359,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         (, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));
 
         ar.onEthRewardsReceived(rewards, treasuryFee, noFee);
-    }
-
-    /**
-     * @notice Sets the required ETH stake for activating a minipool.
-     * @param _requiredLEBStaked Amount of ETH required.
-     */
-    function setBondRequirements(uint256 _requiredLEBStaked) external onlyAdmin {
-        requiredLEBStaked = _requiredLEBStaked;
     }
 
     /**
