@@ -356,10 +356,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             uint256 rewards = finalBalance - initialBalance;
             console.log('rewards recieved', rewards);
             ar.onEthRewardsReceived(rewards);
-
         } else {
             // the minipool is exited
+            ar.openGate();
             ar.onExitedMinipool(minipool);
+            ar.closeGate();
             this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
         }
     }
