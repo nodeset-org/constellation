@@ -141,7 +141,7 @@ describe("xRPL", function () {
     expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("3")))
   })
 
-  it.only("success - tries to deposit and redeem from weth vault multiple times after getting merkle rewards", async () => {
+  it("success - tries to deposit and redeem from weth vault multiple times after getting merkle rewards", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
@@ -175,7 +175,9 @@ describe("xRPL", function () {
     const amountEth = [ethReward];
     const proof = [[ethers.utils.hexZeroPad("0x0", 32)], [ethers.utils.hexZeroPad("0x0", 32)]]
 
-    const expectedTreasuryPortion = await protocol.vCRPL.getTreasuryPortion(rplReward);
+
+    const treasuryFee = await setupData.protocol.vCWETH.treasuryFee();
+    const expectedTreasuryPortion = rplReward.mul(treasuryFee).div(ethers.utils.parseEther("1")); 
     const expectedCommunityPortion = rplReward.sub(expectedTreasuryPortion)
 
     // TODO: refractor into utils
@@ -188,10 +190,11 @@ describe("xRPL", function () {
 
       const packedData = ethers.utils.solidityPack(
         ['uint256', 'uint256', 'uint256', 'address', 'uint256', 'uint256'],
-        [avgNoFe, avgTreasuryFee, sigGenesisTime, setupData.protocol.superNode.address, nonce, chainId]
+        [avgTreasuryFee, avgNoFe, sigGenesisTime, setupData.protocol.superNode.address, nonce, chainId]
       );
 
       const messageHash = ethers.utils.keccak256(packedData);
+
       const messageHashBytes = ethers.utils.arrayify(messageHash);
       const sig = await setupData.signers.admin.signMessage(messageHashBytes);
 
@@ -202,8 +205,8 @@ describe("xRPL", function () {
 
     await protocol.superNode.merkleClaim(protocol.superNode.address, rewardIndex, amountRpl, amountEth, proof, await createMerkleSig(
       setupData,
-      expectedTreasuryPortion,
-      expectedCommunityPortion
+      treasuryFee,
+      treasuryFee
     ))
 
 

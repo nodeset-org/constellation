@@ -459,23 +459,28 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         uint256 ethReward = finalEthBalance - initialEthBalance;
         uint256 rplReward = finalRplBalance - initialRplBalance;
 
-        bytes32 messageHash = keccak256(abi.encodePacked(_config.avgTreasuryFee, _config.avgNoFe, _config.sigGenesisTime, address(this), merkleClaimNonce, block.chainid));
-        require(!merkleClaimSigUsed[messageHash], "merkle sig already used");
-        address recoveredAddress = ECDSA.recover(
-            ECDSA.toEthSignedMessageHash(
-                messageHash
-            ),
-            _config.sig
+        bytes32 messageHash = keccak256(
+            abi.encodePacked(
+                _config.avgTreasuryFee,
+                _config.avgNoFe,
+                _config.sigGenesisTime,
+                address(this),
+                merkleClaimNonce,
+                block.chainid
+            )
         );
+        require(!merkleClaimSigUsed[messageHash], 'merkle sig already used');
+        merkleClaimSigUsed[messageHash] = true;
+        address recoveredAddress = ECDSA.recover(ECDSA.toEthSignedMessageHash(messageHash), _config.sig);
         require(
             _directory.hasRole(Constants.ADMIN_ORACLE_ROLE, recoveredAddress),
             'merkleClaim: signer must have permission from admin oracle role'
         );
-        require(block.timestamp - _config.sigGenesisTime > merkleClaimSigExpiry, "merkle sig expired");
+        require(block.timestamp - _config.sigGenesisTime < merkleClaimSigExpiry, 'merkle sig expired');
         merkleClaimNonce++;
 
         AssetRouter(payable(ar)).onEthRewardsReceived(ethReward, _config.avgTreasuryFee, _config.avgNoFe);
-        AssetRouter(payable(ar)).onRplRewardsRecieved(rplReward);
+        AssetRouter(payable(ar)).onRplRewardsRecieved(rplReward, _config.avgTreasuryFee);
     }
 
     /**

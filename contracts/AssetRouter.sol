@@ -204,6 +204,7 @@ contract AssetRouter is UpgradeableBase {
         console.log('treasuryPortion', treasuryPortion);
         console.log('nodeOperatorPortion', nodeOperatorPortion);
         console.log('_amount', _amount);
+        console.log('ethBalance', address(this).balance);
 
         (bool success, ) = _directory.getTreasuryAddress().call{value: treasuryPortion}('');
         require(success, 'Transfer to treasury failed');
@@ -221,11 +222,11 @@ contract AssetRouter is UpgradeableBase {
         od.onIncreaseOracleError(communityPortion);
     }
 
-    function onRplRewardsRecieved(uint256 _amount) external onlyProtocol {
+    function onRplRewardsRecieved(uint256 _amount, uint256 treasuryFee) external onlyProtocol {
         IERC20 rpl = IERC20(_directory.getRPLAddress());
         RPLVault vrpl = RPLVault(getDirectory().getRPLVaultAddress());
 
-        uint256 treasuryPortion = vrpl.getTreasuryPortion(_amount);
+        uint256 treasuryPortion = _amount.mulDiv(treasuryFee, 1e18);
 
         console.log('treasuryPortion', treasuryPortion);
         console.log('_amount', _amount);
