@@ -88,7 +88,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Returns the total ETH held by the contract, including both the balance of this contract and the staked ETH.
+     * @notice Returns the total ETH managed by the contract, including both the balance of this contract 
+     * and the SuperNode's staked ETH.
      * @return uint256 Total amount of ETH under the management of the contract.
      */
     function getTvlEth() public view returns (uint) {
@@ -96,7 +97,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Returns the total RPL held by the contract, including both the balance of this contract and the staked RPL.
+     * @notice Returns the total RPL managed by the contract, including both the balance of this contract 
+     * and the SuperNode's staked RPL.
      * @return uint256 Total amount of RPL under the management of the contract.
      */
     function getTvlRpl() public view returns (uint) {
@@ -107,7 +109,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @notice Allocates the necessary liquidity for the creation of a new minipool.
      * @param _bond The amount of ETH required to be staked for the minipool.
      */
-    function provisionLiquiditiesForMinipoolCreation(uint256 _bond) external onlyProtocolOrAdmin {
+    function provisionLiquiditiesForMinipoolCreation(uint256 _bond) external onlyProtocol {
         console.log('provisionLiquiditiesForMinipoolCreation.pre-RebalanceLiquidities');
         _rebalanceLiquidity();
         console.log('provisionLiquiditiesForMinipoolCreation.post-RebalanceLiquidities');
@@ -135,11 +137,12 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Adjusts the RPL stake of a node operator to maintain the target stake ratio.
-     * @dev Calculates required adjustments to the RPL stake based on the current ETH price and staking metrics.
-     * @param _ethStaked Amount of ETH currently staked by the node operator.
+     * @notice Adjusts the RPL stake of the SuperNode to maintain the target RPL stake ratio based on the current ETH price
+     *  and staking metrics.
+     * @dev Anyone can call to rebalance the current stake, but normally called during processMinipool() or minipool creation. 
+     * @param _ethStaked Amount of ETH currently staked in the SuperNode.
      */
-    function rebalanceRplStake(uint256 _ethStaked) public onlyProtocolOrAdmin {
+    function rebalanceRplStake(uint256 _ethStaked) public {
         address _nodeAccount = _directory.getSuperNodeAddress();
 
         console.log('rebalanceRplStake()');
@@ -156,22 +159,38 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         uint256 targetStake = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
         console.log('od.rebalanceRplStake.targetStake', targetStake);
+        
+        // stake more
         if (targetStake > rplStaked) {
-            // stake more
             uint256 stakeIncrease = targetStake - rplStaked;
+            if (stakeIncrease == 0) return;
             console.log('rebalanceRplStake.stakeIncrease', stakeIncrease);
             console.log('od.rebalanceRplStake.balanceOf', IERC20(_directory.getRPLAddress()).balanceOf(address(this)));
             console.log('od.rebalanceRplStake.balanceRpl', balanceRpl);
 
-            _performTopUp(_nodeAccount, stakeIncrease);
+            uint256 currentRplBalance = balanceRpl;
+
+            if (currentRplBalance >= stakeIncrease) {
+                // transfer RPL to asset router
+                IERC20(_directory.getRPLAddress()).transfer(_directory.getAssetRouterAddress(), stakeIncrease);
+                AssetRouter(_directory.getAssetRouterAddress()).stakeRPLFor(_nodeAccount, stakeIncrease);
+                balanceRpl -= stakeIncrease;
+
+            } else {
+                // stake what we have
+                if (currentRplBalance == 0) return;
+                IERC20(_directory.getRPLAddress()).transfer(_directory.getAssetRouterAddress(), balanceRpl);
+                AssetRouter(_directory.getAssetRouterAddress()).stakeRPLFor(_nodeAccount, balanceRpl);
+                balanceRpl = 0;
+            }
             console.log('rebalanceRplStake.actualStakeIncrease', stakeIncrease);
         }
 
+        // unstake
         if (targetStake < rplStaked) {
             uint256 elapsed = block.timestamp -
                 IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStakedTime(_nodeAccount);
 
-            // NOTE: what happens if rpl staked is 0 and locked stake is postive?
             uint256 excessRpl = rplStaked - targetStake;
             bool noShortfall = rplStaked - excessRpl - lockedStake >=
                 rocketNodeStaking.getNodeMaximumRPLStake(_nodeAccount);
@@ -181,7 +200,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                     .getRewardsClaimIntervalTime() &&
                 noShortfall
             ) {
-                // NOTE: to auditors: double check that all cases are covered such that withdrawRPL will not revert execution
+                // NOTE: to auditors: double check that all cases are covered such that unstakeRpl will not revert execution
                 console.log('rebalanceRplStake.excessRpl', excessRpl);
                 balanceRpl += excessRpl;
                 AssetRouter(_directory.getAssetRouterAddress()).unstakeRpl(_nodeAccount, excessRpl);
@@ -193,35 +212,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         }
         console.log('finished rebalanceRplStake.targetStake', targetStake);
         console.log('finished rebalanceRplStake.rplStaked', rplStaked);
-    }
-
-    function _performTopUp(address _superNode, uint256 _requiredStake) internal returns (uint256) {
-        uint256 currentRplBalance = balanceRpl;
-        console.log('_performTopUp.currentRplBalance', currentRplBalance);
-        console.log('od._performTopup.balanceOf', IERC20(_directory.getRPLAddress()).balanceOf(address(this)));
-        if (currentRplBalance >= _requiredStake) {
-            if (_requiredStake == 0) {
-                return 0;
-            }
-            // transfer RPL to asset router
-            IERC20(_directory.getRPLAddress()).transfer(_directory.getAssetRouterAddress(), _requiredStake);
-            AssetRouter(_directory.getAssetRouterAddress()).stakeRPLFor(_superNode, _requiredStake);
-            balanceRpl -= _requiredStake;
-            console.log('_performTopUp._requiredStake', _requiredStake);
-            return _requiredStake;
-        } else {
-            if (currentRplBalance == 0) {
-                return 0;
-            }
-            // stake what we have
-            console.log('od._performTopup.balanceRpl', balanceRpl);
-            console.log('od._performTopup.balanceOf', IERC20(_directory.getRPLAddress()).balanceOf(address(this)));
-            IERC20(_directory.getRPLAddress()).transfer(_directory.getAssetRouterAddress(), balanceRpl);
-            AssetRouter(_directory.getAssetRouterAddress()).stakeRPLFor(_superNode, balanceRpl);
-            balanceRpl = 0;
-            console.log('_performTopUp.currentRplBalance', balanceRpl);
-            return currentRplBalance;
-        }
     }
 
     /**
