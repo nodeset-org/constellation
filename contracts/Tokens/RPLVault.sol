@@ -13,7 +13,11 @@ import '../Operator/OperatorDistributor.sol';
 
 import 'hardhat/console.sol';
 
-/// @custom:security-contact info@nodeoperator.org
+/**
+ * @title RPLVault
+ * @author Theodore Clapp, Mike Leach
+ * @dev Distributes earned rewards to a decentralized operator set using an interval system.
+ */
 contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
     event TreasuryFeeClaimed(uint256 amount);

@@ -262,7 +262,7 @@ contract AssetRouter is UpgradeableBase {
         _gateOpen = false;
     }
 
-    /// @dev We can't use a named payable function because Rocket Pool needs to send ETH to this contract
+    /// @dev We can't use a named or address-locked payable function because Rocket Pool needs to send ETH to this contract
     receive() external payable {
         require(_gateOpen);
     }

@@ -30,18 +30,18 @@ struct Claim {
     uint256 numOperators; // length of node operators active in the interval
 }
 
-/// @custom:security-contact info@nodeset.io
 /**
- * @title SuperNodeAccount
- * @author Theodore Clapp
- * @dev Allows Sub Node Operators collect their share of rewards
+ * @title YieldDistributor
+ * @author Theodore Clapp, Mike Leach
+ * @dev Distributes earned rewards to a decentralized operator set using an interval system.
  */
 contract YieldDistributor is UpgradeableBase {
     event RewardDistributed(Reward);
     event WarningAlreadyClaimed(address operator, uint256 interval);
 
-    uint256 public totalYieldAccrued;
     uint256 public yieldAccruedInInterval;
+    /// @notice dust acccrued from operators with less than the maximum number of minipols claiming rewards
+    /// This is claimable by the Treasury
     uint256 public dustAccrued;
 
     mapping(uint256 => Claim) public claims; // claimable yield per interval (in wei)
@@ -51,7 +51,7 @@ contract YieldDistributor is UpgradeableBase {
     uint256 public currentIntervalGenesisTime;
     uint256 public maxIntervalLengthSeconds; // NOs will have to wait at most this long for their payday
 
-    uint256 public k; // steepness of the curve
+    uint256 public k; // steepness of the exponential curve
 
 
     /**
@@ -91,7 +91,6 @@ contract YieldDistributor is UpgradeableBase {
      * @param weth The amount of WETH received by the contract.
      */
     function _wethReceived(uint256 weth, bool voidClaim) internal {
-        totalYieldAccrued += weth;
         yieldAccruedInInterval += weth;
 
         // if elapsed time since last interval is greater than maxIntervalLengthSeconds, start a new interval
@@ -127,7 +126,10 @@ contract YieldDistributor is UpgradeableBase {
 
     /**
      * @notice Distributes rewards accrued between two intervals to a specific rewardee.
-     * @dev The function calculates the reward based on the number of validators managed by the rewardee and uses an exponential function to determine the portion of the reward. Any rewards not claimed due to conditions or errors are considered "dust" and are accumulated in the `dustAccrued` variable. The caller should ensure that the function is called in a gas-efficient manner.
+     * @dev The function calculates the reward based on the number of validators managed by the rewardee and 
+     * uses an exponential function to determine the portion of the reward. Any rewards not claimed due to conditions 
+     * or errors are considered "dust" and are accumulated in the `dustAccrued` variable. The caller should ensure that 
+     * the function is called in a gas-efficient manner.
      * @param _rewardee The address of the operator to distribute rewards to.
      * @param _startInterval The interval (inclusive) from which to start distributing the rewards.
      * @param _endInterval The interval (inclusive) at which to end distributing the rewards.
@@ -223,7 +225,8 @@ contract YieldDistributor is UpgradeableBase {
     /**
      * @notice Updates the maximum duration for each rewards interval.
      * @param _maxIntervalLengthSeconds The new maximum duration (in seconds) for each interval.
-     * @dev This function allows the admin to adjust the length of time between rewards intervals. Adjustments may be necessary based on changing network conditions or governance decisions.
+     * @dev This function allows the admin to adjust the length of time between rewards intervals. 
+     * Adjustments may be necessary based on changing network conditions or governance decisions.
      */ function setMaxIntervalTime(uint256 _maxIntervalLengthSeconds) public onlyShortTimelock {
         maxIntervalLengthSeconds = _maxIntervalLengthSeconds;
     }
@@ -231,9 +234,10 @@ contract YieldDistributor is UpgradeableBase {
     /**
      * @notice Transfers the accumulated dust (residual ETH) to the specified treasury address.
      * @param treasury The address of the treasury to which the dust will be sent.
-     * @dev This function can only be called by the protocol admin. It allows for the collection of small residual ETH balances (dust) that may have accumulated due to rounding errors or other minor discrepancies.
+     * @dev This function can only be called by the protocol admin. It allows for the collection of 
+     * small residual ETH balances (dust) that may have accumulated due to rounding errors or other minor discrepancies.
      */
-    function adminSweep(address treasury) public onlyMediumTimelock {
+    function treasurySweep(address treasury) public onlyTreasurer {
         uint256 amount = dustAccrued;
         dustAccrued = 0;
         (bool success, ) = treasury.call{value: amount}('');
@@ -282,11 +286,10 @@ contract YieldDistributor is UpgradeableBase {
     }
 
     /**
-     * @notice Fallback function to receive ETH and convert it to WETH (Wrapped ETH). This is also used to trigger new intervals after enough time has elapsed
-     * @dev When ETH is sent to this contract, it is automatically wrapped into WETH and the corresponding amount is processed.
+     * @notice Fallback function to receive ETH and trigger new intervals after enough time has elapsed.
+     * Thank you for your donation to the hard-working operators!
      */
-    // Thank you for your donation to the hard-working operators
-    receive() external payable  { 
+    receive() external payable { 
         _wethReceived(msg.value, false);
     }
 }
