@@ -173,14 +173,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             if (currentRplBalance >= stakeIncrease) {
                 // transfer RPL to asset router
                 IERC20(_directory.getRPLAddress()).transfer(_directory.getAssetRouterAddress(), stakeIncrease);
-                AssetRouter(_directory.getAssetRouterAddress()).stakeRPLFor(_nodeAccount, stakeIncrease);
+                AssetRouter(_directory.getAssetRouterAddress()).stakeRpl(stakeIncrease);
                 balanceRpl -= stakeIncrease;
 
             } else {
                 // stake what we have
                 if (currentRplBalance == 0) return;
                 IERC20(_directory.getRPLAddress()).transfer(_directory.getAssetRouterAddress(), balanceRpl);
-                AssetRouter(_directory.getAssetRouterAddress()).stakeRPLFor(_nodeAccount, balanceRpl);
+                AssetRouter(_directory.getAssetRouterAddress()).stakeRpl(balanceRpl);
                 balanceRpl = 0;
             }
             console.log('rebalanceRplStake.actualStakeIncrease', stakeIncrease);
@@ -203,7 +203,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 // NOTE: to auditors: double check that all cases are covered such that unstakeRpl will not revert execution
                 console.log('rebalanceRplStake.excessRpl', excessRpl);
                 balanceRpl += excessRpl;
-                AssetRouter(_directory.getAssetRouterAddress()).unstakeRpl(_nodeAccount, excessRpl);
+                AssetRouter(_directory.getAssetRouterAddress()).unstakeRpl(excessRpl);
             } else {
                 console.log('failed to rebalanceRplStake.excessRpl', excessRpl);
             }

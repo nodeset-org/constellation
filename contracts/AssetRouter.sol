@@ -16,10 +16,12 @@ import './Interfaces/Oracles/IXRETHOracle.sol';
 import './Utils/Constants.sol';
 
 /// @custom:security-contact info@nodeoperator.org
-/// @notice Immutable deposit pool which holds deposits and provides a minimum source of liquidity for depositors.
-/// ETH + RPL intakes from token mints and validator yields and sends to respective ERC4246 vaults.
+/// @notice Router to keep the protocol asset distributions balanced. Ensures a minimum source of liquidity for depositors.
+/// Acts as a withdrawal address for the SuperNodeAccount. Takes in ETH & RPL from token mints and minipool yields, 
+/// then sends to respective ERC4246 vaults or OperatorDistributor.
+/// ANY WETH OR RPL SENT TO THIS CONTRACT FROM OUTSIDE THIS PROTOCOL WILL NOT BE ACCOUNTED FOR AND WILL BE LOST PERMANENTLY!
 contract AssetRouter is UpgradeableBase {
-    uint256 public balanceWeth;
+    uint256 public balanceEthAndWeth;
     uint256 public balanceRpl;
 
     bool internal _gateOpen;
@@ -38,17 +40,17 @@ contract AssetRouter is UpgradeableBase {
     /// GETTERS
     ///--------
 
-    /// @notice Retrieves the total ETH and WETH value locked inside this deposit pool.
-    /// @dev This function calculates and returns the combined value of ETH and WETH held by the deposit pool.
-    ///      It sums the ETH balance of this contract and the WETH balance from the WETH contract.
-    /// @return The total value in ETH and WETH locked in the deposit pool.
+    /// @notice Retrieves the total ETH and WETH value in the AssetRouter.
+    /// @dev This function calculates and returns the combined value of ETH and WETH held by this contract.
+    ///      It sums the ETH balance of this contract with known WETH deposits.
+    /// @return The total value in ETH and WETH locked in the AssetRouter.
     function getTvlEth() public view returns (uint) {
-        return balanceWeth;
+        return balanceEthAndWeth;
     }
 
-    /// @notice Retrieves the total RPL value locked inside this deposit pool.
-    /// @dev This function calculates and returns the total amount of RPL tokens held by the deposit pool.
-    /// @return The total value in RPL locked in the deposit pool.
+    /// @notice Retrieves the total RPL value locked inside the AssetRouter.
+    /// @dev This function calculates and returns the total amount of RPL tokens held by the AssetRouter.
+    /// @return The total value in RPL locked in the AssetRouter.
     function getTvlRpl() public view returns (uint) {
         return balanceRpl;
     }
@@ -58,27 +60,29 @@ contract AssetRouter is UpgradeableBase {
     ///--------
 
     /// @notice Unstakes a specified amount of RPL tokens.
-    /// @dev This function allows an administrator to unstake a specified amount of RPL tokens from the Rocket Node Staking contract.
+    /// @dev This function unstakes a specified amount of RPL tokens from the Rocket Node Staking contract.
     /// @param _amount The amount of RPL tokens to unstake.
-    /// @dev The tokens will be withdrawn from the Rocket Node Staking contract.
-    function unstakeRpl(address _nodeAddress, uint256 _amount) external onlyProtocolOrAdmin {
-        IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).withdrawRPL(_nodeAddress, _amount);
+    /// @dev The tokens will be withdrawn from the Rocket Node Staking contract into this contract. 
+    /// Outside callers MUST call onRplBalanceIncrease or onRplBalanceDecrease to appropriately account for this.
+    function unstakeRpl(uint256 _amount) external onlyProtocol {
+        IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).withdrawRPL(getDirectory().getSuperNodeAddress(), _amount);
     }
 
-    /// @notice Stakes a specified amount of RPL tokens on behalf of a node operator.
-    /// @dev This function allows the protocol or an administrator to stake a specified amount of RPL tokens on behalf of a node operator
+    /// @notice Stakes a specified amount of RPL tokens on behalf of the SuperNode.
+    /// @dev This function allows the protocol to stake a specified amount of RPL tokens on the SuperNode
     ///      using the Rocket Node Staking contract.
-    /// @param _nodeAddress The address of the node operator on whose behalf the RPL tokens are being staked.
     /// @param _amount The amount of RPL tokens to stake.
-    /// @dev This function ensures that the specified amount of RPL tokens is approved and then staked for the given node operator.
-    function stakeRPLFor(address _nodeAddress, uint256 _amount) external onlyProtocolOrAdmin {
+    /// @dev This function ensures that the specified amount of RPL tokens is approved and then staked 
+    /// for the SuperNode.
+    function stakeRpl(uint256 _amount) external onlyProtocol {
         SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), 0);
         SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), _amount);
-        IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(_nodeAddress, _amount);
+        IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(getDirectory().getSuperNodeAddress(), _amount);
     }
 
     /// @notice Distributes ETH to the vault and operator distributor.
-    /// @dev This function converts the WETH balance to ETH, sends the required capital to the vault, and the surplus ETH to the operator distributor.
+    /// @dev This function converts the WETH balance to ETH, sends the required capital to the vault, 
+    /// and the surplus ETH to the OperatorDistributor.
     function sendEthToDistributors() public onlyProtocolOrAdmin nonReentrant {
         IWETH weth = IWETH(_directory.getWETHAddress());
 
@@ -91,19 +95,19 @@ contract AssetRouter is UpgradeableBase {
         console.log('sendEthToDistributors.D');
         console.log(requiredCapital);
 
-        if (balanceWeth >= requiredCapital) {
+        if (balanceEthAndWeth >= requiredCapital) {
             console.log('sendEthToDistributors.E');
 
-            balanceWeth -= requiredCapital;
+            balanceEthAndWeth -= requiredCapital;
             vweth.onWethBalanceIncrease(requiredCapital);
             SafeERC20.safeTransfer(weth, address(vweth), requiredCapital);
 
             console.log('sendEthToDistributors.E2');
 
-            uint256 surplus = balanceWeth;
+            uint256 surplus = balanceEthAndWeth;
             console.log('sendEthToDistributors.E3');
 
-            balanceWeth = 0;
+            balanceEthAndWeth = 0;
             _gateOpen = true;
             weth.withdraw(surplus);
             _gateOpen = false;
@@ -112,8 +116,8 @@ contract AssetRouter is UpgradeableBase {
         } else {
             console.log('sendEthToDistributors.G');
 
-            uint256 shortfall = balanceWeth;
-            balanceWeth = 0;
+            uint256 shortfall = balanceEthAndWeth;
+            balanceEthAndWeth = 0;
             vweth.onWethBalanceIncrease(shortfall);
             SafeERC20.safeTransfer(IERC20(address(weth)), address(vweth), shortfall);
             console.log('sendEthToDistributors.H');
@@ -165,11 +169,11 @@ contract AssetRouter is UpgradeableBase {
     }
 
     function onWethBalanceIncrease(uint256 _amount) external onlyProtocol {
-        balanceWeth += _amount;
+        balanceEthAndWeth += _amount;
     }
 
     function onWethBalanceDecrease(uint256 _amount) external onlyProtocol {
-        balanceWeth -= _amount;
+        balanceEthAndWeth -= _amount;
     }
 
     function onRplBalanceIncrease(uint256 _amount) external onlyProtocol {
@@ -217,7 +221,7 @@ contract AssetRouter is UpgradeableBase {
         console.log('onEthRewardsReceived.communityPortion', communityPortion);
         console.log('onEthRewardsReceived.treasuryPortion', treasuryPortion);
         console.log('onEthRewardsReceived.nodeOperatorFee', nodeOperatorPortion);
-        balanceWeth += communityPortion;
+        balanceEthAndWeth += communityPortion;
         od.onIncreaseOracleError(communityPortion);
     }
 
@@ -245,6 +249,7 @@ contract AssetRouter is UpgradeableBase {
         _gateOpen = false;
     }
 
+    /// @dev We can't use a named payable function because Rocket Pool needs to send ETH to this contract
     receive() external payable {
         require(_gateOpen);
     }
