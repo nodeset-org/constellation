@@ -582,8 +582,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     // Must receive ETH from OD for staking during the createMinipool process (pre-staking minipools)
-    // If ETH is received otherwise, it won't be returned!
-    receive() external payable {}
+    receive() external payable onlyProtocol {}
 
     /**
      * @notice Retrieves the next minipool in the sequence to process tasks such as reward distribution or updates.
