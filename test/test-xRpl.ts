@@ -4,7 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { assertAddOperator, assertMultipleTransfers, assertSingleTransferExists, expectNumberE18ToBeApproximately } from "./utils/utils";
+import { assertAddOperator, assertMultipleTransfers, createMerkleSig } from "./utils/utils";
 
 describe("xRPL", function () {
 
@@ -182,34 +182,10 @@ describe("xRPL", function () {
     const expectedTreasuryPortion = rplReward.mul(rplTreasuryFee).div(ethers.utils.parseEther("1")); 
     const expectedCommunityPortion = rplReward.sub(expectedTreasuryPortion)
 
-    // TODO: refractor into utils
-    const createMerkleSig = async (setupData: SetupData, avgEthTreasuryFee: BigNumber, avgEthOperatorFee: BigNumber, avgRplTreasuryFee: BigNumber) => {
-      const network = await ethers.provider.getNetwork();
-      const chainId = network.chainId;
-
-      const sigGenesisTime = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
-      const nonce = await setupData.protocol.superNode.merkleClaimNonce();
-
-      const packedData = ethers.utils.solidityPack(
-        ['uint256', 'uint256', 'uint256', 'uint256', 'address', 'uint256', 'uint256'],
-        [avgEthTreasuryFee, avgEthOperatorFee, avgRplTreasuryFee, sigGenesisTime, setupData.protocol.superNode.address, nonce, chainId]
-      );
-
-      const messageHash = ethers.utils.keccak256(packedData);
-
-      const messageHashBytes = ethers.utils.arrayify(messageHash);
-      const adminHasOracleRole = await setupData.protocol.directory.hasRole(
-        ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('ADMIN_ORACLE_ROLE'))), 
-        setupData.signers.admin.address
-      );
-      expect(adminHasOracleRole).equals(true);
-      const sig = await setupData.signers.admin.signMessage(messageHashBytes);
-
-      return { sig, sigGenesisTime, avgEthTreasuryFee, avgEthOperatorFee, avgRplTreasuryFee};
-    }
+    
 
 
-    await protocol.superNode.merkleClaim(protocol.superNode.address, rewardIndex, amountRpl, amountEth, proof, await createMerkleSig(
+    await protocol.superNode.merkleClaim(rewardIndex, amountRpl, amountEth, proof, await createMerkleSig(
       setupData,
       ethTreasuryFee,
       ethOperatorFee,

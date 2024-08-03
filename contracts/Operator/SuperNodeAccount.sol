@@ -42,7 +42,7 @@ struct MerkleRewardsConfig {
 /**
  * @title SuperNodeAccount
  * @author Theodore Clapp, Mike Leach
- * @dev Abstracts all created minipools under a single address / minipool owner
+ * @dev Abstracts all created minipools under a single node
  */
 contract SuperNodeAccount is UpgradeableBase, Errors {
     // Mapping of minipool address to the amount of ETH locked
@@ -54,19 +54,20 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     // Mapping of keccak256 hash of subNodeOperator and minipool address to bool indicating if a minipool exists
     mapping(bytes32 => bool) public subNodeOperatorHasMinipool;
 
-    // Total amount of ETH locked in all minipools
+    // Total amount of ETH locked in for all minipools
     uint256 public totalEthLocked;
-
-    // Variables for pre-signed exit message checks
-    bool public adminServerCheck;
-    mapping(bytes => bool) public sigsUsed;
-    uint256 public adminServerSigExpiry;
 
     // Lock threshold amount in wei
     uint256 public lockThreshold;
     // Lock-up time in seconds
     uint256 public lockUpTime;
 
+    // Variables for admin server message checks (if enabled for minipool creation)
+    bool public adminServerCheck;
+    mapping(bytes => bool) public sigsUsed;
+    uint256 public adminServerSigExpiry;
+
+    // Merkle claim signature data
     uint256 public merkleClaimNonce;
     mapping(bytes32 => bool) public merkleClaimSigUsed;
     uint256 public merkleClaimSigExpiry;
@@ -106,6 +107,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     uint256 public bond;
     uint256 public minimumNodeFee;
     uint256 public maxValidators; // max number of validators each NO is allowed
+    bool public allowSubOpDelegateChanges;
 
     /// @notice Modifier to ensure a function can only be called once for lazy initialization
     modifier lazyInitializer() {
@@ -125,12 +127,16 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /// @notice Modifier to ensure a function can only be called by a sub-node operator or admin of a specific minipool
-    modifier onlySubNodeOperatorOrAdmin(address _minipool) {
-        require(
-            _directory.hasRole(Constants.ADMIN_ROLE, msg.sender) ||
-                subNodeOperatorHasMinipool[keccak256(abi.encodePacked(msg.sender, _minipool))],
-            'Can only be called by SubNodeOperator!'
-        );
+    modifier onlyAdminOrAllowedSNO(address _minipool) {
+        if(allowSubOpDelegateChanges) { 
+            require(
+                _directory.hasRole(Constants.ADMIN_ROLE, msg.sender) || 
+                    subNodeOperatorHasMinipool[keccak256(abi.encodePacked(msg.sender, _minipool))],
+                'Can only be called by admin or sub node operator'
+            );
+        } else {
+            require(_directory.hasRole(Constants.ADMIN_ROLE, msg.sender), 'Minipool delegate changes only allowed by admin');
+        }
         _;
     }
 
@@ -149,12 +155,13 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         super.initialize(_directory);
 
         lockThreshold = 1 ether;
-        lockUpTime = 28 days;
+        lockUpTime = 28 days; // the length of an RP rewards period, which is the maximum length of time that a minipool will be in pre-launch before being dissolved
         adminServerCheck = true;
         adminServerSigExpiry = 1 days;
         minimumNodeFee = 14e16;
         bond = 8 ether;
         maxValidators = 1;
+        allowSubOpDelegateChanges = false;
     }
 
     /**
@@ -178,14 +185,14 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     /**
      * @notice This function is responsible for the creation and initialization of a minipool based on the validator's configuration.
-     *         It requires that the calling node operator is whitelisted and that the signature provided for the minipool creation is valid.
+     *         It requires that the calling node operator is whitelisted and that the signature provided for the minipool creation is valid (if signature checks are enabled).
      *         It also checks for sufficient liquidity (both RPL and ETH) before proceeding with the creation.
      * @dev The function involves multiple steps:
-     *      1. Validates that the transaction contains the exact amount of ETH specified in the `lockThreshold`.
+     *      1. Validates that the transaction contains the exact amount of ETH specified in the `lockThreshold` (to prevent depoist contract front-running).
      *      2. Checks if there is sufficient liquidity available for the required bond amount in both RPL and ETH.
      *      3. Validates that the sender (sub-node operator) is whitelisted.
      *      4. Ensures the signature provided has not been used before and marks it as used.
-     *      5. If pre-signed exit message checks are enabled, it verifies that the signature recovers to an address with the admin server role.
+     *      5. If admin server message checks are enabled, it verifies that the signature recovers to an address with the admin server role.
      *      6. Ensures that the expected minipool address from the configuration has not been initialized before.
      *      7. Locks the sent ETH, updates the total locked ETH count, and sets the timestamp when the lock started.
      *      8. Adds the minipool to the tracking arrays and mappings.
@@ -195,7 +202,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      *      It's crucial that this function is called with correct and validated parameters to ensure the integrity of the node and minipool registration process.
      *
      * @notice _config A `ValidatorConfig` struct containing:
-     *        - timezoneLocation: String representation of the validator's timezone.
      *        - bondAmount: The amount of ETH to be bonded.
      *        - minimumNodeFee: Minimum fee for the node operations.
      *        - validatorPubkey: Public key of the validator.
@@ -203,7 +209,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      *        - depositDataRoot: Root hash of the deposit data.
      *        - salt: Random nonce used for generating the expected minipool address.
      *        - expectedMinipoolAddress: Precomputed address expected to be generated for the new minipool.
-     * @notice _config.sig The signature provided for minipool creation, used for admin verification if pre-signed exit message checks are enabled.
+     *        - sig The signature provided for minipool creation; used for admin verification if admin server checks are enabled, ignored otherwise.
      */
     function createMinipool(CreateMinipoolConfig calldata _config) public payable {
         require(msg.value == lockThreshold, 'SuperNode: must set the message value to lockThreshold');
@@ -349,7 +355,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     ) external onlySubNodeOperator(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.stake(_validatorSignature, _depositDataRoot);
-        // RP close call will revert unless you're in the right state, so this may waste your gas if you call at the wrong time!
 
         // Refund the locked ETH
         uint256 lockupBalance = lockedEth[_minipool];
@@ -362,9 +367,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Closes a minipool and updates the tracking and financial records accordingly.
-     * @dev This function handles the administrative closure of a minipool, ensuring that the associated staking records
-     *      and financials are updated. Only callable by an admin.
+     * @notice Closes a dissolved minipool and updates the tracking and financial records accordingly.
+     * @dev This function handles the administrative closure of a minipool, ensuring that the associated
+     *      records are updated. Only callable by an admin.
      * @param _subNodeOperator Address of the sub-node operator associated with the minipool.
      * @param _minipool Address of the minipool to close.
      */
@@ -379,7 +384,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     /**
      * @notice Unlocks and transfers a fixed amount of ETH back to the sub-node operator from a minipool.
      * @dev Ensures that the minipool has been locked for a sufficient period or is in the staking state before allowing ETH to be unlocked.
-     *      This function is a safeguard to prevent premature withdrawal of locked funds which could affect minipool operations and rewards.
+     *      This function is a safeguard to prevent premature withdrawal of locked funds.
      * @param _minipool Address of the minipool from which ETH will be unlocked.
      */
     function unlockEth(address _minipool) external onlySubNodeOperator(_minipool) hasConfig(_minipool) {
@@ -398,42 +403,15 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Distributes staking rewards or allows for finalizing the minipool based on the given parameter.
-     * @dev Admins can call this function to either distribute rewards only or to finalize and close a minipool.
-     *      This function ensures that only admins can trigger these critical operations to maintain system integrity.
-     *      Restricting this function to admin is the only way we can technologically enforce
-     *      a node operator to not slash the capital they get from constellation depositors. If we
-     *      open this function to node operators, they could inappropriately finalize and fully
-     *      withdraw a minipool, creating slashings on depositor capital.
-     * @param _rewardsOnly If true, only distributes rewards; if false, it may also finalize the minipool.
-     * @param _subNodeOperator Address of the sub-node operator associated with the minipool.
-     * @param _minipool Address of the minipool for which to distribute rewards or finalize.
-     */
-    function distributeBalance(
-        bool _rewardsOnly,
-        address _subNodeOperator,
-        address _minipool
-    ) external onlyAdmin hasConfig(_minipool) {
-        IMinipool minipool = IMinipool(_minipool);
-        minipool.distributeBalance(_rewardsOnly);
-        if (minipool.getFinalised()) {
-            OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(_subNodeOperator);
-            _stopTrackingMinipool(_minipool);
-        }
-    }
-
-    /**
      * @notice Claims rewards for a node based on a Merkle proof, distributing specified amounts of RPL and ETH.
      * @dev This function interfaces with the RocketMerkleDistributorMainnet to allow nodes to claim their rewards.
      *      The rewards are determined by a Merkle proof which validates the amounts to be claimed.
-     * @param _nodeAddress Address of the node claiming the rewards.
      * @param _rewardIndex Array of indices in the Merkle tree corresponding to reward entries.
      * @param _amountRPL Array of amounts of RPL tokens to claim.
      * @param _amountETH Array of amounts of ETH to claim.
      * @param _merkleProof Array of Merkle proofs for each reward entry.
      */
     function merkleClaim(
-        address _nodeAddress,
         uint256[] calldata _rewardIndex,
         uint256[] calldata _amountRPL,
         uint256[] calldata _amountETH,
@@ -448,7 +426,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         AssetRouter(payable(ar)).openGate();
         IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
-            _nodeAddress,
+            address(this),
             _rewardIndex,
             _amountRPL,
             _amountETH,
@@ -488,11 +466,11 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Allows sub-node operators or admins to delegate an upgrade to the minipool's contract.
+     * @notice Allows dmins to delegate an upgrade to the minipool's contract.
      * @dev This function provides a mechanism for delegated upgrades of minipools, enhancing flexibility in maintenance and upgrades.
      * @param _minipool Address of the minipool which is to be upgraded.
      */
-    function delegateUpgrade(address _minipool) external onlySubNodeOperatorOrAdmin(_minipool) hasConfig(_minipool) {
+    function delegateUpgrade(address _minipool) external onlyAdminOrAllowedSNO(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateUpgrade();
     }
@@ -502,7 +480,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev Provides a rollback mechanism for previously delegated upgrades, ensuring that upgrades can be reversed if necessary.
      * @param _minipool Address of the minipool whose upgrade is to be rolled back.
      */
-    function delegateRollback(address _minipool) external onlySubNodeOperatorOrAdmin(_minipool) hasConfig(_minipool) {
+    function delegateRollback(address _minipool) external onlyAdminOrAllowedSNO(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateRollback();
     }
@@ -516,7 +494,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function setUseLatestDelegate(
         bool _setting,
         address _minipool
-    ) external onlySubNodeOperatorOrAdmin(_minipool) hasConfig(_minipool) {
+    ) external onlyAdminOrAllowedSNO(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.setUseLatestDelegate(_setting);
     }
@@ -536,16 +514,16 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @notice Enables the server-admin approved sigs
      * @dev This function can be called by an admin to activate the needing approval for admin-server
      */
-    function useAdminServerCheck() external onlyAdmin {
-        adminServerCheck = true;
+    function setAllowSubNodeOpDelegateChanges(bool newValue) external onlyAdmin {
+        allowSubOpDelegateChanges = newValue;
     }
 
     /**
-     * @notice Disables the server-admin approved sigs
-     * @dev This function can be called by an admin to deactivate the needing approval for admin-server
+     * @notice Enables or disables the server-admin approved sigs for creating minipools
+     * @dev This function can only be called by an admin
      */
-    function disableAdminServerCheck() external onlyAdmin {
-        adminServerCheck = false;
+    function setAdminServerCheck(bool newValue) external onlyAdmin {
+        adminServerCheck = newValue;
     }
 
     /**

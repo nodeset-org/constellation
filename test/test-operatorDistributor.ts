@@ -38,8 +38,6 @@ describe("Operator Distributor", function () {
 		const initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
 		console.log("od.test.initial stake", initialRplStake)
 		const tx = await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
-		console.log("printing events")
-		await printEventDetails(tx, operatorDistributor);
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
