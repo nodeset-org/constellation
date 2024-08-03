@@ -218,7 +218,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @notice Calculates the additional RPL needed to maintain the minimum staking ratio.
      * @param _existingRplStake Current amount of RPL staked by the node.
      * @param _rpEthMatched Amount of ETH currently staked by the node.
-     * @return requiredStakeRpl Amount of additional RPL needed.
+     * @return requiredStakeRpl Amount of additional RPL needed to reach the minimumStakeRatio.
      */
     function calculateRplStakeShortfall(
         uint256 _existingRplStake,
@@ -246,6 +246,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     /**
      * @notice Calculates the maximum RPL that can be withdrawn while maintaining the target staking ratio.
+     * @dev Used for tests
      * @param _existingRplStake Current amount of RPL staked by the node.
      * @param _ethStaked Amount of ETH currently staked by the node.
      * @return withdrawableStakeRpl Maximum RPL that can be safely withdrawn.
@@ -268,7 +269,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     /**
      * @notice Process the next minipool in line.
-     * Handles RPL top-up and balance distribution based on minipool's current state.
+     * Handles RPL rebalancing and minipool distribution based on minipool's current state.
      * Although this can be called manually, this typically happens automatically as part of other state changes
      * like claiming NO fees or depositing/withdrawing from the token vaults.
      */
@@ -277,15 +278,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Handles the creation of a minipool, registers the node, and logs the event.
+     * @notice Handles the creation of a minipool and emits the event.
      * @param newMinipoolAddress Address of the newly created minipool.
      * @param nodeAddress Address of the node operator.
      */
-    function onMinipoolCreated(address newMinipoolAddress, address nodeAddress) external {
-        if (!_directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender)) {
-            revert BadRole(Constants.CORE_PROTOCOL_ROLE, msg.sender);
-        }
-
+    function onMinipoolCreated(address newMinipoolAddress, address nodeAddress) external onlyProtocol {
         // register minipool with node operator
         Whitelist whitelist = Whitelist(getDirectory().getWhitelistAddress());
         whitelist.registerNewValidator(nodeAddress);
@@ -294,7 +291,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @dev Processes a single minipool by performing RPL top-up and distributing balance if certain conditions are met.
+     * @dev Performs a RPL stake rebalance for the node and distributes the outstanding balance for a minipool.
      */
     function processMinipool(IMinipool minipool) public {
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
@@ -343,8 +340,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Sets the target ETH to RPL stake ratio.
-     * @dev Adjusts the target ratio used to maintain balance between ETH and RPL stakes.
+     * @notice Sets the target ratio of the SuperNode's bonded ETH to RPL stake.
+     * @dev RPL will be staked or unstaked to try to reach this ratio during some common state changes. 
+     * See rebalanceRplStake()
      * @param _targetStakeRatio The new target stake ratio to be set.
      */
     function setTargetStakeRatio(uint256 _targetStakeRatio) external onlyAdmin {
@@ -352,9 +350,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Sets the minimum ETH to RPL stake ratio.
-     * @dev Adjusts the minimum ratio used to maintain balance between ETH and RPL stakes.
-     * Minipools can't be created if the new stake ratio would be below this amount.
+     * @notice Sets the minimum ratio of matched rETH to RPL stake allowed in the node.
+     * @dev minipools can't be created if the new stake ratio would be below this amount.
      * @param _minimumStakeRatio The new minimum stake ratio to be set.
      */
     function setMinimumStakeRatio(uint256 _minimumStakeRatio) external onlyAdmin {
@@ -362,8 +359,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Handles the destruction of a minipool by a node operator.
-     * @param _nodeOperator Address of the node operator.
+     * @notice Handles the destruction of a minipool.
+     * @param _nodeOperator Address of the sub node operator that created the minipool.
      */
     function onNodeMinipoolDestroy(address _nodeOperator) external onlyProtocol {
         Whitelist(getDirectory().getWhitelistAddress()).removeValidator(_nodeOperator);
