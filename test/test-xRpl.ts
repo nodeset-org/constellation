@@ -198,10 +198,16 @@ describe("xRPL", function () {
       const messageHash = ethers.utils.keccak256(packedData);
 
       const messageHashBytes = ethers.utils.arrayify(messageHash);
+      const adminHasOracleRole = await setupData.protocol.directory.hasRole(
+        ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('ADMIN_ORACLE_ROLE'))), 
+        setupData.signers.admin.address
+      );
+      expect(adminHasOracleRole).equals(true);
       const sig = await setupData.signers.admin.signMessage(messageHashBytes);
 
       return { sig, sigGenesisTime, avgEthTreasuryFee, avgEthOperatorFee, avgRplTreasuryFee};
     }
+
 
     await protocol.superNode.merkleClaim(protocol.superNode.address, rewardIndex, amountRpl, amountEth, proof, await createMerkleSig(
       setupData,

@@ -466,6 +466,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             abi.encodePacked(
                 _config.avgEthTreasuryFee,
                 _config.avgEthOperatorFee,
+                _config.avgRplTreasuryFee,
                 _config.sigGenesisTime,
                 address(this),
                 merkleClaimNonce,
