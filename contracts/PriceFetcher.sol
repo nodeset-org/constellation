@@ -10,7 +10,7 @@ import './Utils/Constants.sol';
 import 'hardhat/console.sol';
 
 /// @title PriceFetcher
-/// @author Teddy Clapp, Mike Leach
+/// @author Theodore Clapp, Mike Leach
 /// @notice Fetches current RPL/ETH price using Rocket Pool's reported value. Upgradeable in case something changes in Rocket Pool.
 contract PriceFetcher is UpgradeableBase {
     /**

@@ -13,6 +13,6 @@
   *
   *  For more information, visit https://nodeset.io
   *
-  *  @author Mike Leach (Wander), Teddy Clapp (mryamz), Joe Clapis (jcrtp)
+  *  @author Mike Leach (Wander), Theodore Clapp (mryamz), Joe Clapis (jcrtp)
   *  @custom:security-contact info@nodeset.io
   **/

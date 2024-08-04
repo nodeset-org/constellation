@@ -48,7 +48,7 @@ struct RocketIntegrations {
     address rocketDAOProtocolSettingsRewards;
 }
 
-/// @custom:security-contact info@nodeoperator.org
+/// @author Mike Leach, Theodore Clapp
 /// @notice The Directory contract holds references to all protocol contracts and role mechanisms.
 /// @dev The Directory contract is a central component of the protocol, managing contract addresses and access control roles.
 ///      It provides the ability to set contract addresses during initialization, manage treasury, and update the Oracle contract.
