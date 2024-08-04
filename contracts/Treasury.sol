@@ -5,8 +5,8 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './UpgradeableBase.sol';
 import './Utils/Constants.sol';
 
-/// @title Treasury Contract
-/// @notice A contract that allows the treasuerer to manage and execute transfers of ETH and ERC20 tokens.
+/// @title Treasury
+/// @notice A contract that allows the Constellation Treasuerer to manage and execute transfers of ETH and ERC20 tokens.
 /// @dev Inherits from UpgradeableBase to allow for future upgrades.
 contract Treasury is UpgradeableBase {
     event ClaimedToken(address indexed _token, address indexed _to, uint256 indexed _amount);
@@ -55,7 +55,7 @@ contract Treasury is UpgradeableBase {
     /// @param _tokenAddress The address of the ERC20 token.
     /// @param _to The recipient's address.
     /// @param _amount The amount of tokens to transfer.
-    function claimToken(address _tokenAddress, address _to, uint256 _amount) external onlyTreasurer nonReentrant {
+    function claimTokenAmount(address _tokenAddress, address _to, uint256 _amount) external onlyTreasurer nonReentrant {
         _claimTokenInternal(_tokenAddress, _to, _amount);
     }
 
@@ -68,7 +68,7 @@ contract Treasury is UpgradeableBase {
     /// @notice Allows the treasuerer to claim a specified amount of ETH and send it to a given address.
     /// @param _to The payable address to which the ETH will be transferred.
     /// @param _amount The amount of ETH to transfer.
-    function claimEth(address payable _to, uint256 _amount) external onlyTreasurer nonReentrant {
+    function claimEthAmount(address payable _to, uint256 _amount) external onlyTreasurer nonReentrant {
         _claimEthInternal(_to, _amount);
     }
 
@@ -97,6 +97,6 @@ contract Treasury is UpgradeableBase {
         }
     }
 
-    // we accept donations
+    // Thank you for your donation
     receive() external payable {}
 }

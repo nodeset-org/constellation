@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
-import './Interfaces/Oracles/IXRETHOracle.sol';
+import './Interfaces/Oracles/IBeaconOracle.sol';
 import './Interfaces/RocketPool/IRocketStorage.sol';
 import './Interfaces/ISanctions.sol';
 import './Interfaces/RocketPool/IRocketNetworkPrices.sol';
@@ -48,7 +48,7 @@ struct RocketIntegrations {
     address rocketDAOProtocolSettingsRewards;
 }
 
-/// @custom:security-contact info@nodeoperator.org
+/// @author Mike Leach, Theodore Clapp
 /// @notice The Directory contract holds references to all protocol contracts and role mechanisms.
 /// @dev The Directory contract is a central component of the protocol, managing contract addresses and access control roles.
 ///      It provides the ability to set contract addresses during initialization, manage treasury, and update the Oracle contract.
@@ -98,7 +98,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.assetRouter;
     }
 
-    function getRETHOracleAddress() public view returns (address) {
+    function getOracleAddress() public view returns (address) {
         return _protocol.oracle;
     }
 

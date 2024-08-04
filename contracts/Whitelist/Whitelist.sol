@@ -20,6 +20,7 @@ struct Operator {
 /// Only modifiable by admin. Upgradeable and intended to be replaced by a ZK-ID check when possible.
 /**
  * @title Whitelist
+ * @author Mike Leach, Theodore Clapp
  * @notice Controls operator access to the protocol. Only modifiable by permission of the admin.
  */
 contract Whitelist is UpgradeableBase {

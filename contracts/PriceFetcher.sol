@@ -3,14 +3,15 @@ pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/utils/math/Math.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
-//import "@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol";
 
 import './UpgradeableBase.sol';
 import './Utils/Constants.sol';
 
 import 'hardhat/console.sol';
 
+/// @title PriceFetcher
+/// @author Theodore Clapp, Mike Leach
+/// @notice Fetches current RPL/ETH price using Rocket Pool's reported value. Upgradeable in case something changes in Rocket Pool.
 contract PriceFetcher is UpgradeableBase {
     /**
      * @notice Initializes the PriceFetcher contract.
@@ -27,7 +28,6 @@ contract PriceFetcher is UpgradeableBase {
     function getPrice() public view returns (uint256) {
         console.log('getPriceFromODAO');
         console.logAddress(address(_directory.getRocketNetworkPrices()));
-        // do we use rocketNetworkSnapshots instead and pass priceKey, ..., 14?
         uint256 rplPrice = _directory.getRocketNetworkPrices().getRPLPrice();
 
         uint256 invertedPrice = (1 ether * 10 ** 18) / rplPrice;

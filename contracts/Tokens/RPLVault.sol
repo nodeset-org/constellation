@@ -13,17 +13,27 @@ import '../Operator/OperatorDistributor.sol';
 
 import 'hardhat/console.sol';
 
-/// @custom:security-contact info@nodeoperator.org
+/**
+ * @title RPLVault
+ * @author Theodore Clapp, Mike Leach
+ * @dev An ERC-4626 vault for staking RPL with a single node run by a decentralized operator set.
+ * @notice These vault shares will increase or decrease in value according to the rewards or penalties applied to the SuperNodeAccount by Rocket Pool.
+ */
 contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
     event TreasuryFeeClaimed(uint256 amount);
 
     string constant NAME = 'Constellation RPL';
-    string constant SYMBOL = 'xRPL'; // Vaulted Constellation RPL
+    string constant SYMBOL = 'xRPL';
 
     uint256 public treasuryFee;
 
-    uint256 public liquidityReserveRatio; // collateralization ratio
+    /**
+     * @notice Sets the liquidity reserve as a percentage of TVL. E.g. if set to 2% (0.02e18), then 2% of the 
+     * RPL backing xRPL will be reserved for withdrawals. If the reserve is below maximum, it will be refilled before assets are
+     * put to work with the OperatorDistributor.
+     */
+    uint256 public liquidityReservePercent;
 
     uint256 public minWethRplRatio; // weth coverage ratio
 
@@ -42,16 +52,16 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(rplToken));
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
-        liquidityReserveRatio = 0.02e18;
+        liquidityReservePercent = 0.02e18;
         minWethRplRatio = 0; // 0% by default
         treasuryFee = 0.01e18;
     }
 
     /**
      * @notice Handles deposits into the vault, ensuring compliance with WETH coverage ratio and distribution of fees.
-     * @dev This function first checks if the WETH coverage ratio is above the threshold, and then continues with the deposit process.
+     * @dev This function first checks if the WETH coverage ratio after deposit will still be above the threshold, and then continues with the deposit process.
      * It takes a fee based on the deposit amount and distributes the fee to the treasury.
-     * The rest of the deposited amount is transferred to a deposit pool for utilization.
+     * The rest of the deposited amount is transferred to the OperatorDistributor for utilization.
      * This function overrides the `_deposit` function in the parent contract to ensure custom business logic is applied.
      * @param caller The address initiating the deposit.
      * @param receiver The address designated to receive the issued shares for the deposit.
@@ -80,9 +90,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Handles withdrawals from the vault, distributing fees to the treasury.
-     * @dev This function first calculates the taker fee based on the withdrawal amount and then
-     * proceeds with the withdrawal process. After the withdrawal, the calculated fee is transferred
-     * to the treasury. This function overrides the `_withdraw` function in the parent contract to
+     * @dev This function overrides the `_withdraw` function in the parent contract to
      * ensure custom business logic is applied. May revert if the liquidity reserves are too low.
      * @param caller The address initiating the withdrawal.
      * @param receiver The address designated to receive the withdrawn assets.
@@ -111,7 +119,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Returns the total assets managed by this vault.
+     * @notice Returns the total assets managed by this vault. That is, all the RPL backing xRPL.
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
@@ -131,7 +139,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns (uint256) {
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 fullBalance = totalAssets() + deposit;
-        uint256 requiredBalance = liquidityReserveRatio.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
+        uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
         return requiredBalance > currentBalance ? requiredBalance : 0;
     }
 
@@ -140,7 +148,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @dev This function compares the current balance of assets in the contract with the desired collateralization ratio.
      * If the required collateral based on the desired ratio is greater than the current balance, the function returns
      * the amount of collateral needed to achieve the desired ratio. Otherwise, it returns 0, indicating no additional collateral
-     * is needed. The desired collateralization ratio is defined by `liquidityReserveRatio`.
+     * is needed. The desired collateralization ratio is defined by `liquidityReservePercent`.
      * @return The amount of asset required to maintain the desired collateralization ratio, or 0 if no additional collateral is needed.
      */
     function getRequiredCollateral() public view returns (uint256) {
@@ -150,7 +158,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     /**ADMIN FUNCTIONS */
 
     /**
-     * @notice Sets the treasurer fee basis points.
+     * @notice Sets the treasury fee basis points.
      * @dev This function allows the admin to update the fee basis points that the treasury will receive from the rewards.
      * The treasury fee must be less than or equal to 100% (1e18 basis points).
      * @param _treasuryFee The new treasury fee in basis points.
@@ -173,16 +181,18 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Sets the collateralization ratio basis points.
-     * @dev This function allows the admin to update the collateralization ratio which determines the level of collateral required for sufficent liquidity.
-     * The collateralization ratio must be a reasonable percentage, typically expressed in basis points (1e18 basis points = 100%).
-     * @param _liquidityReserveRatio The new collateralization ratio in basis points.
+     * @notice Sets the liquidity reserve as a percentage of TVL. E.g. if set to 2% (0.02e18), then 2% of the 
+     * RPL backing xRPL will be reserved for withdrawals. If the reserve is below maximum, it will be refilled before assets are
+     * put to work with the OperatorDistributor.
+     * @dev This function allows the admin to update the liquidity reserve which determines the amount available for withdrawals.
+     * The liquidity rserve must be a reasonable percentage between 0 and 100%. 1e18 = 100%
+     * @param _liquidityReservePercent The new collateralization ratio in basis points.
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
-    function setLiquidityReserveRatio(uint256 _liquidityReserveRatio) external onlyShortTimelock {
-        require(_liquidityReserveRatio >= 0, 'RPLVault: Collateralization ratio must be positive');
-        require(_liquidityReserveRatio <= 1e18, 'RPLVault: Collateralization ratio must be less than or equal to 100%');
-        liquidityReserveRatio = _liquidityReserveRatio;
+    function setLiquidityReservePercent(uint256 _liquidityReservePercent) external onlyShortTimelock {
+        require(_liquidityReservePercent >= 0, 'RPLVault: liquidity reserve percentage must be positive');
+        require(_liquidityReservePercent <= 1e18, 'RPLVault: liquidity reserve percentage must be less than or equal to 100%');
+        liquidityReservePercent = _liquidityReservePercent;
     }
 
     function onRplBalanceIncrease(uint256 _amount) external onlyProtocol {
@@ -196,6 +206,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         console.log("rplVault.onRplBalanceDecrease.", balanceRpl);
     }
 
+    /// Calculates the treasury portion of a specific RPL reward amount.
+    /// @param _amount The RPL reward expected
     function getTreasuryPortion(uint256 _amount) external view returns (uint256) {
         return _amount.mulDiv(treasuryFee, 1e18);
     }

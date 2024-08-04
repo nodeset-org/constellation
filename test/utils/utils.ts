@@ -507,7 +507,7 @@ export const registerNewValidatorDeprecated = async (setupData: SetupData, nodeO
 
     await rocketPool.rockStorageContract
       .connect(nodeOperator)
-      .setWithdrawalAddress(nodeOperator.address, setupData.protocol.depositPool.address, true);
+      .setWithdrawalAddress(nodeOperator.address, setupData.protocol.assetRouter.address, true);
 
     // NO sets smoothing pool registration state to true
     await rocketPool.rocketNodeManagerContract.connect(nodeOperator).setSmoothingPoolRegistrationState(true);
@@ -542,7 +542,7 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   console.log('REQUIRE COLLAT', vaultMinimum);
   const requiredEth = depositAmount
     .add(vaultMinimum)
-    .mul((await setupData.protocol.vCWETH.liquidityReserveRatio())
+    .mul((await setupData.protocol.vCWETH.liquidityReservePercent())
       .div(ethers.utils.parseUnits('1', 17)))
     .add(depositAmount.div(ethers.utils.parseUnits("1", 2)))
     .add(depositAmount.div(ethers.utils.parseUnits("1", 3)))

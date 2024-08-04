@@ -171,7 +171,7 @@ describe("Yield Distributor", function () {
       const tx4 = await yieldDistributor.connect(signers.random4).harvest(signers.random4.address, 1, 1);
       const tx5 = await yieldDistributor.connect(signers.random5).harvest(signers.random5.address, 1, 1);
 
-      const claims = await yieldDistributor.getClaims();
+      const claims = await yieldDistributor.getIntervals();
 
       expect(claims[0].amount).to.equal(firstYield);
       expect(claims[1].amount).to.equal(secondYield);

@@ -4,7 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from "./test";
 import { prepareOperatorDistributionContract } from "./utils/utils";
 
-describe("XRETHAdminOracle", function () {
+describe("XRETHOracle", function () {
 
     describe("Initialization", function () {
         it("Should initialize with correct directory address", async function () {

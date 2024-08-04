@@ -319,7 +319,7 @@ Function: getDepositPoolAddress() - Selector: 0xad969e8c
 Function: getImplementation() - Selector: 0xaaf10f42
 Function: getOperatorDistributorAddress() - Selector: 0xeb4cfca7
 Function: getPriceFetcherAddress() - Selector: 0x24077021
-Function: getRETHOracleAddress() - Selector: 0xdc8177be
+Function: getOracleAddress() - Selector: 0xdc8177be
 Function: getRPLAddress() - Selector: 0xa3370ab8
 Function: getRPLVaultAddress() - Selector: 0xf6c15335
 Function: getRocketNodeDepositAddress() - Selector: 0x7de868c4

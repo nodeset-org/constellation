@@ -4,7 +4,7 @@ import path from 'path';
 import { getNextContractAddress } from "../../test/utils/utils";
 import { getInitializerData } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import readline from 'readline';
-import { Treasury, Directory, AssetRouter, IRocketStorage, IXRETHOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, XRETHAdminOracle, YieldDistributor } from "../../typechain-types";
+import { Treasury, Directory, AssetRouter, IRocketStorage, IBeaconOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, YieldDistributor, PoABeaconOracle } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Protocol, Signers } from "../../test/test";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
@@ -71,7 +71,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
     });
 
     const oracleProxy = await retryOperation(async () => {
-        const oracle = await upgrades.deployProxy(await ethers.getContractFactory("XRETHAdminOracle", deployer), [directoryAddress], { 'initializer': 'initializeAdminOracle', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        const oracle = await upgrades.deployProxy(await ethers.getContractFactory("PoABeaconOracle", deployer), [directoryAddress], { 'initializer': 'initializeOracle', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         if (log) console.log("admin oracle deployed to", oracle.address)
         return oracle;
     });
@@ -194,7 +194,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
         operatorDistributor: operatorDistributorProxy as OperatorDistributor,
         yieldDistributor: yieldDistributorProxy as YieldDistributor,
         priceFetcher: priceFetcherProxy as PriceFetcher,
-        oracle: oracleProxy as XRETHAdminOracle,
+        oracle: oracleProxy as PoABeaconOracle,
         superNode: superNodeProxy as SuperNodeAccount,
         treasury: treasuryProxy as Treasury,
         directory: directoryProxy as Directory
@@ -263,7 +263,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     expect(await directory.getTreasuryAddress()).to.equal(treasury.address);
     await directory.connect(signers.admin).setTreasury(deployer.address);
 
-    const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
+    const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, assetRouter: depositPool, operatorDistributor, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
 
     // send all rpl from admin to rplWhale
     const rplWhaleBalance = await rplContract.balanceOf(signers.deployer.address);
