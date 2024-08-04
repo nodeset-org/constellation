@@ -55,7 +55,7 @@ contract Treasury is UpgradeableBase {
     /// @param _tokenAddress The address of the ERC20 token.
     /// @param _to The recipient's address.
     /// @param _amount The amount of tokens to transfer.
-    function claimToken(address _tokenAddress, address _to, uint256 _amount) external onlyTreasurer nonReentrant {
+    function claimTokenAmount(address _tokenAddress, address _to, uint256 _amount) external onlyTreasurer nonReentrant {
         _claimTokenInternal(_tokenAddress, _to, _amount);
     }
 
@@ -68,7 +68,7 @@ contract Treasury is UpgradeableBase {
     /// @notice Allows the treasuerer to claim a specified amount of ETH and send it to a given address.
     /// @param _to The payable address to which the ETH will be transferred.
     /// @param _amount The amount of ETH to transfer.
-    function claimEth(address payable _to, uint256 _amount) external onlyTreasurer nonReentrant {
+    function claimEthAmount(address payable _to, uint256 _amount) external onlyTreasurer nonReentrant {
         _claimEthInternal(_to, _amount);
     }
 
