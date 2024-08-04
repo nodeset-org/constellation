@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
-import './Interfaces/Oracles/IXRETHOracle.sol';
+import './Interfaces/Oracles/IBeaconOracle.sol';
 import './Interfaces/RocketPool/IRocketStorage.sol';
 import './Interfaces/ISanctions.sol';
 import './Interfaces/RocketPool/IRocketNetworkPrices.sol';
@@ -98,7 +98,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.assetRouter;
     }
 
-    function getRETHOracleAddress() public view returns (address) {
+    function getOracleAddress() public view returns (address) {
         return _protocol.oracle;
     }
 

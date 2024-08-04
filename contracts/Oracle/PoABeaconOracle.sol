@@ -1,27 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
-import '../Interfaces/Oracles/IXRETHOracle.sol';
+import '../Interfaces/Oracles/IBeaconOracle.sol';
 import '../UpgradeableBase.sol';
 import '../Operator/SuperNodeAccount.sol';
 import '../Tokens/WETHVault.sol';
 
-
 pragma solidity 0.8.17;
 
-struct MerkleProofParams {
-    address nodeAddress;
-    uint256[] rewardIndex;
-    uint256[] amountRPL;
-    uint256[] amountETH;
-    bytes32[][] merkleProof;
-}
-
 /**
- * @title XRETHAdminOracle
- * @notice An admin oracle to manage and update the total yield accrued.
+ * @title PoABeaconOracle
+ * @notice A proof-of-authority oracle to manage and update the total yield accrued by xrETH on the beacon chain.
  */
-contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
+contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
     event TotalYieldAccruedUpdated(int256 _amount);
 
     int256 internal _totalYieldAccrued;
@@ -30,7 +21,7 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
     constructor() initializer {}
 
     /**
-     * @notice Initializes the Admin Oracle service with the specified directory address.
+     * @notice Initializes the oracle with the specified directory address.
      * @param _directoryAddress The address of the directory contract.
      */
     function initializeAdminOracle(address _directoryAddress) public virtual initializer {
@@ -73,7 +64,7 @@ contract XRETHAdminOracle is IXRETHOracle, UpgradeableBase {
 
     /**
      * @notice Sets the total yield accrued.
-     * @param _sig The signature.
+     * @param _sig Signature provided by the Constants.ADMIN_ORACLE_ROLE.
      * @param _newTotalYieldAccrued The new total yield accrued.
      * @param _sigTimeStamp The timestamp of the signature.
      */

@@ -11,7 +11,7 @@ import '../UpgradeableBase.sol';
 import '../Tokens/WETHVault.sol';
 
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
-import '../Interfaces/Oracles/IXRETHOracle.sol';
+import '../Interfaces/Oracles/IBeaconOracle.sol';
 import '../Interfaces/IWETH.sol';
 import '../Utils/Constants.sol';
 

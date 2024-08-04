@@ -1,15 +1,12 @@
-// SPDX License Identifier: GPL v3
+// SPDX-License-Identifier: GPL-3.0-or-later
 
-import '../Interfaces/Oracles/IXRETHOracle.sol';
+import '../Interfaces/Oracles/IBeaconOracle.sol';
 import '../UpgradeableBase.sol';
 
 pragma solidity 0.8.17;
 
-// interface def here
-
-contract XRETHOracle is IXRETHOracle, UpgradeableBase {
-    address public oracleService; // is gonna be rated
-
+contract ZKBeaconOracle is IBeaconOracle, UpgradeableBase {
+    address public oracleService;
     constructor() initializer {}
 
     /**
@@ -27,7 +24,7 @@ contract XRETHOracle is IXRETHOracle, UpgradeableBase {
      * @return The total yield accrued.
      */
     function getTotalYieldAccrued() external view override returns (int256) {
-        // rated oracle itegration here
+        // TODO: zk-oracle impl here
     }
 
     function getLastUpdatedTotalYieldAccrued() external view override returns (uint256) {}

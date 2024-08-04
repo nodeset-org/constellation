@@ -10,7 +10,7 @@ import '../AssetRouter.sol';
 import '../Operator/YieldDistributor.sol';
 import '../Utils/Constants.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
-import '../Interfaces/Oracles/IXRETHOracle.sol';
+import '../Interfaces/Oracles/IBeaconOracle.sol';
 
 import 'hardhat/console.sol';
 
@@ -143,8 +143,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @dev This function gets the address of the Oracle contract from the Directory contract.
      * @return The address of the Oracle contract.
      */
-    function getOracle() public view returns (IXRETHOracle) {
-        return IXRETHOracle(getDirectory().getRETHOracleAddress());
+    function getOracle() public view returns (IBeaconOracle) {
+        return IBeaconOracle(getDirectory().getOracleAddress());
     }
 
     /**

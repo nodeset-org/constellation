@@ -12,7 +12,7 @@ import './Tokens/RPLVault.sol';
 
 import './Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
 import './Interfaces/IWETH.sol';
-import './Interfaces/Oracles/IXRETHOracle.sol';
+import './Interfaces/Oracles/IBeaconOracle.sol';
 import './Utils/Constants.sol';
 
 /// @notice Router to keep the protocol asset distributions balanced. Ensures a minimum source of liquidity for depositors.
