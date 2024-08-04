@@ -104,6 +104,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     uint256 public currentMinipool;
 
     // admin settings
+    /// @notice Bond amount for newly created minipools
+    /// @dev ONLY use this for creating minipools. Do not use this for calculating rewards! 
     uint256 public bond;
     uint256 public minimumNodeFee;
     uint256 public maxValidators; // max number of validators each NO is allowed
