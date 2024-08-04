@@ -28,7 +28,12 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     uint256 public treasuryFee;
 
-    uint256 public liquidityReserveRatio; // collateralization ratio
+    /**
+     * @notice Sets the liquidity reserve as a percentage of TVL. E.g. if set to 2% (0.02e18), then 2% of the 
+     * RPL backing xRPL will be reserved for withdrawals. If the reserve is below maximum, it will be refilled before assets are
+     * put to work with the OperatorDistributor.
+     */
+    uint256 public liquidityReservePercent;
 
     uint256 public minWethRplRatio; // weth coverage ratio
 
@@ -47,7 +52,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(rplToken));
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
-        liquidityReserveRatio = 0.02e18;
+        liquidityReservePercent = 0.02e18;
         minWethRplRatio = 0; // 0% by default
         treasuryFee = 0.01e18;
     }
@@ -134,7 +139,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns (uint256) {
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 fullBalance = totalAssets() + deposit;
-        uint256 requiredBalance = liquidityReserveRatio.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
+        uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
         return requiredBalance > currentBalance ? requiredBalance : 0;
     }
 
@@ -143,7 +148,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @dev This function compares the current balance of assets in the contract with the desired collateralization ratio.
      * If the required collateral based on the desired ratio is greater than the current balance, the function returns
      * the amount of collateral needed to achieve the desired ratio. Otherwise, it returns 0, indicating no additional collateral
-     * is needed. The desired collateralization ratio is defined by `liquidityReserveRatio`.
+     * is needed. The desired collateralization ratio is defined by `liquidityReservePercent`.
      * @return The amount of asset required to maintain the desired collateralization ratio, or 0 if no additional collateral is needed.
      */
     function getRequiredCollateral() public view returns (uint256) {
@@ -176,16 +181,18 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Sets the collateralization ratio basis points.
-     * @dev This function allows the admin to update the collateralization ratio which determines the level of collateral required for sufficent liquidity.
-     * The collateralization ratio must be a reasonable percentage (0-100% with 1e18 = 100%).
-     * @param _liquidityReserveRatio The new collateralization ratio in basis points.
+     * @notice Sets the liquidity reserve as a percentage of TVL. E.g. if set to 2% (0.02e18), then 2% of the 
+     * RPL backing xRPL will be reserved for withdrawals. If the reserve is below maximum, it will be refilled before assets are
+     * put to work with the OperatorDistributor.
+     * @dev This function allows the admin to update the liquidity reserve which determines the amount available for withdrawals.
+     * The liquidity rserve must be a reasonable percentage between 0 and 100%. 1e18 = 100%
+     * @param _liquidityReservePercent The new collateralization ratio in basis points.
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
-    function setLiquidityReserveRatio(uint256 _liquidityReserveRatio) external onlyShortTimelock {
-        require(_liquidityReserveRatio >= 0, 'RPLVault: Collateralization ratio must be positive');
-        require(_liquidityReserveRatio <= 1e18, 'RPLVault: Collateralization ratio must be less than or equal to 100%');
-        liquidityReserveRatio = _liquidityReserveRatio;
+    function setLiquidityReservePercent(uint256 _liquidityReservePercent) external onlyShortTimelock {
+        require(_liquidityReservePercent >= 0, 'RPLVault: liquidity reserve percentage must be positive');
+        require(_liquidityReservePercent <= 1e18, 'RPLVault: liquidity reserve percentage must be less than or equal to 100%');
+        liquidityReservePercent = _liquidityReservePercent;
     }
 
     function onRplBalanceIncrease(uint256 _amount) external onlyProtocol {

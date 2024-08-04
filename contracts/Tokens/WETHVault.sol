@@ -21,7 +21,12 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     string constant NAME = 'Constellation ETH';
     string constant SYMBOL = 'xrETH';
 
-    uint256 public liquidityReserveRatio;
+    /**
+     * @notice Sets the liquidity reserve as a percentage of TVL. E.g. if set to 2% (0.02e18), then 2% of the 
+     * ETH backing xrETH will be reserved for withdrawals. If the reserve is below maximum, it will be refilled before assets are
+     * put to work with the OperatorDistributor.
+     */
+    uint256 public liquidityReservePercent;
     uint256 public maxWethRplRatio;
 
     uint256 public treasuryFee; // Treasury fee in basis points
@@ -47,7 +52,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(weth));
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
-        liquidityReserveRatio = 0.1e18; // 10% of TVL
+        liquidityReservePercent = 0.1e18; // 10% of TVL
         maxWethRplRatio = 40e18; // 400% at start (4 ETH of xrETH for 1 ETH of xRPL)
 
         // default fees with 14% rETH commission mean WETHVault share returns are equal to base ETH staking rewards
@@ -195,7 +200,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns (uint256) {
         uint256 fullBalance = totalAssets() + deposit;
-        uint256 requiredBalance = liquidityReserveRatio.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
+        uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
         return requiredBalance > balanceWeth ? requiredBalance : 0;
     }
 
@@ -211,19 +216,20 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     /**ADMIN FUNCTIONS */
 
     /**
-     * @notice Sets the RPL coverage ratio for the vault.
-     * @dev This function allows the admin to update the RPL coverage ratio, which determines the minimum RPL coverage required for the vault's health.
-     * @param _maxWethRplRatio The new RPL coverage ratio to be set.
+     * @notice Sets the minimum ETH/RPL coverage ratio for the vault.
+     * @dev This function allows the admin to update the RPL coverage ratio, which determines the 
+     * minimum ETH/RPL coverage required for the vault's health.
+     * @param _maxWethRplRatio The new ETH/RPL coverage ratio to be set.
      */
     function setMaxWethRplRatio(uint256 _maxWethRplRatio) external onlyShortTimelock {
         maxWethRplRatio = _maxWethRplRatio;
     }
 
     /**
-     * @notice Sets the treasury fee in basis points.
-     * @dev This function allows the admin to update the treasury fee, which is calculated in basis points.
+     * @notice Sets the treasury fee.
+     * @dev This function allows the admin to update the treasury fee.
      * This fee and the total fee must not exceed 100%.
-     * @param _treasuryFee The new treasury fee in basis points.
+     * @param _treasuryFee The new treasury fee (1e18 = 100%).
      */
     function setTreasuryFee(uint256 _treasuryFee) external onlyMediumTimelock {
         require(_treasuryFee <= 1e18, 'Fee too high');
@@ -232,10 +238,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Sets the node operator fee in basis points.
-     * @dev This function allows the admin to update the node operator fee, which is calculated in basis points.
+     * @notice Sets the node operator fee.
+     * @dev This function allows the admin to update the node operator fee.
      * This fee and the total fee must not exceed 100%.
-     * @param _nodeOperatorFee The new node operator fee in basis points.
+     * @param _nodeOperatorFee The new node operator fee (1e18 = 100%).
      */
     function setNodeOperatorFee(uint256 _nodeOperatorFee) external onlyMediumTimelock {
         require(_nodeOperatorFee <= 1e18, 'Fee too high');
@@ -244,11 +250,11 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Sets protocol fees in basis points.
-     * @dev This function allows the admin to update the node operator fee, which is calculated in basis points.
-     * The total fee must not exceed 100%.
-     * @param _nodeOperatorFee The new node operator fee in basis points.
-     * @param _treasuryFee The new treasury fee in basis points.
+     * @notice Sets protocol fees.
+     * @dev This function allows the admin to update the node operator fee.
+     * The total fee must not exceed 100%. (1e18 = 100%)
+     * @param _nodeOperatorFee The new node operator fee.
+     * @param _treasuryFee The new treasury fee.
      */
     function setProtocolFees(uint256 _nodeOperatorFee, uint256 _treasuryFee) external onlyMediumTimelock {
         require(_treasuryFee <= 1e18, 'Fee too high');
@@ -259,16 +265,18 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Sets the collateralization ratio basis points.
-     * @dev This function allows the admin to update the collateralization ratio which determines the level of collateral required.
-     * The collateralization ratio must be a reasonable percentage, typically expressed in basis points (1e18 basis points = 100%).
-     * @param _liquidityReserveRatio The new collateralization ratio in basis points.
+     * @notice Sets the liquidity reserve as a percentage of TVL. E.g. if set to 2% (0.02e18), then 2% of the 
+     * ETH backing xrETH will be reserved for withdrawals. If the reserve is below maximum, it will be refilled before assets are
+     * put to work with the OperatorDistributor.
+     * @dev This function allows the admin to update the liquidity reserve which determines the amount available for withdrawals.
+     * The liquidity rserve must be a reasonable percentage between 0 and 100%. 1e18 = 100%
+     * @param _liquidityReservePercent The new liquidity reserve percentage.
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
-    function setLiquidityReserveRatio(uint256 _liquidityReserveRatio) external onlyShortTimelock {
-        require(_liquidityReserveRatio >= 0, 'WETHVault: Collateralization ratio must be positive');
-        require(_liquidityReserveRatio <= 1e18, 'WETHVault: Collateralization ratio must be less than or equal to 100%');
-        liquidityReserveRatio = _liquidityReserveRatio;
+    function setLiquidityReservePerecent(uint256 _liquidityReservePercent) external onlyShortTimelock {
+        require(_liquidityReservePercent >= 0, 'WETHVault: liquidity reserve percentage must be positive');
+        require(_liquidityReservePercent <= 1e18, 'WETHVault: liquidity reserve percentage must be less than or equal to 100%');
+        liquidityReservePercent = _liquidityReservePercent;
     }
 
     function onWethBalanceIncrease(uint256 _amount) external onlyProtocol {

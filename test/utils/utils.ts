@@ -542,7 +542,7 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   console.log('REQUIRE COLLAT', vaultMinimum);
   const requiredEth = depositAmount
     .add(vaultMinimum)
-    .mul((await setupData.protocol.vCWETH.liquidityReserveRatio())
+    .mul((await setupData.protocol.vCWETH.liquidityReservePercent())
       .div(ethers.utils.parseUnits('1', 17)))
     .add(depositAmount.div(ethers.utils.parseUnits("1", 2)))
     .add(depositAmount.div(ethers.utils.parseUnits("1", 3)))
