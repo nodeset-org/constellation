@@ -20,6 +20,7 @@ struct Operator {
 /// Only modifiable by admin. Upgradeable and intended to be replaced by a ZK-ID check when possible.
 /**
  * @title Whitelist
+ * @author Mike Leach, Theodore Clapp
  * @notice Controls operator access to the protocol. Only modifiable by permission of the admin.
  */
 contract Whitelist is UpgradeableBase {
@@ -93,11 +94,18 @@ contract Whitelist is UpgradeableBase {
 
     /// @notice Registers a new validator under a specific node operator.
     /// @dev This function allows the protocol to register a new validator under a node operator's address.
-    ///      Only accessible to authorized protocol administrators.
     /// @param nodeOperator The address of the node operator to register the new validator under.
     /// @dev Increases the validator count for the specified node operator.
     function registerNewValidator(address nodeOperator) public onlyProtocol {
         nodeMap[nodeOperator].currentValidatorCount++;
+    }
+
+    /// @notice Registers a new validator under a specific node operator.
+    /// @dev This function allows the protocol to register a new validator under a node operator's address.
+    /// @param nodeOperator The address of the node operator the validator is being removed from.
+    /// @dev Decreases the validator count for the specified node operator.
+    function removeValidator(address nodeOperator) public onlyProtocol {
+        nodeMap[nodeOperator].currentValidatorCount--;
     }
 
     /// @notice Retrieves the address of an operator based on its index.

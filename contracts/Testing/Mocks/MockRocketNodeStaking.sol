@@ -1,4 +1,4 @@
-// SPDX License Identifier: GPL v3
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 pragma solidity 0.8.17;
 
@@ -48,4 +48,10 @@ contract MockRocketNodeStaking is IRocketNodeStaking {
     function getNodeRPLStakedTime(address _nodeAddress) external view override returns (uint256) {}
 
     function getNodeRPLLocked(address _nodeAddress) external view override returns (uint256) {}
+
+    function getNodeETHMatched(address _nodeAddress) external view returns (uint256) {}
+
+    function getNodeETHProvided(address _nodeAddress) external view returns (uint256) {}
+
+    function getTotalRPLStake() external view returns (uint256) {}
 }

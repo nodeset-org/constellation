@@ -3,7 +3,6 @@ import { getRocketPool, protocolFixture, protocolParams } from "../test/test";
 import { setDefaultParameters } from "../test/rocketpool/_helpers/defaults";
 import { deployRocketPool } from "../test/rocketpool/_helpers/deployment";
 import { getNextContractAddress } from "../test/utils/utils";
-import { IXRETHOracle } from "../typechain-types";
 import { expect } from "chai";
 import readline from 'readline';
 import { fastDeployProtocol, generateBytes32Identifier, retryOperation } from "./utils/deployment";

@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
-import './Interfaces/Oracles/IXRETHOracle.sol';
+import './Interfaces/Oracles/IBeaconOracle.sol';
 import './Interfaces/RocketPool/IRocketStorage.sol';
 import './Interfaces/ISanctions.sol';
 import './Interfaces/RocketPool/IRocketNetworkPrices.sol';
@@ -20,7 +20,7 @@ struct Protocol {
     address whitelist;
     address payable wethVault;
     address rplVault;
-    address payable depositPool;
+    address payable assetRouter;
     address payable operatorDistributor;
     address payable yieldDistributor;
     address oracle;
@@ -48,7 +48,7 @@ struct RocketIntegrations {
     address rocketDAOProtocolSettingsRewards;
 }
 
-/// @custom:security-contact info@nodeoperator.org
+/// @author Mike Leach, Theodore Clapp
 /// @notice The Directory contract holds references to all protocol contracts and role mechanisms.
 /// @dev The Directory contract is a central component of the protocol, managing contract addresses and access control roles.
 ///      It provides the ability to set contract addresses during initialization, manage treasury, and update the Oracle contract.
@@ -94,11 +94,11 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.rplVault;
     }
 
-    function getDepositPoolAddress() public view returns (address payable) {
-        return _protocol.depositPool;
+    function getAssetRouterAddress() public view returns (address payable) {
+        return _protocol.assetRouter;
     }
 
-    function getRETHOracleAddress() public view returns (address) {
+    function getOracleAddress() public view returns (address) {
         return _protocol.oracle;
     }
 
@@ -205,7 +205,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         );
         require(_protocol.rplVault == address(0) && newProtocol.rplVault != address(0), Constants.INITIALIZATION_ERROR);
         require(
-            _protocol.depositPool == address(0) && newProtocol.depositPool != address(0),
+            _protocol.assetRouter == address(0) && newProtocol.assetRouter != address(0),
             Constants.INITIALIZATION_ERROR
         );
         require(
@@ -247,7 +247,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.whitelist);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.wethVault);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.rplVault);
-        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.depositPool);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.assetRouter);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.operatorDistributor);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.yieldDistributor);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.oracle);

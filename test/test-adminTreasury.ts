@@ -54,7 +54,7 @@ describe("treasury", function () {
 
       const totalSupply = await token.totalSupply();
       await token.transfer(treasury.address, totalSupply);
-      await expect(treasury.connect(admin)['claimToken(address,address)'](token.address, admin.address)).to.emit(treasury, "ClaimedToken").withArgs(token.address, admin.address, totalSupply);
+      await expect(treasury.connect(admin).claimToken(token.address, admin.address)).to.emit(treasury, "ClaimedToken").withArgs(token.address, admin.address, totalSupply);
       const adminBalance = await token.balanceOf(admin.address);
       expect(adminBalance).to.equal(totalSupply);
     });
@@ -66,7 +66,7 @@ describe("treasury", function () {
       const totalSupply = await token.totalSupply();
       const decimals = await token.decimals();
       await token.transfer(treasury.address, totalSupply);
-      await expect(treasury.connect(admin)["claimToken(address,address,uint256)"](token.address, admin.address, ethers.utils.parseUnits("1000", decimals))).to.emit(treasury, "ClaimedToken").withArgs(token.address, admin.address, ethers.utils.parseUnits("1000", decimals));
+      await expect(treasury.connect(admin).claimTokenAmount(token.address, admin.address, ethers.utils.parseUnits("1000", decimals))).to.emit(treasury, "ClaimedToken").withArgs(token.address, admin.address, ethers.utils.parseUnits("1000", decimals));
       const adminBalance = await token.balanceOf(admin.address);
       expect(adminBalance).to.equal(ethers.utils.parseUnits("1000", decimals));
       expect(await token.balanceOf(treasury.address)).to.equal(totalSupply.sub(ethers.utils.parseUnits("1000", decimals)));
@@ -74,7 +74,7 @@ describe("treasury", function () {
 
     it("fail - non-admin claim tokens", async function () {
       await token.transfer(treasury.address, ethers.utils.parseEther("100"));
-      await expect(treasury.connect(nonAdmin)['claimToken(address,address)'](token.address, nonAdmin.address)).to.be.revertedWith("Can only be called by treasurer address!");
+      await expect(treasury.connect(nonAdmin).claimToken(token.address, nonAdmin.address)).to.be.revertedWith("Can only be called by treasurer address!");
     });
 
   });
@@ -92,7 +92,7 @@ describe("treasury", function () {
         value: ethers.utils.parseEther("1")
       })
       expect(await ethers.provider.getBalance(treasury.address)).equals(ethers.utils.parseEther("1"))
-      await expect(treasury.connect(admin)["claimEth(address)"](signers.admin.address)).to.emit(treasury, "ClaimedEth").withArgs(signers.admin.address, ethers.utils.parseEther("1"));
+      await expect(treasury.connect(admin).claimEth(signers.admin.address)).to.emit(treasury, "ClaimedEth").withArgs(signers.admin.address, ethers.utils.parseEther("1"));
       expect(await ethers.provider.getBalance(treasury.address)).equals(ethers.utils.parseEther("0"))
     })
 
@@ -108,7 +108,7 @@ describe("treasury", function () {
         value: ethers.utils.parseEther("1")
       })
       expect(await ethers.provider.getBalance(treasury.address)).equals(ethers.utils.parseEther("1"))
-      await expect(treasury.connect(admin)["claimEth(address,uint256)"](signers.admin.address, ethers.utils.parseEther("0.1"))).to.emit(treasury, "ClaimedEth").withArgs(signers.admin.address, ethers.utils.parseEther("0.1"));
+      await expect(treasury.connect(admin).claimEthAmount(signers.admin.address, ethers.utils.parseEther("0.1"))).to.emit(treasury, "ClaimedEth").withArgs(signers.admin.address, ethers.utils.parseEther("0.1"));
       expect(await ethers.provider.getBalance(treasury.address)).equals(ethers.utils.parseEther(".9"))
     })
 
@@ -123,7 +123,7 @@ describe("treasury", function () {
         value: ethers.utils.parseEther("1")
       })
       expect(await ethers.provider.getBalance(treasury.address)).equals(ethers.utils.parseEther("1"))
-      await expect(treasury.connect(signers.random)["claimEth(address)"](signers.random.address)).to.be.rejectedWith("Can only be called by treasurer address!");
+      await expect(treasury.connect(signers.random).claimEth(signers.random.address)).to.be.rejectedWith("Can only be called by treasurer address!");
       expect(await ethers.provider.getBalance(treasury.address)).equals(ethers.utils.parseEther("1"))
     })
   })

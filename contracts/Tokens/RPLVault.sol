@@ -8,29 +8,36 @@ import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import './WETHVault.sol';
 
 import '../UpgradeableBase.sol';
-import '../FundRouter.sol';
+import '../AssetRouter.sol';
 import '../Operator/OperatorDistributor.sol';
 
 import 'hardhat/console.sol';
 
-/// @custom:security-contact info@nodeoperator.org
+/**
+ * @title RPLVault
+ * @author Theodore Clapp, Mike Leach
+ * @dev An ERC-4626 vault for staking RPL with a single node run by a decentralized operator set.
+ * @notice These vault shares will increase or decrease in value according to the rewards or penalties applied to the SuperNodeAccount by Rocket Pool.
+ */
 contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
     event TreasuryFeeClaimed(uint256 amount);
 
     string constant NAME = 'Constellation RPL';
-    string constant SYMBOL = 'xRPL'; // Vaulted Constellation RPL
-
-    bool public enforceWethCoverageRatio;
+    string constant SYMBOL = 'xRPL';
 
     uint256 public treasuryFee;
 
-    uint256 public principal; // Total principal amount (sum of all deposits)
-    uint256 public lastIncomeClaimed; // Tracks the amount of income already claimed by the treasury
+    /**
+     * @notice Sets the liquidity reserve as a percentage of TVL. E.g. if set to 2% (0.02e18), then 2% of the 
+     * RPL backing xRPL will be reserved for withdrawals. If the reserve is below maximum, it will be refilled before assets are
+     * put to work with the OperatorDistributor.
+     */
+    uint256 public liquidityReservePercent;
 
-    uint256 public liquidityReserveRatio; // collateralization ratio
+    uint256 public minWethRplRatio; // weth coverage ratio
 
-    uint256 public wethCoverageRatio; // weth coverage ratio
+    uint256 public balanceRpl;
 
     constructor() initializer {}
 
@@ -45,17 +52,16 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         ERC4626Upgradeable.__ERC4626_init(IERC20Upgradeable(rplToken));
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
-        liquidityReserveRatio = 0.02e5;
-        wethCoverageRatio = 1.75e5;
-        enforceWethCoverageRatio = false;
-        treasuryFee = 0.01e5;
+        liquidityReservePercent = 0.02e18;
+        minWethRplRatio = 0; // 0% by default
+        treasuryFee = 0.01e18;
     }
 
     /**
      * @notice Handles deposits into the vault, ensuring compliance with WETH coverage ratio and distribution of fees.
-     * @dev This function first checks if the WETH coverage ratio is above the threshold, and then continues with the deposit process.
+     * @dev This function first checks if the WETH coverage ratio after deposit will still be above the threshold, and then continues with the deposit process.
      * It takes a fee based on the deposit amount and distributes the fee to the treasury.
-     * The rest of the deposited amount is transferred to a deposit pool for utilization.
+     * The rest of the deposited amount is transferred to the OperatorDistributor for utilization.
      * This function overrides the `_deposit` function in the parent contract to ensure custom business logic is applied.
      * @param caller The address initiating the deposit.
      * @param receiver The address designated to receive the issued shares for the deposit.
@@ -67,29 +73,25 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
-
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
-        require(
-            !enforceWethCoverageRatio || vweth.tvlRatioEthRpl() < wethCoverageRatio,
-            'insufficient weth coverage ratio'
-        );
 
-        principal += assets;
+        require(vweth.tvlRatioEthRpl(assets, false) >= minWethRplRatio, 'insufficient weth coverage ratio');
 
-        address payable pool = _directory.getDepositPoolAddress();
-        _claimTreasuryFee();
+        AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
+
         super._deposit(caller, receiver, assets, shares);
-        SafeERC20.safeTransfer(IERC20(asset()), pool, assets);
-        FundRouter(pool).sendRplToDistributors();
+
+        ar.onRplBalanceIncrease(assets);
+        SafeERC20.safeTransfer(IERC20(asset()), address(ar), assets);
+
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
+        ar.sendRplToDistributors();
     }
 
     /**
-     * @notice Handles withdrawals from the vault, distributing the taker fees to the treasury.
-     * @dev This function first calculates the taker fee based on the withdrawal amount and then
-     * proceeds with the withdrawal process. After the withdrawal, the calculated fee is transferred
-     * to the treasury. This function overrides the `_withdraw` function in the parent contract to
-     * ensure custom business logic is applied.
+     * @notice Handles withdrawals from the vault, distributing fees to the treasury.
+     * @dev This function overrides the `_withdraw` function in the parent contract to
+     * ensure custom business logic is applied. May revert if the liquidity reserves are too low.
      * @param caller The address initiating the withdrawal.
      * @param receiver The address designated to receive the withdrawn assets.
      * @param owner The address that owns the shares being redeemed.
@@ -106,56 +108,39 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
-
-        _claimTreasuryFee();
-
+        require(balanceRpl >= assets, 'Not enough liquidity to withdraw');
         // required violation of CHECKS/EFFECTS/INTERACTIONS
-        principal -= assets;
+
+        balanceRpl -= assets;
 
         super._withdraw(caller, receiver, owner, assets, shares);
-        FundRouter(_directory.getDepositPoolAddress()).sendRplToDistributors();
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
+        AssetRouter(_directory.getAssetRouterAddress()).sendRplToDistributors();
     }
 
     /**
-     * @notice Calculates the current income from rewards.
-     * @dev This function computes the total value locked (TVL) across the vault, the deposit pool, and the operator distributor,
-     * subtracts the principal amount, and returns the difference as the current income from rewards.
-     * If the TVL is less than the principal, it returns 0.
-     * @return The current income from rewards.
-     */
-    function currentIncomeFromRewards() public view returns (uint256) {
-        unchecked {
-            uint256 tvl = super.totalAssets() +
-                FundRouter(_directory.getDepositPoolAddress()).getTvlRpl() +
-                OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl();
-
-            if (tvl < principal) {
-                return 0;
-            }
-            return tvl - principal;
-        }
-    }
-
-    /**
-     * @notice Calculates the current treasury income from rewards.
-     * @dev This function calculates the treasury's share of the current income from rewards based on the treasury fee basis points.
-     * @return The current treasury income from rewards.
-     */
-    function currentTreasuryIncomeFromRewards() public view returns (uint256) {
-        return currentIncomeFromRewards().mulDiv(treasuryFee, 1e5);
-    }
-
-    /**
-     * @notice Returns the total assets managed by this vault.
+     * @notice Returns the total assets managed by this vault. That is, all the RPL backing xRPL.
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
-        return
-            (super.totalAssets() +
-                FundRouter(_directory.getDepositPoolAddress()).getTvlRpl() +
-                OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl()) -
-            currentTreasuryIncomeFromRewards();
+        return (balanceRpl +
+            AssetRouter(_directory.getAssetRouterAddress()).getTvlRpl() +
+            OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl());
+    }
+
+    /**
+     * @notice Calculates the required collateral after a specified deposit.
+     * @dev This function calculates the required collateral to ensure the contract remains sufficiently collateralized
+     * after a specified deposit amount. It compares the current balance with the required collateral based on
+     * the total assets, including the deposit.
+     * @param deposit The amount of the deposit to consider in the collateral calculation.
+     * @return The amount of collateral required after the specified deposit.
+     */
+    function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns (uint256) {
+        uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
+        uint256 fullBalance = totalAssets() + deposit;
+        uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
+        return requiredBalance > currentBalance ? requiredBalance : 0;
     }
 
     /**
@@ -163,29 +148,24 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @dev This function compares the current balance of assets in the contract with the desired collateralization ratio.
      * If the required collateral based on the desired ratio is greater than the current balance, the function returns
      * the amount of collateral needed to achieve the desired ratio. Otherwise, it returns 0, indicating no additional collateral
-     * is needed. The desired collateralization ratio is defined by `liquidityReserveRatio`.
+     * is needed. The desired collateralization ratio is defined by `liquidityReservePercent`.
      * @return The amount of asset required to maintain the desired collateralization ratio, or 0 if no additional collateral is needed.
      */
     function getRequiredCollateral() public view returns (uint256) {
-        uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
-        uint256 fullBalance = totalAssets();
-
-        uint256 requiredBalance = liquidityReserveRatio.mulDiv(fullBalance, 1e5, Math.Rounding.Up);
-
-        return requiredBalance > currentBalance ? requiredBalance : 0;
+        return getRequiredCollateralAfterDeposit(0);
     }
 
     /**ADMIN FUNCTIONS */
 
     /**
-     * @notice Sets the treasurer fee basis points.
+     * @notice Sets the treasury fee basis points.
      * @dev This function allows the admin to update the fee basis points that the treasury will receive from the rewards.
-     * The treasury fee must be less than or equal to 100% (1e5 basis points).
+     * The treasury fee must be less than or equal to 100% (1e18 basis points).
      * @param _treasuryFee The new treasury fee in basis points.
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
     function setTreasuryFee(uint256 _treasuryFee) external onlyMediumTimelock {
-        require(_treasuryFee <= 1e5, 'Fee too high');
+        require(_treasuryFee <= 1e18, 'Fee too high');
         treasuryFee = _treasuryFee;
     }
 
@@ -193,100 +173,42 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @notice Update the WETH coverage ratio.
      * @dev This function allows the admin to adjust the WETH coverage ratio.
      * The ratio determines the minimum coverage required to ensure the contract's health and stability.
-     * It's expressed in base points, where 1e5 represents 100%.
-     * @param _wethCoverageRatio The new WETH coverage ratio to be set (in base points).
+     * It's expressed in base points, where 1e18 represents 100%.
+     * @param _minWethRplRatio The new WETH coverage ratio to be set (in base points).
      */
-    function setWETHCoverageRatio(uint256 _wethCoverageRatio) external onlyShortTimelock {
-        wethCoverageRatio = _wethCoverageRatio;
+    function setMinWethRplRatio(uint256 _minWethRplRatio) external onlyShortTimelock {
+        minWethRplRatio = _minWethRplRatio;
     }
 
     /**
-     * @notice Set the enforcement status of the WETH coverage ratio.
-     * @dev Allows the admin to toggle whether or not the contract should enforce the WETH coverage ratio.
-     * When enforced, certain operations will require that the WETH coverage ratio is met.
-     * This could be useful to ensure the contract's health and stability.
-     * @param _enforceWethCoverageRatio True if the WETH coverage ratio should be enforced, otherwise false.
-     */
-    function setEnforceWethCoverageRatio(bool _enforceWethCoverageRatio) external onlyMediumTimelock {
-        enforceWethCoverageRatio = _enforceWethCoverageRatio;
-    }
-
-    /**
-     * @dev Internal function to claim the treasury fees.
-     * This function calculates the current treasury income from rewards, determines the fee amount based on the income
-     * that hasn't been claimed yet, and transfers this fee out to the treasury. It then updates the `lastIncomeClaimed`
-     * to the latest claimed amount. It is used within deposit and withdrawal operations to periodically claim the treasury fee.
-     *
-     * Emits an `TreasuryFeeClaimed` event with the amount of the fee claimed.
-     */
-    function _claimTreasuryFee() internal {
-        uint256 currentTreasuryIncome = currentTreasuryIncomeFromRewards();
-        uint256 feeAmount = currentTreasuryIncome - lastIncomeClaimed;
-
-        _doTransferOut(_directory.getTreasuryAddress(), feeAmount);
-
-        // Update lastIncomeClaimed to reflect the new total income claimed
-        lastIncomeClaimed = currentTreasuryIncomeFromRewards();
-
-        emit TreasuryFeeClaimed(feeAmount);
-    }
-
-    /**
-     * @notice Transfers a specified amount of the vault's asset to a given address.
-     * @dev This function allows the protocol to transfer a specified amount of the vault's asset to the provided address.
-     * It ensures that the transfer is executed safely and handles cases where the vault's balance is insufficient.
-     * @param _to The address to transfer the assets to.
-     * @param _amount The amount of assets to transfer.
-     */
-    function doTransferOut(address _to, uint256 _amount) external onlyProtocol {
-        _doTransferOut(_to, _amount);
-    }
-
-    /**
-     * @notice Internal function to transfer assets out of the vault.
-     * @dev This function handles the actual transfer of assets from the vault to a specified address.
-     * It checks the vault's balance and manages shortfalls by requesting additional assets from the Operator Distributor if necessary.
-     * @param _to The address to transfer the assets to.
-     * @param _amount The amount of assets to transfer.
-     */
-    function _doTransferOut(address _to, uint256 _amount) internal {
-        IERC20 asset = IERC20(asset());
-        uint256 balance = asset.balanceOf(address(this));
-        uint256 shortfall = _amount > balance ? _amount - balance : 0;
-        if (shortfall > 0) {
-            SafeERC20.safeTransfer(asset, _to, balance);
-            OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-            uint256 transferedIn = od.transferRplToVault(shortfall);
-            console.log('transfering out rpl to vault');
-            SafeERC20.safeTransfer(asset, _to, transferedIn);
-        } else {
-            SafeERC20.safeTransfer(asset, _to, _amount);
-        }
-    }
-
-    /**
-     * @notice Internal function to claim the treasury fees.
-     * @dev This function calculates the current treasury income from rewards, determines the fee amount based on the income
-     * that hasn't been claimed yet, and transfers this fee out to the treasury. It then updates the `lastIncomeClaimed`
-     * to the latest claimed amount. This function is used within deposit and withdrawal operations to periodically claim the admin fee.
-     * It ensures the treasury receives their due income from the vault's rewards.
-     *
-     * Emits an `TreasuryFeeClaimed` event with the amount of the fee claimed.
-     */
-    function claimTreasuryFee() public onlyTreasurer {
-        _claimTreasuryFee();
-    }
-
-    /**
-     * @notice Sets the collateralization ratio basis points.
-     * @dev This function allows the admin to update the collateralization ratio which determines the level of collateral required for sufficent liquidity.
-     * The collateralization ratio must be a reasonable percentage, typically expressed in basis points (1e5 basis points = 100%).
-     * @param _liquidityReserveRatio The new collateralization ratio in basis points.
+     * @notice Sets the liquidity reserve as a percentage of TVL. E.g. if set to 2% (0.02e18), then 2% of the 
+     * RPL backing xRPL will be reserved for withdrawals. If the reserve is below maximum, it will be refilled before assets are
+     * put to work with the OperatorDistributor.
+     * @dev This function allows the admin to update the liquidity reserve which determines the amount available for withdrawals.
+     * The liquidity rserve must be a reasonable percentage between 0 and 100%. 1e18 = 100%
+     * @param _liquidityReservePercent The new collateralization ratio in basis points.
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
-    function setLiquidityReserveRatio(uint256 _liquidityReserveRatio) external onlyShortTimelock {
-        require(_liquidityReserveRatio >= 0, 'RPLVault: Collateralization ratio must be positive');
-        require(_liquidityReserveRatio <= 1e5, 'RPLVault: Collateralization ratio must be less than or equal to 100%');
-        liquidityReserveRatio = _liquidityReserveRatio;
+    function setLiquidityReservePercent(uint256 _liquidityReservePercent) external onlyShortTimelock {
+        require(_liquidityReservePercent >= 0, 'RPLVault: liquidity reserve percentage must be positive');
+        require(_liquidityReservePercent <= 1e18, 'RPLVault: liquidity reserve percentage must be less than or equal to 100%');
+        liquidityReservePercent = _liquidityReservePercent;
+    }
+
+    function onRplBalanceIncrease(uint256 _amount) external onlyProtocol {
+        balanceRpl += _amount;
+        console.log("rplVault.onRplBalanceIncrease.balanceRpl", balanceRpl);
+        console.log("rplVault.onRplBalanceIncrease.balacneOf.rpl", IERC20(asset()).balanceOf(address(this)));
+    }
+
+    function onRplBalanceDecrease(uint256 _amount) external onlyProtocol {
+        balanceRpl -= _amount;
+        console.log("rplVault.onRplBalanceDecrease.", balanceRpl);
+    }
+
+    /// Calculates the treasury portion of a specific RPL reward amount.
+    /// @param _amount The RPL reward expected
+    function getTreasuryPortion(uint256 _amount) external view returns (uint256) {
+        return _amount.mulDiv(treasuryFee, 1e18);
     }
 }

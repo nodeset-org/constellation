@@ -8,6 +8,7 @@ import './OperatorDistributor.sol';
 
 import '../Whitelist/Whitelist.sol';
 import '../UpgradeableBase.sol';
+import '../AssetRouter.sol';
 
 import '../Interfaces/RocketPool/RocketTypes.sol';
 import '../Interfaces/RocketPool/IRocketNodeDeposit.sol';
@@ -19,8 +20,10 @@ import '../Interfaces/RocketPool/IRocketDAOProtocolProposal.sol';
 import '../Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
 import '../Interfaces/RocketPool/IRocketStorage.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
-import '../Interfaces/Oracles/IXRETHOracle.sol';
+import '../Interfaces/Oracles/IBeaconOracle.sol';
 import '../Interfaces/IWETH.sol';
+
+import '../Tokens/WETHVault.sol';
 
 import '../Utils/ProtocolMath.sol';
 import '../Utils/Constants.sol';
@@ -28,12 +31,18 @@ import '../Utils/Errors.sol';
 
 import 'hardhat/console.sol';
 
-// WE NOW ASSUME WE ONLY SUPPORT STAKING WITH LEB8s
+struct MerkleRewardsConfig {
+    bytes sig;
+    uint256 sigGenesisTime;
+    uint256 avgEthTreasuryFee;
+    uint256 avgEthOperatorFee;
+    uint256 avgRplTreasuryFee;
+}
 
 /**
  * @title SuperNodeAccount
  * @author Theodore Clapp, Mike Leach
- * @dev Abstracts all created minipools under a single address / minipool owner
+ * @dev Abstracts all created minipools under a single node
  */
 contract SuperNodeAccount is UpgradeableBase, Errors {
     // Mapping of minipool address to the amount of ETH locked
@@ -45,41 +54,67 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     // Mapping of keccak256 hash of subNodeOperator and minipool address to bool indicating if a minipool exists
     mapping(bytes32 => bool) public subNodeOperatorHasMinipool;
 
-    // Total amount of ETH locked in all minipools
+    // Total amount of ETH locked in for all minipools
     uint256 public totalEthLocked;
-    // Total amount of ETH staked in all minipools
-    uint256 public totalEthStaking;
-
-    // Variables for pre-signed exit message checks
-    bool public adminServerCheck;
-    mapping(bytes => bool) public sigsUsed;
-    uint256 public adminServerSigExpiry;
 
     // Lock threshold amount in wei
     uint256 public lockThreshold;
     // Lock-up time in seconds
     uint256 public lockUpTime;
 
+    // Variables for admin server message checks (if enabled for minipool creation)
+    bool public adminServerCheck;
+    mapping(bytes => bool) public sigsUsed;
+    uint256 public adminServerSigExpiry;
+
+    // Merkle claim signature data
+    uint256 public merkleClaimNonce;
+    mapping(bytes32 => bool) public merkleClaimSigUsed;
+    uint256 public merkleClaimSigExpiry;
+
     bool lazyInit;
 
     // List of all minipools
     address[] public minipools;
+
+    struct Minipool {
+        address subNodeOperator;
+        uint256 ethTreasuryFee;
+        uint256 noFee;
+        uint256 rplTreasuryFee;
+    }
+
+    struct CreateMinipoolConfig {
+        bytes validatorPubkey;
+        bytes validatorSignature;
+        bytes32 depositDataRoot;
+        uint256 salt;
+        address expectedMinipoolAddress;
+        uint256 sigGenesisTime;
+        bytes sig;
+    }
+
     // Mapping of minipool address to its index in the minipools array
     mapping(address => uint256) public minipoolIndex;
     // Mapping of sub-node operator address to their list of minipools
     mapping(address => address[]) public subNodeOperatorMinipools;
+    // Mapping of minipools to sub-node operator addresses
+    mapping(address => Minipool) public minipoolData;
     // Index for the current minipool being processed
     uint256 public currentMinipool;
 
     // admin settings
     uint256 public bond;
     uint256 public minimumNodeFee;
+    uint256 public maxValidators; // max number of validators each NO is allowed
+    bool public allowSubOpDelegateChanges;
 
     /// @notice Modifier to ensure a function can only be called once for lazy initialization
     modifier lazyInitializer() {
         require(!lazyInit, 'already lazily initialized');
         _;
         lazyInit = true;
+        merkleClaimSigExpiry = 1 days;
     }
 
     /// @notice Modifier to ensure a function can only be called by a sub-node operator of a specific minipool
@@ -92,12 +127,16 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /// @notice Modifier to ensure a function can only be called by a sub-node operator or admin of a specific minipool
-    modifier onlySubNodeOperatorOrAdmin(address _minipool) {
-        require(
-            _directory.hasRole(Constants.ADMIN_ROLE, msg.sender) ||
-                subNodeOperatorHasMinipool[keccak256(abi.encodePacked(msg.sender, _minipool))],
-            'Can only be called by SubNodeOperator!'
-        );
+    modifier onlyAdminOrAllowedSNO(address _minipool) {
+        if(allowSubOpDelegateChanges) { 
+            require(
+                _directory.hasRole(Constants.ADMIN_ROLE, msg.sender) || 
+                    subNodeOperatorHasMinipool[keccak256(abi.encodePacked(msg.sender, _minipool))],
+                'Can only be called by admin or sub node operator'
+            );
+        } else {
+            require(_directory.hasRole(Constants.ADMIN_ROLE, msg.sender), 'Minipool delegate changes only allowed by admin');
+        }
         _;
     }
 
@@ -116,11 +155,13 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         super.initialize(_directory);
 
         lockThreshold = 1 ether;
-        lockUpTime = 28 days;
+        lockUpTime = 28 days; // the length of an RP rewards period, which is the maximum length of time that a minipool will be in pre-launch before being dissolved
         adminServerCheck = true;
         adminServerSigExpiry = 1 days;
         minimumNodeFee = 14e16;
         bond = 8 ether;
+        maxValidators = 1;
+        allowSubOpDelegateChanges = false;
     }
 
     /**
@@ -129,22 +170,29 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function lazyInitialize() external lazyInitializer {
         Directory directory = Directory(_directory);
         _registerNode('Australia/Brisbane');
-        address dp = directory.getDepositPoolAddress();
-        IRocketNodeManager(directory.getRocketNodeManagerAddress()).setRPLWithdrawalAddress(address(this), dp, true);
+        address dp = directory.getAssetRouterAddress();
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), dp, true);
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(true);
     }
 
     /**
+     * @notice Returns the total number of Constellation minipools.
+     * @return uint256 The total number of Constellation minipools.
+     */
+    function minipoolCount() external view returns (uint256) {
+        return minipools.length;
+    }
+
+    /**
      * @notice This function is responsible for the creation and initialization of a minipool based on the validator's configuration.
-     *         It requires that the calling node operator is whitelisted and that the signature provided for the minipool creation is valid.
+     *         It requires that the calling node operator is whitelisted and that the signature provided for the minipool creation is valid (if signature checks are enabled).
      *         It also checks for sufficient liquidity (both RPL and ETH) before proceeding with the creation.
      * @dev The function involves multiple steps:
-     *      1. Validates that the transaction contains the exact amount of ETH specified in the `lockThreshold`.
+     *      1. Validates that the transaction contains the exact amount of ETH specified in the `lockThreshold` (to prevent depoist contract front-running).
      *      2. Checks if there is sufficient liquidity available for the required bond amount in both RPL and ETH.
      *      3. Validates that the sender (sub-node operator) is whitelisted.
      *      4. Ensures the signature provided has not been used before and marks it as used.
-     *      5. If pre-signed exit message checks are enabled, it verifies that the signature recovers to an address with the admin server role.
+     *      5. If admin server message checks are enabled, it verifies that the signature recovers to an address with the admin server role.
      *      6. Ensures that the expected minipool address from the configuration has not been initialized before.
      *      7. Locks the sent ETH, updates the total locked ETH count, and sets the timestamp when the lock started.
      *      8. Adds the minipool to the tracking arrays and mappings.
@@ -154,7 +202,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      *      It's crucial that this function is called with correct and validated parameters to ensure the integrity of the node and minipool registration process.
      *
      * @notice _config A `ValidatorConfig` struct containing:
-     *        - timezoneLocation: String representation of the validator's timezone.
      *        - bondAmount: The amount of ETH to be bonded.
      *        - minimumNodeFee: Minimum fee for the node operations.
      *        - validatorPubkey: Public key of the validator.
@@ -162,21 +209,13 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      *        - depositDataRoot: Root hash of the deposit data.
      *        - salt: Random nonce used for generating the expected minipool address.
      *        - expectedMinipoolAddress: Precomputed address expected to be generated for the new minipool.
-     * @param _sig The signature provided for minipool creation, used for admin verification if pre-signed exit message checks are enabled.
+     *        - sig The signature provided for minipool creation; used for admin verification if admin server checks are enabled, ignored otherwise.
      */
-    function createMinipool(
-        bytes calldata _validatorPubkey,
-        bytes calldata _validatorSignature,
-        bytes32 _depositDataRoot,
-        uint256 _salt,
-        address _expectedMinipoolAddress,
-        uint256 _sigGenesisTime,
-        bytes memory _sig
-    ) public payable {
+    function createMinipool(CreateMinipoolConfig calldata _config) public payable {
         require(msg.value == lockThreshold, 'SuperNode: must set the message value to lockThreshold');
         require(
             IRocketMinipoolManager(_directory.getRocketMinipoolManagerAddress()).getMinipoolExists(
-                _expectedMinipoolAddress
+                _config.expectedMinipoolAddress
             ) == false,
             'minipool already initialized'
         );
@@ -185,23 +224,35 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             Whitelist(_directory.getWhitelistAddress()).getIsAddressInWhitelist(subNodeOperator),
             'sub node operator must be whitelisted'
         );
+        require(
+            Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(subNodeOperator) < maxValidators,
+            'Sub node operator has created too many minipools already'
+        );
         require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
 
-        _validateSigUsed(_sig);
+        uint256 salt = uint256(keccak256(abi.encodePacked(_config.salt, subNodeOperator)));
+
+        _validateSigUsed(_config.sig);
         OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(bond);
         if (adminServerCheck) {
-            require(block.timestamp - _sigGenesisTime < adminServerSigExpiry, 'as sig expired');
+            require(block.timestamp - _config.sigGenesisTime < adminServerSigExpiry, 'as sig expired');
             console.log('_createMinipool: message hash');
             console.logBytes32(
-                keccak256(abi.encodePacked(_expectedMinipoolAddress, _salt, address(this), block.chainid))
+                keccak256(abi.encodePacked(_config.expectedMinipoolAddress, salt, address(this), block.chainid))
             );
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
                     keccak256(
-                        abi.encodePacked(_expectedMinipoolAddress, _salt, _sigGenesisTime, address(this), block.chainid)
+                        abi.encodePacked(
+                            _config.expectedMinipoolAddress,
+                            salt,
+                            _config.sigGenesisTime,
+                            address(this),
+                            block.chainid
+                        )
                     )
                 ),
-                _sig
+                _config.sig
             );
             require(
                 _directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress),
@@ -209,32 +260,41 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             );
         }
 
-        subNodeOperatorHasMinipool[keccak256(abi.encodePacked(subNodeOperator, _expectedMinipoolAddress))] = true;
+        subNodeOperatorHasMinipool[
+            keccak256(abi.encodePacked(subNodeOperator, _config.expectedMinipoolAddress))
+        ] = true;
 
-        lockedEth[_expectedMinipoolAddress] = msg.value;
+        lockedEth[_config.expectedMinipoolAddress] = msg.value;
         totalEthLocked += msg.value;
-        lockStarted[_expectedMinipoolAddress] = block.timestamp;
+        lockStarted[_config.expectedMinipoolAddress] = block.timestamp;
 
-        minipoolIndex[_expectedMinipoolAddress] = minipools.length;
-        minipools.push(_expectedMinipoolAddress);
+        minipoolIndex[_config.expectedMinipoolAddress] = minipools.length;
+        minipools.push(_config.expectedMinipoolAddress);
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        od.onMinipoolCreated(_expectedMinipoolAddress, subNodeOperator, bond);
-        od.rebalanceRplStake(totalEthStaking + (32 ether - bond));
+        od.onMinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator);
+        od.rebalanceRplStake(getTotalEthStaked() + bond);
 
-        subNodeOperatorMinipools[subNodeOperator].push(_expectedMinipoolAddress);
+        subNodeOperatorMinipools[subNodeOperator].push(_config.expectedMinipoolAddress);
+        WETHVault wethVault = WETHVault(getDirectory().getWETHVaultAddress());
+        minipoolData[_config.expectedMinipoolAddress] = Minipool(
+            subNodeOperator,
+            wethVault.treasuryFee(),
+            wethVault.nodeOperatorFee(),
+            RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee()
+        );
 
         console.log('_createMinipool()');
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: bond}(
             bond,
             minimumNodeFee,
-            _validatorPubkey,
-            _validatorSignature,
-            _depositDataRoot,
-            _salt,
-            _expectedMinipoolAddress
+            _config.validatorPubkey,
+            _config.validatorSignature,
+            _config.depositDataRoot,
+            salt,
+            _config.expectedMinipoolAddress
         );
-        IMinipool minipool = IMinipool(_expectedMinipoolAddress);
+        IMinipool minipool = IMinipool(_config.expectedMinipoolAddress);
         console.log('_createMinipool.status', uint256(minipool.getStatus()));
         console.log('finished creating minipool without revert from deposit to casper');
     }
@@ -295,8 +355,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     ) external onlySubNodeOperator(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.stake(_validatorSignature, _depositDataRoot);
-        // RP close call will revert unless you're in the right state, so this may waste your gas if you call at the wrong time!
-        totalEthStaking += (32 ether - bond);
 
         // Refund the locked ETH
         uint256 lockupBalance = lockedEth[_minipool];
@@ -309,22 +367,16 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Closes a minipool and updates the tracking and financial records accordingly.
-     * @dev This function handles the administrative closure of a minipool, ensuring that the associated staking records
-     *      and financials are updated. Only callable by an admin.
+     * @notice Closes a dissolved minipool and updates the tracking and financial records accordingly.
+     * @dev This function handles the administrative closure of a minipool, ensuring that the associated
+     *      records are updated. Only callable by an admin.
      * @param _subNodeOperator Address of the sub-node operator associated with the minipool.
      * @param _minipool Address of the minipool to close.
      */
     function close(address _subNodeOperator, address _minipool) external hasConfig(_minipool) {
-        if (!_directory.hasRole(Constants.ADMIN_ROLE, msg.sender)) {
-            revert BadRole(Constants.ADMIN_ROLE, msg.sender);
-        }
-
         IMinipool minipool = IMinipool(_minipool);
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(_subNodeOperator, bond);
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(_subNodeOperator);
         _stopTrackingMinipool(_minipool);
-
-        totalEthStaking -= bond;
 
         minipool.close();
     }
@@ -332,7 +384,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     /**
      * @notice Unlocks and transfers a fixed amount of ETH back to the sub-node operator from a minipool.
      * @dev Ensures that the minipool has been locked for a sufficient period or is in the staking state before allowing ETH to be unlocked.
-     *      This function is a safeguard to prevent premature withdrawal of locked funds which could affect minipool operations and rewards.
+     *      This function is a safeguard to prevent premature withdrawal of locked funds.
      * @param _minipool Address of the minipool from which ETH will be unlocked.
      */
     function unlockEth(address _minipool) external onlySubNodeOperator(_minipool) hasConfig(_minipool) {
@@ -351,65 +403,74 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Distributes staking rewards or allows for finalizing the minipool based on the given parameter.
-     * @dev Admins can call this function to either distribute rewards only or to finalize and close a minipool.
-     *      This function ensures that only admins can trigger these critical operations to maintain system integrity.
-     *      Restricting this function to admin is the only way we can technologically enforce
-     *      a node operator to not slash the capital they get from constellation depositors. If we
-     *      open this function to node operators, they could inappropriately finalize and fully
-     *      withdraw a minipool, creating slashings on depositor capital.
-     * @param _rewardsOnly If true, only distributes rewards; if false, it may also finalize the minipool.
-     * @param _subNodeOperator Address of the sub-node operator associated with the minipool.
-     * @param _minipool Address of the minipool for which to distribute rewards or finalize.
-     */
-    function distributeBalance(
-        bool _rewardsOnly,
-        address _subNodeOperator,
-        address _minipool
-    ) external onlyAdmin hasConfig(_minipool) {
-        IMinipool minipool = IMinipool(_minipool);
-        minipool.distributeBalance(_rewardsOnly);
-        if (minipool.getFinalised()) {
-            OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(
-                _subNodeOperator,
-                bond
-            );
-            _stopTrackingMinipool(_minipool);
-        }
-    }
-
-    /**
      * @notice Claims rewards for a node based on a Merkle proof, distributing specified amounts of RPL and ETH.
      * @dev This function interfaces with the RocketMerkleDistributorMainnet to allow nodes to claim their rewards.
      *      The rewards are determined by a Merkle proof which validates the amounts to be claimed.
-     * @param _nodeAddress Address of the node claiming the rewards.
      * @param _rewardIndex Array of indices in the Merkle tree corresponding to reward entries.
      * @param _amountRPL Array of amounts of RPL tokens to claim.
      * @param _amountETH Array of amounts of ETH to claim.
      * @param _merkleProof Array of Merkle proofs for each reward entry.
      */
     function merkleClaim(
-        address _nodeAddress,
         uint256[] calldata _rewardIndex,
         uint256[] calldata _amountRPL,
         uint256[] calldata _amountETH,
-        bytes32[][] calldata _merkleProof
+        bytes32[][] calldata _merkleProof,
+        MerkleRewardsConfig calldata _config
     ) public {
+        address ar = _directory.getAssetRouterAddress();
+        IERC20 rpl = IERC20(_directory.getRPLAddress());
+
+        uint256 initialEthBalance = ar.balance;
+        uint256 initialRplBalance = rpl.balanceOf(ar);
+
+        AssetRouter(payable(ar)).openGate();
         IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
-            _nodeAddress,
+            address(this),
             _rewardIndex,
             _amountRPL,
             _amountETH,
             _merkleProof
         );
+        AssetRouter(payable(ar)).closeGate();
+
+        uint256 finalEthBalance = ar.balance;
+        uint256 finalRplBalance = rpl.balanceOf(ar);
+
+        uint256 ethReward = finalEthBalance - initialEthBalance;
+        uint256 rplReward = finalRplBalance - initialRplBalance;
+
+        bytes32 messageHash = keccak256(
+            abi.encodePacked(
+                _config.avgEthTreasuryFee,
+                _config.avgEthOperatorFee,
+                _config.avgRplTreasuryFee,
+                _config.sigGenesisTime,
+                address(this),
+                merkleClaimNonce,
+                block.chainid
+            )
+        );
+        require(!merkleClaimSigUsed[messageHash], 'merkle sig already used');
+        merkleClaimSigUsed[messageHash] = true;
+        address recoveredAddress = ECDSA.recover(ECDSA.toEthSignedMessageHash(messageHash), _config.sig);
+        require(
+            _directory.hasRole(Constants.ADMIN_ORACLE_ROLE, recoveredAddress),
+            'merkleClaim: signer must have permission from admin oracle role'
+        );
+        require(block.timestamp - _config.sigGenesisTime < merkleClaimSigExpiry, 'merkle sig expired');
+        merkleClaimNonce++;
+
+        AssetRouter(payable(ar)).onEthRewardsReceived(ethReward, _config.avgEthTreasuryFee, _config.avgEthOperatorFee);
+        AssetRouter(payable(ar)).onRplRewardsRecieved(rplReward, _config.avgRplTreasuryFee);
     }
 
     /**
-     * @notice Allows sub-node operators or admins to delegate an upgrade to the minipool's contract.
+     * @notice Allows dmins to delegate an upgrade to the minipool's contract.
      * @dev This function provides a mechanism for delegated upgrades of minipools, enhancing flexibility in maintenance and upgrades.
      * @param _minipool Address of the minipool which is to be upgraded.
      */
-    function delegateUpgrade(address _minipool) external onlySubNodeOperatorOrAdmin(_minipool) hasConfig(_minipool) {
+    function delegateUpgrade(address _minipool) external onlyAdminOrAllowedSNO(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateUpgrade();
     }
@@ -419,7 +480,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev Provides a rollback mechanism for previously delegated upgrades, ensuring that upgrades can be reversed if necessary.
      * @param _minipool Address of the minipool whose upgrade is to be rolled back.
      */
-    function delegateRollback(address _minipool) external onlySubNodeOperatorOrAdmin(_minipool) hasConfig(_minipool) {
+    function delegateRollback(address _minipool) external onlyAdminOrAllowedSNO(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateRollback();
     }
@@ -433,7 +494,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function setUseLatestDelegate(
         bool _setting,
         address _minipool
-    ) external onlySubNodeOperatorOrAdmin(_minipool) hasConfig(_minipool) {
+    ) external onlyAdminOrAllowedSNO(_minipool) hasConfig(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.setUseLatestDelegate(_setting);
     }
@@ -450,24 +511,23 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Enables the server-admin approved sigs
-     * @dev This function can be called by an admin to activate the needing approval for admin-server
+     * @notice Enables or disables the ability for sub node operators to change minipool delegates
+     * @dev Admin-only
      */
-    function useAdminServerCheck() external onlyAdmin {
-        adminServerCheck = true;
+    function setAllowSubNodeOpDelegateChanges(bool newValue) external onlyAdmin {
+        allowSubOpDelegateChanges = newValue;
     }
 
     /**
-     * @notice Disables the server-admin approved sigs
-     * @dev This function can be called by an admin to deactivate the needing approval for admin-server
+     * @notice Enables or disables the server-admin approved sigs for creating minipools
+     * @dev This function can only be called by an admin
      */
-    function disableAdminServerCheck() external onlyAdmin {
-        adminServerCheck = false;
+    function setAdminServerCheck(bool newValue) external onlyAdmin {
+        adminServerCheck = newValue;
     }
 
     /**
      * @notice Sets a new lock threshold.
-     * @dev Only callable by the contract owner or authorized admin.
      * @param _newLockThreshold The new lock threshold value in wei.
      */
     function setLockAmount(uint256 _newLockThreshold) external onlyShortTimelock {
@@ -476,16 +536,35 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     /**
      * @notice Sets a new lock-up time.
-     * @dev Only callable by the contract owner or authorized admin.
      * @param _newLockUpTime The new lock-up time in seconds.
      */
     function setLockUpTime(uint256 _newLockUpTime) external onlyShortTimelock {
         lockUpTime = _newLockUpTime;
     }
 
+    function getSubNodeOpFromMinipool(address minipoolAddress) public view returns (address) {
+        return minipoolData[minipoolAddress].subNodeOperator;
+    }
+
+    /**
+     * @return uint256 The amount of ETH bonded with this node from WETHVault deposits.
+     */
+    function getTotalEthStaked() public view returns (uint256) {
+        return IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).getNodeETHProvided(address(this));
+    }
+
+    /**
+     * @return uint256 The amount of ETH matched with this node from the rETH deposit pool
+     */
+    function getTotalEthMatched() public view returns (uint256) {
+        return IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).getNodeETHMatched(address(this));
+    }
+
     /**
      * @notice Checks if there is sufficient liquidity in the protocol to cover a specified bond amount.
-     * @dev This function helps ensure that there are enough resources (both RPL and ETH) available in the system to cover the bond required for creating or operating a minipool. It is crucial for maintaining financial stability and operational continuity.
+     * @dev This function helps ensure that there are enough resources (both RPL and ETH) available 
+     * in the system to cover the bonds required for creating or operating a minipool.
+     * It is crucial for maintaining financial stability and operational continuity.
      * @param _bond The bond amount in wei for which liquidity needs to be checked.
      * @return bool Returns true if there is sufficient liquidity to cover the bond; false otherwise.
      */
@@ -493,16 +572,23 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         address payable od = _directory.getOperatorDistributorAddress();
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
         uint256 rplStaking = rocketNodeStaking.getNodeRPLStake(address(this));
-        uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(rplStaking, totalEthStaking + _bond);
+        uint256 newEthBorrowed = 32 ether - _bond;
+        console.log('newEthBorrowed', newEthBorrowed);
+        uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(
+            rplStaking,
+            getTotalEthMatched() + newEthBorrowed
+        );
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired && od.balance >= _bond;
     }
 
-    receive() external payable {}
+    // Must receive ETH from OD for staking during the createMinipool process (pre-staking minipools)
+    receive() external payable onlyProtocol {}
 
     /**
      * @notice Retrieves the next minipool in the sequence to process tasks such as reward distribution or updates.
-     * @dev This function helps in managing the rotation and handling of different minipools within the system. It ensures that operations are spread evenly and systematically across all active minipools.
-     * @return IMinipool Returns the address of the next minipool to process. Returns the zero address if there are no minipools left to process.
+     * @dev This function helps in managing the rotation and handling of different minipools within the system. 
+     * It ensures that operations are spread evenly and systematically across all active minipools.
+     * @return IMinipool Returns the address of the next minipool to process. Returns the zero address if there are no minipools.
      */
     function getNextMinipool() external onlyProtocol returns (IMinipool) {
         if (minipools.length == 0) {
@@ -511,15 +597,37 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         return IMinipool(minipools[currentMinipool++ % minipools.length]);
     }
 
+    /**
+     * @notice Sets a new admin sig expiry time.
+     * @param _newExpiry The new sig expiry time in seconds.
+     */
     function setAdminServerSigExpiry(uint256 _newExpiry) external onlyAdmin {
         adminServerSigExpiry = _newExpiry;
     }
 
+    /**
+     * @notice Sets the bond amount used for new minipools.
+     * @param _newBond The new bond amount in wei.
+     */
     function setBond(uint256 _newBond) external onlyAdmin {
         bond = _newBond;
     }
 
+    /**
+     * @notice Sets the minimum node fee used for new minipools.
+     * @param _newMinimumNodeFee The new minimum node fee.
+     */
     function setMinimumNodeFee(uint256 _newMinimumNodeFee) external onlyAdmin {
         minimumNodeFee = _newMinimumNodeFee;
+    }
+
+    /**
+     * @notice Sets the maximum numbder of allowed validators for each operator.
+     * @param _maxValidators The maximum number of validators to be considered in the reward calculation.
+     * @dev This function can only be called by the protocol admin.
+     * Adjusting this parameter will change the reward distribution dynamics for validators.
+     */
+    function setMaxValidators(uint256 _maxValidators) public onlyMediumTimelock {
+        maxValidators = _maxValidators;
     }
 }

@@ -11,9 +11,11 @@ import '../UpgradeableBase.sol';
 import '../Tokens/WETHVault.sol';
 
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
-import '../Interfaces/Oracles/IXRETHOracle.sol';
+import '../Interfaces/Oracles/IBeaconOracle.sol';
 import '../Interfaces/IWETH.sol';
 import '../Utils/Constants.sol';
+
+import './SuperNodeAccount.sol';
 
 import "hardhat/console.sol";
 
@@ -22,35 +24,38 @@ struct Reward {
     uint eth;
 }
 
-/// @notice Claims get filed by the protcol and distributed upon request
-struct Claim {
+/// @notice Intervals are calculated by the protcol and distributed upon request
+struct Interval {
     uint256 amount; // amount wei of protocol yield accrued since last interval
     uint256 numOperators; // length of node operators active in the interval
 }
 
-/// @custom:security-contact info@nodeset.io
 /**
- * @title SuperNodeAccount
- * @author Theodore Clapp
- * @dev Let's Sub Node Operators collect their share of rewards
+ * @title YieldDistributor
+ * @author Theodore Clapp, Mike Leach
+ * @dev Distributes earned rewards to a decentralized operator set using an interval system.
  */
 contract YieldDistributor is UpgradeableBase {
     event RewardDistributed(Reward);
     event WarningAlreadyClaimed(address operator, uint256 interval);
 
-    uint256 public totalYieldAccrued;
     uint256 public yieldAccruedInInterval;
+    /// @notice dust acccrued from operators with less than the maximum number of minipols claiming rewards
+    /// This is claimable by the Treasury
     uint256 public dustAccrued;
 
-    mapping(uint256 => Claim) public claims; // claimable yield per interval (in wei)
+    mapping(uint256 => Interval) public intervals; // all intervals
     mapping(address => mapping(uint256 => bool)) public hasClaimed; // whether an operator has claimed for a given interval
 
     uint256 public currentInterval;
     uint256 public currentIntervalGenesisTime;
-    uint256 public maxIntervalLengthSeconds; // NOs will have to wait at most this long for their payday
+    /// @notice The maximum interval length
+    /// @dev Intervals are closed when there is an asset state change (processMinipool()) or an operator is added or removed.
+    /// This means intervals may be significantly longer than this if no one is using the protocol.
+    uint256 public maxIntervalLengthSeconds;
 
-    uint256 public k; // steepness of the curve
-    uint256 public maxValidators; // max number of validators used to normalize x axis
+    uint256 public k; // steepness of the exponential curve
+
 
     /**
      * @notice Initializes the contract with the specified directory address and sets the initial configurations.
@@ -63,10 +68,9 @@ contract YieldDistributor is UpgradeableBase {
         super.initialize(_directory);
 
         currentIntervalGenesisTime = block.timestamp;
-        maxIntervalLengthSeconds = 30 days;
+        maxIntervalLengthSeconds = 7 days;
 
         k = 7;
-        maxValidators = 5;
     }
 
     /**
@@ -90,12 +94,11 @@ contract YieldDistributor is UpgradeableBase {
      * @param weth The amount of WETH received by the contract.
      */
     function _wethReceived(uint256 weth, bool voidClaim) internal {
-        totalYieldAccrued += weth;
         yieldAccruedInInterval += weth;
 
         // if elapsed time since last interval is greater than maxIntervalLengthSeconds, start a new interval
         if (block.timestamp - currentIntervalGenesisTime > maxIntervalLengthSeconds) {
-            if(voidClaim) { /// @dev void claim means there is no admin claim
+            if(voidClaim) { /// @dev void claim means there is no claim
                 _finalizeIntervalVoidClaim();
             } else {
                 finalizeInterval();
@@ -108,16 +111,15 @@ contract YieldDistributor is UpgradeableBase {
      */
 
     /**
-     * @notice Retrieves all claims from the beginning up to and including the current interval.
-     *
-     * @return _claims An array containing all claims up to the current interval.
+     * @notice Retrieves all intervals from the beginning up to and including the current interval.
+     * @return _intervals An array containing all claims up to the current interval.
      */
-    function getClaims() public view returns (Claim[] memory) {
-        Claim[] memory _claims = new Claim[](currentInterval + 1);
+    function getIntervals() public view returns (Interval[] memory) {
+        Interval[] memory _intervals = new Interval[](currentInterval + 1);
         for (uint256 i = 0; i <= currentInterval; i++) {
-            _claims[i] = claims[i];
+            _intervals[i] = intervals[i];
         }
-        return _claims;
+        return _intervals;
     }
 
     /****
@@ -126,7 +128,10 @@ contract YieldDistributor is UpgradeableBase {
 
     /**
      * @notice Distributes rewards accrued between two intervals to a specific rewardee.
-     * @dev The function calculates the reward based on the number of validators managed by the rewardee and uses an exponential function to determine the portion of the reward. Any rewards not claimed due to conditions or errors are considered "dust" and are accumulated in the `dustAccrued` variable. The caller should ensure that the function is called in a gas-efficient manner.
+     * @dev The function calculates the reward based on the number of validators managed by the rewardee and 
+     * uses an exponential function to determine the portion of the reward. Any rewards not claimed due to conditions 
+     * or errors are considered "dust" and are accumulated in the `dustAccrued` variable. The caller should ensure that 
+     * the function is called in a gas-efficient manner.
      * @param _rewardee The address of the operator to distribute rewards to.
      * @param _startInterval The interval (inclusive) from which to start distributing the rewards.
      * @param _endInterval The interval (inclusive) at which to end distributing the rewards.
@@ -155,23 +160,23 @@ contract YieldDistributor is UpgradeableBase {
                 continue;
             }
 
-            Claim memory claim = claims[i];
+            Interval memory interval = intervals[i];
 
-            uint256 fullEthReward = ((claim.amount * 1e18) / claim.numOperators) / 1e18;
+            uint256 fullEthReward = ((interval.amount * 1e18) / interval.numOperators) / 1e18;
 
-            console.log("full reward", i);
-            console.log(fullEthReward);
-            console.log(claim.amount);
+            console.log("full reward for interval", i, interval.amount);
+            console.log('fullEthReward (for running max minipools)', fullEthReward);
 
             uint256 operatorsPortion = ProtocolMath.exponentialFunction(
                 operator.currentValidatorCount,
-                maxValidators,
+                SuperNodeAccount(_directory.getSuperNodeAddress()).maxValidators(),
                 k,
                 1,
-                claim.amount,
+                fullEthReward,
                 1e18
             );
 
+            console.log('operator is running', operator.currentValidatorCount, 'so their actual reward is', operatorsPortion);
             totalReward += operatorsPortion;
             dustAccrued += fullEthReward - operatorsPortion;
             hasClaimed[_rewardee][i] = true;
@@ -180,7 +185,8 @@ contract YieldDistributor is UpgradeableBase {
         // send weth to rewardee
 
         if (isWhitelisted) {
-            SafeERC20.safeTransfer(IWETH(_directory.getWETHAddress()), _rewardee, totalReward);
+            (bool success, ) = _rewardee.call{value: totalReward}("");
+            require(success, "_rewardee failed to claim");
         } else {
             dustAccrued += totalReward;
         }
@@ -192,21 +198,26 @@ contract YieldDistributor is UpgradeableBase {
 
     /**
      * @notice Ends the current rewards interval and starts a new one.
-     * @dev This function records the rewards for the current interval and increments the interval counter. It's primarily triggered when there's a change in the number of operators or when the duration of the current interval exceeds the `maxIntervalLengthSeconds`. Also, it triggers the process of distributing rewards to the minipools via the `OperatorDistributor`. Intervals without yield are skipped, except for the first interval.
      */
     function finalizeInterval() public onlyProtocolOrAdmin {
         console.log("calling claim node operator fee");
-        WETHVault(_directory.getWETHVaultAddress()).claimFees();
         _finalizeIntervalVoidClaim();
     }
 
+    /**
+     * @dev This function records the rewards for the current interval and increments the interval counter. 
+     * It's normally triggered when:
+     * 1) This contract receives rewards during OperatorDistributor.processMinipool() (if enough the max interval length has passed)
+     * 2) An operator is removed or added
+     * Intervals without yield are skipped, except for the first interval.
+     */
     function _finalizeIntervalVoidClaim() internal {
         if (yieldAccruedInInterval == 0 && currentInterval > 0) {
             return;
         }
         Whitelist whitelist = getWhitelist();
 
-        claims[currentInterval] = Claim(yieldAccruedInInterval, whitelist.numOperators());
+        intervals[currentInterval] = Interval(yieldAccruedInInterval, whitelist.numOperators());
 
         currentInterval++;
         currentIntervalGenesisTime = block.timestamp;
@@ -222,32 +233,34 @@ contract YieldDistributor is UpgradeableBase {
     /**
      * @notice Updates the maximum duration for each rewards interval.
      * @param _maxIntervalLengthSeconds The new maximum duration (in seconds) for each interval.
-     * @dev This function allows the admin to adjust the length of time between rewards intervals. Adjustments may be necessary based on changing network conditions or governance decisions.
-     */ function setMaxIntervalTime(uint256 _maxIntervalLengthSeconds) public onlyShortTimelock {
+     * @dev This function allows the admin to adjust the length of time between rewards intervals. 
+     * Adjustments may be necessary based on changing network conditions or governance decisions.
+     */ 
+    function setMaxIntervalTime(uint256 _maxIntervalLengthSeconds) public onlyShortTimelock {
         maxIntervalLengthSeconds = _maxIntervalLengthSeconds;
     }
 
     /**
-     * @notice Transfers the accumulated dust (residual ETH) to the specified treasury address.
-     * @param treasury The address of the treasury to which the dust will be sent.
-     * @dev This function can only be called by the contract's admin. It allows for the collection of small residual ETH balances (dust) that may have accumulated due to rounding errors or other minor discrepancies.
+     * @notice Transfers the accumulated dust (residual ETH) to the treasury address.
+     * @dev This function can only be called by the treasurer. It allows for the collection of 
+     * small residual ETH balances (dust) that may have accumulated due to rounding errors or other minor discrepancies.
      */
-    function adminSweep(address treasury) public onlyMediumTimelock {
+    function treasurySweep() public onlyTreasurer {
         uint256 amount = dustAccrued;
         dustAccrued = 0;
-        (bool success, ) = treasury.call{value: amount}('');
+        (bool success, ) = getDirectory().getTreasuryAddress().call{value: amount}('');
         require(success, 'Failed to send ETH to treasury');
     }
 
     /**
-     * @notice Sets the parameters for the reward incentive model used in reward distribution.
+     * @notice Sets the steepness of the curve for the reward incentive model.
      * @param _k The curvature parameter for the exponential function used in reward calculation.
-     * @param _maxValidators The maximum number of validators to be considered in the reward calculation.
-     * @dev This function can only be called by the contract's admin. Adjusting these parameters can change the reward distribution dynamics for validators.
+     * @dev This function can only be called by the protocol admin. 
+     * Adjusting this parameter will change the reward distribution dynamics for operators.
+     * See https://www.desmos.com/calculator/txymjzg1ad for a visualization
      */
-    function setRewardIncentiveModel(uint256 _k, uint256 _maxValidators) public onlyShortTimelock {
+    function setRewardIncentiveModel(uint256 _k) public {
         k = _k;
-        maxValidators = _maxValidators;
     }
 
     /****
@@ -281,17 +294,11 @@ contract YieldDistributor is UpgradeableBase {
         _;
     }
 
-    /****
-     * RECEIVE
-     */
-
     /**
-     * @notice Fallback function to receive ETH and convert it to WETH (Wrapped ETH). This is also used to trigger new intervals after enough time has elapsed
-     * @dev When ETH is sent to this contract, it is automatically wrapped into WETH and the corresponding amount is processed.
+     * @notice Fallback function to receive ETH and trigger new intervals after enough time has elapsed.
+     * Thank you for your donation to the hard-working operators!
      */
-    receive() external payable {
-        // mint weth
-        IWETH(_directory.getWETHAddress()).deposit{value: msg.value}();
+    receive() external payable { 
         _wethReceived(msg.value, false);
     }
 }

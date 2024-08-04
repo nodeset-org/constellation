@@ -1,4 +1,4 @@
-// SPDX License Identifier: GPL v3
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 pragma solidity 0.8.17;
 
@@ -33,4 +33,10 @@ interface IRocketNodeStaking {
         address _caller,
         bool _allowed
     ) external;
+
+    function getNodeETHMatched(address _nodeAddress) external view returns (uint256);
+
+    function getNodeETHProvided(address _nodeAddress) external view returns (uint256);
+
+    function getTotalRPLStake() external view returns (uint256);
 }

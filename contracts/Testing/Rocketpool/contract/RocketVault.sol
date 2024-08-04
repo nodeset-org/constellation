@@ -8,6 +8,8 @@ import '../interface/RocketVaultInterface.sol';
 import '../interface/RocketVaultWithdrawerInterface.sol';
 import '../interface/util/IERC20Burnable.sol';
 
+import 'hardhat/console.sol';
+
 // ETH and rETH are stored here to prevent contract upgrades from affecting balances
 // The RocketVault contract must not be upgraded
 
@@ -33,6 +35,16 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         uint256 amount,
         uint256 time
     );
+
+    bool public isMocking;
+
+    function useMock() public {
+        isMocking = true;
+    }
+
+    function disableMock() public {
+        isMocking = false;
+    }
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -67,6 +79,8 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         emit EtherDeposited(contractName, msg.value, block.timestamp);
     }
 
+    receive() external payable {}
+
     // Withdraw an amount of ETH to a network contract
     // Only accepts calls from Rocket Pool network contracts
     function withdrawEther(uint256 _amount) external override onlyLatestNetworkContract {
@@ -75,13 +89,23 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         // Get contract key
         string memory contractName = getContractName(msg.sender);
         // Check and update contract balance
-        require(etherBalances[contractName] >= _amount, 'Insufficient contract ETH balance');
-        etherBalances[contractName] = etherBalances[contractName].sub(_amount);
+
+        if (!isMocking) {
+            require(etherBalances[contractName] >= _amount, 'Insufficient contract ETH balance');
+            etherBalances[contractName] = etherBalances[contractName].sub(_amount);
+        }
         // Withdraw
+        console.log('rocketVault _amount', _amount);
+        console.log('rocketVault balance', address(this).balance);
         RocketVaultWithdrawerInterface withdrawer = RocketVaultWithdrawerInterface(msg.sender);
+        console.log('calling withdraw ether', msg.sender);
         withdrawer.receiveVaultWithdrawalETH{value: _amount}();
+        //(bool result, ) = payable(msg.sender).call{value: _amount}('');
+        //require(result, "bad trasnfer in vualt");
+
         // Emit ether withdrawn event
         emit EtherWithdrawn(contractName, _amount, block.timestamp);
+        console.log('called rocketvault.withdrawEther()');
     }
 
     // Accept an token deposit and assign its balance to a network contract (saves a large amount of gas this way through not needing a double token transfer via a network contract first)
@@ -116,7 +140,9 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         // Get contract key
         bytes32 contractKey = keccak256(abi.encodePacked(getContractName(msg.sender), _tokenAddress));
         // Update balances
-        tokenBalances[contractKey] = tokenBalances[contractKey].sub(_amount);
+        if (!isMocking) {
+            tokenBalances[contractKey] = tokenBalances[contractKey].sub(_amount);
+        }
         // Get the token ERC20 instance
         IERC20 tokenContract = IERC20(_tokenAddress);
         // Withdraw to the desired address

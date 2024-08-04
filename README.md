@@ -22,8 +22,8 @@ This repository contains Solidity smart contracts for Constellation, a second la
 2. **Whitelist.sol**
    - Manages a list of approved node operators and their controllers.
 
-4. **XRETHAdminOracle.sol**
-   - Allows administrative updates to the total yield accrued using ECDSA signatures.
+4. **PoABeaconOracle.sol**
+   - Uses proof-of-authority to allow updates to the total yield accrued using ECDSA signatures.
 
 5. **ProtocolMath.sol**
    - A library for performing precise mathematical operations using 64x64 fixed-point arithmetic.
@@ -40,7 +40,7 @@ This repository contains Solidity smart contracts for Constellation, a second la
 9. **Directory.sol**
    - Holds references to all protocol contracts and manages role mechanisms.
 
-10. **FundRouter.sol**
+10. **AssetRouter.sol**
     - Manages protocol asset routing between vaults and other distributors.
 
 11. **WETHVault.sol**
@@ -76,7 +76,7 @@ The protocol involves several actors, each with specific roles and incentives to
 
 3. **Admin**
    - **Roles:**
-     - Manage protocol upgrades and configurations.
+     - Manage protocol configuration to ensure stability.
      - Oversee reward distributions.
      - Ensure security and compliance within the protocol.
      - Develop and update smart contracts.

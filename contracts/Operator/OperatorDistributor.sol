@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import '../UpgradeableBase.sol';
 import '../Whitelist/Whitelist.sol';
-import '../FundRouter.sol';
+import '../AssetRouter.sol';
 import '../PriceFetcher.sol';
 import '../Tokens/WETHVault.sol';
 import './SuperNodeAccount.sol';
@@ -21,12 +21,13 @@ import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
 /**
  * @title OperatorDistributor
  * @author Theodore Clapp, Mike Leach
- * @dev Manages distribution and staking of ETH and RPL tokens for node operators in a decentralized network.
+ * @dev Manages distribution and staking of ETH and RPL tokens for 
+ * decentralized node operators to stake with a single Rocket Pool "supernode".
  * Inherits from UpgradeableBase and Errors to use their functionalities for upgradeability and error handling.
  */
 contract OperatorDistributor is UpgradeableBase, Errors {
     event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
-    event MinipoolDestroyed(address indexed _minipoolAddress, address indexed _nodeAddress);
+    event MinipoolDestroyed(address indexed _minipoolAddress);
     event WarningNoMiniPoolsToHarvest();
 
     event WarningMinipoolNotStaking(
@@ -37,24 +38,18 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     using Math for uint256;
 
-    // The total amount of Ether (ETH) funded or allocated by the contract.
-    // This variable keeps track of the ETH resources managed within this contract,
-    // Total amount of Ether (ETH) funded or allocated by the contract.
-    uint256 public fundedEth;
-
-    // The total amount of Rocket Pool tokens (RPL) funded or allocated by the contract.
-    // This field is used to track the RPL token balance managed by the contract,
-    // Total amount of Rocket Pool tokens (RPL) funded or allocated by the contract.
-    uint256 public fundedRpl;
-
-    // Target ratio of ETH to RPL stake.
+    // Target ratio of SuperNode's bonded ETH to RPL stake.
+    // RPL will be staked if the stake balance is below this and unstaked if the balance is above.
     uint256 public targetStakeRatio;
 
-    // Required amount of ETH staked for a minipool to be active.
-    uint256 public requiredLEBStaked;
+    // Minimum ratio of matched rETH to RPL stake allowed in the node.
+    uint256 public minimumStakeRatio;
 
     // The amount the oracle has already included in its summation
     uint256 public oracleError;
+
+    uint256 public balanceEth;
+    uint256 public balanceRpl;
 
     constructor() initializer {}
 
@@ -66,73 +61,68 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      */
     function initialize(address _directory) public override initializer {
         super.initialize(_directory);
-        // defaulting these to 8eth to only allow LEB8 minipools
-        targetStakeRatio = 1.5e18; // Set to 150% as a default ratio.
-        requiredLEBStaked = 8 ether; // Default to 8 ETH to align with specific minipool configurations.
+        targetStakeRatio = 0.6e18; // 60% of bonded ETH by default.
+        minimumStakeRatio = 0.15e18; // 15% of matched ETH by default
     }
 
     /**
-     * @notice Fallback function to handle incoming Ether transactions.
-     * @dev Automatically routes incoming ETH to the FundRouter contract for distribution unless sent by the deposit pool directly.
-     */
-    receive() external payable {
-        address payable dp = _directory.getDepositPoolAddress();
-        console.log('fallback od initial');
-        console.log(address(this).balance);
-
-        if (msg.sender != dp) {
-            (bool success, ) = dp.call{value: msg.value}('');
-            require(success, 'low level call failed in od');
-            FundRouter(dp).sendEthToDistributors();
-        }
-
-        console.log('fallback od final');
-        console.log(address(this).balance);
-    }
-
-    /**
-     * @notice Rebalances liquidity by transferring all collected ETH and RPL tokens to the deposit pool.
+     * @notice Rebalances liquidity by transferring all collected ETH and RPL tokens to the AssetRouter.
      * @dev Calls to external contracts for transferring balances and ensures successful execution of these calls.
      */
     function _rebalanceLiquidity() internal nonReentrant {
-        address payable dp = _directory.getDepositPoolAddress();
-        (bool success, ) = dp.call{value: address(this).balance}('');
-        require(success, 'low level call failed in od');
-        FundRouter(dp).sendEthToDistributors();
+        AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
+
+        IWETH weth = IWETH(_directory.getWETHAddress());
+        weth.deposit{value: balanceEth}();
+
+        SafeERC20.safeTransfer(weth, address(ar), balanceEth);
+        ar.onWethBalanceIncrease(balanceEth);
+        balanceEth = 0;
+        ar.sendEthToDistributors();
 
         IERC20 rpl = IERC20(_directory.getRPLAddress());
-        SafeERC20.safeTransfer(rpl, dp, rpl.balanceOf(address(this)));
-        FundRouter(dp).sendRplToDistributors();
+        SafeERC20.safeTransfer(rpl, address(ar), balanceRpl);
+        ar.onRplBalanceIncrease(balanceRpl);
+        balanceRpl = 0;
+        ar.sendRplToDistributors();
     }
 
     /**
-     * @notice Returns the total ETH held by the contract, including both the balance of this contract and the funded ETH.
+     * @notice Returns the total ETH managed by the contract, including both the balance of this contract 
+     * and the SuperNode's staked ETH.
      * @return uint256 Total amount of ETH under the management of the contract.
      */
     function getTvlEth() public view returns (uint) {
-        return address(this).balance + fundedEth;
+        return balanceEth + SuperNodeAccount(_directory.getSuperNodeAddress()).getTotalEthStaked();
     }
 
     /**
-     * @notice Returns the total RPL held by the contract, including both the balance of this contract and the funded RPL.
+     * @notice Returns the total RPL managed by the contract, including both the balance of this contract 
+     * and the SuperNode's staked RPL.
      * @return uint256 Total amount of RPL under the management of the contract.
      */
     function getTvlRpl() public view returns (uint) {
-        return IERC20(_directory.getRPLAddress()).balanceOf(address(this)) + fundedRpl;
+        return balanceRpl + IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getTotalRPLStake();
     }
 
     /**
      * @notice Allocates the necessary liquidity for the creation of a new minipool.
      * @param _bond The amount of ETH required to be staked for the minipool.
      */
-    function provisionLiquiditiesForMinipoolCreation(uint256 _bond) external onlyProtocolOrAdmin {
+    function provisionLiquiditiesForMinipoolCreation(uint256 _bond) external onlyProtocol {
         console.log('provisionLiquiditiesForMinipoolCreation.pre-RebalanceLiquidities');
         _rebalanceLiquidity();
         console.log('provisionLiquiditiesForMinipoolCreation.post-RebalanceLiquidities');
-        require(_bond == requiredLEBStaked, 'OperatorDistributor: Bad _bond amount, should be `requiredLEBStaked`');
-        fundedEth += _bond;
+        require(_bond == SuperNodeAccount(getDirectory().getSuperNodeAddress()).bond(), 'OperatorDistributor: Bad _bond amount, should be `SuperNodeAccount.bond`');
 
         address superNode = _directory.getSuperNodeAddress();
+
+        console.log('od.provisionLiquiditiesForMinipoolCreation.balanceEth', balanceEth);
+        console.log('od.provisionLiquiditiesForMinipoolCreation.balance', address(this).balance);
+        console.log(
+            'od.provisionLiquiditiesForMinipoolCreation.balanceOf.weth',
+            IERC20(_directory.getWETHAddress()).balanceOf(address(this))
+        );
 
         (bool success, bytes memory data) = superNode.call{value: _bond}('');
         if (!success) {
@@ -141,15 +131,18 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             console.log(_bond);
             revert LowLevelEthTransfer(success, data);
         }
+
+        balanceEth -= _bond;
         console.log('finished provisionLiquiditiesForMinipoolCreation');
     }
 
     /**
-     * @notice Adjusts the RPL stake of a node operator to maintain the target stake ratio.
-     * @dev Calculates required adjustments to the RPL stake based on the current ETH price and staking metrics.
-     * @param _ethStaked Amount of ETH currently staked by the node operator.
+     * @notice Adjusts the RPL stake of the SuperNode to maintain the target RPL stake ratio based on the current ETH price
+     *  and staking metrics.
+     * @dev Anyone can call to rebalance the current stake, but normally called during processMinipool() or minipool creation. 
+     * @param _ethStaked Amount of ETH currently staked in the SuperNode.
      */
-    function rebalanceRplStake(uint256 _ethStaked) public onlyProtocolOrAdmin {
+    function rebalanceRplStake(uint256 _ethStaked) public {
         address _nodeAccount = _directory.getSuperNodeAddress();
 
         console.log('rebalanceRplStake()');
@@ -165,21 +158,39 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('rebalanceRplStake.targetStakeRatio', targetStakeRatio);
 
         uint256 targetStake = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
-
+        console.log('od.rebalanceRplStake.targetStake', targetStake);
+        
+        // stake more
         if (targetStake > rplStaked) {
-            // stake more
             uint256 stakeIncrease = targetStake - rplStaked;
+            if (stakeIncrease == 0) return;
             console.log('rebalanceRplStake.stakeIncrease', stakeIncrease);
-            uint256 actualStakeIncrease = _performTopUp(_nodeAccount, stakeIncrease);
+            console.log('od.rebalanceRplStake.balanceOf', IERC20(_directory.getRPLAddress()).balanceOf(address(this)));
+            console.log('od.rebalanceRplStake.balanceRpl', balanceRpl);
+
+            uint256 currentRplBalance = balanceRpl;
+
+            if (currentRplBalance >= stakeIncrease) {
+                // transfer RPL to asset router
+                IERC20(_directory.getRPLAddress()).transfer(_directory.getAssetRouterAddress(), stakeIncrease);
+                AssetRouter(_directory.getAssetRouterAddress()).stakeRpl(stakeIncrease);
+                balanceRpl -= stakeIncrease;
+
+            } else {
+                // stake what we have
+                if (currentRplBalance == 0) return;
+                IERC20(_directory.getRPLAddress()).transfer(_directory.getAssetRouterAddress(), balanceRpl);
+                AssetRouter(_directory.getAssetRouterAddress()).stakeRpl(balanceRpl);
+                balanceRpl = 0;
+            }
             console.log('rebalanceRplStake.actualStakeIncrease', stakeIncrease);
-            fundedRpl += actualStakeIncrease;
         }
 
+        // unstake
         if (targetStake < rplStaked) {
             uint256 elapsed = block.timestamp -
                 IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStakedTime(_nodeAccount);
 
-            // NOTE: what happens if rpl staked is 0 and locked stake is postive?
             uint256 excessRpl = rplStaked - targetStake;
             bool noShortfall = rplStaked - excessRpl - lockedStake >=
                 rocketNodeStaking.getNodeMaximumRPLStake(_nodeAccount);
@@ -189,10 +200,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                     .getRewardsClaimIntervalTime() &&
                 noShortfall
             ) {
-                // NOTE: to auditors: double check that all cases are covered such that withdrawRPL will not revert execution
-                fundedRpl -= excessRpl;
+                // NOTE: to auditors: double check that all cases are covered such that unstakeRpl will not revert execution
                 console.log('rebalanceRplStake.excessRpl', excessRpl);
-                FundRouter(_directory.getDepositPoolAddress()).unstakeRpl(_nodeAccount, excessRpl);
+                balanceRpl += excessRpl;
+                AssetRouter(_directory.getAssetRouterAddress()).unstakeRpl(excessRpl);
             } else {
                 console.log('failed to rebalanceRplStake.excessRpl', excessRpl);
             }
@@ -203,59 +214,39 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         console.log('finished rebalanceRplStake.rplStaked', rplStaked);
     }
 
-    function _performTopUp(address _superNode, uint256 _requiredStake) internal returns (uint256) {
-        uint256 currentRplBalance = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
-        console.log('_performTopUp.currentRplBalance', currentRplBalance);
-        if (currentRplBalance >= _requiredStake) {
-            if (_requiredStake == 0) {
-                return 0;
-            }
-            // stakeRPLOnBehalfOf
-            // transfer RPL to deposit pool
-            IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), _requiredStake);
-            FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_superNode, _requiredStake);
-            console.log('_performTopUp._requiredStake', _requiredStake);
-            return _requiredStake;
-        } else {
-            if (currentRplBalance == 0) {
-                return 0;
-            }
-            // stake what we have
-            IERC20(_directory.getRPLAddress()).transfer(_directory.getDepositPoolAddress(), currentRplBalance);
-            FundRouter(_directory.getDepositPoolAddress()).stakeRPLFor(_superNode, currentRplBalance);
-            console.log('_performTopUp.currentRplBalance', currentRplBalance);
-            return currentRplBalance;
-        }
-    }
-
     /**
-     * @notice Calculates the additional RPL needed to maintain the target staking ratio.
+     * @notice Calculates the additional RPL needed to maintain the minimum staking ratio.
      * @param _existingRplStake Current amount of RPL staked by the node.
-     * @param _ethStaked Amount of ETH currently staked by the node.
-     * @return requiredStakeRpl Amount of additional RPL needed.
+     * @param _rpEthMatched Amount of ETH currently staked by the node.
+     * @return requiredStakeRpl Amount of additional RPL needed to reach the minimumStakeRatio.
      */
     function calculateRplStakeShortfall(
         uint256 _existingRplStake,
-        uint256 _ethStaked
+        uint256 _rpEthMatched
     ) public view returns (uint256 requiredStakeRpl) {
-        console.log('before calling getPriceFetcherAddress');
+        console.log('existing rpl staked', _existingRplStake);
+        console.log('_rpEthMatched', _rpEthMatched);
         console.logAddress(getDirectory().getPriceFetcherAddress());
         console.log('B');
         uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
         console.log('price', ethPriceInRpl);
-        uint256 stakeRatio = _existingRplStake == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / _existingRplStake;
-        if (stakeRatio < targetStakeRatio) {
-            uint256 minuend = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
+        uint256 matchedStakeRatio = _existingRplStake == 0
+            ? 0
+            : ((_rpEthMatched * ethPriceInRpl * 1e18) / _existingRplStake) / 1e18;
+        console.log('matchedStakeRatio', matchedStakeRatio);
+        console.log('minimumStakeRatio', minimumStakeRatio);
+        if (matchedStakeRatio < minimumStakeRatio) {
+            uint256 minuend = minimumStakeRatio.mulDiv(_rpEthMatched * ethPriceInRpl, 1e18 * 10 ** 18);
             console.log('calculateRplStakeShortfall.minuend', minuend);
             requiredStakeRpl = minuend < _existingRplStake ? 0 : minuend - _existingRplStake;
         } else {
             requiredStakeRpl = 0;
         }
-        return requiredStakeRpl;
     }
 
     /**
      * @notice Calculates the maximum RPL that can be withdrawn while maintaining the target staking ratio.
+     * @dev Used for tests
      * @param _existingRplStake Current amount of RPL staked by the node.
      * @param _ethStaked Amount of ETH currently staked by the node.
      * @return withdrawableStakeRpl Maximum RPL that can be safely withdrawn.
@@ -277,24 +268,21 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Internal function to process the next minipool in line.
-     * Handles RPL top-up and balance distribution based on minipool's current state.
+     * @notice Process the next minipool in line.
+     * Handles RPL rebalancing and minipool distribution based on minipool's current state.
+     * Although this can be called manually, this typically happens automatically as part of other state changes
+     * like claiming NO fees or depositing/withdrawing from the token vaults.
      */
     function processNextMinipool() external {
-        _processNextMinipool();
+        processMinipool(SuperNodeAccount(getDirectory().getSuperNodeAddress()).getNextMinipool());
     }
 
     /**
-     * @notice Handles the creation of a minipool, registers the node, and logs the event.
+     * @notice Handles the creation of a minipool and emits the event.
      * @param newMinipoolAddress Address of the newly created minipool.
      * @param nodeAddress Address of the node operator.
-     * @param bond Amount of ETH bonded for the minipool.
      */
-    function onMinipoolCreated(address newMinipoolAddress, address nodeAddress, uint256 bond) external {
-        if (!_directory.hasRole(Constants.CORE_PROTOCOL_ROLE, msg.sender)) {
-            revert BadRole(Constants.CORE_PROTOCOL_ROLE, msg.sender);
-        }
-
+    function onMinipoolCreated(address newMinipoolAddress, address nodeAddress) external onlyProtocol {
         // register minipool with node operator
         Whitelist whitelist = Whitelist(getDirectory().getWhitelistAddress());
         whitelist.registerNewValidator(nodeAddress);
@@ -303,43 +291,58 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @dev Processes a single minipool by performing RPL top-up and distributing balance if certain conditions are met.
+     * @dev Performs a RPL stake rebalance for the node and distributes the outstanding balance for a minipool.
      */
-    function _processNextMinipool() internal {
+    function processMinipool(IMinipool minipool) public {
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
 
-        rebalanceRplStake(sna.totalEthStaking());
+        rebalanceRplStake(sna.getTotalEthStaked());
 
-        /**
-         * @dev We are only calling distributeBalance with a true flag to prevent griefing vectors. This ensures we
-         * are only collecting skimmed rewards and not doing anything related to full withdrawals or finalizations.
-         * One example is that if we pass false to distributeBalance, it opens a scenario where operators are forced to
-         * finalize due to having more than 8 ETH. This could result in slashings from griefing vectors.
-         */
-        IMinipool minipool = sna.getNextMinipool();
-        if (address(minipool) != address(0)) {
-            uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
-            if (totalBalance < 8 ether) {
-                // track incoming eth
-                uint256 initalBalance = _directory.getDepositPoolAddress().balance;
-                minipool.distributeBalance(true);
-                uint256 finalBalance = _directory.getDepositPoolAddress().balance;
-                oracleError += finalBalance - initalBalance;
-            }
+        if (address(minipool) == address(0)) {
+            return;
         }
+
+        MinipoolStatus status = minipool.getStatus();
+        if (minipool.getFinalised() || status != MinipoolStatus.Staking) {
+            return;
+        }
+
+        uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
+        if (totalBalance == 0) {
+            return;
+        }
+
+        AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
+        ar.openGate();
+        uint256 initialBalance = address(ar).balance;
+        
+        if (totalBalance < 8 ether) {
+            // minipool is still staking
+            console.log('withdrawal address before skim', _directory.getAssetRouterAddress().balance);
+            ar.onClaimSkimmedRewards(minipool);
+            console.log('withdrawal address after skim', _directory.getAssetRouterAddress().balance);
+        } else {
+            // the minipool is exited
+            ar.onExitedMinipool(minipool);
+            this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
+        }
+
+        uint256 finalBalance = address(ar).balance;
+        ar.closeGate();
+        console.log('finalBalance', finalBalance);
+        console.log('initialBalance', initialBalance);
+        uint256 rewards = finalBalance - initialBalance;
+        console.log('rewards recieved', rewards);
+
+        (, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));
+
+        ar.onEthRewardsReceived(rewards, treasuryFee, noFee);
     }
 
     /**
-     * @notice Sets the required ETH stake for activating a minipool.
-     * @param _requiredLEBStaked Amount of ETH required.
-     */
-    function setBondRequirements(uint256 _requiredLEBStaked) external onlyAdmin {
-        requiredLEBStaked = _requiredLEBStaked;
-    }
-
-    /**
-     * @notice Sets the target ETH to RPL stake ratio.
-     * @dev Adjusts the target ratio used to maintain balance between ETH and RPL stakes.
+     * @notice Sets the target ratio of the SuperNode's bonded ETH to RPL stake.
+     * @dev RPL will be staked or unstaked to try to reach this ratio during some common state changes. 
+     * See rebalanceRplStake()
      * @param _targetStakeRatio The new target stake ratio to be set.
      */
     function setTargetStakeRatio(uint256 _targetStakeRatio) external onlyAdmin {
@@ -347,33 +350,21 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Handles the destruction of a minipool by a node operator.
-     * @param _nodeOperator Address of the node operator.
-     * @param _bond Amount of ETH bonded that needs to be subtracted from the total funded ETH.
+     * @notice Sets the minimum ratio of matched rETH to RPL stake allowed in the node.
+     * @dev minipools can't be created if the new stake ratio would be below this amount.
+     * @param _minimumStakeRatio The new minimum stake ratio to be set.
      */
-    function onNodeMinipoolDestroy(address _nodeOperator, uint256 _bond) external onlyProtocol {
-        fundedEth -= _bond;
+    function setMinimumStakeRatio(uint256 _minimumStakeRatio) external onlyAdmin {
+        minimumStakeRatio = _minimumStakeRatio;
     }
 
     /**
-     * @notice Transfers WETH to a specified vault, provided the contract has enough balance.
-     * @param _amount Amount of WETH to transfer.
-     * @return uint256 Amount of WETH transferred.
+     * @notice Handles the destruction of a minipool.
+     * @param _nodeOperator Address of the sub node operator that created the minipool.
      */
-    function transferWEthToVault(uint256 _amount) external returns (uint256) {
-        address vault = _directory.getWETHVaultAddress();
-        require(msg.sender == vault, 'caller must be vault');
-        address weth = _directory.getWETHAddress();
-
-        // Check if there's enough WETH in the contract
-        uint256 wethBalance = IWETH(weth).balanceOf(address(this));
-        if (wethBalance >= _amount) {
-            IWETH(weth).deposit{value: _amount}();
-            SafeERC20.safeTransfer(IERC20(weth), vault, _amount);
-            return _amount;
-        } else {
-            return 0;
-        }
+    function onNodeMinipoolDestroy(address _nodeOperator) external onlyProtocol {
+        Whitelist(getDirectory().getWhitelistAddress()).removeValidator(_nodeOperator);
+        emit MinipoolDestroyed(_nodeOperator);
     }
 
     /**
@@ -383,23 +374,26 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         oracleError = 0;
     }
 
-    /**
-     * @notice Transfers RPL to a specified vault, provided the contract has enough balance.
-     * @param _amount Amount of RPL to transfer.
-     * @return uint256 Amount of RPL transferred.
-     */
-    function transferRplToVault(uint256 _amount) external returns (uint256) {
-        address vault = _directory.getRPLVaultAddress();
-        require(msg.sender == vault, 'caller must be vault');
+    function onIncreaseOracleError(uint256 _amount) external onlyProtocol {
+        oracleError += _amount;
+    }
 
-        // Check if there's enough RPL in the contract
-        address rpl = IERC4626Upgradeable(vault).asset();
-        uint256 rplBalance = IERC20(rpl).balanceOf(address(this));
-        if (rplBalance >= _amount) {
-            SafeERC20.safeTransfer(IERC20(rpl), vault, _amount);
-            return _amount;
-        } else {
-            return 0;
-        }
+    function onEthBalanceIncrease(uint256 _amount) external payable onlyProtocol {
+        require(msg.value == _amount, '_amount must match msg.value');
+        balanceEth += _amount;
+    }
+
+    function onEthBalanceDecrease(uint256 _amount) external onlyProtocol {
+        balanceEth -= _amount;
+    }
+
+    function onRplBalanceIncrease(uint256 _amount) external onlyProtocol {
+        balanceRpl += _amount;
+        console.log('od.onRplBalanceIncrease.newBalance is', balanceRpl);
+        console.log('od.onRplBalanceIncrease.balanceOf', IERC20(_directory.getRPLAddress()).balanceOf(address(this)));
+    }
+
+    function onRplBalanceDecrease(uint256 _amount) external onlyProtocol {
+        balanceRpl -= _amount;
     }
 }
