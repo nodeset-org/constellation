@@ -108,7 +108,10 @@ describe("xrETH", function () {
 
   })
 
-  it("success - tries to deposit and redeem from weth vault multiple times with minipool reward claims", async () => {
+  it.only("TODO: success - tries to deposit and redeem from weth vault multiple times with minipool reward claims", async () => {
+    
+    // THIS TEST ASSUMES YOU CAN JUST DEPOSIT AN ETHER INTO A MINIPOOOL CONTRACT, IS THIS CORRECT?
+    
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
     
@@ -128,22 +131,28 @@ describe("xrETH", function () {
     const initialRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
     expect(initialRedeemValue).equals(ethers.utils.parseEther("1"));
 
+    // simulate 1 ether of rewards put into minipool contract
     const executionLayerReward = ethers.utils.parseEther("1");
-    signers.ethWhale.sendTransaction({
+    await signers.ethWhale.sendTransaction({
       to: minipools[0],
       value: executionLayerReward
     })
-    const expectedShareOfReward = ethers.BigNumber.from("362500000000000000");
 
+    console.log('minipool balance', await ethers.provider.getBalance(minipools[0]));
+    
     const minipoolData = await protocol.superNode.minipoolData(minipools[0]);
+    console.log('minipoolTreasuryFee', minipoolData.ethTreasuryFee);
+    console.log('minipoolNOFee', minipoolData.noFee);
+    const totalFeePercentage = ((minipoolData.ethTreasuryFee).add(minipoolData.noFee));
+    console.log('total fee percentage', totalFeePercentage);
+    expect(totalFeePercentage).equals(ethers.utils.parseEther("0.29576"));
+    
+    const expectedCommunityPortion = executionLayerReward.sub(executionLayerReward.mul(totalFeePercentage).div(ethers.utils.parseEther("1")));
+    console.log("expectedCommunityPortion (executionLayerReward-fees)", expectedCommunityPortion);
+    // console.log("minipoolData", minipoolData)
 
-    console.log("minipoolData", minipoolData)
-
-    const expectedTreasuryPortion = expectedShareOfReward.mul(minipoolData.ethTreasuryFee).div(ethers.utils.parseEther("1")); 
-    const expectedNodeOperatorPortion = expectedShareOfReward.mul(minipoolData.noFee).div(ethers.utils.parseEther("1")); 
-
-    const expectedCommunityPortion = expectedShareOfReward.sub(expectedTreasuryPortion.add(expectedNodeOperatorPortion))
-    console.log("expectedCommunityPortion", expectedCommunityPortion);
+    const expectedTreasuryPortion = executionLayerReward.mul(minipoolData.ethTreasuryFee).div(ethers.utils.parseEther("1")); 
+    const expectedNodeOperatorPortion = executionLayerReward.mul(minipoolData.noFee).div(ethers.utils.parseEther("1")); 
     
     const initalTreasuryBalance = await ethers.provider.getBalance(await protocol.directory.getTreasuryAddress());
     await protocol.operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
@@ -151,6 +160,7 @@ describe("xrETH", function () {
 
     const expectedRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
 
+    // failing here
     expect(await protocol.vCWETH.totalAssets()).equals(totalDeposit.add(expectedCommunityPortion))
 
     let preBalance = await protocol.wETH.balanceOf(signers.random.address);
