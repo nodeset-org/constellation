@@ -10,11 +10,13 @@ pragma solidity 0.8.17;
 
 /**
  * @title PoABeaconOracle
- * @notice A proof-of-authority oracle to manage and update the total yield accrued by xrETH on the beacon chain.
+ * @notice Protocol interface for a proof-of-authority oracle that provides total yield accrued by xrETH from the beacon chain.
+ * The reported yield is the sum of the rewards or penalties for all validator and minipool contract balances (i.e. it does NOT include bonds).
  */
 contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
     event TotalYieldAccruedUpdated(int256 _amount);
 
+    /// @dev This takes into account the validator and minipool contract balances
     int256 internal _totalYieldAccrued;
     uint256 internal _lastUpdatedTotalYieldAccrued;
 
@@ -24,12 +26,14 @@ contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
      * @notice Initializes the oracle with the specified directory address.
      * @param _directoryAddress The address of the directory contract.
      */
-    function initializeAdminOracle(address _directoryAddress) public virtual initializer {
+    function initializeOracle(address _directoryAddress) public virtual initializer {
         super.initialize(_directoryAddress);
     }
 
     /**
      * @notice Retrieves the total yield accrued.
+     * @dev The reported yield is the sum of the rewards or penalties for all validator and minipool contract balances 
+     * (i.e. it does NOT include bonds).
      * @return The total yield accrued.
      */
     function getTotalYieldAccrued() external view override returns (int256) {
@@ -37,7 +41,9 @@ contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
     }
 
     /**
-     * @notice Internal function to set the total yield accrued.
+     * @notice Internal function to set the total yield accrued, which takes into account the validator and minipool contract balances.
+     * @dev The reported yield should be the sum of the rewards or penalties for all validator and minipool contract balances 
+     * (i.e. it should NOT include bonds).
      * @param _sig The signature.
      * @param _newTotalYieldAccrued The new total yield accrued.
      * @param _sigTimeStamp The timestamp of the signature.
@@ -64,6 +70,8 @@ contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
 
     /**
      * @notice Sets the total yield accrued.
+     * @dev The reported yield should be the sum of the rewards or penalties for all validator and minipool contract balances 
+     * (i.e. it should NOT include bonds).
      * @param _sig Signature provided by the Constants.ADMIN_ORACLE_ROLE.
      * @param _newTotalYieldAccrued The new total yield accrued.
      * @param _sigTimeStamp The timestamp of the signature.

@@ -16,14 +16,15 @@ import 'hardhat/console.sol';
 /**
  * @title RPLVault
  * @author Theodore Clapp, Mike Leach
- * @dev Distributes earned rewards to a decentralized operator set using an interval system.
+ * @dev An ERC-4626 vault for staking RPL with a single node run by a decentralized operator set.
+ * @notice These vault shares will increase or decrease in value according to the rewards or penalties applied to the SuperNodeAccount by Rocket Pool.
  */
 contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
     event TreasuryFeeClaimed(uint256 amount);
 
     string constant NAME = 'Constellation RPL';
-    string constant SYMBOL = 'xRPL'; // Vaulted Constellation RPL
+    string constant SYMBOL = 'xRPL';
 
     uint256 public treasuryFee;
 
@@ -53,7 +54,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Handles deposits into the vault, ensuring compliance with WETH coverage ratio and distribution of fees.
-     * @dev This function first checks if the WETH coverage ratio is above the threshold, and then continues with the deposit process.
+     * @dev This function first checks if the WETH coverage ratio after deposit will still be above the threshold, and then continues with the deposit process.
      * It takes a fee based on the deposit amount and distributes the fee to the treasury.
      * The rest of the deposited amount is transferred to the OperatorDistributor for utilization.
      * This function overrides the `_deposit` function in the parent contract to ensure custom business logic is applied.
@@ -84,9 +85,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Handles withdrawals from the vault, distributing fees to the treasury.
-     * @dev This function first calculates the taker fee based on the withdrawal amount and then
-     * proceeds with the withdrawal process. After the withdrawal, the calculated fee is transferred
-     * to the treasury. This function overrides the `_withdraw` function in the parent contract to
+     * @dev This function overrides the `_withdraw` function in the parent contract to
      * ensure custom business logic is applied. May revert if the liquidity reserves are too low.
      * @param caller The address initiating the withdrawal.
      * @param receiver The address designated to receive the withdrawn assets.
@@ -115,7 +114,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Returns the total assets managed by this vault.
+     * @notice Returns the total assets managed by this vault. That is, all the RPL backing xRPL.
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
@@ -154,7 +153,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     /**ADMIN FUNCTIONS */
 
     /**
-     * @notice Sets the treasurer fee basis points.
+     * @notice Sets the treasury fee basis points.
      * @dev This function allows the admin to update the fee basis points that the treasury will receive from the rewards.
      * The treasury fee must be less than or equal to 100% (1e18 basis points).
      * @param _treasuryFee The new treasury fee in basis points.
@@ -179,7 +178,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     /**
      * @notice Sets the collateralization ratio basis points.
      * @dev This function allows the admin to update the collateralization ratio which determines the level of collateral required for sufficent liquidity.
-     * The collateralization ratio must be a reasonable percentage, typically expressed in basis points (1e18 basis points = 100%).
+     * The collateralization ratio must be a reasonable percentage (0-100% with 1e18 = 100%).
      * @param _liquidityReserveRatio The new collateralization ratio in basis points.
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
@@ -200,6 +199,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         console.log("rplVault.onRplBalanceDecrease.", balanceRpl);
     }
 
+    /// Calculates the treasury portion of a specific RPL reward amount.
+    /// @param _amount The RPL reward expected
     function getTreasuryPortion(uint256 _amount) external view returns (uint256) {
         return _amount.mulDiv(treasuryFee, 1e18);
     }

@@ -71,7 +71,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
     });
 
     const oracleProxy = await retryOperation(async () => {
-        const oracle = await upgrades.deployProxy(await ethers.getContractFactory("PoABeaconOracle", deployer), [directoryAddress], { 'initializer': 'initializeAdminOracle', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        const oracle = await upgrades.deployProxy(await ethers.getContractFactory("PoABeaconOracle", deployer), [directoryAddress], { 'initializer': 'initializeOracle', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         if (log) console.log("admin oracle deployed to", oracle.address)
         return oracle;
     });

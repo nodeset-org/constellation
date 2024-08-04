@@ -37,7 +37,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Initializes the vault with necessary parameters and settings.
-     * @dev This function sets up the vault's token references, fee structures, and various configurations. It's intended to be called once after deployment.
+     * @dev This function sets up the vault's token references, fee structures, and various configurations. 
+     * It's intended to be called once after deployment.
      * @param directoryAddress Address of the directory contract to reference other platform contracts.
      * @param weth Address of the WETH token contract to be used in this vault.
      */
@@ -48,7 +49,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         liquidityReserveRatio = 0.1e18; // 10% of TVL
         maxWethRplRatio = 40e18; // 400% at start (4 ETH of xrETH for 1 ETH of xRPL)
-
 
         // default fees with 14% rETH commission mean WETHVault share returns are equal to base ETH staking rewards
         treasuryFee = 0.14788e18; 
@@ -88,8 +88,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Handles withdrawals from the vault, updating the position and distributing fees to operators and the treasury.
-     * @dev This function calculates and records any capital gains or losses, updates the owner's position, and distributes the assets to the receiver.
-     * It also transfers the assets from the AssetRouter. May revert if the liquidity reserves are too low.
+     * @dev This function distributes the assets to the receiver and also transfers the assets from the AssetRouter as necessary.
+     * May revert if the liquidity reserves are too low.
      * @param caller The address initiating the withdrawal.
      * @param receiver The address designated to receive the withdrawn assets.
      * @param owner The address that owns the shares being redeemed.
@@ -120,7 +120,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Retrieves the total yield available for distribution.
-     * @dev This function calculates the yield that can be distributed by subtracting the total yield already distributed from the total yield accrued as reported by the Oracle.
+     * @dev This function calculates the yield that can be distributed by subtracting the total yield already distributed 
+     * from the total yield accrued as reported by the Oracle.
      * @return distributableYield The total yield available for distribution.
      */
     function getDistributableYield() public view returns (uint256 distributableYield, bool signed) {
@@ -148,9 +149,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Returns the total assets managed by this vault.
+     * @notice Returns the total assets managed by this vault. That is, all the ETH backing xrETH.
      * @dev This function calculates the total assets by summing the vault's own assets, the distributable yield,
-     * and the assets held in the AssetRouter and OperatorDistributor. It then subtracts the treasury and node operator incomes to get the net total assets.
+     * and the assets held in the AssetRouter and OperatorDistributor. 
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
