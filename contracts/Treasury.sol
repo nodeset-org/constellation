@@ -5,8 +5,8 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './UpgradeableBase.sol';
 import './Utils/Constants.sol';
 
-/// @title Treasury Contract
-/// @notice A contract that allows the treasuerer to manage and execute transfers of ETH and ERC20 tokens.
+/// @title Treasury
+/// @notice A contract that allows the Constellation Treasuerer to manage and execute transfers of ETH and ERC20 tokens.
 /// @dev Inherits from UpgradeableBase to allow for future upgrades.
 contract Treasury is UpgradeableBase {
     event ClaimedToken(address indexed _token, address indexed _to, uint256 indexed _amount);
@@ -97,6 +97,6 @@ contract Treasury is UpgradeableBase {
         }
     }
 
-    // we accept donations
+    // Thank you for your donation
     receive() external payable {}
 }
