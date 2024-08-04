@@ -49,7 +49,10 @@ contract YieldDistributor is UpgradeableBase {
 
     uint256 public currentInterval;
     uint256 public currentIntervalGenesisTime;
-    uint256 public maxIntervalLengthSeconds; // NOs will have to wait at most this long for their payday
+    /// @notice The maximum interval length
+    /// @dev Intervals are closed when there is an asset state change (processMinipool()) or an operator is added or removed.
+    /// This means intervals may be significantly longer than this if no one is using the protocol.
+    uint256 public maxIntervalLengthSeconds;
 
     uint256 public k; // steepness of the exponential curve
 
@@ -195,13 +198,19 @@ contract YieldDistributor is UpgradeableBase {
 
     /**
      * @notice Ends the current rewards interval and starts a new one.
-     * @dev This function records the rewards for the current interval and increments the interval counter. It's primarily triggered when there's a change in the number of operators or when the duration of the current interval exceeds the `maxIntervalLengthSeconds`. Also, it triggers the process of distributing rewards from the minipool contracts via the `OperatorDistributor`. Intervals without yield are skipped, except for the first interval.
      */
     function finalizeInterval() public onlyProtocolOrAdmin {
         console.log("calling claim node operator fee");
         _finalizeIntervalVoidClaim();
     }
 
+    /**
+     * @dev This function records the rewards for the current interval and increments the interval counter. 
+     * It's normally triggered when:
+     * 1) This contract receives rewards during OperatorDistributor.processMinipool() (if enough the max interval length has passed)
+     * 2) An operator is removed or added
+     * Intervals without yield are skipped, except for the first interval.
+     */
     function _finalizeIntervalVoidClaim() internal {
         if (yieldAccruedInInterval == 0 && currentInterval > 0) {
             return;
@@ -226,28 +235,29 @@ contract YieldDistributor is UpgradeableBase {
      * @param _maxIntervalLengthSeconds The new maximum duration (in seconds) for each interval.
      * @dev This function allows the admin to adjust the length of time between rewards intervals. 
      * Adjustments may be necessary based on changing network conditions or governance decisions.
-     */ function setMaxIntervalTime(uint256 _maxIntervalLengthSeconds) public onlyShortTimelock {
+     */ 
+    function setMaxIntervalTime(uint256 _maxIntervalLengthSeconds) public onlyShortTimelock {
         maxIntervalLengthSeconds = _maxIntervalLengthSeconds;
     }
 
     /**
-     * @notice Transfers the accumulated dust (residual ETH) to the specified treasury address.
-     * @param treasury The address of the treasury to which the dust will be sent.
-     * @dev This function can only be called by the protocol admin. It allows for the collection of 
+     * @notice Transfers the accumulated dust (residual ETH) to the treasury address.
+     * @dev This function can only be called by the treasurer. It allows for the collection of 
      * small residual ETH balances (dust) that may have accumulated due to rounding errors or other minor discrepancies.
      */
-    function treasurySweep(address treasury) public onlyTreasurer {
+    function treasurySweep() public onlyTreasurer {
         uint256 amount = dustAccrued;
         dustAccrued = 0;
-        (bool success, ) = treasury.call{value: amount}('');
+        (bool success, ) = getDirectory().getTreasuryAddress().call{value: amount}('');
         require(success, 'Failed to send ETH to treasury');
     }
 
     /**
-     * @notice Sets the parameters for the reward incentive model used in reward distribution.
+     * @notice Sets the steepness of the curve for the reward incentive model.
      * @param _k The curvature parameter for the exponential function used in reward calculation.
      * @dev This function can only be called by the protocol admin. 
      * Adjusting this parameter will change the reward distribution dynamics for operators.
+     * See https://www.desmos.com/calculator/txymjzg1ad for a visualization
      */
     function setRewardIncentiveModel(uint256 _k) public {
         k = _k;
