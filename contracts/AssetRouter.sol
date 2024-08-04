@@ -199,12 +199,12 @@ contract AssetRouter is UpgradeableBase {
         _minipool.distributeBalance(false);
     }
 
-    /// Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode 
+    /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode 
     /// withdrawal address for both ETH and RPL rewards from Rocket Pool.
     /// Splits incoming assets up among the Treasury, YieldDistributor, and the WETHVault/OperatorDistributor.
     /// @param _amount amount of ETH rewards expected
-    /// @param avgTreasuryFee Treasury fee for the rewards received
-    /// @param avgOperatorsFee Operator fee for the rewards received
+    /// @param avgTreasuryFee Average treasury fee for the rewards received across all the minipools the rewards came from
+    /// @param avgOperatorsFee Average operator fee for the rewards received across all the minipools the rewards came from
     function onEthRewardsReceived(uint256 _amount, uint256 avgTreasuryFee, uint256 avgOperatorsFee) external onlyProtocol {
         IWETH weth = IWETH(_directory.getWETHAddress());
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
@@ -233,11 +233,11 @@ contract AssetRouter is UpgradeableBase {
         od.onIncreaseOracleError(communityPortion);
     }
 
-    /// Called by the protocol when RPL rewards are distributed to this contract, which acts as the SuperNode 
+    /// @notice Called by the protocol when RPL rewards are distributed to this contract, which acts as the SuperNode 
     /// withdrawal address for both ETH and RPL rewards from Rocket Pool.
     /// Splits incoming assets up among the Treasury, YieldDistributor, and the WETHVault/OperatorDistributor.
     /// @param _amount amount of RPL rewards expected
-    /// @param avgTreasuryFee Treasury fee for the rewards received
+    /// @param avgTreasuryFee Average treasury fee for the rewards received across all the minipools the rewards came from
     function onRplRewardsRecieved(uint256 _amount, uint256 avgTreasuryFee) external onlyProtocol {
         uint256 treasuryPortion = _amount.mulDiv(avgTreasuryFee, 1e18);
 
