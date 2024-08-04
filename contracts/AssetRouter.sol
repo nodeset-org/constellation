@@ -202,36 +202,63 @@ contract AssetRouter is UpgradeableBase {
     /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode 
     /// withdrawal address for both ETH and RPL rewards from Rocket Pool.
     /// Splits incoming assets up among the Treasury, YieldDistributor, and the WETHVault/OperatorDistributor.
-    /// @param _amount amount of ETH rewards expected
+    /// @param reward amount of ETH rewards expected
     /// @param avgTreasuryFee Average treasury fee for the rewards received across all the minipools the rewards came from
     /// @param avgOperatorsFee Average operator fee for the rewards received across all the minipools the rewards came from
-    function onEthRewardsReceived(uint256 _amount, uint256 avgTreasuryFee, uint256 avgOperatorsFee) external onlyProtocol {
-        IWETH weth = IWETH(_directory.getWETHAddress());
-        OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
-
-        uint256 treasuryPortion = _amount.mulDiv(avgTreasuryFee, 1e18);
-        uint256 nodeOperatorPortion = _amount.mulDiv(avgOperatorsFee, 1e18);
+    function onEthRewardsReceived(uint256 reward, uint256 avgTreasuryFee, uint256 avgOperatorsFee) external onlyProtocol {
+        uint256 treasuryPortion = reward.mulDiv(avgTreasuryFee, 1e18);
+        uint256 nodeOperatorPortion = reward.mulDiv(avgOperatorsFee, 1e18);
 
         console.log('treasuryPortion', treasuryPortion);
         console.log('nodeOperatorPortion', nodeOperatorPortion);
-        console.log('_amount', _amount);
+        console.log('_amount', reward);
         console.log('ethBalance', address(this).balance);
 
-        (bool success, ) = _directory.getTreasuryAddress().call{value: treasuryPortion}('');
+        (bool success, ) = getDirectory().getTreasuryAddress().call{value: treasuryPortion}('');
         require(success, 'Transfer to treasury failed');
 
-        (bool success2, ) = _directory.getYieldDistributorAddress().call{value: nodeOperatorPortion}('');
+        (bool success2, ) = getDirectory().getYieldDistributorAddress().call{value: nodeOperatorPortion}('');
         require(success2, 'Transfer to yield distributor failed');
 
-        uint256 communityPortion = _amount - treasuryPortion - nodeOperatorPortion;
+        uint256 communityPortion = reward - treasuryPortion - nodeOperatorPortion;
 
-        weth.deposit{value: communityPortion}();
+        IWETH(getDirectory().getWETHAddress()).deposit{value: communityPortion}();
         console.log('onEthRewardsReceived.communityPortion', communityPortion);
         console.log('onEthRewardsReceived.treasuryPortion', treasuryPortion);
         console.log('onEthRewardsReceived.nodeOperatorFee', nodeOperatorPortion);
         balanceEthAndWeth += communityPortion;
-        od.onIncreaseOracleError(communityPortion);
+        OperatorDistributor(getDirectory().getOperatorDistributorAddress()).onIncreaseOracleError(communityPortion);
     }
+
+    /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode 
+    /// withdrawal address for both ETH and RPL rewards from Rocket Pool.
+    /// Only takes in ETH and sends to WETHVault/OperatorDistributor depending on liquidity conditions. 
+    /// Does NOT take fees.
+    function onEthPrincipalReceived(uint256 principal) external onlyProtocol {
+        IWETH(getDirectory().getWETHAddress()).deposit{value: principal}();
+        balanceEthAndWeth += principal;
+    }
+
+    /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode 
+    /// withdrawal address for both ETH and RPL rewards from Rocket Pool.
+    /// Splits incoming assets up among the Treasury, YieldDistributor, and the WETHVault/OperatorDistributor based on
+    /// the rewards and principal specified.
+    function onEthRewardsAndPrincipalReceived(uint256 reward, uint256 principal, uint256 avgTreasuryFee, uint256 avgOperatorsFee) external onlyProtocol {
+        uint256 treasuryPortion = reward.mulDiv(avgTreasuryFee, 1e18);
+        uint256 nodeOperatorPortion = reward.mulDiv(avgOperatorsFee, 1e18);
+        IWETH(getDirectory().getWETHAddress()).deposit{value: reward + principal}();
+
+        (bool success, ) = getDirectory().getTreasuryAddress().call{value: treasuryPortion}('');
+        require(success, 'Transfer to treasury failed');
+
+        (bool success2, ) = getDirectory().getYieldDistributorAddress().call{value: nodeOperatorPortion}('');
+        require(success2, 'Transfer to yield distributor failed');
+
+        uint256 communityPortion = reward - treasuryPortion - nodeOperatorPortion;
+        balanceEthAndWeth += communityPortion + principal;
+        OperatorDistributor(getDirectory().getOperatorDistributorAddress()).onIncreaseOracleError(communityPortion);
+    }
+
 
     /// @notice Called by the protocol when RPL rewards are distributed to this contract, which acts as the SuperNode 
     /// withdrawal address for both ETH and RPL rewards from Rocket Pool.

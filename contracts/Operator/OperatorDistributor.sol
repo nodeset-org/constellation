@@ -46,6 +46,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     uint256 public minimumStakeRatio;
 
     // The amount the oracle has already included in its summation
+    // This is important to track because when a minipool is skimmed, its balance will have 
+    // been reported already by the oracle, so there will be an extra amount of ETH TVL reported
+    // otherwise
     uint256 public oracleError;
 
     uint256 public balanceEth;
@@ -312,31 +315,45 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             return;
         }
 
+        // get refs and data
         AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
+        (, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));   
+
+        // allow deposits into AssetRouter
         ar.openGate();
-        uint256 initialBalance = address(ar).balance;
+
+        // determine the difference in node share and remaining bond amount
+        uint256 depositBalance = minipool.getNodeDepositBalance();
+        // if node share - original deposit is <= 0 then there are no rewards (it's been penalized)
+        uint256 rewards = 0;
+        if(minipool.calculateNodeShare(depositBalance) > depositBalance)
+            rewards = minipool.calculateNodeShare(depositBalance) - depositBalance;
+        console.log('rewards recieved', rewards);
         
-        if (totalBalance < 8 ether) {
-            // minipool is still staking
+        if (totalBalance < 8 ether) { // minipool is still staking
+           
             console.log('withdrawal address before skim', _directory.getAssetRouterAddress().balance);
+            // withdrawal address calls distributeBalance(true)
             ar.onClaimSkimmedRewards(minipool);
             console.log('withdrawal address after skim', _directory.getAssetRouterAddress().balance);
-        } else {
-            // the minipool is exited
+            // calculate only rewards
+            ar.onEthRewardsReceived(rewards, treasuryFee, noFee);
+        } else { // the minipool is exited
+            // withdrawal address calls distributeBalance(false)
             ar.onExitedMinipool(minipool);
+            // stop tracking
             this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
-        }
-
-        uint256 finalBalance = address(ar).balance;
+            if (rewards > 0) {
+                // calculate rewards and principal
+                ar.onEthRewardsAndPrincipalReceived(rewards, depositBalance, treasuryFee, noFee);
+            }
+            else {
+                // everything is principal
+                ar.onEthPrincipalReceived(minipool.calculateNodeShare(depositBalance));
+            }
+        }        
+        // lock down AssetRouter again
         ar.closeGate();
-        console.log('finalBalance', finalBalance);
-        console.log('initialBalance', initialBalance);
-        uint256 rewards = finalBalance - initialBalance;
-        console.log('rewards recieved', rewards);
-
-        (, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));
-
-        ar.onEthRewardsReceived(rewards, treasuryFee, noFee);
     }
 
     /**
