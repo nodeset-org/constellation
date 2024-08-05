@@ -484,55 +484,6 @@ export const badAutWhitelistUserServerSig = async (setupData: SetupData, nodeOpe
   return { sig, timestamp };
 };
 
-// Deprecated: Don't use
-export const registerNewValidatorDeprecated = async (setupData: SetupData, nodeOperators: SignerWithAddress[]) => {
-  // one currently needs 8 eth in the operatorDistribution contract to register a validator for each node operator
-  const requiredEth = ethers.utils.parseEther('8').mul(nodeOperators.length);
-  if ((await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)).lt(requiredEth)) {
-    throw new Error(
-      `Not enough eth in operatorDistributor contract to register ${nodeOperators.length
-      } validators. Required ${ethers.utils.formatEther(requiredEth)} eth but only have ${ethers.utils.formatEther(
-        await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)
-      )} eth`
-    );
-  }
-
-  const bondValue = ethers.utils.parseEther('8');
-  const rocketPool = setupData.rocketPool;
-
-  for (let i = 0; i < nodeOperators.length; i++) {
-    const nodeOperator = nodeOperators[i];
-
-    const mockMinipool = await deployRPMinipool(nodeOperator, rocketPool, setupData.signers, bondValue);
-
-    await rocketPool.rockStorageContract
-      .connect(nodeOperator)
-      .setWithdrawalAddress(nodeOperator.address, setupData.protocol.assetRouter.address, true);
-
-    // NO sets smoothing pool registration state to true
-    await rocketPool.rocketNodeManagerContract.connect(nodeOperator).setSmoothingPoolRegistrationState(true);
-
-    // admin needs to kyc the node operator and register them in the whitelist if they aren't already
-    if (!(await setupData.protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address))) {
-      await assertAddOperator(setupData, nodeOperator);
-    }
-
-    // admin will sign mockMinipool's address via signMessage
-    const encodedMinipoolAddress = ethers.utils.defaultAbiCoder.encode(['address'], [mockMinipool.address]);
-    const mockMinipoolAddressHash = ethers.utils.keccak256(encodedMinipoolAddress);
-    const mockMinipoolAddressHashBytes = ethers.utils.arrayify(mockMinipoolAddressHash);
-    const sig = await setupData.signers.adminServer.signMessage(mockMinipoolAddressHashBytes);
-
-    // admin will reimburse the node operator for the minipool
-    let operatorData = await setupData.protocol.whitelist.getOperatorAtAddress(nodeOperator.address);
-    const lastCount = operatorData.currentValidatorCount;
-    //await setupData.protocol.operatorDistributor.connect(setupData.signers.admin).reimburseNodeForMinipool(sig, mockMinipool.address);
-    // FUNCTION DNE
-    operatorData = await setupData.protocol.whitelist.getOperatorAtAddress(nodeOperator.address);
-    expect(operatorData.currentValidatorCount).to.equal(lastCount + 1);
-  }
-};
-
 export async function prepareOperatorDistributionContract(setupData: SetupData, numOperators: Number) {
   const vweth = setupData.protocol.vCWETH;
   let depositAmount = ethers.utils.parseEther('8').mul(BigNumber.from(numOperators));

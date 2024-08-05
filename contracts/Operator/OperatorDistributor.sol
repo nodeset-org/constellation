@@ -316,8 +316,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
         uint256 totalBalance = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() + balanceAfterRefund;
         
-        if(balanceAfterRefund > depositBalance) { // it's an exit, and the extra nodeShare is rewards
-            console.log("MINIPOOL STATUS: exited and rewarded");
+        if(balanceAfterRefund >= depositBalance) { // it's an exit, and any extra nodeShare is rewards
+            console.log("MINIPOOL STATUS: exited");
             rewards = minipool.calculateNodeShare(totalBalance) - depositBalance;
             console.log('nodeshare', minipool.calculateNodeShare(totalBalance));
             // withdrawal address calls distributeBalance(false)
@@ -333,14 +333,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             ar.onClaimSkimmedRewards(minipool);
             // calculate only rewards
             ar.onEthRewardsReceived(rewards, treasuryFee, noFee);
-        } else { // it's an exit, but it's been penalized or rewards are 0, so everything is the remaining bond
-            console.log("MINIPOOL STATUS: exited and penalized");
-            // withdrawal address calls distributeBalance(false)
-            ar.onExitedMinipool(minipool);
-            // stop tracking
-            this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
-            // only the (reduced) bond is received
-            ar.onEthBondReceived(minipool.calculateNodeShare(depositBalance));
         }
         console.log('rewards recieved', rewards);   
         ar.sendEthToDistributors(); 

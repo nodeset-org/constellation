@@ -173,8 +173,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function lazyInitialize() external lazyInitializer {
         Directory directory = Directory(_directory);
         _registerNode('Australia/Brisbane');
-        address dp = directory.getAssetRouterAddress();
-        IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), dp, true);
+        address ar = directory.getAssetRouterAddress();
+        IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), ar, true);
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(true);
     }
 
