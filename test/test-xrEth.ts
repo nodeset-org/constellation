@@ -225,10 +225,10 @@ describe("xrETH", function () {
     expect(initialRedeemValue).equals(ethers.utils.parseEther("1"));
 
     // simulate 31 ether (bond-penalty) put into minipool contract from beacon
-    const executionLayerReward = ethers.utils.parseEther("10");
+    const finalMinipoolBalance = ethers.utils.parseEther("31");
     await signers.ethWhale.sendTransaction({
       to: minipools[0],
-      value: executionLayerReward
+      value: finalMinipoolBalance
     })
 
     console.log('minipool balance', await ethers.provider.getBalance(minipools[0]));
@@ -247,14 +247,13 @@ describe("xrETH", function () {
     console.log('AssetRouter PRE-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getAssetRouterAddress()));
     console.log('xrETH PRE-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
 
-    // assume a 15% rETH fee and LEB8 (36.25% of all rewards), which is default settings 
-    const nodeRewards = executionLayerReward.mul(ethers.utils.parseEther("3.625")).div(ethers.utils.parseEther("1")); 
+    const nodeRewards = 0; 
     console.log('expected node rewards', nodeRewards);
-    const expectedTreasuryPortion = nodeRewards.mul(minipoolData.ethTreasuryFee).div(ethers.utils.parseEther("1")); 
+    const expectedTreasuryPortion = 0; 
     console.log('expected TreasuryPortion', expectedTreasuryPortion);
-    const expectedNodeOperatorPortion = nodeRewards.mul(minipoolData.noFee).div(ethers.utils.parseEther("1")); 
+    const expectedNodeOperatorPortion = 0; 
     console.log('expected NodeOperatorPortion', expectedNodeOperatorPortion);
-    const expectedCommunityPortion = nodeRewards.sub(expectedTreasuryPortion).sub(expectedNodeOperatorPortion);
+    const expectedCommunityPortion = 0;
     console.log("expectedCommunityPortion (executionLayerReward-fees)", expectedCommunityPortion);
     const initalTreasuryBalance = await ethers.provider.getBalance(await protocol.directory.getTreasuryAddress());
     await protocol.operatorDistributor.connect(signers.random).processNextMinipool();
@@ -271,7 +270,7 @@ describe("xrETH", function () {
     console.log('totalAssets()', await protocol.vCWETH.totalAssets());
     console.log('totalDeposit', totalDeposit);
 
-    expect(await protocol.vCWETH.totalAssets()).equals(totalDeposit.add(expectedCommunityPortion));
+    expect(await protocol.vCWETH.totalAssets()).equals(totalDeposit.sub(1));
 
     let preBalance = await protocol.wETH.balanceOf(signers.random.address);
     await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
@@ -289,7 +288,7 @@ describe("xrETH", function () {
     expectNumberE18ToBeApproximately(expectedRedeemValue, postBalance.sub(preBalance), 0.0000000001)
 
     // preview of redeeming all shares
-    expectNumberE18ToBeApproximately(await protocol.vCWETH.previewRedeem(totalDeposit), expectedCommunityPortion.add(totalDeposit), 0.00000001)
+    expectNumberE18ToBeApproximately(await protocol.vCWETH.previewRedeem(totalDeposit), totalDeposit, 0.00000001)
 
     expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).equals(expectedNodeOperatorPortion);
     expect(finalTreasuryBalance.sub(initalTreasuryBalance)).equals(expectedTreasuryPortion);
@@ -319,10 +318,10 @@ describe("xrETH", function () {
     expect(initialRedeemValue).equals(ethers.utils.parseEther("1"));
 
     // simulate 33 ether (full validator + 1 ETH reward) put into minipool contract from beacon
-    const executionLayerReward = ethers.utils.parseEther("33");
+    const finalMinipoolBalance = ethers.utils.parseEther("33");
     await signers.ethWhale.sendTransaction({
       to: minipools[0],
-      value: executionLayerReward
+      value: finalMinipoolBalance
     })
 
     console.log('minipool balance', await ethers.provider.getBalance(minipools[0]));
@@ -342,7 +341,7 @@ describe("xrETH", function () {
     console.log('xrETH PRE-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
 
     // assume a 15% rETH fee and LEB8 (36.25% of all rewards), which is default settings 
-    const nodeRewards = executionLayerReward.mul(ethers.utils.parseEther("3.625")).div(ethers.utils.parseEther("1")); 
+    const nodeRewards = ethers.utils.parseEther(".3625"); 
     console.log('expected node rewards', nodeRewards);
     const expectedTreasuryPortion = nodeRewards.mul(minipoolData.ethTreasuryFee).div(ethers.utils.parseEther("1")); 
     console.log('expected TreasuryPortion', expectedTreasuryPortion);

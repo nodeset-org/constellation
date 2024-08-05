@@ -214,7 +214,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Check current status & node deposit status
         require(status == MinipoolStatus.Initialised, 'The pre-deposit can only be made while initialised');
         require(preLaunchValue == 0, 'Pre-deposit already performed');
-        console.log("RocketMinipoolDelegate.preDeposit()");
         // Update node deposit details
         nodeDepositBalance = _bondValue;
         preLaunchValue = msg.value;
@@ -331,7 +330,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         bytes calldata _validatorSignature,
         bytes32 _depositDataRoot
     ) external override onlyMinipoolOwner(msg.sender) onlyInitialised {
-        console.log("RocketMinipoolDelegate.stake()");
         // Get contracts
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(
                 getContractAddress('rocketDAOProtocolSettingsMinipool')
@@ -670,10 +668,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         uint256 nodeShare = 0;
         // Calculate the total capital (node + user)
         uint256 capital = userCapital.add(nodeCapital);
-        console.log("minipoolDelegate capital", capital);
-        console.log("minipoolDelegate userCapital", userCapital);
-        console.log("minipoolDelegate nodeCapital", nodeCapital);
-        console.log("minipoolDelegate _balance", _balance);
         if (_balance > capital) {
             // Total rewards to share
             uint256 rewards = _balance.sub(capital);
@@ -690,7 +684,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             }
             nodeShare = nodeShare.sub(penaltyAmount);
         }
-        console.log("minipoolDelegate nodeShare", nodeShare);
+
         return nodeShare;
     }
 

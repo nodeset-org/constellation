@@ -314,18 +314,20 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         // if nodeshare - original deposit is <= 0 then it's an exit but there are no rewards (it's been penalized)
         uint256 rewards = 0;
         uint256 balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
-        uint256 totalBalance = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() + balanceAfterRefund;
+        //uint256 totalBalance = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() + balanceAfterRefund;
         
         if(balanceAfterRefund >= depositBalance) { // it's an exit, and any extra nodeShare is rewards
             console.log("MINIPOOL STATUS: exited");
-            rewards = minipool.calculateNodeShare(totalBalance) - depositBalance;
-            console.log('nodeshare', minipool.calculateNodeShare(totalBalance));
+            uint256 remainingBond = minipool.calculateNodeShare(balanceAfterRefund) < depositBalance ? minipool.calculateNodeShare(balanceAfterRefund) : depositBalance;
+            rewards = remainingBond > depositBalance ? minipool.calculateNodeShare(balanceAfterRefund) - depositBalance : 0;  
+            console.log('exit rewards expected', rewards);
+            console.log('node share of bond', minipool.calculateNodeShare(balanceAfterRefund));
             // withdrawal address calls distributeBalance(false)
             ar.onExitedMinipool(minipool);
             // stop tracking
             this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
             // both bond and rewards are received
-            ar.onEthRewardsAndBondReceived(rewards, depositBalance, treasuryFee, noFee);
+            ar.onEthRewardsAndBondReceived(rewards, remainingBond, treasuryFee, noFee);
         } else if (balanceAfterRefund < depositBalance) { // it's still staking
             console.log("MINIPOOL STATUS: still staking");
             rewards = minipool.calculateNodeShare(balanceAfterRefund);

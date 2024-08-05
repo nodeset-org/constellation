@@ -91,12 +91,8 @@ contract AssetRouter is UpgradeableBase {
         // Initialize the vault and operator distributor addresses
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
         OperatorDistributor operatorDistributor = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
-        console.log('sendEthToDistributors.C');
 
         uint256 requiredCapital = vweth.getRequiredCollateral();
-        console.log('sendEthToDistributors.D');
-        console.log(requiredCapital);
-
         if (balanceEthAndWeth >= requiredCapital) {
             balanceEthAndWeth -= requiredCapital;
             vweth.onWethBalanceIncrease(requiredCapital);
@@ -170,7 +166,9 @@ contract AssetRouter is UpgradeableBase {
     }
 
     function onExitedMinipool(IMinipool _minipool) external onlyProtocol {
+        console.log("AssetRouter balance before distribute", address(this).balance);
         _minipool.distributeBalance(false);
+        console.log("AssetRouter balance after distribute", address(this).balance);
     }
 
     /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode 
@@ -181,9 +179,15 @@ contract AssetRouter is UpgradeableBase {
     /// @param avgTreasuryFee Average treasury fee for the rewards received across all the minipools the rewards came from
     /// @param avgOperatorsFee Average operator fee for the rewards received across all the minipools the rewards came from
     function onEthRewardsReceived(uint256 rewardAmount, uint256 avgTreasuryFee, uint256 avgOperatorsFee) public onlyProtocol {
+        if(rewardAmount == 0)
+            return;
+
+        console.log("reward amount s", rewardAmount);
+
         uint256 treasuryPortion = rewardAmount.mulDiv(avgTreasuryFee, 1e18);
         uint256 nodeOperatorPortion = rewardAmount.mulDiv(avgOperatorsFee, 1e18);
 
+        console.log("AR is trying to send", rewardAmount);
         (bool success, ) = getDirectory().getTreasuryAddress().call{value: treasuryPortion}('');
         require(success, 'Transfer to treasury failed');
 
@@ -203,6 +207,10 @@ contract AssetRouter is UpgradeableBase {
     /// Only takes in ETH and sends to WETHVault/OperatorDistributor depending on liquidity conditions based on the 
     /// bondAmount expected. Does NOT take fees.
     function onEthBondReceived(uint256 bondAmount) public onlyProtocol {
+        if(bondAmount == 0)
+            return;
+
+        console.log("AR is trying to send", bondAmount);
         IWETH(getDirectory().getWETHAddress()).deposit{value: bondAmount}();
         balanceEthAndWeth += bondAmount;
     }
