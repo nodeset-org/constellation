@@ -273,7 +273,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _liquidityReservePercent The new liquidity reserve percentage.
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
-    function setLiquidityReservePerecent(uint256 _liquidityReservePercent) external onlyShortTimelock {
+    function setLiquidityReservePercent(uint256 _liquidityReservePercent) external onlyShortTimelock {
         require(_liquidityReservePercent >= 0, 'WETHVault: liquidity reserve percentage must be positive');
         require(_liquidityReservePercent <= 1e18, 'WETHVault: liquidity reserve percentage must be less than or equal to 100%');
         liquidityReservePercent = _liquidityReservePercent;
