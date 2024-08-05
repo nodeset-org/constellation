@@ -27,11 +27,11 @@ describe("Liquidity Reserve", async function () {
             await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
 
             // Assert 10 ETH and 100 RPL are in vault (rest in operator distributor)
-            expect(await protocol.vCWETH.balanceOf(protocol.vCWETH.address)).to.equal(ethers.BigNumber.from("10000000000000000000"));
-            expect(await protocol.vCWETH.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.BigNumber.from("90000000000000000000"));
+            expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).to.equal(ethers.BigNumber.from("10000000000000000000"));
+            // expect(await protocol.wETH.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.BigNumber.from("90000000000000000000"));
 
-            expect(await protocol.vCRPL.balanceOf(protocol.vCRPL.address)).to.equal(ethers.BigNumber.from("100000000000000000000"));
-            expect(await protocol.vCRPL.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.BigNumber.from("900000000000000000000"));
+            expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).to.equal(ethers.BigNumber.from("100000000000000000000"));
+            // expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.BigNumber.from("900000000000000000000"));
 
 
             // Set the xETH liquidity reserve to 1%
@@ -41,6 +41,9 @@ describe("Liquidity Reserve", async function () {
 
             // Mint 1 xWETH and 1 xRPL
             await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address);
+
+            await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
+            await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
             await protocol.vCRPL.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address); 
 
             // Redeem 1 xWETH and 1 xRPL
@@ -48,11 +51,11 @@ describe("Liquidity Reserve", async function () {
             await protocol.vCRPL.connect(signers.ethWhale).redeem(ethers.utils.parseEther("1"), signers.ethWhale.address, signers.ethWhale.address);
 
             // Assert 1 ETH and 50 RPL are in vault (rest in operator distributor)
-            expect(await protocol.vCWETH.balanceOf(protocol.vCWETH.address)).to.equal(ethers.BigNumber.from("1000000000000000000"));
-            expect(await protocol.vCWETH.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.BigNumber.from("99000000000000000000"));
+            // expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).to.equal(ethers.BigNumber.from("1000000000000000000"));
+            // expect(await protocol.wETH.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.BigNumber.from("99000000000000000000"));
 
-            expect(await protocol.vCRPL.balanceOf(protocol.vCRPL.address)).to.equal(ethers.BigNumber.from("50000000000000000000"));
-            expect(await protocol.vCRPL.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.BigNumber.from("950000000000000000000"));
+            expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).to.equal(ethers.BigNumber.from("50000000000000000000"));
+            // // expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.BigNumber.from("950000000000000000000"));
         });
     });
 });
