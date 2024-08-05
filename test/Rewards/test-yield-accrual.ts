@@ -4,7 +4,6 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from "../test";
 
 describe("Yield Accrual", function () {
-
     describe("When sender is not protocol", async () => {
         it("should revert", async () => {
             try {
