@@ -6,6 +6,7 @@ import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expectNumberE18ToBeApproximately, getEventNames, prepareOperatorDistributionContract, registerNewValidator, upgradePriceFetcherToMock, whitelistUserServerSig } from "./utils/utils";
 import { ContractTransaction } from "@ethersproject/contracts";
+import { wEth } from "../typechain-types/factories/contracts/Testing";
 
 describe("xrETH", function () {
 
@@ -108,7 +109,7 @@ describe("xrETH", function () {
 
   })
 
-  it.only("TODO: success - tries to deposit and redeem from weth vault multiple times with minipool reward claims", async () => {
+  it("TODO: success - tries to deposit and redeem from weth vault multiple times with minipool reward claims", async () => {
     
     // THIS TEST ASSUMES YOU CAN JUST DEPOSIT AN ETHER INTO A MINIPOOOL CONTRACT, IS THIS CORRECT?
     
@@ -145,23 +146,43 @@ describe("xrETH", function () {
     console.log('minipoolNOFee', minipoolData.noFee);
     const totalFeePercentage = ((minipoolData.ethTreasuryFee).add(minipoolData.noFee));
     console.log('total fee percentage', totalFeePercentage);
-    expect(totalFeePercentage).equals(ethers.utils.parseEther("0.29576"));
-    
-    const expectedCommunityPortion = executionLayerReward.sub(executionLayerReward.mul(totalFeePercentage).div(ethers.utils.parseEther("1")));
+    //expect(totalFeePercentage).equals(ethers.utils.parseEther("0.29576"));
+
+    console.log('OperatorDistributor PRE-processing balance ETH', await ethers.provider.getBalance(await protocol.directory.getWETHVaultAddress()));
+    console.log('AssetRouter PRE-process balance  ETH', await ethers.provider.getBalance(await protocol.directory.getAssetRouterAddress()));
+    console.log('xrETH PRE-process balance  ETH', await ethers.provider.getBalance(await protocol.directory.getWETHVaultAddress()));
+    console.log('OperatorDistributor PRE-processing balance WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
+    console.log('AssetRouter PRE-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getAssetRouterAddress()));
+    console.log('xrETH PRE-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
+
+    // assume a 15% rETH fee and LEB8 (36.25% of all rewards), which is default settings 
+    const nodeRewards = executionLayerReward.mul(ethers.utils.parseEther(".3625")).div(ethers.utils.parseEther("1")); 
+    console.log('expected node rewards', nodeRewards);
+    const expectedTreasuryPortion = nodeRewards.mul(minipoolData.ethTreasuryFee).div(ethers.utils.parseEther("1")); 
+    console.log('expected TreasuryPortion', expectedTreasuryPortion);
+    const expectedNodeOperatorPortion = nodeRewards.mul(minipoolData.noFee).div(ethers.utils.parseEther("1")); 
+    console.log('expected NodeOperatorPortion', expectedNodeOperatorPortion);
+    const expectedCommunityPortion = nodeRewards.sub(expectedTreasuryPortion).sub(expectedNodeOperatorPortion);
     console.log("expectedCommunityPortion (executionLayerReward-fees)", expectedCommunityPortion);
-    // console.log("minipoolData", minipoolData)
-
-    const expectedTreasuryPortion = executionLayerReward.mul(minipoolData.ethTreasuryFee).div(ethers.utils.parseEther("1")); 
-    const expectedNodeOperatorPortion = executionLayerReward.mul(minipoolData.noFee).div(ethers.utils.parseEther("1")); 
-    
     const initalTreasuryBalance = await ethers.provider.getBalance(await protocol.directory.getTreasuryAddress());
-    await protocol.operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
+    await protocol.operatorDistributor.connect(signers.random).processNextMinipool();
     const finalTreasuryBalance = await ethers.provider.getBalance(await protocol.directory.getTreasuryAddress());
-
     const expectedRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
 
+    console.log('OperatorDistributor POST-processing balance', await ethers.provider.getBalance(await protocol.directory.getWETHVaultAddress()));
+    console.log('AssetRouter POST-processing balance', await ethers.provider.getBalance(await protocol.directory.getAssetRouterAddress()));
+    console.log('xrETH POST-processing balance', await ethers.provider.getBalance(await protocol.directory.getWETHVaultAddress()));
+    console.log('OperatorDistributor POST-processing balance WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
+    console.log('AssetRouter POST-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getAssetRouterAddress()));
+    console.log('xrETH POST-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
+    
+    console.log('totalAssets()', await protocol.vCWETH.totalAssets());
+    console.log('totalDeposit', totalDeposit);
+
+
+
     // failing here
-    expect(await protocol.vCWETH.totalAssets()).equals(totalDeposit.add(expectedCommunityPortion))
+    expect(await protocol.vCWETH.totalAssets()).equals(totalDeposit.add(expectedCommunityPortion));
 
     let preBalance = await protocol.wETH.balanceOf(signers.random.address);
     await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);

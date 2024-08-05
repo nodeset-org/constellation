@@ -297,6 +297,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         }
 
         uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
+        console.log('nodeshare', minipool.calculateNodeShare(totalBalance));
         if (totalBalance == 0) {
             return;
         }
@@ -310,7 +311,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         console.log('balance of minipool contract', address(minipool).balance);
         console.log('total balance after node refunds', totalBalance);
-        console.log('nodeshare', minipool.calculateNodeShare(totalBalance));
+        
 
 
         // determine the difference in node share and remaining bond amount
@@ -321,6 +322,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         // nodeShare is the portion of the current minipool balance that is assignable to the node (including rewards and bond)
         uint256 nodeShare = minipool.calculateNodeShare(totalBalance);
         if(nodeShare > depositBalance) { // it's an exit, and the extra nodeShare is rewards
+            console.log("MINIPOOL STATUS: exited and rewarded");
             rewards = nodeShare - depositBalance;
             // withdrawal address calls distributeBalance(false)
             ar.onExitedMinipool(minipool);
@@ -329,12 +331,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             // both bond and rewards are received
             ar.onEthRewardsAndBondReceived(rewards, depositBalance, treasuryFee, noFee);
         } else if (totalBalance < depositBalance) { // it's still staking
+            console.log("MINIPOOL STATUS: still staking");
             rewards = nodeShare;
             // withdrawal address calls distributeBalance(true)
             ar.onClaimSkimmedRewards(minipool);
             // calculate only rewards
             ar.onEthRewardsReceived(rewards, treasuryFee, noFee);
-        } else { // it's an exit, but it's been penalized: rewards are 0, and everything is the remaining bond
+        } else { // it's an exit, but it's been penalized or rewards are 0, so everything is the remaining bond
+            console.log("MINIPOOL STATUS: exited and penalized");
             // withdrawal address calls distributeBalance(false)
             ar.onExitedMinipool(minipool);
             // stop tracking
@@ -342,7 +346,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             // only the (reduced) bond is received
             ar.onEthBondReceived(minipool.calculateNodeShare(depositBalance));
         }
-        console.log('rewards recieved', rewards);    
+        console.log('rewards recieved', rewards);   
+        ar.sendEthToDistributors(); 
         // lock down AssetRouter again
         ar.closeGate();
     }
