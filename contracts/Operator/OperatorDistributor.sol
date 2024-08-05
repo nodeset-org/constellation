@@ -319,7 +319,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         if(balanceAfterRefund >= depositBalance) { // it's an exit, and any extra nodeShare is rewards
             console.log("MINIPOOL STATUS: exited");
             uint256 remainingBond = minipool.calculateNodeShare(balanceAfterRefund) < depositBalance ? minipool.calculateNodeShare(balanceAfterRefund) : depositBalance;
-            rewards = remainingBond > depositBalance ? minipool.calculateNodeShare(balanceAfterRefund) - depositBalance : 0;  
+            rewards = minipool.calculateNodeShare(balanceAfterRefund) > depositBalance ? minipool.calculateNodeShare(balanceAfterRefund) - depositBalance : 0;  
             console.log('exit rewards expected', rewards);
             console.log('node share of bond', minipool.calculateNodeShare(balanceAfterRefund));
             // withdrawal address calls distributeBalance(false)
