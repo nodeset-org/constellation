@@ -8,7 +8,7 @@ import { Signers } from "../test";
 import { RocketPool } from "../test";
 import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault, IWETH, RocketMinipoolInterface } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
-import { deployRPMinipool, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances, assertAddOperator, deployMinipool, increaseEVMTime } from "../utils/utils";
+import { deployRPMinipool, registerNewValidator, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances, assertAddOperator, deployMinipool, increaseEVMTime } from "../utils/utils";
 import { generateDepositDataForStake } from "../rocketpool/_helpers/minipool";
 
 
@@ -119,27 +119,38 @@ describe("Node Operator Onboarding", function () {
         //expectNumberE18ToBeApproximately(actualRplInDP, expectedRplInDP, 0.1); // ooof, lets get this estimate down to 0.001%
     });
 
-    it("eth whale redeems one share to trigger pool rebalacings", async function () {
+    it("oracle update increases yield appropriately", async function () {
+        
+        // deposit into protocol
+        await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
+        await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
+        await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
+        
         const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
         const network = await ethers.provider.getNetwork();
         const chainId = network.chainId;
         const newTotalYield = ethers.utils.parseEther("3");
-        const incorrectMessageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "address", "uint256"], [newTotalYield, timestamp, protocol.oracle.address, chainId]);
+        const incorrectMessageHash = ethers.utils.solidityKeccak256(
+            ["int256", "uint256", "address", "uint256"], 
+            [newTotalYield, timestamp, protocol.oracle.address, chainId]
+        );
         const signature = await signers.admin.signMessage(ethers.utils.arrayify(incorrectMessageHash));
+        // accrue yield via oracle
         await protocol.oracle.connect(signers.admin).setTotalYieldAccrued(signature, newTotalYield, timestamp)
 
         console.log("total supply of shares")
         console.log(await protocol.vCWETH.totalSupply())
-        console.log(await protocol.vCWETH.maxRedeem(signers.ethWhale.address));
-        console.log(await protocol.vCWETH.totalAssets())
-        console.log(await protocol.vCWETH.balanceOf(signers.ethWhale.address));
-        console.log(await protocol.wETH.balanceOf(protocol.vCWETH.address));
-        console.log(await ethers.provider.getBalance(protocol.vCWETH.address));
-        console.log(await protocol.vCWETH.convertToAssets(ethers.utils.parseEther("1")));
+        console.log('max redeem', await protocol.vCWETH.maxRedeem(signers.ethWhale.address));
+        console.log('WETHVault total assets',await protocol.vCWETH.totalAssets())
+        console.log('xrETH balance of depositor',await protocol.vCWETH.balanceOf(signers.ethWhale.address));
+        console.log('WETH balance of WETHVault', await protocol.wETH.balanceOf(protocol.vCWETH.address));
+        console.log('ETHER balance of WETHVault', await ethers.provider.getBalance(protocol.vCWETH.address));
+        console.log('xrETH/ETH value',await ethers.utils.formatEther(await protocol.vCWETH.convertToAssets(ethers.utils.parseEther("1"))));
         console.log("balance of deposit pool / opd")
         console.log(await protocol.wETH.balanceOf(protocol.assetRouter.address));
         console.log(await protocol.wETH.balanceOf(protocol.operatorDistributor.address));
-        console.log(await protocol.vCWETH.maxRedeem(signers.ethWhale.address));
+
+        console.log('liquidity reserve percent for WETHVault', await protocol.vCWETH.liquidityReservePercent());
 
         const tx = await protocol.vCWETH.connect(signers.ethWhale).redeem(ethers.utils.parseEther("1"), signers.ethWhale.address, signers.ethWhale.address);
         const receipt = await tx.wait();
@@ -170,15 +181,17 @@ describe("Node Operator Onboarding", function () {
             RPLbalancesBefore.push(allAddresses[i].name + " - " + await rocketPool.rplContract.balanceOf(allAddresses[i].address));
         }
 
-        console.log("AA")
+        registerNewValidator(setupData, [signers.hyperdriver]);
 
-        console.log("BB")
+        //await ethers.connect(setupData.signers.ethWhale).transfer(, ethers.utils.parseEther("1"))l
 
         await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
 
         const currentInterval = (await protocol.yieldDistributor.currentInterval()).sub(1);
 
         console.log(await protocol.yieldDistributor.getIntervals())
+
+
 
         const tx = await protocol.yieldDistributor.connect(signers.random).harvest(signers.hyperdriver.address, 0, currentInterval);
         const receipt = await tx.wait();
