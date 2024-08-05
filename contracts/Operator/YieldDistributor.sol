@@ -226,8 +226,6 @@ contract YieldDistributor is UpgradeableBase {
         currentInterval++;
         currentIntervalGenesisTime = block.timestamp;
         yieldAccruedInInterval = 0;
-
-        getOperatorDistributor().processNextMinipool();
     }
 
     /****
