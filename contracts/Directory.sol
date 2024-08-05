@@ -46,6 +46,7 @@ struct RocketIntegrations {
     address rocketNetworkVoting;
     address rocketDAOProtocolProposal;
     address rocketDAOProtocolSettingsRewards;
+    address rocketDAOProtocolSettingsMinipool;
 }
 
 /// @author Mike Leach, Theodore Clapp
@@ -144,6 +145,10 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     function getRocketDAOProtocolSettingsRewardsAddress() public view returns (address) {
         return _integrations.rocketDAOProtocolSettingsRewards;
+    }
+
+    function getRocketDAOProtocolSettingsMinipool() public view returns (address) {
+        return _integrations.rocketDAOProtocolSettingsMinipool;
     }
 
     function getRPLAddress() public view returns (address) {
@@ -332,6 +337,15 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         require(
             _integrations.rocketDAOProtocolSettingsRewards != address(0),
             'rocketDAOProtocolSettingsRewards is 0x0'
+        );
+
+        _integrations.rocketDAOProtocolSettingsMinipool = IRocketStorage(newProtocol.rocketStorage).getAddress(
+            RocketpoolEncoder.generateBytes32Identifier('rocketDAOProtocolSettingsMinipool')
+        );
+
+        require(
+            _integrations.rocketDAOProtocolSettingsMinipool != address(0),
+            'rocketDAOProtocolSettingsMinipool is 0x0'
         );
 
         _enabledSanctions = true;

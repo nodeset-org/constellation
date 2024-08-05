@@ -105,6 +105,10 @@ contract Whitelist is UpgradeableBase {
     /// @param nodeOperator The address of the node operator the validator is being removed from.
     /// @dev Decreases the validator count for the specified node operator.
     function removeValidator(address nodeOperator) public onlyProtocol {
+        // ensure this is a real validator
+        if(nodeMap[nodeOperator].currentValidatorCount != 0) {
+            return;
+        }
         nodeMap[nodeOperator].currentValidatorCount--;
     }
 

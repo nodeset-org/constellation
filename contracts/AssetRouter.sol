@@ -91,83 +91,58 @@ contract AssetRouter is UpgradeableBase {
         // Initialize the vault and operator distributor addresses
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
         OperatorDistributor operatorDistributor = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
-        console.log('sendEthToDistributors.C');
 
         uint256 requiredCapital = vweth.getRequiredCollateral();
-        console.log('sendEthToDistributors.D');
-        console.log(requiredCapital);
-
         if (balanceEthAndWeth >= requiredCapital) {
-            console.log('sendEthToDistributors.E');
-
             balanceEthAndWeth -= requiredCapital;
             vweth.onWethBalanceIncrease(requiredCapital);
             SafeERC20.safeTransfer(weth, address(vweth), requiredCapital);
 
-            console.log('sendEthToDistributors.E2');
-
             uint256 surplus = balanceEthAndWeth;
-            console.log('sendEthToDistributors.E3');
 
             balanceEthAndWeth = 0;
             _gateOpen = true;
             weth.withdraw(surplus);
             _gateOpen = false;
             operatorDistributor.onEthBalanceIncrease{value: surplus}(surplus);
-            console.log('sendEthToDistributors.F');
         } else {
-            console.log('sendEthToDistributors.G');
-
             uint256 shortfall = balanceEthAndWeth;
             balanceEthAndWeth = 0;
             vweth.onWethBalanceIncrease(shortfall);
             SafeERC20.safeTransfer(IERC20(address(weth)), address(vweth), shortfall);
-            console.log('sendEthToDistributors.H');
         }
-        console.log('sendEthToDistributors.I');
     }
 
     /// @notice Distributes RPL to the vault and operator distributor.
     /// @dev This function transfers the required RPL capital to the vault and any surplus RPL to the operator distributor.
     function sendRplToDistributors() public onlyProtocol nonReentrant {
-        console.log('sendRplToDistributors.A');
 
         // Initialize the RPLVault and the Operator Distributor addresses
         RPLVault vrpl = RPLVault(getDirectory().getRPLVaultAddress());
         OperatorDistributor operatorDistributor = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         IERC20 rpl = IERC20(_directory.getRPLAddress());
-        console.log('sendRplToDistributors.B');
 
         // Fetch the required capital in RPL and the total RPL balance of the contract
         uint256 requiredCapital = vrpl.getRequiredCollateral();
-        console.log('sendRplToDistributors.C');
 
         // Transfer RPL to the RPLVault
         if (balanceRpl >= requiredCapital) {
-            console.log('sendRplToDistributors.E');
 
             balanceRpl -= requiredCapital;
             SafeERC20.safeTransfer(IERC20(address(rpl)), address(vrpl), requiredCapital);
             vrpl.onRplBalanceIncrease(requiredCapital);
 
-            console.log('sendRplToDistributors.E2');
-
             uint256 surplus = balanceRpl;
-            console.log('sendRplToDistributors.E3');
 
             balanceRpl = 0;
             SafeERC20.safeTransfer(IERC20(address(rpl)), address(operatorDistributor), surplus);
             operatorDistributor.onRplBalanceIncrease(surplus);
-
-            console.log('sendRplToDistributors.F');
         } else {
             uint256 shortfall = balanceRpl;
             balanceRpl = 0;
             SafeERC20.safeTransfer(IERC20(address(rpl)), address(vrpl), shortfall);
             vrpl.onRplBalanceIncrease(shortfall);
         }
-
-        console.log('sendRplToDistributors.G');
     }
 
     function onWethBalanceIncrease(uint256 _amount) external onlyProtocol {
@@ -180,11 +155,6 @@ contract AssetRouter is UpgradeableBase {
 
     function onRplBalanceIncrease(uint256 _amount) external onlyProtocol {
         balanceRpl += _amount;
-        console.log(
-            'ar.onRplBalanceIncrease.balanceOf.rpl',
-            IERC20(_directory.getRPLAddress()).balanceOf(address(this))
-        );
-        console.log('ar.onRplBalanceIncrease.balanceRpl', balanceRpl);
     }
 
     function onRplBalanceDecrease(uint256 _amount) external onlyProtocol {
@@ -196,42 +166,68 @@ contract AssetRouter is UpgradeableBase {
     }
 
     function onExitedMinipool(IMinipool _minipool) external onlyProtocol {
+        console.log("AssetRouter balance before distribute", address(this).balance);
         _minipool.distributeBalance(false);
+        console.log("AssetRouter balance after distribute", address(this).balance);
     }
 
     /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode 
-    /// withdrawal address for both ETH and RPL rewards from Rocket Pool.
-    /// Splits incoming assets up among the Treasury, YieldDistributor, and the WETHVault/OperatorDistributor.
-    /// @param _amount amount of ETH rewards expected
+    /// withdrawal address for both ETH and RPL from Rocket Pool.
+    /// Splits incoming assets up among the Treasury, YieldDistributor, and the WETHVault/OperatorDistributor based on the 
+    /// rewardsAmount expected.
+    /// @param rewardAmount amount of ETH rewards expected
     /// @param avgTreasuryFee Average treasury fee for the rewards received across all the minipools the rewards came from
     /// @param avgOperatorsFee Average operator fee for the rewards received across all the minipools the rewards came from
-    function onEthRewardsReceived(uint256 _amount, uint256 avgTreasuryFee, uint256 avgOperatorsFee) external onlyProtocol {
-        IWETH weth = IWETH(_directory.getWETHAddress());
-        OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
+    function onEthRewardsReceived(uint256 rewardAmount, uint256 avgTreasuryFee, uint256 avgOperatorsFee) public onlyProtocol {
+        if(rewardAmount == 0)
+            return;
 
-        uint256 treasuryPortion = _amount.mulDiv(avgTreasuryFee, 1e18);
-        uint256 nodeOperatorPortion = _amount.mulDiv(avgOperatorsFee, 1e18);
+        console.log("reward amount s", rewardAmount);
 
-        console.log('treasuryPortion', treasuryPortion);
-        console.log('nodeOperatorPortion', nodeOperatorPortion);
-        console.log('_amount', _amount);
-        console.log('ethBalance', address(this).balance);
+        uint256 treasuryPortion = rewardAmount.mulDiv(avgTreasuryFee, 1e18);
+        uint256 nodeOperatorPortion = rewardAmount.mulDiv(avgOperatorsFee, 1e18);
 
-        (bool success, ) = _directory.getTreasuryAddress().call{value: treasuryPortion}('');
+        console.log("AR is trying to send", rewardAmount);
+        (bool success, ) = getDirectory().getTreasuryAddress().call{value: treasuryPortion}('');
         require(success, 'Transfer to treasury failed');
 
-        (bool success2, ) = _directory.getYieldDistributorAddress().call{value: nodeOperatorPortion}('');
+        (bool success2, ) = getDirectory().getYieldDistributorAddress().call{value: nodeOperatorPortion}('');
         require(success2, 'Transfer to yield distributor failed');
 
-        uint256 communityPortion = _amount - treasuryPortion - nodeOperatorPortion;
+        uint256 communityPortion = rewardAmount - treasuryPortion - nodeOperatorPortion;
 
-        weth.deposit{value: communityPortion}();
-        console.log('onEthRewardsReceived.communityPortion', communityPortion);
-        console.log('onEthRewardsReceived.treasuryPortion', treasuryPortion);
-        console.log('onEthRewardsReceived.nodeOperatorFee', nodeOperatorPortion);
+        IWETH(getDirectory().getWETHAddress()).deposit{value: communityPortion}();
+
         balanceEthAndWeth += communityPortion;
-        od.onIncreaseOracleError(communityPortion);
+        OperatorDistributor(getDirectory().getOperatorDistributorAddress()).onIncreaseOracleError(communityPortion);
     }
+
+    /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode 
+    /// withdrawal address for both ETH and RPL from Rocket Pool.
+    /// Only takes in ETH and sends to WETHVault/OperatorDistributor depending on liquidity conditions based on the 
+    /// bondAmount expected. Does NOT take fees.
+    function onEthBondReceived(uint256 bondAmount) public onlyProtocol {
+        if(bondAmount == 0)
+            return;
+
+        console.log("AR is trying to send", bondAmount);
+        IWETH(getDirectory().getWETHAddress()).deposit{value: bondAmount}();
+        balanceEthAndWeth += bondAmount;
+    }
+
+    /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode 
+    /// withdrawal address for both ETH and RPL from Rocket Pool.
+    /// Splits incoming assets up among the Treasury, YieldDistributor, and the WETHVault/OperatorDistributor based on
+    /// the rewardsAmount and bondAmount specified.
+    /// @param rewardAmount amount of ETH rewards expected
+    /// @param bondAmount amount of ETH bond expected
+    /// @param avgTreasuryFee Average treasury fee for the rewards received across all the minipools the rewards came from
+    /// @param avgOperatorsFee Average operator fee for the rewards received across all the minipools the rewards came from
+    function onEthRewardsAndBondReceived(uint256 rewardAmount, uint256 bondAmount, uint256 avgTreasuryFee, uint256 avgOperatorsFee) external onlyProtocol {
+        onEthBondReceived(bondAmount);
+        onEthRewardsReceived(rewardAmount, avgTreasuryFee, avgOperatorsFee);
+    }
+
 
     /// @notice Called by the protocol when RPL rewards are distributed to this contract, which acts as the SuperNode 
     /// withdrawal address for both ETH and RPL rewards from Rocket Pool.
@@ -241,16 +237,11 @@ contract AssetRouter is UpgradeableBase {
     function onRplRewardsRecieved(uint256 _amount, uint256 avgTreasuryFee) external onlyProtocol {
         uint256 treasuryPortion = _amount.mulDiv(avgTreasuryFee, 1e18);
 
-        console.log('treasuryPortion', treasuryPortion);
-        console.log('_amount', _amount);
-
         IERC20 rpl = IERC20(_directory.getRPLAddress());
         SafeERC20.safeTransfer(rpl, _directory.getTreasuryAddress(), treasuryPortion);
 
         uint256 communityPortion = _amount - treasuryPortion;
 
-        console.log('onRplRewardsRecieved.communityPortion', communityPortion);
-        console.log('onRplRewardsRecieved.treasuryPortion', treasuryPortion);
         balanceRpl += communityPortion;
     }
 

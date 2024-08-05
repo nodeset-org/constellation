@@ -46,6 +46,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     uint256 public minimumStakeRatio;
 
     // The amount the oracle has already included in its summation
+    // This is important to track because when a minipool is skimmed, its balance will have 
+    // been reported already by the oracle, so there will be an extra amount of ETH TVL reported
+    // otherwise
     uint256 public oracleError;
 
     uint256 public balanceEth;
@@ -145,28 +148,18 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     function rebalanceRplStake(uint256 _ethStaked) public {
         address _nodeAccount = _directory.getSuperNodeAddress();
 
-        console.log('rebalanceRplStake()');
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
         uint256 rplStaked = rocketNodeStaking.getNodeRPLStake(_nodeAccount);
         uint256 lockedStake = rocketNodeStaking.getNodeRPLLocked(_nodeAccount);
 
-        console.log('rebalanceRplStake.rplStaked', rplStaked);
-
         uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
-        console.log('rebalanceRplStake.ethPriceInRpl', ethPriceInRpl);
-
-        console.log('rebalanceRplStake.targetStakeRatio', targetStakeRatio);
 
         uint256 targetStake = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
-        console.log('od.rebalanceRplStake.targetStake', targetStake);
         
         // stake more
         if (targetStake > rplStaked) {
             uint256 stakeIncrease = targetStake - rplStaked;
             if (stakeIncrease == 0) return;
-            console.log('rebalanceRplStake.stakeIncrease', stakeIncrease);
-            console.log('od.rebalanceRplStake.balanceOf', IERC20(_directory.getRPLAddress()).balanceOf(address(this)));
-            console.log('od.rebalanceRplStake.balanceRpl', balanceRpl);
 
             uint256 currentRplBalance = balanceRpl;
 
@@ -183,7 +176,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 AssetRouter(_directory.getAssetRouterAddress()).stakeRpl(balanceRpl);
                 balanceRpl = 0;
             }
-            console.log('rebalanceRplStake.actualStakeIncrease', stakeIncrease);
         }
 
         // unstake
@@ -201,7 +193,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 noShortfall
             ) {
                 // NOTE: to auditors: double check that all cases are covered such that unstakeRpl will not revert execution
-                console.log('rebalanceRplStake.excessRpl', excessRpl);
                 balanceRpl += excessRpl;
                 AssetRouter(_directory.getAssetRouterAddress()).unstakeRpl(excessRpl);
             } else {
@@ -210,8 +201,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             console.log('excessRpl', excessRpl);
             console.log('noShortfall', noShortfall);
         }
-        console.log('finished rebalanceRplStake.targetStake', targetStake);
-        console.log('finished rebalanceRplStake.rplStaked', rplStaked);
     }
 
     /**
@@ -224,20 +213,13 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 _existingRplStake,
         uint256 _rpEthMatched
     ) public view returns (uint256 requiredStakeRpl) {
-        console.log('existing rpl staked', _existingRplStake);
-        console.log('_rpEthMatched', _rpEthMatched);
         console.logAddress(getDirectory().getPriceFetcherAddress());
-        console.log('B');
         uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
-        console.log('price', ethPriceInRpl);
         uint256 matchedStakeRatio = _existingRplStake == 0
             ? 0
             : ((_rpEthMatched * ethPriceInRpl * 1e18) / _existingRplStake) / 1e18;
-        console.log('matchedStakeRatio', matchedStakeRatio);
-        console.log('minimumStakeRatio', minimumStakeRatio);
         if (matchedStakeRatio < minimumStakeRatio) {
             uint256 minuend = minimumStakeRatio.mulDiv(_rpEthMatched * ethPriceInRpl, 1e18 * 10 ** 18);
-            console.log('calculateRplStakeShortfall.minuend', minuend);
             requiredStakeRpl = minuend < _existingRplStake ? 0 : minuend - _existingRplStake;
         } else {
             requiredStakeRpl = 0;
@@ -272,8 +254,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * Handles RPL rebalancing and minipool distribution based on minipool's current state.
      * Although this can be called manually, this typically happens automatically as part of other state changes
      * like claiming NO fees or depositing/withdrawing from the token vaults.
+     * See processMinipool() for more info (this is a very important function).
      */
-    function processNextMinipool() external {
+    function processNextMinipool() public {
         processMinipool(SuperNodeAccount(getDirectory().getSuperNodeAddress()).getNextMinipool());
     }
 
@@ -291,52 +274,72 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
+     * @custom:author Mike Leach (Wander)
+     * @notice This is the "tick" function of the protocol. It's the heartbeat of Constellation, called every time there is a major state change:
+     * - Deposits and withdrawals from the xrETH and xRPL vaults
+     * - When operators are added or removed
+     * - When operators claim rewards
      * @dev Performs a RPL stake rebalance for the node and distributes the outstanding balance for a minipool.
      */
     function processMinipool(IMinipool minipool) public {
+        if (address(minipool) == address(0)) {
+            return; // should only happen if there are no miniopools in the system
+        }
+        if (address(minipool).balance == 0) {
+            return;
+        }
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
+        require(sna.minipoolIndex(address(minipool)) < sna.getNumMinipools(), "Must be a minipool managed by Constellation");
 
         rebalanceRplStake(sna.getTotalEthStaked());
 
-        if (address(minipool) == address(0)) {
-            return;
-        }
-
         MinipoolStatus status = minipool.getStatus();
+
         if (minipool.getFinalised() || status != MinipoolStatus.Staking) {
             return;
         }
-
-        uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
-        if (totalBalance == 0) {
-            return;
-        }
-
-        AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
-        ar.openGate();
-        uint256 initialBalance = address(ar).balance;
         
-        if (totalBalance < 8 ether) {
-            // minipool is still staking
-            console.log('withdrawal address before skim', _directory.getAssetRouterAddress().balance);
-            ar.onClaimSkimmedRewards(minipool);
-            console.log('withdrawal address after skim', _directory.getAssetRouterAddress().balance);
-        } else {
-            // the minipool is exited
+        // get refs and data
+        AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
+        (, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));   
+
+        // allow deposits into AssetRouter
+        ar.openGate();
+
+        console.log('balance of minipool contract', address(minipool).balance);
+
+        // determine the difference in node share and remaining bond amount
+        uint256 depositBalance = minipool.getNodeDepositBalance();
+        console.log('depositBalance', depositBalance);
+        // if nodeshare - original deposit is <= 0 then it's an exit but there are no rewards (it's been penalized)
+        uint256 rewards = 0;
+        uint256 balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
+        //uint256 totalBalance = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() + balanceAfterRefund;
+        
+        if(balanceAfterRefund >= depositBalance) { // it's an exit, and any extra nodeShare is rewards
+            console.log("MINIPOOL STATUS: exited");
+            uint256 remainingBond = minipool.calculateNodeShare(balanceAfterRefund) < depositBalance ? minipool.calculateNodeShare(balanceAfterRefund) : depositBalance;
+            rewards = minipool.calculateNodeShare(balanceAfterRefund) > depositBalance ? minipool.calculateNodeShare(balanceAfterRefund) - depositBalance : 0;  
+            console.log('exit rewards expected', rewards);
+            console.log('node share of bond', minipool.calculateNodeShare(balanceAfterRefund));
+            // withdrawal address calls distributeBalance(false)
             ar.onExitedMinipool(minipool);
+            // stop tracking
             this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
+            // both bond and rewards are received
+            ar.onEthRewardsAndBondReceived(rewards, remainingBond, treasuryFee, noFee);
+        } else if (balanceAfterRefund < depositBalance) { // it's still staking
+            console.log("MINIPOOL STATUS: still staking");
+            rewards = minipool.calculateNodeShare(balanceAfterRefund);
+            // withdrawal address calls distributeBalance(true)
+            ar.onClaimSkimmedRewards(minipool);
+            // calculate only rewards
+            ar.onEthRewardsReceived(rewards, treasuryFee, noFee);
         }
-
-        uint256 finalBalance = address(ar).balance;
+        console.log('rewards recieved', rewards);   
+        ar.sendEthToDistributors(); 
+        // lock down AssetRouter again
         ar.closeGate();
-        console.log('finalBalance', finalBalance);
-        console.log('initialBalance', initialBalance);
-        uint256 rewards = finalBalance - initialBalance;
-        console.log('rewards recieved', rewards);
-
-        (, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));
-
-        ar.onEthRewardsReceived(rewards, treasuryFee, noFee);
     }
 
     /**
@@ -389,8 +392,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     function onRplBalanceIncrease(uint256 _amount) external onlyProtocol {
         balanceRpl += _amount;
-        console.log('od.onRplBalanceIncrease.newBalance is', balanceRpl);
-        console.log('od.onRplBalanceIncrease.balanceOf', IERC20(_directory.getRPLAddress()).balanceOf(address(this)));
     }
 
     function onRplBalanceDecrease(uint256 _amount) external onlyProtocol {

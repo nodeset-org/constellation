@@ -10,6 +10,8 @@ export type SandboxDeployments = Protocol;
 export const setupSandbox = async () => {
   const [deployer, admin] = await ethers.getSigners();
 
+  console.log('deploying RP...');
+
   const rocketStorage = await deployRocketPool();
   await setDefaultParameters();
 
@@ -23,14 +25,6 @@ export const setupSandbox = async () => {
     return contract;
   });
   console.log('weth address', wETH.address);
-
-  // deploy mock uniswap v3 pool
-  const uniswapV3Pool = await retryOperation(async () => {
-    const UniswapV3Pool = await ethers.getContractFactory('MockUniswapV3Pool');
-    const contract = await UniswapV3Pool.deploy();
-    await contract.deployed();
-    return contract;
-});
 
   const sanctions = await retryOperation(async () => {
     const Sanctions = await ethers.getContractFactory('MockSanctions');
