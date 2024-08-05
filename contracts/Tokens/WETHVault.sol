@@ -279,22 +279,14 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         require(_liquidityReservePercent >= 0, 'WETHVault: liquidity reserve percentage must be positive');
         require(_liquidityReservePercent <= 1e18, 'WETHVault: liquidity reserve percentage must be less than or equal to 100%');
 
-        // when setting liquidity reserve to be lower, make sure to send entire balance to AssetRouter to rebalance liquidities
-        bool rebalanceNecessary = false;
-        if(liquidityReservePercent > _liquidityReservePercent) {
-            rebalanceNecessary = true;
-        }
-
         liquidityReservePercent = _liquidityReservePercent;
 
-        if(rebalanceNecessary) {
-            // rebalance entire balance of the contract
-            AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
-            uint256 fullWethBalance = IWETH(getDirectory().getWETHAddress()).balanceOf(address(this));
-            ar.onWethBalanceIncrease(fullWethBalance);
-            SafeERC20.safeTransfer(IERC20(asset()), address(ar), fullWethBalance);
-            ar.sendEthToDistributors();
-        }
+        // rebalance entire balance of the contract to ensure the new liquidity reserve is respected
+        AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
+        uint256 fullWethBalance = IWETH(getDirectory().getWETHAddress()).balanceOf(address(this));
+        ar.onWethBalanceIncrease(fullWethBalance);
+        SafeERC20.safeTransfer(IERC20(asset()), address(ar), fullWethBalance);
+        ar.sendEthToDistributors();
     }
 
     function onWethBalanceIncrease(uint256 _amount) external onlyProtocol {
