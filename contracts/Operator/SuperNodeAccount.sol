@@ -595,7 +595,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         if (minipools.length == 0) {
             return address(0);
         }
-        return minipools[currentMinipool+1 % minipools.length];
+        return minipools[(currentMinipool+1) % minipools.length];
     }
 
     /**
