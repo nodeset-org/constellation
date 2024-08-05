@@ -306,7 +306,8 @@ describe("xrETH", function () {
     expect(initialRedeemValue).equals(ethers.utils.parseEther("1"));
 
     // simulate 33 ether (full validator + 1 ETH reward) put into minipool contract from beacon
-    const finalMinipoolBalance = ethers.utils.parseEther("33");
+    const rewards = ethers.utils.parseEther("1");
+    const finalMinipoolBalance = ethers.utils.parseEther("32").add(rewards);
     await signers.ethWhale.sendTransaction({
       to: minipools[0],
       value: finalMinipoolBalance
@@ -329,7 +330,7 @@ describe("xrETH", function () {
     console.log('xrETH PRE-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
 
     // assume a 15% rETH fee and LEB8 (36.25% of all rewards), which is default settings 
-    const nodeRewards = ethers.utils.parseEther(".3625"); 
+    const nodeRewards = rewards.mul(ethers.utils.parseEther(".3625")).div(ethers.utils.parseEther("1")); 
     console.log('expected node rewards', nodeRewards);
     const expectedTreasuryPortion = nodeRewards.mul(minipoolData.ethTreasuryFee).div(ethers.utils.parseEther("1")); 
     console.log('expected TreasuryPortion', expectedTreasuryPortion);
