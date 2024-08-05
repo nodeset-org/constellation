@@ -291,7 +291,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
         require(sna.minipoolIndex(address(minipool)) < sna.getNumMinipools(), "Must be a minipool managed by Constellation");
 
-        if(YieldDistributor(getDirectory().getYieldDistributorAddress()).getIsEndOfIntervalTime()){
+        if(YieldDistributor(getDirectory().getYieldDistributorAddress()).getIsEndOfIntervalTime() &&
+            YieldDistributor(getDirectory().getYieldDistributorAddress()).yieldAccruedInInterval() > 0 && 
+            YieldDistributor(getDirectory().getYieldDistributorAddress()).currentInterval() != 0){
             YieldDistributor(getDirectory().getYieldDistributorAddress()).finalizeInterval(); // finalize the interval and process over there instead
             return;
         }
