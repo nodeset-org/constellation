@@ -282,26 +282,23 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @dev Performs a RPL stake rebalance for the node and distributes the outstanding balance for a minipool.
      */
     function processMinipool(IMinipool minipool) public {
-        SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
-
-        rebalanceRplStake(sna.getTotalEthStaked());
-
         if (address(minipool) == address(0)) {
+            return; // should only happen if there are no miniopools in the system
+        }
+        if (address(minipool).balance == 0) {
             return;
         }
+        SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
+        require(sna.minipoolIndex(address(minipool)) < sna.getNumMinipools(), "Must be a minipool managed by Constellation");
+
+        rebalanceRplStake(sna.getTotalEthStaked());
 
         MinipoolStatus status = minipool.getStatus();
 
         if (minipool.getFinalised() || status != MinipoolStatus.Staking) {
             return;
         }
-
-        uint256 totalBalance = address(minipool).balance - minipool.getNodeRefundBalance();
-        console.log('nodeshare', minipool.calculateNodeShare(totalBalance));
-        if (totalBalance == 0) {
-            return;
-        }
-
+        
         // get refs and data
         AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
         (, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));   
@@ -310,29 +307,28 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         ar.openGate();
 
         console.log('balance of minipool contract', address(minipool).balance);
-        console.log('total balance after node refunds', totalBalance);
-        
-
 
         // determine the difference in node share and remaining bond amount
         uint256 depositBalance = minipool.getNodeDepositBalance();
         console.log('depositBalance', depositBalance);
         // if nodeshare - original deposit is <= 0 then it's an exit but there are no rewards (it's been penalized)
         uint256 rewards = 0;
-        // nodeShare is the portion of the current minipool balance that is assignable to the node (including rewards and bond)
-        uint256 nodeShare = minipool.calculateNodeShare(totalBalance);
-        if(nodeShare > depositBalance) { // it's an exit, and the extra nodeShare is rewards
+        uint256 balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
+        uint256 totalBalance = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() + balanceAfterRefund;
+        
+        if(balanceAfterRefund > depositBalance) { // it's an exit, and the extra nodeShare is rewards
             console.log("MINIPOOL STATUS: exited and rewarded");
-            rewards = nodeShare - depositBalance;
+            rewards = minipool.calculateNodeShare(totalBalance) - depositBalance;
+            console.log('nodeshare', minipool.calculateNodeShare(totalBalance));
             // withdrawal address calls distributeBalance(false)
             ar.onExitedMinipool(minipool);
             // stop tracking
             this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
             // both bond and rewards are received
             ar.onEthRewardsAndBondReceived(rewards, depositBalance, treasuryFee, noFee);
-        } else if (totalBalance < depositBalance) { // it's still staking
+        } else if (balanceAfterRefund < depositBalance) { // it's still staking
             console.log("MINIPOOL STATUS: still staking");
-            rewards = nodeShare;
+            rewards = minipool.calculateNodeShare(balanceAfterRefund);
             // withdrawal address calls distributeBalance(true)
             ar.onClaimSkimmedRewards(minipool);
             // calculate only rewards

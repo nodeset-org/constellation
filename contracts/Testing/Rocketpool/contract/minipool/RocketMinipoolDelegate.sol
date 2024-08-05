@@ -343,17 +343,13 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
                 );
    
             uint256 scrubPeriod = rocketDAONodeTrustedSettingsMinipool.getScrubPeriod();
-            console.log("RocketMinipoolDelegate.scrubPeriod=", scrubPeriod);
             // Check current status
             require(status == MinipoolStatus.Prelaunch, 'The minipool can only begin staking while in prelaunch');
             require(block.timestamp > statusTime + scrubPeriod, 'Not enough time has passed to stake');
-            console.log("RocketMinipoolDelegate.(statusTime + scrubPeriod)=", statusTime + scrubPeriod);
             require(!vacant, 'Cannot stake a vacant minipool');
-            console.log("RocketMinipoolDelegate.(!vacant)=", !vacant);
         }
         // Progress to staking
         setStatus(MinipoolStatus.Staking);
-        console.log("RocketMinipoolDelegate.Staking=", true);
         // Load contracts
         DepositInterface casperDeposit = DepositInterface(getContractAddress('casperDeposit'));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(
@@ -372,16 +368,14 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(address(this).balance >= depositAmount, 'Insufficient balance to begin staking');
         // Retrieve validator pubkey from storage
         bytes memory validatorPubkey = rocketMinipoolManager.getMinipoolPubkey(address(this));
-        console.log("RocketMinipoolDelegate.validatorPubkey, sig:");
+
         // Send staking deposit to casper (commented out for hardhat)
-        console.logBytes(_validatorSignature);
         casperDeposit.deposit{value: depositAmount}(
             validatorPubkey,
             rocketMinipoolManager.getMinipoolWithdrawalCredentials(address(this)),
             _validatorSignature,
             _depositDataRoot
         );
-        console.log("RocketMinipoolDelegate.casperDeposit.deposit");
         // Increment node's number of staking minipools
         rocketMinipoolManager.incrementNodeStakingMinipoolCount(nodeAddress);
     }
@@ -465,13 +459,10 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(
             getContractAddress('rocketMinipoolManager')
         );
-        console.log("RocketminipoolDelegate.preStake()");
         // Set minipool pubkey
         rocketMinipoolManager.setMinipoolPubkey(_validatorPubkey);
         // Get withdrawal credentials
         bytes memory withdrawalCredentials = rocketMinipoolManager.getMinipoolWithdrawalCredentials(address(this));
-        console.log("RocketminipoolDelegate.withdrawalCredentials");
-        console.logBytes(withdrawalCredentials);
         // Send staking deposit to casper
         casperDeposit.deposit{value: preLaunchValue}(
             _validatorPubkey,
@@ -479,7 +470,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             _validatorSignature,
             _depositDataRoot
         );
-        console.log("RocketminipoolDelegate.caslperDeposit");
         // Emit event
         emit MinipoolPrestaked(
             _validatorPubkey,
@@ -499,7 +489,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     ///         split as rewards.
     /// @param _rewardsOnly If set to true, will revert if balance is not being treated as rewards
     function distributeBalance(bool _rewardsOnly) external override onlyInitialised {
-        console.log("in minipool distributeBalance");
         // Get node withdrawal address
         address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
         bool ownerCalling = msg.sender == nodeAddress || msg.sender == nodeWithdrawalAddress;
@@ -530,7 +519,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         } else {
             // Just a partial withdraw
             distributeSkimmedRewards();
-            console.log("skimming...");
             // If node operator is calling, save a tx by calling refund immediately
             if (ownerCalling && nodeRefundBalance > 0) {
                 _refund();
@@ -682,6 +670,10 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         uint256 nodeShare = 0;
         // Calculate the total capital (node + user)
         uint256 capital = userCapital.add(nodeCapital);
+        console.log("minipoolDelegate capital", capital);
+        console.log("minipoolDelegate userCapital", userCapital);
+        console.log("minipoolDelegate nodeCapital", nodeCapital);
+        console.log("minipoolDelegate _balance", _balance);
         if (_balance > capital) {
             // Total rewards to share
             uint256 rewards = _balance.sub(capital);
@@ -698,6 +690,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             }
             nodeShare = nodeShare.sub(penaltyAmount);
         }
+        console.log("minipoolDelegate nodeShare", nodeShare);
         return nodeShare;
     }
 

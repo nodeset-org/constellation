@@ -98,76 +98,55 @@ contract AssetRouter is UpgradeableBase {
         console.log(requiredCapital);
 
         if (balanceEthAndWeth >= requiredCapital) {
-            console.log('sendEthToDistributors.E');
-
             balanceEthAndWeth -= requiredCapital;
             vweth.onWethBalanceIncrease(requiredCapital);
             SafeERC20.safeTransfer(weth, address(vweth), requiredCapital);
 
-            console.log('sendEthToDistributors.E2');
-
             uint256 surplus = balanceEthAndWeth;
-            console.log('sendEthToDistributors.E3');
 
             balanceEthAndWeth = 0;
             _gateOpen = true;
             weth.withdraw(surplus);
             _gateOpen = false;
             operatorDistributor.onEthBalanceIncrease{value: surplus}(surplus);
-            console.log('sendEthToDistributors.F');
         } else {
-            console.log('sendEthToDistributors.G');
-
             uint256 shortfall = balanceEthAndWeth;
             balanceEthAndWeth = 0;
             vweth.onWethBalanceIncrease(shortfall);
             SafeERC20.safeTransfer(IERC20(address(weth)), address(vweth), shortfall);
-            console.log('sendEthToDistributors.H');
         }
-        console.log('sendEthToDistributors.I');
     }
 
     /// @notice Distributes RPL to the vault and operator distributor.
     /// @dev This function transfers the required RPL capital to the vault and any surplus RPL to the operator distributor.
     function sendRplToDistributors() public onlyProtocol nonReentrant {
-        console.log('sendRplToDistributors.A');
 
         // Initialize the RPLVault and the Operator Distributor addresses
         RPLVault vrpl = RPLVault(getDirectory().getRPLVaultAddress());
         OperatorDistributor operatorDistributor = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         IERC20 rpl = IERC20(_directory.getRPLAddress());
-        console.log('sendRplToDistributors.B');
 
         // Fetch the required capital in RPL and the total RPL balance of the contract
         uint256 requiredCapital = vrpl.getRequiredCollateral();
-        console.log('sendRplToDistributors.C');
 
         // Transfer RPL to the RPLVault
         if (balanceRpl >= requiredCapital) {
-            console.log('sendRplToDistributors.E');
 
             balanceRpl -= requiredCapital;
             SafeERC20.safeTransfer(IERC20(address(rpl)), address(vrpl), requiredCapital);
             vrpl.onRplBalanceIncrease(requiredCapital);
 
-            console.log('sendRplToDistributors.E2');
-
             uint256 surplus = balanceRpl;
-            console.log('sendRplToDistributors.E3');
 
             balanceRpl = 0;
             SafeERC20.safeTransfer(IERC20(address(rpl)), address(operatorDistributor), surplus);
             operatorDistributor.onRplBalanceIncrease(surplus);
-
-            console.log('sendRplToDistributors.F');
         } else {
             uint256 shortfall = balanceRpl;
             balanceRpl = 0;
             SafeERC20.safeTransfer(IERC20(address(rpl)), address(vrpl), shortfall);
             vrpl.onRplBalanceIncrease(shortfall);
         }
-
-        console.log('sendRplToDistributors.G');
     }
 
     function onWethBalanceIncrease(uint256 _amount) external onlyProtocol {
@@ -180,11 +159,6 @@ contract AssetRouter is UpgradeableBase {
 
     function onRplBalanceIncrease(uint256 _amount) external onlyProtocol {
         balanceRpl += _amount;
-        console.log(
-            'ar.onRplBalanceIncrease.balanceOf.rpl',
-            IERC20(_directory.getRPLAddress()).balanceOf(address(this))
-        );
-        console.log('ar.onRplBalanceIncrease.balanceRpl', balanceRpl);
     }
 
     function onRplBalanceDecrease(uint256 _amount) external onlyProtocol {
@@ -210,11 +184,6 @@ contract AssetRouter is UpgradeableBase {
         uint256 treasuryPortion = rewardAmount.mulDiv(avgTreasuryFee, 1e18);
         uint256 nodeOperatorPortion = rewardAmount.mulDiv(avgOperatorsFee, 1e18);
 
-        console.log('treasuryPortion', treasuryPortion);
-        console.log('nodeOperatorPortion', nodeOperatorPortion);
-        console.log('_amount', rewardAmount);
-        console.log('ethBalance', address(this).balance);
-
         (bool success, ) = getDirectory().getTreasuryAddress().call{value: treasuryPortion}('');
         require(success, 'Transfer to treasury failed');
 
@@ -224,9 +193,7 @@ contract AssetRouter is UpgradeableBase {
         uint256 communityPortion = rewardAmount - treasuryPortion - nodeOperatorPortion;
 
         IWETH(getDirectory().getWETHAddress()).deposit{value: communityPortion}();
-        console.log('onEthRewardsReceived.communityPortion', communityPortion);
-        console.log('onEthRewardsReceived.treasuryPortion', treasuryPortion);
-        console.log('onEthRewardsReceived.nodeOperatorFee', nodeOperatorPortion);
+
         balanceEthAndWeth += communityPortion;
         OperatorDistributor(getDirectory().getOperatorDistributorAddress()).onIncreaseOracleError(communityPortion);
     }
@@ -262,16 +229,11 @@ contract AssetRouter is UpgradeableBase {
     function onRplRewardsRecieved(uint256 _amount, uint256 avgTreasuryFee) external onlyProtocol {
         uint256 treasuryPortion = _amount.mulDiv(avgTreasuryFee, 1e18);
 
-        console.log('treasuryPortion', treasuryPortion);
-        console.log('_amount', _amount);
-
         IERC20 rpl = IERC20(_directory.getRPLAddress());
         SafeERC20.safeTransfer(rpl, _directory.getTreasuryAddress(), treasuryPortion);
 
         uint256 communityPortion = _amount - treasuryPortion;
 
-        console.log('onRplRewardsRecieved.communityPortion', communityPortion);
-        console.log('onRplRewardsRecieved.treasuryPortion', treasuryPortion);
         balanceRpl += communityPortion;
     }
 

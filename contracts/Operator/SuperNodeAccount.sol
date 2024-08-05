@@ -18,6 +18,7 @@ import '../Interfaces/RocketPool/IRocketMinipoolManager.sol';
 import '../Interfaces/RocketPool/IRocketNetworkVoting.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolProposal.sol';
 import '../Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
+import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
 import '../Interfaces/RocketPool/IRocketStorage.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/Oracles/IBeaconOracle.sol';
@@ -117,6 +118,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         _;
         lazyInit = true;
         merkleClaimSigExpiry = 1 days;
+        lockThreshold = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getPreLaunchValue();
     }
 
     /// @notice Modifier to ensure a function can only be called by a sub-node operator of a specific minipool
@@ -155,8 +157,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      */
     function initialize(address _directory) public override initializer {
         super.initialize(_directory);
-
-        lockThreshold = 1 ether;
+        
         lockUpTime = 28 days; // the length of an RP rewards period, which is the maximum length of time that a minipool will be in pre-launch before being dissolved
         adminServerCheck = true;
         adminServerSigExpiry = 1 days;
@@ -574,7 +575,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         address payable od = _directory.getOperatorDistributorAddress();
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
         uint256 rplStaking = rocketNodeStaking.getNodeRPLStake(address(this));
-        uint256 newEthBorrowed = 32 ether - _bond;
+        uint256 newEthBorrowed = IRocketDAOProtocolSettingsMinipool(_directory.getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() - _bond;
         console.log('newEthBorrowed', newEthBorrowed);
         uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(
             rplStaking,
@@ -597,6 +598,10 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             return IMinipool(address(0));
         }
         return IMinipool(minipools[currentMinipool++ % minipools.length]);
+    }
+
+    function getNumMinipools() external view returns (uint256) {
+        return minipools.length;
     }
 
     /**
