@@ -11,6 +11,7 @@ import '../Operator/YieldDistributor.sol';
 import '../Utils/Constants.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/Oracles/IBeaconOracle.sol';
+import '../Interfaces/IWETH.sol';
 
 import 'hardhat/console.sol';
 
@@ -112,6 +113,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
+        console.log('balanceWeth on withdraw xrETH',balanceWeth);
         require(balanceWeth >= assets, 'Not enough liquidity to withdraw');
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
 
@@ -273,10 +275,18 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _liquidityReservePercent The new liquidity reserve percentage.
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
-    function setLiquidityReservePerecent(uint256 _liquidityReservePercent) external onlyShortTimelock {
+    function setLiquidityReservePercent(uint256 _liquidityReservePercent) external onlyShortTimelock {
         require(_liquidityReservePercent >= 0, 'WETHVault: liquidity reserve percentage must be positive');
         require(_liquidityReservePercent <= 1e18, 'WETHVault: liquidity reserve percentage must be less than or equal to 100%');
+
         liquidityReservePercent = _liquidityReservePercent;
+
+        // rebalance entire balance of the contract to ensure the new liquidity reserve is respected
+        AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
+        ar.onWethBalanceIncrease(balanceWeth);
+        SafeERC20.safeTransfer(IERC20(asset()), address(ar), balanceWeth);
+        balanceWeth = 0;
+        ar.sendEthToDistributors();
     }
 
     function onWethBalanceIncrease(uint256 _amount) external onlyProtocol {

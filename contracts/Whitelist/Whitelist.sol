@@ -11,7 +11,7 @@ import '../Utils/Constants.sol';
 /// @notice An operator which provides services to the network.
 struct Operator {
     uint256 operationStartTime;
-    uint256 currentValidatorCount;
+    uint256 activeValidatorCount;
     uint256 intervalStart;
     address operatorController; // designated address to control the node operator's settings and collect rewards
 }
@@ -83,9 +83,9 @@ contract Whitelist is UpgradeableBase {
     /// @param a The address of the operator to retrieve the number of validators for.
     /// @return The number of validators associated with the specified operator.
     /// @dev Throws an error if the specified address is not found in the whitelist.
-    function getNumberOfValidators(address a) public view returns (uint) {
+    function getActiveValidatorCountForOperator(address a) public view returns (uint) {
         require(reverseNodeIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
-        return nodeMap[a].currentValidatorCount;
+        return nodeMap[a].activeValidatorCount;
     }
 
     //----
@@ -97,7 +97,7 @@ contract Whitelist is UpgradeableBase {
     /// @param nodeOperator The address of the node operator to register the new validator under.
     /// @dev Increases the validator count for the specified node operator.
     function registerNewValidator(address nodeOperator) public onlyProtocol {
-        nodeMap[nodeOperator].currentValidatorCount++;
+        nodeMap[nodeOperator].activeValidatorCount++;
     }
 
     /// @notice Registers a new validator under a specific node operator.
@@ -105,11 +105,11 @@ contract Whitelist is UpgradeableBase {
     /// @param nodeOperator The address of the node operator the validator is being removed from.
     /// @dev Decreases the validator count for the specified node operator.
     function removeValidator(address nodeOperator) public onlyProtocol {
-        // ensure this is a real validator
-        if(nodeMap[nodeOperator].currentValidatorCount != 0) {
+        // ensure this validator is associated with an operator
+        if(nodeMap[nodeOperator].activeValidatorCount == 0) {
             return;
         }
-        nodeMap[nodeOperator].currentValidatorCount--;
+        nodeMap[nodeOperator].activeValidatorCount--;
     }
 
     /// @notice Retrieves the address of an operator based on its index.

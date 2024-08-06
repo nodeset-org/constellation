@@ -240,34 +240,42 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
 
     // set adminServer to be ADMIN_SERVER_ROLE
     const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
-    await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(adminRole), signers.adminServer.address);
+    let tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(adminRole), signers.adminServer.address);
+    await tx.wait();
 
     // set timelock to be TIMELOCK_ROLE
     const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
-    await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRole), signers.admin.address);
+    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRole), signers.admin.address);
+    await tx.wait();
 
     const timelockRoleMed = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_MED"));
-    await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRoleMed), signers.admin.address);
+    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRoleMed), signers.admin.address);
+    await tx.wait();
 
     const timelockLongRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_LONG"));
-    await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockLongRole), signers.admin.address);
+    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockLongRole), signers.admin.address);
+    await tx.wait();
 
     const oracleAdminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ORACLE_ROLE"));
-    await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(oracleAdminRole), signers.admin.address);
+    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(oracleAdminRole), signers.admin.address);
+    await tx.wait();
 
     // set protocolSigner to be PROTOCOL_ROLE
     const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
-    await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
+    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
+    await tx.wait();
 
     // set directory treasury to deployer to prevent tests from failing
     expect(await directory.getTreasuryAddress()).to.equal(treasury.address);
-    await directory.connect(signers.admin).setTreasury(deployer.address);
+    tx = await directory.connect(signers.admin).setTreasury(deployer.address);
+    await tx.wait();
 
     const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, assetRouter: depositPool, operatorDistributor, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
 
     // send all rpl from admin to rplWhale
     const rplWhaleBalance = await rplContract.balanceOf(signers.deployer.address);
-    await rplContract.transfer(signers.rplWhale.address, rplWhaleBalance);
+    tx = await rplContract.transfer(signers.rplWhale.address, rplWhaleBalance);
+    await tx.wait();
 
     return returnData;
 }

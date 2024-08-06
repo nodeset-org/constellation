@@ -45,6 +45,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     // Minimum ratio of matched rETH to RPL stake allowed in the node.
     uint256 public minimumStakeRatio;
 
+    // Index for the current minipool being processed
+    uint256 public currentMinipool;
+
     // The amount the oracle has already included in its summation
     // This is important to track because when a minipool is skimmed, its balance will have 
     // been reported already by the oracle, so there will be an extra amount of ETH TVL reported
@@ -113,30 +116,17 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @param _bond The amount of ETH required to be staked for the minipool.
      */
     function provisionLiquiditiesForMinipoolCreation(uint256 _bond) external onlyProtocol {
-        console.log('provisionLiquiditiesForMinipoolCreation.pre-RebalanceLiquidities');
         _rebalanceLiquidity();
-        console.log('provisionLiquiditiesForMinipoolCreation.post-RebalanceLiquidities');
         require(_bond == SuperNodeAccount(getDirectory().getSuperNodeAddress()).bond(), 'OperatorDistributor: Bad _bond amount, should be `SuperNodeAccount.bond`');
 
         address superNode = _directory.getSuperNodeAddress();
 
-        console.log('od.provisionLiquiditiesForMinipoolCreation.balanceEth', balanceEth);
-        console.log('od.provisionLiquiditiesForMinipoolCreation.balance', address(this).balance);
-        console.log(
-            'od.provisionLiquiditiesForMinipoolCreation.balanceOf.weth',
-            IERC20(_directory.getWETHAddress()).balanceOf(address(this))
-        );
-
         (bool success, bytes memory data) = superNode.call{value: _bond}('');
         if (!success) {
-            console.log('LowLevelEthTransfer 1');
-            console.log('balance eth', address(this).balance);
-            console.log(_bond);
             revert LowLevelEthTransfer(success, data);
         }
 
         balanceEth -= _bond;
-        console.log('finished provisionLiquiditiesForMinipoolCreation');
     }
 
     /**
@@ -195,11 +185,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 // NOTE: to auditors: double check that all cases are covered such that unstakeRpl will not revert execution
                 balanceRpl += excessRpl;
                 AssetRouter(_directory.getAssetRouterAddress()).unstakeRpl(excessRpl);
-            } else {
-                console.log('failed to rebalanceRplStake.excessRpl', excessRpl);
             }
-            console.log('excessRpl', excessRpl);
-            console.log('noShortfall', noShortfall);
         }
     }
 
@@ -250,14 +236,20 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Process the next minipool in line.
+     * @notice Process the next minipool in line, then increments currentMinipool.
      * Handles RPL rebalancing and minipool distribution based on minipool's current state.
      * Although this can be called manually, this typically happens automatically as part of other state changes
      * like claiming NO fees or depositing/withdrawing from the token vaults.
      * See processMinipool() for more info (this is a very important function).
      */
     function processNextMinipool() public {
-        processMinipool(SuperNodeAccount(getDirectory().getSuperNodeAddress()).getNextMinipool());
+        IMinipool nextMinipool = getNextMinipool();
+        if (address(nextMinipool) == address(0)) {
+            // Nothing to do
+            return;
+        }
+        processMinipool(nextMinipool);
+        currentMinipool++;
     }
 
     /**
@@ -277,7 +269,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @custom:author Mike Leach (Wander)
      * @notice This is the "tick" function of the protocol. It's the heartbeat of Constellation, called every time there is a major state change:
      * - Deposits and withdrawals from the xrETH and xRPL vaults
-     * - When operators are added or removed
      * - When operators claim rewards
      * @dev Performs a RPL stake rebalance for the node and distributes the outstanding balance for a minipool.
      */
@@ -288,8 +279,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         if (address(minipool).balance == 0) {
             return;
         }
+
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
-        require(sna.minipoolIndex(address(minipool)) < sna.getNumMinipools(), "Must be a minipool managed by Constellation");
+        require(sna.getIsMinipoolRecognized(address(minipool)), "Must be a minipool managed by Constellation"); 
 
         rebalanceRplStake(sna.getTotalEthStaked());
 
@@ -340,6 +332,18 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         ar.sendEthToDistributors(); 
         // lock down AssetRouter again
         ar.closeGate();
+    }
+
+    /**
+     * @dev This function helps read state for the rotation and handling of different minipools within the system.
+     * @return IMinipool Returns the next minipool to process. Returns a binding to the zero address if there are no minipools.
+     */
+    function getNextMinipool() public view returns (IMinipool) {
+        SuperNodeAccount sna = SuperNodeAccount(getDirectory().getSuperNodeAddress());
+        if (sna.getNumMinipools() == 0) {
+            return IMinipool(address(0));
+        }
+        return IMinipool(sna.minipools(currentMinipool % sna.getNumMinipools()));
     }
 
     /**

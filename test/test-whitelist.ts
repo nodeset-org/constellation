@@ -114,7 +114,7 @@ describe("Whitelist", function () {
         // so we have to compare each field directly.
         // see https://github.com/NomicFoundation/hardhat/issues/3318
         expect(operator.operationStartTime).equals(expected.operationStartTime);
-        expect(operator.currentValidatorCount).equals(expected.currentValidatorCount);
+        expect(operator.activeValidatorCount).equals(expected.currentValidatorCount);
     });
 
     it("Node operator can only update operator controller once", async () => {
