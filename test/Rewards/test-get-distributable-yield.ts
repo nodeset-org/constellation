@@ -85,12 +85,6 @@ describe("Distributable Yield", async () => {
     })
 
     describe("When last oracle update is 0", async () => {
-        describe("When totalUnrealizedAccrual is greater than 0", async () => {
-            it("should return positive totalUnrealizedAccrual", async () => {
-
-            })
-        })
-
         describe("When totalUnrealizedAccrual is equal to 0", async () => {
             it("should return positive totalUnrealizedAccrual", async () => {
                 const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
@@ -102,12 +96,6 @@ describe("Distributable Yield", async () => {
 
                 expect(distributableYield).equals(0);
                 expect(signed).equals(false);
-            })
-        })
-
-        describe("When totalUnrealizedAccrual is less than 0", async () => {
-            it("should return negative totalUnrealizedAccrual", async () => {
-
             })
         })
     })
