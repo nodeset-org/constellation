@@ -209,7 +209,8 @@ export async function protocolFixture(): Promise<SetupData> {
     const rocketPool = await getRocketPool(deployedProtocol.directory);
   
     return { protocol: deployedProtocol, signers, rocketPool };
-  } catch {
+  } catch (e) {
+    console.log("Error", e)
     return await protocolFixture();
   }
 }
