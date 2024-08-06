@@ -260,7 +260,12 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * See processMinipool() for more info (this is a very important function).
      */
     function processNextMinipool() public {
-        processMinipool(getNextMinipool());
+        IMinipool nextMinipool = getNextMinipool();
+        if (address(nextMinipool) == address(0)) {
+            // Nothing to do
+            return;
+        }
+        processMinipool(nextMinipool);
         currentMinipool++;
     }
 
