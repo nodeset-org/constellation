@@ -28,8 +28,7 @@ describe("Liquidity Reserve", async function () {
 
             // Assert 10 ETH and 100 RPL are in vault (rest in operator distributor)
             expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).to.equal(ethers.utils.parseEther("10"));
-            const odBalance1 = await ethers.provider.getBalance(protocol.operatorDistributor.address)
-            expect(odBalance1).to.equal(ethers.utils.parseEther("90"));
+            expect(await ethers.provider.getBalance(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("90"));
 
             expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).to.equal(ethers.utils.parseEther("100"));
             expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("900"));
@@ -91,8 +90,7 @@ describe("Liquidity Reserve", async function () {
 
             // Assert 10 ETH and 100 RPL are in vault (rest in operator distributor)
             expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).to.equal(ethers.utils.parseEther("10"));
-            const odBalance1 = await ethers.provider.getBalance(protocol.operatorDistributor.address)
-            expect(odBalance1).to.equal(ethers.utils.parseEther("90"));
+            expect(await ethers.provider.getBalance(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("90"));
 
             expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).to.equal(ethers.utils.parseEther("100"));
             expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("900"));
