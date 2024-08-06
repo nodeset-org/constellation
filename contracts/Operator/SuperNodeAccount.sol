@@ -143,9 +143,13 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /// @notice Modifier to ensure a function can only be called if the minipool has been configured
-    modifier hasConfig(address _minipool) {
-        require(lockStarted[_minipool] != 0, 'nodeAccount not initialized');
+    modifier onlyRecognizedMinipool(address _minipool) {
+        require(getIsMinipoolRecognized(_minipool), 'minipool not recognized');
         _;
+    }
+
+    function getIsMinipoolRecognized(address minipool) public view returns (bool) {
+        return lockStarted[minipool] != 0;
     }
 
     /**
@@ -232,11 +236,14 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
 
         uint256 salt = uint256(keccak256(abi.encodePacked(_config.salt, subNodeOperator)));
-
-        _validateSigUsed(_config.sig);
+        // move the necessary ETH to this contract for use 
         OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(bond);
+        
+        // verify admin server signature if required
         if (adminServerCheck) {
             require(block.timestamp - _config.sigGenesisTime < adminServerSigExpiry, 'as sig expired');
+            
+            _validateSigUsed(_config.sig);
             console.log('_createMinipool: message hash');
             console.logBytes32(
                 keccak256(abi.encodePacked(_config.expectedMinipoolAddress, salt, address(this), block.chainid))
@@ -261,6 +268,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             );
         }
 
+        // track the new minipool and locked ETH
         subNodeOperatorHasMinipool[
             keccak256(abi.encodePacked(subNodeOperator, _config.expectedMinipoolAddress))
         ] = true;
@@ -274,8 +282,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         od.onMinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator);
-        od.rebalanceRplStake(getTotalEthStaked() + bond);
-
+        
         subNodeOperatorMinipools[subNodeOperator].push(_config.expectedMinipoolAddress);
         WETHVault wethVault = WETHVault(getDirectory().getWETHVaultAddress());
         minipoolData[_config.expectedMinipoolAddress] = Minipool(
@@ -285,7 +292,10 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee()
         );
 
-        console.log('_createMinipool()');
+        // stake additional RPL to cover the new minipool
+        od.rebalanceRplStake(getTotalEthStaked() + bond);
+
+        // do the deposit!
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: bond}(
             bond,
             minimumNodeFee,
@@ -295,9 +305,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             salt,
             _config.expectedMinipoolAddress
         );
-        IMinipool minipool = IMinipool(_config.expectedMinipoolAddress);
-        console.log('_createMinipool.status', uint256(minipool.getStatus()));
-        console.log('finished creating minipool without revert from deposit to casper');
     }
 
     /**
@@ -353,7 +360,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         bytes calldata _validatorSignature,
         bytes32 _depositDataRoot,
         address _minipool
-    ) external onlySubNodeOperator(_minipool) hasConfig(_minipool) {
+    ) external onlySubNodeOperator(_minipool) onlyRecognizedMinipool(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.stake(_validatorSignature, _depositDataRoot);
 
@@ -374,7 +381,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @param _subNodeOperator Address of the sub-node operator associated with the minipool.
      * @param _minipool Address of the minipool to close.
      */
-    function close(address _subNodeOperator, address _minipool) external hasConfig(_minipool) {
+    function close(address _subNodeOperator, address _minipool) external onlyRecognizedMinipool(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(_subNodeOperator);
         _stopTrackingMinipool(_minipool);
@@ -388,7 +395,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      *      This function is a safeguard to prevent premature withdrawal of locked funds.
      * @param _minipool Address of the minipool from which ETH will be unlocked.
      */
-    function unlockEth(address _minipool) external onlySubNodeOperator(_minipool) hasConfig(_minipool) {
+    function unlockEth(address _minipool) external onlySubNodeOperator(_minipool) onlyRecognizedMinipool(_minipool) {
         require(lockedEth[_minipool] > 0, 'Insufficient locked ETH');
         require(
             block.timestamp - lockStarted[_minipool] > lockUpTime ||
@@ -471,7 +478,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev This function provides a mechanism for delegated upgrades of minipools, enhancing flexibility in maintenance and upgrades.
      * @param _minipool Address of the minipool which is to be upgraded.
      */
-    function delegateUpgrade(address _minipool) external onlyAdminOrAllowedSNO(_minipool) hasConfig(_minipool) {
+    function delegateUpgrade(address _minipool) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateUpgrade();
     }
@@ -481,7 +488,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev Provides a rollback mechanism for previously delegated upgrades, ensuring that upgrades can be reversed if necessary.
      * @param _minipool Address of the minipool whose upgrade is to be rolled back.
      */
-    function delegateRollback(address _minipool) external onlyAdminOrAllowedSNO(_minipool) hasConfig(_minipool) {
+    function delegateRollback(address _minipool) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateRollback();
     }
@@ -495,7 +502,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function setUseLatestDelegate(
         bool _setting,
         address _minipool
-    ) external onlyAdminOrAllowedSNO(_minipool) hasConfig(_minipool) {
+    ) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.setUseLatestDelegate(_setting);
     }
