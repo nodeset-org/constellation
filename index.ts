@@ -3585,6 +3585,13 @@ export const mockNodeAccountV2Abi = [
   },
   {
     type: 'function',
+    inputs: [{ name: 'minipool', internalType: 'address', type: 'address' }],
+    name: 'getIsMinipoolRecognized',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [],
     name: 'getNumMinipools',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
@@ -4672,6 +4679,13 @@ export const mockSuperNodeV2Abi = [
     inputs: [],
     name: 'getImplementation',
     outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'minipool', internalType: 'address', type: 'address' }],
+    name: 'getIsMinipoolRecognized',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
     stateMutability: 'view',
   },
   {
@@ -29308,6 +29322,13 @@ export const superNodeAccountAbi = [
   },
   {
     type: 'function',
+    inputs: [{ name: 'minipool', internalType: 'address', type: 'address' }],
+    name: 'getIsMinipoolRecognized',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [],
     name: 'getNumMinipools',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
@@ -30827,7 +30848,7 @@ export const whitelistAbi = [
             type: 'uint256',
           },
           {
-            name: 'currentValidatorCount',
+            name: 'activeValidatorCount',
             internalType: 'uint256',
             type: 'uint256',
           },
@@ -30937,6 +30958,13 @@ export const whitelistAbi = [
   },
   {
     type: 'function',
+    inputs: [{ name: 'a', internalType: 'address', type: 'address' }],
+    name: 'getActiveValidatorCountForOperator',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [],
     name: 'getDirectory',
     outputs: [
@@ -30956,13 +30984,6 @@ export const whitelistAbi = [
     inputs: [{ name: 'a', internalType: 'address', type: 'address' }],
     name: 'getIsAddressInWhitelist',
     outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'a', internalType: 'address', type: 'address' }],
-    name: 'getNumberOfValidators',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
   {
@@ -30988,7 +31009,7 @@ export const whitelistAbi = [
             type: 'uint256',
           },
           {
-            name: 'currentValidatorCount',
+            name: 'activeValidatorCount',
             internalType: 'uint256',
             type: 'uint256',
           },
@@ -31035,7 +31056,7 @@ export const whitelistAbi = [
     outputs: [
       { name: 'operationStartTime', internalType: 'uint256', type: 'uint256' },
       {
-        name: 'currentValidatorCount',
+        name: 'activeValidatorCount',
         internalType: 'uint256',
         type: 'uint256',
       },
@@ -31217,7 +31238,7 @@ export const whitelistV2Abi = [
             type: 'uint256',
           },
           {
-            name: 'currentValidatorCount',
+            name: 'activeValidatorCount',
             internalType: 'uint256',
             type: 'uint256',
           },
@@ -31327,6 +31348,13 @@ export const whitelistV2Abi = [
   },
   {
     type: 'function',
+    inputs: [{ name: 'a', internalType: 'address', type: 'address' }],
+    name: 'getActiveValidatorCountForOperator',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [],
     name: 'getDirectory',
     outputs: [
@@ -31346,13 +31374,6 @@ export const whitelistV2Abi = [
     inputs: [{ name: 'a', internalType: 'address', type: 'address' }],
     name: 'getIsAddressInWhitelist',
     outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'a', internalType: 'address', type: 'address' }],
-    name: 'getNumberOfValidators',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
   {
@@ -31378,7 +31399,7 @@ export const whitelistV2Abi = [
             type: 'uint256',
           },
           {
-            name: 'currentValidatorCount',
+            name: 'activeValidatorCount',
             internalType: 'uint256',
             type: 'uint256',
           },
@@ -31425,7 +31446,7 @@ export const whitelistV2Abi = [
     outputs: [
       { name: 'operationStartTime', internalType: 'uint256', type: 'uint256' },
       {
-        name: 'currentValidatorCount',
+        name: 'activeValidatorCount',
         internalType: 'uint256',
         type: 'uint256',
       },
