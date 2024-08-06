@@ -277,7 +277,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     tx = await rplContract.transfer(signers.rplWhale.address, rplWhaleBalance);
     await tx.wait();
 
-    while(!await returnData.directory.hasRole(signers.protocolSigner.address, protocolRole)) {
+    while(!(await returnData.directory.hasRole(signers.protocolSigner.address, protocolRole))) {
         console.log("wait for granting roll to confirm...")
     }
 
