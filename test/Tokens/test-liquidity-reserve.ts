@@ -39,7 +39,14 @@ describe("Liquidity Reserve", async function () {
             // Set the xRPL liquidity reserve to 5%
             await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(ethers.utils.parseEther("0.05"));
 
-            // Mint 1 xWETH and 1 xRPL
+            // Assert 1 ETH and 50 RPL are in vault (rest in operator distributor)
+            expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).to.equal(ethers.utils.parseEther("1"));
+            expect(await protocol.wETH.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("99"));
+
+            expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).to.equal(ethers.utils.parseEther("50"));
+            expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("950"));
+
+            // Mint 1 xWETH and 1 xRPL to change states and move funds around.
             await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address);
 
             await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
@@ -50,7 +57,7 @@ describe("Liquidity Reserve", async function () {
             await protocol.vCWETH.connect(signers.ethWhale).redeem(ethers.utils.parseEther("1"), signers.ethWhale.address, signers.ethWhale.address);
             await protocol.vCRPL.connect(signers.ethWhale).redeem(ethers.utils.parseEther("1"), signers.ethWhale.address, signers.ethWhale.address);
 
-            // Assert 1 ETH and 50 RPL are in vault (rest in operator distributor)
+            // Assert 1 ETH and 50 RPL are in vault (rest in operator distributor) again after all the state changes
             expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).to.equal(ethers.utils.parseEther("1"));
             expect(await protocol.wETH.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("99"));
 
@@ -94,7 +101,14 @@ describe("Liquidity Reserve", async function () {
             // Set the xRPL liquidity reserve to 50%
             await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(ethers.utils.parseEther("0.50"));
 
-            // Mint 1 xWETH and 1 xRPL
+            // Assert 20 ETH and 50 RPL are in vault (rest in operator distributor)
+            expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).to.equal(ethers.utils.parseEther("20"));
+            expect(await protocol.wETH.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("80"));
+
+            expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).to.equal(ethers.utils.parseEther("500"));
+            expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("500"));
+
+            // Mint 1 xWETH and 1 xRPL to change states and move funds around.
             await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address);
 
             await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
@@ -105,7 +119,7 @@ describe("Liquidity Reserve", async function () {
             await protocol.vCWETH.connect(signers.ethWhale).redeem(ethers.utils.parseEther("1"), signers.ethWhale.address, signers.ethWhale.address);
             await protocol.vCRPL.connect(signers.ethWhale).redeem(ethers.utils.parseEther("1"), signers.ethWhale.address, signers.ethWhale.address);
 
-            // Assert 20 ETH and 50 RPL are in vault (rest in operator distributor)
+            // Assert 20 ETH and 50 RPL are in vault (rest in operator distributor) again after all the state changes
             expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).to.equal(ethers.utils.parseEther("20"));
             expect(await protocol.wETH.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("80"));
 
