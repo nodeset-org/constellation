@@ -172,7 +172,7 @@ contract YieldDistributor is UpgradeableBase {
             console.log('fullEthReward (for running max minipools)', fullEthReward);
 
             uint256 operatorsPortion = ProtocolMath.exponentialFunction(
-                operator.currentValidatorCount,
+                operator.activeValidatorCount,
                 SuperNodeAccount(_directory.getSuperNodeAddress()).maxValidators(),
                 k,
                 1,
@@ -180,7 +180,7 @@ contract YieldDistributor is UpgradeableBase {
                 1e18
             );
 
-            console.log('operator is running', operator.currentValidatorCount, 'so their actual reward is', operatorsPortion);
+            console.log('operator is running', operator.activeValidatorCount, 'so their actual reward is', operatorsPortion);
             totalReward += operatorsPortion;
             dustAccrued += fullEthReward - operatorsPortion;
             hasClaimed[_rewardee][i] = true;
