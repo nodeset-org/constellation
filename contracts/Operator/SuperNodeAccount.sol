@@ -101,8 +101,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     mapping(address => address[]) public subNodeOperatorMinipools;
     // Mapping of minipools to sub-node operator addresses
     mapping(address => Minipool) public minipoolData;
-    // Index for the current minipool being processed
-    uint256 public currentMinipool;
 
     // admin settings
     /// @notice Bond amount for newly created minipools
@@ -586,30 +584,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     // Must receive ETH from OD for staking during the createMinipool process (pre-staking minipools)
     receive() external payable onlyProtocol {}
-
-    /**
-     * @notice Retrieves the next minipool in the sequence to process tasks such as reward distribution or updates.
-     * @return address Returns the address of the next minipool to process. Returns the zero address if there are no minipools.
-     */
-    function getNextMinipoolAddress() external view returns (address) {
-        if (minipools.length == 0) {
-            return address(0);
-        }
-        return minipools[(currentMinipool+1) % minipools.length];
-    }
-
-    /**
-     * @notice Increments the current minipool index to the next one in the sequence to process tasks such as reward distribution or updates, and returns it.
-     * @dev This function helps in managing the rotation and handling of different minipools within the system.
-     * It ensures that operations are spread evenly and systematically across all active minipools.
-     * @return IMinipool Returns the next minipool to process. Returns a binding to the zero address if there are no minipools.
-     */
-    function getNextMinipool() external onlyProtocol returns (IMinipool) {
-        if (minipools.length == 0) {
-            return IMinipool(address(0));
-        }
-        return IMinipool(minipools[currentMinipool++ % minipools.length]);
-    }
 
     function getNumMinipools() external view returns (uint256) {
         return minipools.length;
