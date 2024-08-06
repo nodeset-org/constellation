@@ -116,30 +116,17 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @param _bond The amount of ETH required to be staked for the minipool.
      */
     function provisionLiquiditiesForMinipoolCreation(uint256 _bond) external onlyProtocol {
-        console.log('provisionLiquiditiesForMinipoolCreation.pre-RebalanceLiquidities');
         _rebalanceLiquidity();
-        console.log('provisionLiquiditiesForMinipoolCreation.post-RebalanceLiquidities');
         require(_bond == SuperNodeAccount(getDirectory().getSuperNodeAddress()).bond(), 'OperatorDistributor: Bad _bond amount, should be `SuperNodeAccount.bond`');
 
         address superNode = _directory.getSuperNodeAddress();
 
-        console.log('od.provisionLiquiditiesForMinipoolCreation.balanceEth', balanceEth);
-        console.log('od.provisionLiquiditiesForMinipoolCreation.balance', address(this).balance);
-        console.log(
-            'od.provisionLiquiditiesForMinipoolCreation.balanceOf.weth',
-            IERC20(_directory.getWETHAddress()).balanceOf(address(this))
-        );
-
         (bool success, bytes memory data) = superNode.call{value: _bond}('');
         if (!success) {
-            console.log('LowLevelEthTransfer 1');
-            console.log('balance eth', address(this).balance);
-            console.log(_bond);
             revert LowLevelEthTransfer(success, data);
         }
 
         balanceEth -= _bond;
-        console.log('finished provisionLiquiditiesForMinipoolCreation');
     }
 
     /**
@@ -198,11 +185,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 // NOTE: to auditors: double check that all cases are covered such that unstakeRpl will not revert execution
                 balanceRpl += excessRpl;
                 AssetRouter(_directory.getAssetRouterAddress()).unstakeRpl(excessRpl);
-            } else {
-                console.log('failed to rebalanceRplStake.excessRpl', excessRpl);
             }
-            console.log('excessRpl', excessRpl);
-            console.log('noShortfall', noShortfall);
         }
     }
 

@@ -236,11 +236,14 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
 
         uint256 salt = uint256(keccak256(abi.encodePacked(_config.salt, subNodeOperator)));
-
-        _validateSigUsed(_config.sig);
+        // move the necessary ETH to this contract for use 
         OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(bond);
+        
+        // verify admin server signature if required
         if (adminServerCheck) {
             require(block.timestamp - _config.sigGenesisTime < adminServerSigExpiry, 'as sig expired');
+            
+            _validateSigUsed(_config.sig);
             console.log('_createMinipool: message hash');
             console.logBytes32(
                 keccak256(abi.encodePacked(_config.expectedMinipoolAddress, salt, address(this), block.chainid))
@@ -265,6 +268,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             );
         }
 
+        // track the new minipool and locked ETH
         subNodeOperatorHasMinipool[
             keccak256(abi.encodePacked(subNodeOperator, _config.expectedMinipoolAddress))
         ] = true;
@@ -278,8 +282,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         od.onMinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator);
-        od.rebalanceRplStake(getTotalEthStaked() + bond);
-
+        
         subNodeOperatorMinipools[subNodeOperator].push(_config.expectedMinipoolAddress);
         WETHVault wethVault = WETHVault(getDirectory().getWETHVaultAddress());
         minipoolData[_config.expectedMinipoolAddress] = Minipool(
@@ -289,7 +292,10 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee()
         );
 
-        console.log('_createMinipool()');
+        // stake additional RPL to cover the new minipool
+        od.rebalanceRplStake(getTotalEthStaked() + bond);
+
+        // do the deposit!
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: bond}(
             bond,
             minimumNodeFee,
@@ -299,9 +305,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             salt,
             _config.expectedMinipoolAddress
         );
-        IMinipool minipool = IMinipool(_config.expectedMinipoolAddress);
-        console.log('_createMinipool.status', uint256(minipool.getStatus()));
-        console.log('finished creating minipool without revert from deposit to casper');
     }
 
     /**
