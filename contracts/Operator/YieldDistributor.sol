@@ -169,9 +169,6 @@ contract YieldDistributor is UpgradeableBase {
 
             uint256 fullEthReward = ((interval.amount * 1e18) / interval.numOperators) / 1e18;
 
-            console.log("full reward for interval", i, interval.amount);
-            console.log('fullEthReward (for running max minipools)', fullEthReward);
-
             uint256 maxPossibleValidators = interval.maxValidators;
             if(operator.activeValidatorCount > interval.maxValidators) {
                 maxPossibleValidators = operator.activeValidatorCount;
@@ -186,7 +183,6 @@ contract YieldDistributor is UpgradeableBase {
                 1e18
             );
 
-            console.log('operator is running', operator.activeValidatorCount, 'so their actual reward is', operatorsPortion);
             totalReward += operatorsPortion;
             dustAccrued += fullEthReward - operatorsPortion;
             hasClaimed[_rewardee][i] = true;
