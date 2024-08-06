@@ -11,6 +11,8 @@ bin
 
 .DS_Store
 
+gas-report.txt
+
 #Hardhat files
 cache
 artifacts
