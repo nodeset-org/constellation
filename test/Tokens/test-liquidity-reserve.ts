@@ -67,7 +67,7 @@ describe("Liquidity Reserve", async function () {
         });
     });
     describe("when liquidity reserve ratio is raised", async function () {
-        it.only("should not hav enough in reserve", async function () {
+        it("should not hav enough in reserve", async function () {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool } = setupData;
 
