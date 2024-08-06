@@ -398,8 +398,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function unlockEth(address _minipool) external onlySubNodeOperator(_minipool) onlyRecognizedMinipool(_minipool) {
         require(lockedEth[_minipool] > 0, 'Insufficient locked ETH');
         require(
-            block.timestamp - lockStarted[_minipool] > lockUpTime ||
-                IMinipool(_minipool).getStatus() != MinipoolStatus.Dissolved,
+            block.timestamp - lockStarted[_minipool] > lockUpTime &&
+                IMinipool(_minipool).getStatus() == MinipoolStatus.Dissolved,
             'Lock conditions not met'
         );
 
