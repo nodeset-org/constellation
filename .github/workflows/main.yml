@@ -33,5 +33,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Compile solidity & gen typings
+        run: npx hardhat compile
+
+      - name: Clean out typings
+        run: npx hardhat clean
+
       - name: Run hardhat unit tests
         run: npx hardhat test
