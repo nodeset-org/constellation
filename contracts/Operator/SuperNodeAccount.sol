@@ -399,7 +399,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         require(lockedEth[_minipool] > 0, 'Insufficient locked ETH');
         require(
             block.timestamp - lockStarted[_minipool] > lockUpTime ||
-                IMinipool(_minipool).getStatus() == MinipoolStatus.Staking,
+                IMinipool(_minipool).getStatus() != MinipoolStatus.Dissolved,
             'Lock conditions not met'
         );
 
