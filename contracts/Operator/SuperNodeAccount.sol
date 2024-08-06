@@ -469,7 +469,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         require(block.timestamp - _config.sigGenesisTime < merkleClaimSigExpiry, 'merkle sig expired');
         merkleClaimNonce++;
 
-        AssetRouter(payable(ar)).onEthRewardsReceived(ethReward, _config.avgEthTreasuryFee, _config.avgEthOperatorFee);
+        AssetRouter(payable(ar)).onEthRewardsReceived(ethReward, _config.avgEthTreasuryFee, _config.avgEthOperatorFee, false);
         AssetRouter(payable(ar)).onRplRewardsRecieved(rplReward, _config.avgRplTreasuryFee);
     }
 

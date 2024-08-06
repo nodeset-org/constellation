@@ -178,7 +178,9 @@ contract AssetRouter is UpgradeableBase {
     /// @param rewardAmount amount of ETH rewards expected
     /// @param avgTreasuryFee Average treasury fee for the rewards received across all the minipools the rewards came from
     /// @param avgOperatorsFee Average operator fee for the rewards received across all the minipools the rewards came from
-    function onEthRewardsReceived(uint256 rewardAmount, uint256 avgTreasuryFee, uint256 avgOperatorsFee) public onlyProtocol {
+    /// @param updateOracleError Should the oracle error be updated? Should be true if the ETH is coming from a minipool distribution,
+    /// otherwise (for merkle claims) it should be false
+    function onEthRewardsReceived(uint256 rewardAmount, uint256 avgTreasuryFee, uint256 avgOperatorsFee, bool updateOracleError) public onlyProtocol {
         if(rewardAmount == 0)
             return;
 
@@ -196,7 +198,10 @@ contract AssetRouter is UpgradeableBase {
         IWETH(getDirectory().getWETHAddress()).deposit{value: communityPortion}();
 
         balanceEthAndWeth += communityPortion;
-        OperatorDistributor(getDirectory().getOperatorDistributorAddress()).onIncreaseOracleError(communityPortion);
+
+        if(updateOracleError){
+            OperatorDistributor(getDirectory().getOperatorDistributorAddress()).onIncreaseOracleError(communityPortion);
+        }
     }
 
     /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode 
@@ -220,9 +225,9 @@ contract AssetRouter is UpgradeableBase {
     /// @param bondAmount amount of ETH bond expected
     /// @param avgTreasuryFee Average treasury fee for the rewards received across all the minipools the rewards came from
     /// @param avgOperatorsFee Average operator fee for the rewards received across all the minipools the rewards came from
-    function onEthRewardsAndBondReceived(uint256 rewardAmount, uint256 bondAmount, uint256 avgTreasuryFee, uint256 avgOperatorsFee) external onlyProtocol {
+    function onEthRewardsAndBondReceived(uint256 rewardAmount, uint256 bondAmount, uint256 avgTreasuryFee, uint256 avgOperatorsFee, bool updateOracleError) external onlyProtocol {
         onEthBondReceived(bondAmount);
-        onEthRewardsReceived(rewardAmount, avgTreasuryFee, avgOperatorsFee);
+        onEthRewardsReceived(rewardAmount, avgTreasuryFee, avgOperatorsFee, updateOracleError);
     }
 
 
