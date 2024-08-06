@@ -226,7 +226,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             'sub node operator must be whitelisted'
         );
         require(
-            Whitelist(_directory.getWhitelistAddress()).getNumberOfValidators(subNodeOperator) < maxValidators,
+            Whitelist(_directory.getWhitelistAddress()).getActiveValidatorCountForOperator(subNodeOperator) < maxValidators,
             'Sub node operator has created too many minipools already'
         );
         require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
