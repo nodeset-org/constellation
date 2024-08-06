@@ -6,9 +6,6 @@ import { protocolFixture } from "../test";
 describe("Yield Accrual", function () {
     describe("When sender is not protocol", async () => {
         it("should revert", async () => {
-            try {
-                await loadFixture(protocolFixture);
-            } catch { }
 
             const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
 

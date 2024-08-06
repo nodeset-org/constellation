@@ -200,12 +200,16 @@ export async function createSigners(): Promise<Signers> {
 }
 
 export async function protocolFixture(): Promise<SetupData> {
-  await loadFixture(deployRocketPool);
-  await loadFixture(setDefaultParameters);
-
-  const signers = await createSigners();
-  const deployedProtocol = await deployProtocol(signers);
-  const rocketPool = await getRocketPool(deployedProtocol.directory);
-
-  return { protocol: deployedProtocol, signers, rocketPool };
+  try {
+    await loadFixture(deployRocketPool);
+    await loadFixture(setDefaultParameters);
+  
+    const signers = await createSigners();
+    const deployedProtocol = await deployProtocol(signers);
+    const rocketPool = await getRocketPool(deployedProtocol.directory);
+  
+    return { protocol: deployedProtocol, signers, rocketPool };
+  } catch {
+    return await protocolFixture();
+  }
 }
