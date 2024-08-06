@@ -275,7 +275,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _liquidityReservePercent The new liquidity reserve percentage.
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
-    function setLiquidityReservePerecent(uint256 _liquidityReservePercent) external onlyShortTimelock {
+    function setLiquidityReservePercent(uint256 _liquidityReservePercent) external onlyShortTimelock {
         require(_liquidityReservePercent >= 0, 'WETHVault: liquidity reserve percentage must be positive');
         require(_liquidityReservePercent <= 1e18, 'WETHVault: liquidity reserve percentage must be less than or equal to 100%');
 
@@ -283,9 +283,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         // rebalance entire balance of the contract to ensure the new liquidity reserve is respected
         AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
-        uint256 fullWethBalance = IWETH(getDirectory().getWETHAddress()).balanceOf(address(this));
-        ar.onWethBalanceIncrease(fullWethBalance);
-        SafeERC20.safeTransfer(IERC20(asset()), address(ar), fullWethBalance);
+        ar.onWethBalanceIncrease(balanceWeth);
+        balanceWeth = 0;
+        SafeERC20.safeTransfer(IERC20(asset()), address(ar), balanceWeth);
         ar.sendEthToDistributors();
     }
 
