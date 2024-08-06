@@ -120,11 +120,21 @@ describe("Node Operator Onboarding", function () {
     });
 
     it("oracle update increases yield appropriately", async function () {
+
+        // push down coverage ratio
+        await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.hyperdriver.address, ethers.utils.parseEther("200"));
+        await rocketPool.rplContract.connect(signers.hyperdriver).approve(protocol.vCRPL.address, ethers.utils.parseEther("200"));
+        await protocol.vCRPL.connect(signers.hyperdriver).deposit(ethers.utils.parseEther("200"), signers.hyperdriver.address);
         
         // deposit into protocol
+        console.log("trying to deposit...");
         await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
         await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
+        console.log("trying to deposit...");
+        console.log("maxWethRplRatio", await protocol.vCWETH.maxWethRplRatio())
+        console.log("tvlRatioEthRpl(assets, true)", await protocol.vCWETH.tvlRatioEthRpl(ethers.utils.parseEther("100"), true))
         await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
+        console.log("done trying to deposit...");
         
         const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
         const network = await ethers.provider.getNetwork();

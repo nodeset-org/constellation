@@ -284,8 +284,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         // rebalance entire balance of the contract to ensure the new liquidity reserve is respected
         AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
         ar.onWethBalanceIncrease(balanceWeth);
-        balanceWeth = 0;
         SafeERC20.safeTransfer(IERC20(asset()), address(ar), balanceWeth);
+        balanceWeth = 0;
         ar.sendEthToDistributors();
     }
 

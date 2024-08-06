@@ -198,8 +198,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         // rebalance entire balance of the contract to ensure the new liquidity reserve is respected
         AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
         ar.onRplBalanceIncrease(balanceRpl);
-        balanceRpl = 0;
         SafeERC20.safeTransfer(IERC20(asset()), address(ar), balanceRpl);
+        balanceRpl = 0;
         ar.sendRplToDistributors();
     }
 
