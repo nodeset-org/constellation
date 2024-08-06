@@ -192,7 +192,15 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     function setLiquidityReservePercent(uint256 _liquidityReservePercent) external onlyShortTimelock {
         require(_liquidityReservePercent >= 0, 'RPLVault: liquidity reserve percentage must be positive');
         require(_liquidityReservePercent <= 1e18, 'RPLVault: liquidity reserve percentage must be less than or equal to 100%');
+       
         liquidityReservePercent = _liquidityReservePercent;
+
+        // rebalance entire balance of the contract to ensure the new liquidity reserve is respected
+        AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
+        ar.onRplBalanceIncrease(balanceRpl);
+        SafeERC20.safeTransfer(IERC20(asset()), address(ar), balanceRpl);
+        balanceRpl = 0;
+        ar.sendRplToDistributors();
     }
 
     function onRplBalanceIncrease(uint256 _amount) external onlyProtocol {

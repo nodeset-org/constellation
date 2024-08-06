@@ -97,7 +97,7 @@ contract YieldDistributor is UpgradeableBase {
         yieldAccruedInInterval += weth;
 
         // if elapsed time since last interval is greater than maxIntervalLengthSeconds, start a new interval
-        if (block.timestamp - currentIntervalGenesisTime > maxIntervalLengthSeconds) {
+        if ( getIsEndOfIntervalTime()) {
             if(voidClaim) { /// @dev void claim means there is no claim
                 _finalizeIntervalVoidClaim();
             } else {
@@ -109,6 +109,10 @@ contract YieldDistributor is UpgradeableBase {
     /****
      * GETTERS
      */
+
+    function getIsEndOfIntervalTime() public view returns (bool) {
+        return block.timestamp - currentIntervalGenesisTime > maxIntervalLengthSeconds;
+    }
 
     /**
      * @notice Retrieves all intervals from the beginning up to and including the current interval.
@@ -222,8 +226,6 @@ contract YieldDistributor is UpgradeableBase {
         currentInterval++;
         currentIntervalGenesisTime = block.timestamp;
         yieldAccruedInInterval = 0;
-
-        getOperatorDistributor().processNextMinipool();
     }
 
     /****
