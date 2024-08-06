@@ -298,7 +298,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         }
 
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
-        require(sna.minipoolIndex(address(minipool)) < sna.getNumMinipools(), "Must be a minipool managed by Constellation"); 
+        require(sna.getIsMinipoolRecognized(address(minipool)), "Must be a minipool managed by Constellation"); 
 
         rebalanceRplStake(sna.getTotalEthStaked());
 
