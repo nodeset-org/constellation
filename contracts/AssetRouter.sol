@@ -182,12 +182,9 @@ contract AssetRouter is UpgradeableBase {
         if(rewardAmount == 0)
             return;
 
-        console.log("reward amount s", rewardAmount);
-
         uint256 treasuryPortion = rewardAmount.mulDiv(avgTreasuryFee, 1e18);
         uint256 nodeOperatorPortion = rewardAmount.mulDiv(avgOperatorsFee, 1e18);
 
-        console.log("AR is trying to send", rewardAmount);
         (bool success, ) = getDirectory().getTreasuryAddress().call{value: treasuryPortion}('');
         require(success, 'Transfer to treasury failed');
 
