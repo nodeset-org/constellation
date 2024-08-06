@@ -28,6 +28,7 @@ struct Reward {
 struct Interval {
     uint256 amount; // amount wei of protocol yield accrued since last interval
     uint256 numOperators; // length of node operators active in the interval
+    uint256 maxValidators; // maxValidators at the time of interval closing
 }
 
 /**
@@ -171,9 +172,14 @@ contract YieldDistributor is UpgradeableBase {
             console.log("full reward for interval", i, interval.amount);
             console.log('fullEthReward (for running max minipools)', fullEthReward);
 
+            uint256 maxPossibleValidators = interval.maxValidators;
+            if(operator.activeValidatorCount > interval.maxValidators) {
+                maxPossibleValidators = operator.activeValidatorCount;
+            }
+
             uint256 operatorsPortion = ProtocolMath.exponentialFunction(
                 operator.activeValidatorCount,
-                SuperNodeAccount(_directory.getSuperNodeAddress()).maxValidators(),
+                maxPossibleValidators,
                 k,
                 1,
                 fullEthReward,
@@ -221,7 +227,11 @@ contract YieldDistributor is UpgradeableBase {
         }
         Whitelist whitelist = getWhitelist();
 
-        intervals[currentInterval] = Interval(yieldAccruedInInterval, whitelist.numOperators());
+        intervals[currentInterval] = Interval(
+            yieldAccruedInInterval, 
+            whitelist.numOperators(),
+            SuperNodeAccount(getDirectory().getSuperNodeAddress()).maxValidators()
+        );
 
         currentInterval++;
         currentIntervalGenesisTime = block.timestamp;
