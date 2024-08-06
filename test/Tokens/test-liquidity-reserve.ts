@@ -51,11 +51,11 @@ describe("Liquidity Reserve", async function () {
             await protocol.vCRPL.connect(signers.ethWhale).redeem(ethers.utils.parseEther("1"), signers.ethWhale.address, signers.ethWhale.address);
 
             // Assert 1 ETH and 50 RPL are in vault (rest in operator distributor)
-            // expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).to.equal(ethers.utils.parseEther("1"));
-            // expect(await protocol.wETH.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("99"));
+            expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).to.equal(ethers.utils.parseEther("1"));
+            expect(await protocol.wETH.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("99"));
 
-            // expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).to.equal(ethers.utils.parseEther("50"));
-            // expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("950"));
+            expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).to.equal(ethers.utils.parseEther("50"));
+            expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("950"));
         });
     });
     describe("when liquidity reserve ratio is raised", async function () {
@@ -106,11 +106,11 @@ describe("Liquidity Reserve", async function () {
             await protocol.vCRPL.connect(signers.ethWhale).redeem(ethers.utils.parseEther("1"), signers.ethWhale.address, signers.ethWhale.address);
 
             // Assert 20 ETH and 50 RPL are in vault (rest in operator distributor)
-            // expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).to.equal(ethers.utils.parseEther("20"));
-            // expect(await protocol.wETH.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("80"));
+            expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).to.equal(ethers.utils.parseEther("20"));
+            expect(await protocol.wETH.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("80"));
 
-            // expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).to.equal(ethers.utils.parseEther("500"));
-            // expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("500"));
+            expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).to.equal(ethers.utils.parseEther("500"));
+            expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("500"));
         });
 
 
