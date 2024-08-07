@@ -161,6 +161,8 @@ describe("Yield Accrual", function () {
         })
 
         describe("When rewards are negative", async () => {
+
+            it("should revert", async () => {
             const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
             const reward = ethers.utils.parseEther("-1")
             const avgTreasuryFee = ethers.utils.parseEther(".6") // 50%
@@ -177,7 +179,7 @@ describe("Yield Accrual", function () {
             await protocol.assetRouter.connect(signers.protocolSigner).closeGate();
 
             await expect(protocol.assetRouter.connect(signers.protocolSigner).onEthRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee, true)).to.be.reverted;
-
+            })
         })
     })
 })
