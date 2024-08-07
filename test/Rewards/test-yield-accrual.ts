@@ -73,7 +73,7 @@ describe("Yield Accrual", function () {
                             const expectedOperatorPortion = reward.mul(avgOperatorsFee).div(ethers.utils.parseEther("1"))
                             const expectedCommunityPortion = reward.sub(expectedTreasuryPortion.add(expectedOperatorPortion));
                             
-                            const tx = await protocol.assetRouter.connect(signers.protocolSigner).onEthRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee)
+                            const tx = await protocol.assetRouter.connect(signers.protocolSigner).onEthRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee, true)
                             const receipt = await tx.wait();
                             const block = receipt.blockNumber;
                             
