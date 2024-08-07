@@ -223,7 +223,7 @@ describe("Yield Accrual", function () {
 
         describe("When rewards are negative", async () => {
             const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
-            const reward = ethers.utils.parseEther("-1")
+            const reward = ethers.utils.parseEther("1").mul(-1);
             const avgTreasuryFee = ethers.utils.parseEther(".6") // 50%
             const avgOperatorsFee = ethers.utils.parseEther(".4") // 50%
 
