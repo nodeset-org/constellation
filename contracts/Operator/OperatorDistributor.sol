@@ -319,14 +319,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             // stop tracking
             this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
             // both bond and rewards are received
-            ar.onEthRewardsAndBondReceived(rewards, remainingBond, treasuryFee, noFee);
+            ar.onEthRewardsAndBondReceived(rewards, remainingBond, treasuryFee, noFee, true);
         } else if (balanceAfterRefund < depositBalance) { // it's still staking
             console.log("MINIPOOL STATUS: still staking");
             rewards = minipool.calculateNodeShare(balanceAfterRefund);
             // withdrawal address calls distributeBalance(true)
             ar.onClaimSkimmedRewards(minipool);
             // calculate only rewards
-            ar.onEthRewardsReceived(rewards, treasuryFee, noFee);
+            ar.onEthRewardsReceived(rewards, treasuryFee, noFee, true);
         }
         console.log('rewards recieved', rewards);   
         ar.sendEthToDistributors(); 
