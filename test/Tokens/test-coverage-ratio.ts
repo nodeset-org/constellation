@@ -17,7 +17,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -53,7 +52,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -88,7 +86,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -122,7 +119,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -157,7 +153,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -195,7 +190,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -231,7 +225,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -267,7 +260,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -304,7 +296,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -337,7 +328,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -372,7 +362,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -410,7 +399,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -447,7 +435,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -487,7 +474,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -526,7 +512,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -563,7 +548,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -600,7 +584,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -637,7 +620,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -675,7 +657,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -712,7 +693,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -749,7 +729,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -787,7 +766,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -824,7 +802,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -861,7 +838,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -899,7 +875,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -936,7 +911,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
