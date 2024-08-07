@@ -30,14 +30,8 @@ jobs:
         with:
           node-version: '21.x'
 
-      - name: Install dependencies
+      - name: running npm install...
         run: npm install
 
-      - name: Compile solidity & gen typings
-        run: npx hardhat compile
-
-      - name: Clean out typings
-        run: npx hardhat clean
-
-      - name: Run hardhat unit tests
+      - name: executing test suite...
         run: npx hardhat test
