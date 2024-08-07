@@ -115,10 +115,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     modifier lazyInitializer() {
         require(!lazyInit, 'already lazily initialized');
         _;
-        lazyInit = true;
-        merkleClaimSigExpiry = 1 days;
-        lockThreshold = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getPreLaunchValue();
-        useSmoothingPool = true;
     }
 
     /// @notice Modifier to ensure a function can only be called by a sub-node operator of a specific minipool
@@ -179,6 +175,10 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         _registerNode('Australia/Brisbane');
         address ar = directory.getAssetRouterAddress();
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), ar, true);
+        lazyInit = true;
+        merkleClaimSigExpiry = 1 days;
+        lockThreshold = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getPreLaunchValue();
+        useSmoothingPool = true;
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(useSmoothingPool);
     }
 
