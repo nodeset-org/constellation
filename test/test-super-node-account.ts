@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from "./test";
-import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator, predictDeploymentAddress, prepareOperatorDistributionContract, whitelistUserServerSig } from "./utils/utils";
+import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator, increaseEVMTime, predictDeploymentAddress, prepareOperatorDistributionContract, whitelistUserServerSig } from "./utils/utils";
 import { generateDepositData } from "./rocketpool/_helpers/minipool";
 
 describe("SuperNodeAccount", function () {
@@ -480,4 +480,94 @@ describe("SuperNodeAccount", function () {
             value: ethers.utils.parseEther("1")
         })).to.be.revertedWith("NodeAccount: protocol must have enough rpl and eth");
     });
+
+    describe("SetSmoothingPool", async () => {
+        describe("When sender is admin", async () => {
+
+            describe("When smoothing pool is true", async () => {
+
+                describe("When enough time has passed", async () => {
+                    it("should pass", async () => {
+                        const setupData = await loadFixture(protocolFixture);
+                        const { protocol, signers, rocketPool } = setupData;
+
+                        // this might be a bad key, i'm pretty sure it is for lastTimeUpdated??
+                        const storageKeyForTimer = "0x0ffebeec6c821887d578dfaf27c0b3f03dd63cb069f39a35d4270daf9ebb531b"
+                        const time = await rocketPool.rockStorageContract.getUint(storageKeyForTimer);
+                        await increaseEVMTime(time.toNumber() * 100);
+
+                        expect(await rocketPool.rocketNodeManagerContract.callStatic.getSmoothingPoolRegistrationState(protocol.superNode.address)).equals(true)
+                        await protocol.superNode.connect(signers.admin).setSmoothingPoolParticipation(false);
+                        expect(await rocketPool.rocketNodeManagerContract.callStatic.getSmoothingPoolRegistrationState(protocol.superNode.address)).equals(false)
+                    })
+                })
+
+                describe("When not enough time has passed", async () => {
+                    it("should revert", async () => {
+                        const setupData = await loadFixture(protocolFixture);
+                        const { protocol, signers, rocketPool } = setupData;
+
+                        expect(await rocketPool.rocketNodeManagerContract.callStatic.getSmoothingPoolRegistrationState(protocol.superNode.address)).equals(true)
+                        await expect(protocol.superNode.connect(signers.admin).setSmoothingPoolParticipation(false)).to.revertedWith("Not enough time has passed since changing state");
+                    })
+                })
+
+            })
+
+            describe("When smoothing pool is false", async () => {
+
+                describe("When enough time has passed", async () => {
+
+                    it("should pass", async () => {
+                        const setupData = await loadFixture(protocolFixture);
+                        const { protocol, signers, rocketPool } = setupData;
+
+                        // this might be a bad key, i'm pretty sure it is for lastTimeUpdated??
+                        const storageKeyForTimer = "0x0ffebeec6c821887d578dfaf27c0b3f03dd63cb069f39a35d4270daf9ebb531b"
+                        const time = await rocketPool.rockStorageContract.getUint(storageKeyForTimer);
+                        await increaseEVMTime(time.toNumber() * 100);
+
+                        expect(await rocketPool.rocketNodeManagerContract.callStatic.getSmoothingPoolRegistrationState(protocol.superNode.address)).equals(true)
+                        await protocol.superNode.connect(signers.admin).setSmoothingPoolParticipation(false);
+
+                        await increaseEVMTime(time.toNumber() * 100);
+
+                        expect(await rocketPool.rocketNodeManagerContract.callStatic.getSmoothingPoolRegistrationState(protocol.superNode.address)).equals(false)
+                        await protocol.superNode.connect(signers.admin).setSmoothingPoolParticipation(true);
+                        expect(await rocketPool.rocketNodeManagerContract.callStatic.getSmoothingPoolRegistrationState(protocol.superNode.address)).equals(true)
+                    })
+                })
+
+                describe("When not enough time has passed", async () => {
+                    it("should revert", async () => {
+                        const setupData = await loadFixture(protocolFixture);
+                        const { protocol, signers, rocketPool } = setupData;
+
+                        // this might be a bad key, i'm pretty sure it is for lastTimeUpdated??
+                        const storageKeyForTimer = "0x0ffebeec6c821887d578dfaf27c0b3f03dd63cb069f39a35d4270daf9ebb531b"
+                        const time = await rocketPool.rockStorageContract.getUint(storageKeyForTimer);
+                        await increaseEVMTime(time.toNumber() * 100);
+
+                        expect(await rocketPool.rocketNodeManagerContract.callStatic.getSmoothingPoolRegistrationState(protocol.superNode.address)).equals(true)
+                        await protocol.superNode.connect(signers.admin).setSmoothingPoolParticipation(false);
+                        
+                        expect(await rocketPool.rocketNodeManagerContract.callStatic.getSmoothingPoolRegistrationState(protocol.superNode.address)).equals(false)
+                        await expect(protocol.superNode.connect(signers.admin).setSmoothingPoolParticipation(true)).to.revertedWith("Not enough time has passed since changing state");
+                    })
+                })
+            })
+        })
+
+        describe("When sender is not admin", async () => {
+
+            it("should revert", async () => {
+                const setupData = await loadFixture(protocolFixture);
+                const { protocol, signers, rocketPool } = setupData;
+
+                expect(await rocketPool.rocketNodeManagerContract.callStatic.getSmoothingPoolRegistrationState(protocol.superNode.address)).equals(true)
+                await expect(protocol.superNode.connect(signers.random4).setSmoothingPoolParticipation(false)).to.be.revertedWith("Can only be called by admin address!");
+            })
+
+        })
+    })
 });

@@ -109,7 +109,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     uint256 public minimumNodeFee;
     uint256 public maxValidators; // max number of validators each NO is allowed
     bool public allowSubOpDelegateChanges;
-    bool public useSmoothingPool;
 
     /// @notice Modifier to ensure a function can only be called once for lazy initialization
     modifier lazyInitializer() {
@@ -178,8 +177,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         lazyInit = true;
         merkleClaimSigExpiry = 1 days;
         lockThreshold = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getPreLaunchValue();
-        useSmoothingPool = true;
-        IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(useSmoothingPool);
+        IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(true);
     }
 
     /**
@@ -525,8 +523,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev Admin-only
      */
     function setSmoothingPoolParticipation(bool _useSmoothingPool) external onlyAdmin {
-        useSmoothingPool = _useSmoothingPool;
-        IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(useSmoothingPool);
+        IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(_useSmoothingPool);
     }
 
     /**
