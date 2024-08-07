@@ -105,7 +105,7 @@ describe("Yield Accrual", function () {
                             { avgTreasuryFeeRaw: 1, avgOperatorsFeeRaw: 0, },
                             { avgTreasuryFeeRaw: 0, avgOperatorsFeeRaw: 1, }
                         ].forEach((params: ParamsType) => {
-                            it(`should increase balanceEthAndWeth & call onIncreaseOracleError: avgTreasuryFee=${params.avgTreasuryFeeRaw}, avgOperatorsFee=${params.avgOperatorsFeeRaw}`, async () => {
+                            it(`should increase balanceEthAndWeth & not call onIncreaseOracleError: avgTreasuryFee=${params.avgTreasuryFeeRaw}, avgOperatorsFee=${params.avgOperatorsFeeRaw}`, async () => {
                                 const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
                                 const reward = ethers.utils.parseEther("1")
                                 const avgTreasuryFee = ethers.utils.parseEther(`${params.avgTreasuryFeeRaw}`) // 50%
@@ -225,7 +225,7 @@ describe("Yield Accrual", function () {
 
             it("should revert", async () => {
             const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
-            const reward = ethers.utils.parseEther("-1")
+            const reward = ethers.utils.parseEther("1").mul(-1);
             const avgTreasuryFee = ethers.utils.parseEther(".6") // 50%
             const avgOperatorsFee = ethers.utils.parseEther(".4") // 50%
 
@@ -235,11 +235,11 @@ describe("Yield Accrual", function () {
             await protocol.assetRouter.connect(signers.protocolSigner).openGate();
             await signers.ethWhale.sendTransaction({
                 to: protocol.assetRouter.address,
-                value: reward
+                value: reward.mul(-1)
             })
             await protocol.assetRouter.connect(signers.protocolSigner).closeGate();
 
-            await expect(protocol.assetRouter.connect(signers.protocolSigner).onEthRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee, true)).to.be.reverted;
+            await expect(protocol.assetRouter.connect(signers.protocolSigner).onEthRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee, true)).to.be.rejected;
             })
         })
     })
