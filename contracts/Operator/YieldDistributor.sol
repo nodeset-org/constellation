@@ -80,12 +80,12 @@ contract YieldDistributor is UpgradeableBase {
      * WETH amount received to an internal handler function for further processing.
      * @param weth The amount of WETH received by the contract.
      */
-    function wethReceived(uint256 weth) external onlyProtocol {
-        _wethReceived(weth, false);
+    function ethReceived(uint256 weth) external onlyProtocol {
+        _ethReceived(weth, false);
     }
 
-    function wethReceivedVoidClaim(uint256 weth) external onlyProtocol {
-        _wethReceived(weth, true);
+    function ethReceivedVoidClaim(uint256 weth) external onlyProtocol {
+        _ethReceived(weth, true);
     }
 
     /**
@@ -94,7 +94,7 @@ contract YieldDistributor is UpgradeableBase {
      *
      * @param weth The amount of WETH received by the contract.
      */
-    function _wethReceived(uint256 weth, bool voidClaim) internal {
+    function _ethReceived(uint256 weth, bool voidClaim) internal {
         yieldAccruedInInterval += weth;
 
         // if elapsed time since last interval is greater than maxIntervalLengthSeconds, start a new interval
@@ -307,6 +307,6 @@ contract YieldDistributor is UpgradeableBase {
      * Thank you for your donation to the hard-working operators!
      */
     receive() external payable { 
-        _wethReceived(msg.value, false);
+        _ethReceived(msg.value, false);
     }
 }
