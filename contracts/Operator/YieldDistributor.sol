@@ -168,7 +168,7 @@ contract YieldDistributor is UpgradeableBase {
 
             uint256 maxPossibleValidators = interval.maxValidators;
             if(operator.activeValidatorCount > interval.maxValidators) {
-                maxPossibleValidators = operator.activeValidatorCount;
+                maxPossibleValidators = interval.maxValidators;
             }
 
             uint256 operatorsPortion = ProtocolMath.exponentialFunction(
