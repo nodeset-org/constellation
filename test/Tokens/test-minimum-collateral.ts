@@ -85,8 +85,8 @@ describe("Minimum Collateral", async function () {
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
         
-                    // Deposit 1.6 RPL (i.e. 20% of 8 ETH)
-                    const rplMintAmount = ethers.utils.parseEther("1.6");
+                    // Deposit 160 RPL (i.e. 20% of 8 ETH)
+                    const rplMintAmount = ethers.utils.parseEther("160");
                     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
                     await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
@@ -168,8 +168,8 @@ describe("Minimum Collateral", async function () {
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
         
-                    // Deposit 1.6 RPL (i.e. 20% of 8 ETH)
-                    const rplMintAmount = ethers.utils.parseEther("1.6");
+                    // Deposit 160 RPL (i.e. 20% of 8 ETH)
+                    const rplMintAmount = ethers.utils.parseEther("160");
                     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
                     await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
@@ -213,8 +213,8 @@ describe("Minimum Collateral", async function () {
                         }, { value: ethers.utils.parseEther('1') }))
                     .to.be.revertedWith("NodeAccount: protocol must have enough rpl and eth");
 
-                    // Deposit 0.8 RPL (i.e. now total of 30% of 8 ETH in vault)
-                    const rplMintAmount2 = ethers.utils.parseEther("0.8");
+                    // Deposit 80 RPL (i.e. now total of 30% of 8 ETH in vault)
+                    const rplMintAmount2 = ethers.utils.parseEther("80");
                     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount2);
                     await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount2);
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount2, signers.ethWhale.address); 
@@ -251,8 +251,8 @@ describe("Minimum Collateral", async function () {
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
         
-                    // Deposit 1.6 RPL (i.e. 20% of 8 ETH)
-                    const rplMintAmount = ethers.utils.parseEther("1.6");
+                    // Deposit 160 RPL (i.e. 20% of 8 ETH)
+                    const rplMintAmount = ethers.utils.parseEther("160");
                     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
                     await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
@@ -336,8 +336,9 @@ describe("Minimum Collateral", async function () {
                 await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                 await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                 await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
-                // Deposit 2.4 RPL (i.e. 30% of 8 ETH)
-                const rplMintAmount = ethers.utils.parseEther("2.4");
+                
+                // Deposit 240 RPL (i.e. 30% of 8 ETH)
+                const rplMintAmount = ethers.utils.parseEther("240");
                 await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
                 await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
                 await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
@@ -398,11 +399,21 @@ describe("Minimum Collateral", async function () {
                 await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                 await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
                 
-                // Deposit 8 RPL (i.e. 100% of 8 ETH)
-                const rplMintAmount = ethers.utils.parseEther("8");
+                // Deposit 800 RPL (i.e. 100% of 8 ETH)
+                const rplMintAmount = ethers.utils.parseEther("800");
                 await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
                 await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
                 await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
+
+                // Mint and redeem 1 xWETH and 1 xRPL to change states and move funds around.
+                await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address);
+
+                await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
+                await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
+                await protocol.vCRPL.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address); 
+
+                await protocol.vCWETH.connect(signers.ethWhale).redeem(ethers.utils.parseEther("1"), signers.ethWhale.address, signers.ethWhale.address);
+                await protocol.vCRPL.connect(signers.ethWhale).redeem(ethers.utils.parseEther("1"), signers.ethWhale.address, signers.ethWhale.address);
 
                 // Create minipool
                 const nodeOperator = signers.hyperdriver;
@@ -423,12 +434,12 @@ describe("Minimum Collateral", async function () {
                     expectedMinipoolAddress: depositData.minipoolAddress,
                   };
               
-                  const { sig, timestamp } = await approveHasSignedExitMessageSig(
+                const { sig, timestamp } = await approveHasSignedExitMessageSig(
                     setupData,
                     '0x' + config.expectedMinipoolAddress,
                     config.salt,
-                  );
-    
+                );
+
                 await expect(
                     protocol.superNode
                 .connect(nodeOperator)
