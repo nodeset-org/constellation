@@ -235,11 +235,11 @@ describe("Yield Accrual", function () {
             await protocol.assetRouter.connect(signers.protocolSigner).openGate();
             await signers.ethWhale.sendTransaction({
                 to: protocol.assetRouter.address,
-                value: reward
+                value: reward.mul(-1)
             })
             await protocol.assetRouter.connect(signers.protocolSigner).closeGate();
 
-            await expect(protocol.assetRouter.connect(signers.protocolSigner).onEthRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee, true)).to.be.reverted;
+            await expect(protocol.assetRouter.connect(signers.protocolSigner).onEthRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee, true)).to.be.rejected;
             })
         })
     })
