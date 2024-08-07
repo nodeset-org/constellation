@@ -12,17 +12,14 @@ import '../Utils/Constants.sol';
 struct Operator {
     uint256 operationStartTime;
     uint256 activeValidatorCount;
-    uint256 intervalStart;
     address operatorController; // designated address to control the node operator's settings and collect rewards
 }
 
-/// @custom:security-contact info@nodeoperator.org
-/// Only modifiable by admin. Upgradeable and intended to be replaced by a ZK-ID check when possible.
 /**
  * @title Whitelist
  * @author Mike Leach, Theodore Clapp
  * @notice Controls operator access to the protocol. Only modifiable by permission of the admin.
- */
+ */ 
 contract Whitelist is UpgradeableBase {
     event OperatorAdded(Operator);
     event OperatorsAdded(address[] operators);
@@ -142,24 +139,17 @@ contract Whitelist is UpgradeableBase {
         require(block.timestamp - _sigGenesisTime < whitelistSigExpiry, 'wl sig expired');
         sigsUsed[_sig] = true;
         bytes32 messageHash = keccak256(abi.encodePacked(_operator, _sigGenesisTime, address(this), block.chainid));
-        console.log('_addOperator: message hash');
-        console.logBytes32(messageHash);
+
         bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
-        console.log('_addOperator: ethSignedMessageHash');
-        console.logBytes32(ethSignedMessageHash);
+
         address recoveredAddress = ECDSA.recover(ethSignedMessageHash, _sig);
         require(_directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress), 'signer must be admin server role');
 
         _permissions[_operator] = true;
 
-        YieldDistributor distributor = YieldDistributor(payable(getDirectory().getYieldDistributorAddress()));
-
         numOperators++;
 
-        distributor.finalizeInterval(); // operator controller will be entitled to rewards in the next interval
-
-        uint256 nextInterval = distributor.currentInterval();
-        Operator memory operator = Operator(block.timestamp, 0, nextInterval - 1, _operator);
+        Operator memory operator = Operator(block.timestamp, 0, _operator);
 
         nodeMap[_operator] = operator;
         nodeIndexMap[numOperators] = _operator;
@@ -169,7 +159,7 @@ contract Whitelist is UpgradeableBase {
     }
 
     /// @notice Adds a new operator to the whitelist.
-    /// @dev This function can only be called by a 24-hour timelock and ensures that the operator being added is not a duplicate.
+    /// @dev Ensures that the operator being added is not a duplicate.
     ///      It emits the 'OperatorAdded' event to notify when an operator has been successfully added.
     /// @param _operator The address of the operator to be added.
     /// @dev Throws an error if the operator being added already exists in the whitelist.
@@ -193,10 +183,6 @@ contract Whitelist is UpgradeableBase {
         SuperNodeAccount superNode = SuperNodeAccount(_directory.getSuperNodeAddress());
         superNode.stopTrackingOperatorMinipools(nodeOperator);
         // todo: audit: is this dangerous? do we lose any resouces doing this?
-
-        YieldDistributor ydistributor = YieldDistributor(payable(getDirectory().getYieldDistributorAddress()));
-
-        ydistributor.finalizeInterval();
 
         numOperators--;
     }
