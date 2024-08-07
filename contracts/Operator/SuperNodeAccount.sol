@@ -48,8 +48,6 @@ struct MerkleRewardsConfig {
 contract SuperNodeAccount is UpgradeableBase, Errors {
     // Mapping of minipool address to the amount of ETH locked
     mapping(address => uint256) public lockedEth;
-    // Mapping of minipool address to the timestamp when locking started
-    mapping(address => uint256) public lockStarted;
 
     // keccak256(abi.encodePacked(subNodeOperator, _config.expectedMinipoolAddress))
     // Mapping of keccak256 hash of subNodeOperator and minipool address to bool indicating if a minipool exists
@@ -60,8 +58,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     // Lock threshold amount in wei
     uint256 public lockThreshold;
-    // Lock-up time in seconds
-    uint256 public lockUpTime;
 
     // Variables for admin server message checks (if enabled for minipool creation)
     bool public adminServerCheck;
@@ -99,7 +95,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     mapping(address => uint256) public minipoolIndex;
     // Mapping of sub-node operator address to their list of minipools
     mapping(address => address[]) public subNodeOperatorMinipools;
-    // Mapping of minipools to sub-node operator addresses
+    // Mapping of address to minipool structs
     mapping(address => Minipool) public minipoolData;
 
     // admin settings
@@ -149,7 +145,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     function getIsMinipoolRecognized(address minipool) public view returns (bool) {
-        return lockStarted[minipool] != 0;
+        return minipoolData[minipool].subNodeOperator != address(0);
     }
 
     /**
@@ -160,7 +156,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function initialize(address _directory) public override initializer {
         super.initialize(_directory);
         
-        lockUpTime = 28 days; // the length of an RP rewards period, which is the maximum length of time that a minipool will be in pre-launch before being dissolved
         adminServerCheck = true;
         adminServerSigExpiry = 1 days;
         minimumNodeFee = 14e16;
@@ -275,7 +270,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         lockedEth[_config.expectedMinipoolAddress] = msg.value;
         totalEthLocked += msg.value;
-        lockStarted[_config.expectedMinipoolAddress] = block.timestamp;
 
         minipoolIndex[_config.expectedMinipoolAddress] = minipools.length;
         minipools.push(_config.expectedMinipoolAddress);
@@ -351,7 +345,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Initiates the staking process for a specified minipool.
+     * @notice Initiates the staking process for a specified minipool. Refunds the lock for the minipool when called.
      * @dev Calls the `stake` method on the minipool contract with necessary parameters.
      *      This function can only be called by the sub-node operator of the minipool and when the minipool is properly configured.
      * @param _minipool The address of the minipool to initiate staking.
@@ -389,26 +383,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         minipool.close();
     }
 
-    /**
-     * @notice Unlocks and transfers a fixed amount of ETH back to the sub-node operator from a minipool.
-     * @dev Ensures that the minipool has been locked for a sufficient period or is in the staking state before allowing ETH to be unlocked.
-     *      This function is a safeguard to prevent premature withdrawal of locked funds.
-     * @param _minipool Address of the minipool from which ETH will be unlocked.
-     */
-    function unlockEth(address _minipool) external onlySubNodeOperator(_minipool) onlyRecognizedMinipool(_minipool) {
-        require(lockedEth[_minipool] > 0, 'Insufficient locked ETH');
-        require(
-            block.timestamp - lockStarted[_minipool] > lockUpTime &&
-                IMinipool(_minipool).getStatus() == MinipoolStatus.Dissolved,
-            'Lock conditions not met'
-        );
-
-        uint256 lockupBalance = lockedEth[_minipool];
-        lockedEth[_minipool] = 0;
-        totalEthLocked -= lockupBalance;
-        (bool success, ) = msg.sender.call{value: lockupBalance}('');
-        require(success, 'ETH transfer failed');
-    }
 
     /**
      * @notice Claims rewards for a node based on a Merkle proof, distributing specified amounts of RPL and ETH.
@@ -540,14 +514,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      */
     function setLockAmount(uint256 _newLockThreshold) external onlyShortTimelock {
         lockThreshold = _newLockThreshold;
-    }
-
-    /**
-     * @notice Sets a new lock-up time.
-     * @param _newLockUpTime The new lock-up time in seconds.
-     */
-    function setLockUpTime(uint256 _newLockUpTime) external onlyShortTimelock {
-        lockUpTime = _newLockUpTime;
     }
 
     function getSubNodeOpFromMinipool(address minipoolAddress) public view returns (address) {
