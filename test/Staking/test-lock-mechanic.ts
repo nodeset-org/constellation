@@ -114,8 +114,15 @@ describe("Unlocking Mechanism", async () => {
             const depositDataStake = await generateDepositDataForStake(minipool);
 
             // unlock
-            await protocol.superNode.connect(signers.hyperdriver).stake(depositDataStake.depositData.signature, depositDataStake.depositDataRoot, minipool);
-        
+            const tx = await protocol.superNode.connect(signers.hyperdriver).stake(depositDataStake.depositData.signature, depositDataStake.depositDataRoot, minipool);
+            const receipt = await tx.wait();
+            const {blockNumber, cumulativeGasUsed, effectiveGasPrice} = receipt;
+            const ethPriceOfTx = cumulativeGasUsed.mul(effectiveGasPrice);
+            const initialBalance = await ethers.provider.getBalance(signers.hyperdriver.address, blockNumber - 1);
+            const finalBalance = await ethers.provider.getBalance(signers.hyperdriver.address, blockNumber);
+
+            expect(finalBalance.sub(initialBalance)).equals(lockAmount.sub(ethPriceOfTx));
+
             lockedEth = await protocol.superNode.lockedEth(minipool);
             expect(lockedEth).to.equal(0);
             totalEthLocked = await protocol.superNode.totalEthLocked();
