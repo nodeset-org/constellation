@@ -8,11 +8,8 @@ import '../Whitelist/Whitelist.sol';
 import '../Utils/ProtocolMath.sol';
 import '../UpgradeableBase.sol';
 
-import '../Tokens/WETHVault.sol';
-
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/Oracles/IBeaconOracle.sol';
-import '../Interfaces/IWETH.sol';
 import '../Utils/Constants.sol';
 
 import './SuperNodeAccount.sol';
@@ -75,27 +72,27 @@ contract YieldDistributor is UpgradeableBase {
     }
 
     /**
-     * @notice Handles the event when WETH (Wrapped Ether) is received by the contract.
+     * @notice Handles the event when ETH is received by the contract.
      * @dev This function should only be callable by the protocol (or a designated service). It forwards the
-     * WETH amount received to an internal handler function for further processing.
-     * @param weth The amount of WETH received by the contract.
+     * ETH amount received to an internal handler function for further processing.
+     * @param eth The amount of ETH received by the contract.
      */
-    function ethReceived(uint256 weth) external onlyProtocol {
-        _ethReceived(weth, false);
+    function ethReceived(uint256 eth) external onlyProtocol {
+        _ethReceived(eth, false);
     }
 
-    function ethReceivedVoidClaim(uint256 weth) external onlyProtocol {
-        _ethReceived(weth, true);
+    function ethReceivedVoidClaim(uint256 eth) external onlyProtocol {
+        _ethReceived(eth, true);
     }
 
     /**
-     * @dev Handles the internal logic when WETH (Wrapped Ether) is received by the contract.
+     * @dev Handles the internal logic when ETH (Wrapped Ether) is received by the contract.
      * It updates the total yield accrued and checks if the current interval should be finalized.
      *
-     * @param weth The amount of WETH received by the contract.
+     * @param eth The amount of ETH received by the contract.
      */
-    function _ethReceived(uint256 weth, bool voidClaim) internal {
-        yieldAccruedInInterval += weth;
+    function _ethReceived(uint256 eth, bool voidClaim) internal {
+        yieldAccruedInInterval += eth;
 
         // if elapsed time since last interval is greater than maxIntervalLengthSeconds, start a new interval
         if ( getIsEndOfIntervalTime()) {
@@ -188,7 +185,7 @@ contract YieldDistributor is UpgradeableBase {
             hasClaimed[_rewardee][i] = true;
         }
 
-        // send weth to rewardee
+        // send eth to rewardee
 
         if (isWhitelisted) {
             (bool success, ) = _rewardee.call{value: totalReward}("");
