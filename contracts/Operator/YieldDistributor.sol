@@ -166,14 +166,14 @@ contract YieldDistributor is UpgradeableBase {
 
             uint256 fullEthReward = ((interval.amount * 1e18) / interval.numOperators) / 1e18;
 
-            uint256 maxPossibleValidators = interval.maxValidators;
+            uint256 operatorMinipoolsForRewards = interval.maxValidators;
             if(operator.activeValidatorCount > interval.maxValidators) {
-                maxPossibleValidators = interval.maxValidators;
+                operatorMinipoolsForRewards = interval.maxValidators;
             }
 
             uint256 operatorsPortion = ProtocolMath.exponentialFunction(
-                operator.activeValidatorCount,
-                maxPossibleValidators,
+                operatorMinipoolsForRewards,
+                interval.maxValidators,
                 k,
                 1,
                 fullEthReward,
