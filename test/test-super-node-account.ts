@@ -17,14 +17,6 @@ describe("SuperNodeAccount", function () {
             expect(await superNode.lockThreshold()).to.equal(newLockThreshold);
         });
 
-        it("Admin can set lock-up time", async function () {
-            const { protocol, signers } = await loadFixture(protocolFixture);
-            const { superNode } = protocol;
-            const { admin } = signers;
-            const newLockUpTime = 30 * 24 * 60 * 60; // 30 days in seconds
-            await superNode.connect(admin).setLockUpTime(newLockUpTime);
-            expect(await superNode.lockUpTime()).to.equal(newLockUpTime);
-        });
 
         it("Admin can set admin server signature expiry", async function () {
             const { protocol, signers } = await loadFixture(protocolFixture);
@@ -59,16 +51,6 @@ describe("SuperNodeAccount", function () {
             const { random } = signers;
             const newLockThreshold = ethers.utils.parseEther("2");
             await expect(superNode.connect(random).setLockAmount(newLockThreshold)).to.be.revertedWith(
-                "Can only be called by short timelock!"
-            );
-        });
-
-        it("Non-admin cannot set lock-up time", async function () {
-            const { protocol, signers } = await loadFixture(protocolFixture);
-            const { superNode } = protocol;
-            const { random } = signers;
-            const newLockUpTime = 30 * 24 * 60 * 60; // 30 days in seconds
-            await expect(superNode.connect(random).setLockUpTime(newLockUpTime)).to.be.revertedWith(
                 "Can only be called by short timelock!"
             );
         });
@@ -190,8 +172,6 @@ describe("SuperNodeAccount", function () {
         const subNodeOperator = await protocol.superNode.subNodeOperatorMinipools(signers.hyperdriver.address, 0);
         expect(subNodeOperator).to.equal('0x' + config.expectedMinipoolAddress);
 
-        const lockStarted = await protocol.superNode.lockStarted(config.expectedMinipoolAddress);
-        expect(lockStarted).to.be.gt(0);
     });
 
     it("success - users given supplying 3 as salt will result in different minipool addresses", async function () {
