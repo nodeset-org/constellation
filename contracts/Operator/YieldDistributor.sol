@@ -30,8 +30,10 @@ struct Claim {
 /**
  * @title YieldDistributor
  * @author Mike Leach
- * @dev Distributes earned rewards to a decentralized operator set using an authoritative external source of truth
- * This was redesigned from fully on-chain models because 
+ * @dev Distributes earned rewards to a decentralized operator set using a proof-of-authority model.
+ * This is the first step for a rewards system, and future versions may be entirely on-chain using ZK-proofs of
+ * beacon state information to check perforance data, validator status, etc. Currently, Rocket Pool fully trusts the oDAO
+ * to handle rewards, however, so there is no point in this work until this is resolved at the base layer.
  */
 contract YieldDistributor is UpgradeableBase {
     event RewardDistributed(Reward);
