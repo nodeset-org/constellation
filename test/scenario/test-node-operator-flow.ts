@@ -76,16 +76,8 @@ describe("Node Operator Onboarding", function () {
         const hyperdriverAddress = ethers.utils.getAddress(signers.hyperdriver.address);
         const minipoolFormatAddress = ethers.utils.getAddress(minipoolAddress);
 
-        // Encode the values and hash using keccak256
-        const encodedSubNodeOperator = ethers.utils.keccak256(
-            ethers.utils.solidityPack(
-                ["address", "address"],
-                [hyperdriverAddress, minipoolFormatAddress]
-            )
-        );
-
         // Check if the subNodeOperator has the minipool
-        expect(await protocol.superNode.subNodeOperatorHasMinipool(encodedSubNodeOperator)).to.equal(true);
+        expect((await protocol.superNode.minipoolData(minipoolFormatAddress)).subNodeOperator).to.equal(hyperdriverAddress);
     });
 
     // continue debugging staking ops, why would staking fail here?
