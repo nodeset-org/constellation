@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { ethers, upgrades, hardhatArguments } from "hardhat";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from "../test";
+import { assertAddOperator, createClaimRewardSig } from "../utils/utils";
 
 describe("Claiming Rewards", async () => {
     describe("When _rewardee is not equal to address(0)", async () => {
@@ -11,13 +12,21 @@ describe("Claiming Rewards", async () => {
                     describe("When sig has been verified by correct role", async () => {
                         describe("When yieldDistributor has enough eth to send to operatorController", async () => {
                             it("Should pass", async () => {
-                                const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
+                                const setupData = await loadFixture(protocolFixture);
+                                const { protocol, signers, rocketPool } = setupData;
+                            
+                                const amount = ethers.utils.parseEther("1");
+                                const rewardee = signers.random.address;
+                                await assertAddOperator(setupData, signers.random);
 
                                 await signers.ethWhale.sendTransaction({
                                     to: protocol.yieldDistributor.address,
-                                    value: ethers.utils.parseEther("1")
+                                    value: amount
                                 })
 
+                                const sig = await createClaimRewardSig(setupData, rewardee, amount);
+
+                                await protocol.yieldDistributor.claimRewards(sig, rewardee, amount);
 
                             })
 
@@ -29,6 +38,12 @@ describe("Claiming Rewards", async () => {
 
                             describe("When the same user is trying to claim two sigs with nonce 0", async () => {
                                 it("Should revert", async () => {
+
+                                })
+                            })
+
+                            describe("When another user tries to steal sig to claim funds", async () => {
+                                it("Should give funds to rewardee NOT sender", async () => {
 
                                 })
                             })
