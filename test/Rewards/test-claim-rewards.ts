@@ -30,6 +30,10 @@ describe("Claiming Rewards", async () => {
 
                             })
 
+                            describe("When operatorController is not equal to rewardee", async () => {
+                                
+                            })
+
                             describe("When multiple users are trying to claim a nonce 0", async () => {
                                 it("Should pass", async () => {
 

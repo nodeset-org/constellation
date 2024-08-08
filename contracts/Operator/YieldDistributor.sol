@@ -29,7 +29,6 @@ contract YieldDistributor is UpgradeableBase {
     event EthReceived(uint256);
 
     mapping(address => uint256) public nonces;
-
     mapping(bytes => bool) public claimSigsUsed;
 
     /**
