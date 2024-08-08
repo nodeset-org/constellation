@@ -24,6 +24,11 @@ describe("Claiming Rewards", async () => {
                     })
 
                     describe("When sig has not been verified by correct role due to bad params", async () => {
+                        describe("When param encoding is bad", async () => {
+                            it("Should revert", async () => {
+
+                            })
+                        })
                         describe("When claim.amount is bad", async () => {
                             it("Should revert", async () => {
 
