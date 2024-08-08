@@ -575,6 +575,32 @@ export async function createMerkleSig (setupData: SetupData, avgEthTreasuryFee: 
   return { sig, sigGenesisTime, avgEthTreasuryFee, avgEthOperatorFee, avgRplTreasuryFee};
 }
 
+// sig schema keccak256(abi.encodePacked(_amount, _rewardee, nonces[_rewardee], address(this), block.chainid))
+export async function createClaimRewardSig (setupData: SetupData, rewardee: string, amount: BigNumber) {
+  const network = await ethers.provider.getNetwork();
+  const chainId = network.chainId;
+
+  const sigGenesisTime = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
+  const nonce = await setupData.protocol.superNode.merkleClaimNonce();
+
+  const packedData = ethers.utils.solidityPack(
+    ['uint256', 'uint256', 'uint256', 'uint256', 'address', 'uint256', 'uint256'],
+    [avgEthTreasuryFee, avgEthOperatorFee, avgRplTreasuryFee, sigGenesisTime, setupData.protocol.superNode.address, nonce, chainId]
+  );
+
+  const messageHash = ethers.utils.keccak256(packedData);
+
+  const messageHashBytes = ethers.utils.arrayify(messageHash);
+  const adminHasOracleRole = await setupData.protocol.directory.hasRole(
+    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('ADMIN_ORACLE_ROLE'))), 
+    setupData.signers.admin.address
+  );
+  expect(adminHasOracleRole).equals(true);
+  const sig = await setupData.signers.admin.signMessage(messageHashBytes);
+
+  return { sig, sigGenesisTime, avgEthTreasuryFee, avgEthOperatorFee, avgRplTreasuryFee};
+}
+
 export async function getNextContractAddress(signer: SignerWithAddress, offset = 0) {
   // Get current nonce of the signer
   const nonce = (await signer.getTransactionCount()) + offset;

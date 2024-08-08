@@ -14,18 +14,7 @@ import '../Utils/Constants.sol';
 
 import './SuperNodeAccount.sol';
 
-import "hardhat/console.sol";
-
-struct Reward {
-    address recipient;
-    uint eth;
-}
-
-struct Claim {
-    bytes sig;
-    uint256 sigGenesisTime;
-    uint256 amount;
-}
+import 'hardhat/console.sol';
 
 /**
  * @title YieldDistributor
@@ -36,12 +25,12 @@ struct Claim {
  * to handle rewards, however, so there is no point in this work until this is resolved at the base layer..
  */
 contract YieldDistributor is UpgradeableBase {
-    event RewardDistributed(Reward);
+    event RewardDistributed(address _rewardee);
     event EthReceived(uint256);
 
-    uint256 public claimSigNonce;
+    mapping(address => uint256) public nonces;
+
     mapping(bytes => bool) public claimSigsUsed;
-    uint256 public claimSigExpiry;
 
     /**
      * @notice Initializes the contract with the specified directory address and sets the initial configurations.
@@ -56,46 +45,38 @@ contract YieldDistributor is UpgradeableBase {
 
     /**
      * @notice Distributes rewards accrued for a specific rewardee.
-     * @param _rewardee The address of the operator to distribute rewards to.
-     * @param claim The claim data, including amount and the authoritative signature
+     * @param _sig The claim data, including amount and the authoritative signature
      */
-    function claimRewards(address _rewardee, Claim calldata claim) public nonReentrant {
+    function claimRewards(bytes calldata _sig, address _rewardee, uint256 _amount) public nonReentrant {
         require(_rewardee != address(0), 'rewardee cannot be zero address');
         Whitelist whitelist = getWhitelist();
         Operator memory operator = getWhitelist().getOperatorAtAddress(_rewardee);
 
         require(whitelist.getIsAddressInWhitelist(_rewardee));
 
-        require(!claimSigsUsed[claim.sig], 'sig already used');
-        claimSigsUsed[claim.sig] = true;
-
-        require(block.timestamp - claim.sigGenesisTime < claimSigExpiry, 'as sig expired');
+        require(!claimSigsUsed[_sig], 'sig already used');
+        claimSigsUsed[_sig] = true;
 
         address recoveredAddress = ECDSA.recover(
-                ECDSA.toEthSignedMessageHash(
-                    keccak256(
-                        abi.encodePacked(
-                            claim.amount,
-                            claim.sigGenesisTime,
-                            address(this),
-                            block.chainid
-                        )
-                    )
-                ),
-                claim.sig
-            );
+            ECDSA.toEthSignedMessageHash(
+                keccak256(abi.encodePacked(_rewardee, _amount, nonces[_rewardee], address(this), block.chainid))
+            ),
+            _sig
+        );
         require(
-                _directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress),
-                'signer must have permission from admin server role'
-            );
+            _directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress),
+            'signer must have permission from admin server role'
+        );
 
         // send eth to rewardee
-        (bool success, ) = operator.operatorController.call{value: claim.amount}("");
-        require(success, "_rewardee failed to claim");
+        (bool success, ) = operator.operatorController.call{value: _amount}('');
+        require(success, '_rewardee failed to claim');
+
+        nonces[_rewardee]++;
 
         OperatorDistributor(getDirectory().getOperatorDistributorAddress()).processNextMinipool();
 
-        emit RewardDistributed(Reward(_rewardee, claim.amount));
+        emit RewardDistributed(_rewardee);
     }
 
     /**

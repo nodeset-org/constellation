@@ -11,7 +11,26 @@ describe("Claiming Rewards", async () => {
                     describe("When sig has been verified by correct role", async () => {
                         describe("When yieldDistributor has enough eth to send to operatorController", async () => {
                             it("Should pass", async () => {
+                                const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
 
+                                await signers.ethWhale.sendTransaction({
+                                    to: protocol.yieldDistributor.address,
+                                    value: ethers.utils.parseEther("1")
+                                })
+
+
+                            })
+
+                            describe("When multiple users are trying to claim a nonce 0", async () => {
+                                it("Should pass", async () => {
+
+                                })
+                            })
+
+                            describe("When the same user is trying to claim two sigs with nonce 0", async () => {
+                                it("Should revert", async () => {
+
+                                })
                             })
                         })
 
@@ -34,7 +53,7 @@ describe("Claiming Rewards", async () => {
 
                             })
                         })
-                        describe("When claim.sigGenesisTime is bad", async () => {
+                        describe("When nonce is bad", async () => {
                             it("Should revert", async () => {
 
                             })
