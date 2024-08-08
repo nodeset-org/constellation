@@ -100,11 +100,12 @@ contract YieldDistributor is UpgradeableBase {
     }
 
     /**
-     * @notice Transfers 100% of ETH to the Treasurer. In case of problems with rewards claiming, the Treasurer can manually rectify the situation.
+     * @notice Transfers ETH to the Treasurer directly. In case of problems with rewards claiming, the Treasurer can manually rectify the situation.
      * @dev This function can only be called by the treasurer.
      */
-    function treasurySweep() public onlyTreasurer {
-        (bool success, ) = getDirectory().getTreasuryAddress().call{value: address(this).balance}('');
+    function treasurySweep(uint256 amount) public onlyTreasurer {
+        require(amount < address(this).balance, 'amount must be less than contract balance');
+        (bool success, ) = getDirectory().getTreasuryAddress().call{value: amount}('');
         require(success, 'Failed to send ETH to treasury');
     }
 
