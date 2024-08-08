@@ -114,9 +114,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     modifier lazyInitializer() {
         require(!lazyInit, 'already lazily initialized');
         _;
-        lazyInit = true;
-        merkleClaimSigExpiry = 1 days;
-        lockThreshold = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getPreLaunchValue();
     }
 
     /// @notice Modifier to ensure a function can only be called by a sub-node operator of a specific minipool
@@ -177,6 +174,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         _registerNode('Australia/Brisbane');
         address ar = directory.getAssetRouterAddress();
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), ar, true);
+        lazyInit = true;
+        merkleClaimSigExpiry = 1 days;
+        lockThreshold = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getPreLaunchValue();
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(true);
     }
 
@@ -516,6 +516,14 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function _validateSigUsed(bytes memory _sig) internal {
         require(!sigsUsed[_sig], 'sig already used');
         sigsUsed[_sig] = true;
+    }
+
+    /**
+     * @notice Enables or disables the protocol's participation in the Rocket Pool smoothing pool
+     * @dev Admin-only
+     */
+    function setSmoothingPoolParticipation(bool _useSmoothingPool) external onlyAdmin {
+        IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(_useSmoothingPool);
     }
 
     /**
