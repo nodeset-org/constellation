@@ -33,10 +33,11 @@ struct Claim {
  * @dev Distributes earned rewards to a decentralized operator set using a proof-of-authority model.
  * This is the first step for a rewards system, and future versions may be entirely on-chain using ZK-proofs of
  * beacon state information to check perforance data, validator status, etc. Currently, Rocket Pool fully trusts the oDAO
- * to handle rewards, however, so there is no point in this work until this is resolved at the base layer.
+ * to handle rewards, however, so there is no point in this work until this is resolved at the base layer..
  */
 contract YieldDistributor is UpgradeableBase {
     event RewardDistributed(Reward);
+    event EthReceived(uint256);
 
     uint256 public claimSigNonce;
     mapping(bytes => bool) public claimSigsUsed;
@@ -46,11 +47,7 @@ contract YieldDistributor is UpgradeableBase {
      * @notice Initializes the contract with the specified directory address and sets the initial configurations.
      * @dev This function is an override and should be called only once. It sets up the initial values
      * for the contract.
-     * @param _directory The address of the directory contract or service that this contract will reference.
-     */
-    function initialize(address _directory) public override initializer {
-        super.initialize(_directory);
-        claimSigExpiry = 1 days;
+     * @param _directory The address of the directory contract or servu yesterday just got a lot more complicated so I could really use a lu
     }
 
     /****
@@ -129,5 +126,7 @@ contract YieldDistributor is UpgradeableBase {
         _;
     }
 
-    receive() external payable {}
+    receive() external payable {
+        emit EthReceived(msg.value);
+    }
 }
