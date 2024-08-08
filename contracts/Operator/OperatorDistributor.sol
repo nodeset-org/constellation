@@ -245,7 +245,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     function processNextMinipool() public {
         IMinipool nextMinipool = getNextMinipool();
         if (address(nextMinipool) == address(0)) {
-            // Nothing to do
+            // Any other time the tick doesn't do anything, we still need to increment the counter,
+            // but in this case, there are no minipools in the system, so don't increment counter
             return;
         }
         processMinipool(nextMinipool);
@@ -309,11 +310,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         //uint256 totalBalance = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() + balanceAfterRefund;
         
         if(balanceAfterRefund >= depositBalance) { // it's an exit, and any extra nodeShare is rewards
-            console.log("MINIPOOL STATUS: exited");
+            // calculate bond and reward portions
             uint256 remainingBond = minipool.calculateNodeShare(balanceAfterRefund) < depositBalance ? minipool.calculateNodeShare(balanceAfterRefund) : depositBalance;
             rewards = minipool.calculateNodeShare(balanceAfterRefund) > depositBalance ? minipool.calculateNodeShare(balanceAfterRefund) - depositBalance : 0;  
-            console.log('exit rewards expected', rewards);
-            console.log('node share of bond', minipool.calculateNodeShare(balanceAfterRefund));
             // withdrawal address calls distributeBalance(false)
             ar.onExitedMinipool(minipool);
             // stop tracking
@@ -321,14 +320,17 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             // both bond and rewards are received
             ar.onEthRewardsAndBondReceived(rewards, remainingBond, treasuryFee, noFee, true);
         } else if (balanceAfterRefund < depositBalance) { // it's still staking
-            console.log("MINIPOOL STATUS: still staking");
-            rewards = minipool.calculateNodeShare(balanceAfterRefund);
+            
+            uint256 priorBalance = address(ar).balance;
             // withdrawal address calls distributeBalance(true)
             ar.onClaimSkimmedRewards(minipool);
+            if(address(ar).balance > priorBalance){
+                rewards = address(ar).balance - priorBalance;
+            }
             // calculate only rewards
             ar.onEthRewardsReceived(rewards, treasuryFee, noFee, true);
         }
-        console.log('rewards recieved', rewards);   
+        // rebalance protocol eth
         ar.sendEthToDistributors(); 
         // lock down AssetRouter again
         ar.closeGate();
