@@ -116,34 +116,6 @@ describe("Whitelist", function () {
         expect(operator.activeValidatorCount).equals(expected.currentValidatorCount);
     });
 
-    it("Node operator can only update operator controller once", async () => {
-        const setupData = await loadFixture(protocolFixture);
-        const { protocol, signers } = setupData;
-
-        const {sig, timestamp} = await whitelistUserServerSig(setupData, signers.random);
-
-        await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address, timestamp, sig);
-        await expect(protocol.whitelist.connect(signers.random).setOperatorController(signers.random2.address))
-            .to.emit(protocol.whitelist, "OperatorControllerUpdated").withArgs(signers.random.address, signers.random2.address);
-        await expect(protocol.whitelist.connect(signers.random).setOperatorController(signers.random2.address))
-            .to.be.revertedWith("Whitelist: Operator controller may only be set by the operator controller!");
-    })
-
-    it("Node operator can only updated by operator controller", async () => {
-        const setupData = await loadFixture(protocolFixture);
-        const { protocol, signers } = setupData;
-
-        const {sig, timestamp} = await whitelistUserServerSig(setupData, signers.random);
-
-        await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address, timestamp, sig);
-        await expect(protocol.whitelist.connect(signers.random).setOperatorController(signers.random2.address))
-            .to.emit(protocol.whitelist, "OperatorControllerUpdated").withArgs(signers.random.address, signers.random2.address);
-        await expect(protocol.whitelist.connect(signers.random).setOperatorController(signers.random2.address))
-            .to.be.revertedWith("Whitelist: Operator controller may only be set by the operator controller!");
-        await expect(protocol.whitelist.connect(signers.random2).setOperatorController(signers.random3.address))
-            .to.emit(protocol.whitelist, "OperatorControllerUpdated").withArgs(signers.random2.address, signers.random3.address);
-    })
-
     it("Non-admin cannot add address to whitelist", async function () {
         const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;

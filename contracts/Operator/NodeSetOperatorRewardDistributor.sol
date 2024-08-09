@@ -48,11 +48,6 @@ contract NodeSetOperatorRewardDistributor is UpgradeableBase {
      */
     function claimRewards(bytes calldata _sig, address _token, address _rewardee, uint256 _amount) public nonReentrant {
         require(_rewardee != address(0), 'rewardee cannot be zero address');
-        Whitelist whitelist = getWhitelist();
-        Operator memory operator = getWhitelist().getOperatorAtAddress(_rewardee);
-
-        require(whitelist.getIsAddressInWhitelist(_rewardee));
-
         require(!claimSigsUsed[_sig], 'sig already used');
         claimSigsUsed[_sig] = true;
 
@@ -72,7 +67,7 @@ contract NodeSetOperatorRewardDistributor is UpgradeableBase {
             (bool success, ) = _rewardee.call{value: _amount}('');
             require(success, '_rewardee failed to claim');
         } else {
-            
+
         }
 
         nonces[_rewardee]++;

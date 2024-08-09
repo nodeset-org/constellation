@@ -6,10 +6,10 @@ import { assertAddOperator, createClaimRewardSig, createClaimRewardSigWithNonce 
 
 describe("Claiming Rewards", async () => {
     describe("When _rewardee is not equal to address(0)", async () => {
-        describe("When _rewardee is in whitelist", async () => {
-            describe("When admin server sig has not been used", async () => {
-                describe("When sig has not expired", async () => {
-                    describe("When sig has been verified by correct role", async () => {
+        describe("When admin server sig has not been used", async () => {
+            describe("When sig has not expired", async () => {
+                describe("When sig has been verified by correct role", async () => {
+                    describe("When _token is address(0)", async () => {
                         describe("When yieldDistributor has enough eth to send to _rewardee", async () => {
                             describe("When multiple users are trying to claim a nonce 0", async () => {
                                 it("Should pass", async () => {
@@ -27,11 +27,11 @@ describe("Claiming Rewards", async () => {
                                         value: amount
                                     })
 
-                                    const sig = await createClaimRewardSigWithNonce(setupData, rewardee, amount.div(2), ethers.BigNumber.from(0));
-                                    const sig2 = await createClaimRewardSigWithNonce(setupData, rewardee2, amount.div(2), ethers.BigNumber.from(0));
+                                    const sig = await createClaimRewardSigWithNonce(setupData, ethers.constants.AddressZero, rewardee, amount.div(2), ethers.BigNumber.from(0));
+                                    const sig2 = await createClaimRewardSigWithNonce(setupData, ethers.constants.AddressZero, rewardee2, amount.div(2), ethers.BigNumber.from(0));
 
-                                    const tx = await protocol.yieldDistributor.connect(signers.random).claimRewards(sig, rewardee, amount.div(2));
-                                    const tx2 = await protocol.yieldDistributor.connect(signers.random2).claimRewards(sig2, rewardee2, amount.div(2));
+                                    const tx = await protocol.yieldDistributor.connect(signers.random).claimRewards(sig, ethers.constants.AddressZero, rewardee, amount.div(2));
+                                    const tx2 = await protocol.yieldDistributor.connect(signers.random2).claimRewards(sig2, ethers.constants.AddressZero, rewardee2, amount.div(2));
 
                                     const receipt = await tx.wait();
                                     const { blockNumber, cumulativeGasUsed, effectiveGasPrice } = receipt;
@@ -85,9 +85,9 @@ describe("Claiming Rewards", async () => {
                                         value: amount
                                     })
 
-                                    const sig = await createClaimRewardSig(setupData, rewardee, amount);
+                                    const sig = await createClaimRewardSig(setupData, ethers.constants.AddressZero, rewardee, amount);
 
-                                    const tx = await protocol.yieldDistributor.connect(signers.random).claimRewards(sig, rewardee, amount);
+                                    const tx = await protocol.yieldDistributor.connect(signers.random).claimRewards(sig, ethers.constants.AddressZero, rewardee, amount);
 
                                     const receipt = await tx.wait();
                                     const { blockNumber, cumulativeGasUsed, effectiveGasPrice } = receipt;
@@ -117,9 +117,9 @@ describe("Claiming Rewards", async () => {
                                         value: amount
                                     })
 
-                                    const sig = await createClaimRewardSig(setupData, rewardee, amount);
+                                    const sig = await createClaimRewardSig(setupData, ethers.constants.AddressZero, rewardee, amount);
 
-                                    const tx = await protocol.yieldDistributor.claimRewards(sig, rewardee, amount);
+                                    const tx = await protocol.yieldDistributor.claimRewards(sig, ethers.constants.AddressZero, rewardee, amount);
 
                                     const receipt = await tx.wait();
                                     const { blockNumber, cumulativeGasUsed, effectiveGasPrice } = receipt;
@@ -151,46 +151,60 @@ describe("Claiming Rewards", async () => {
                         })
                     })
 
-                    describe("When sig has not been verified by correct role due to bad params", async () => {
-                        describe("When param encoding is bad", async () => {
-                            it("Should revert", async () => {
+                    describe("When _token is not address(0)", async () => {
+                        describe("When contract has enough token to send to _rewardee", async () => {
 
-                            })
                         })
-                        describe("When claim.amount is bad", async () => {
-                            it("Should revert", async () => {
 
-                            })
-                        })
-                        describe("When nonce is bad", async () => {
-                            it("Should revert", async () => {
-
-                            })
-                        })
-                        describe("When yieldDistributor address is bad", async () => {
-                            it("Should revert", async () => {
-
-                            })
-                        })
-                        describe("When chainid is bad", async () => {
+                        describe("When contract does not have enough token to send to _rewardee", async () => {
                             it("Should revert", async () => {
 
                             })
                         })
                     })
 
-                    describe("When sig has not been verified by correct role due to bad signer", async () => {
+
+                })
+
+                describe("When sig has not been verified by correct role due to bad params", async () => {
+                    describe("When param encoding is bad", async () => {
+                        it("Should revert", async () => {
+
+                        })
+                    })
+                    describe("When claim.amount is bad", async () => {
+                        it("Should revert", async () => {
+
+                        })
+                    })
+                    describe("When nonce is bad", async () => {
+                        it("Should revert", async () => {
+
+                        })
+                    })
+                    describe("When yieldDistributor address is bad", async () => {
+                        it("Should revert", async () => {
+
+                        })
+                    })
+                    describe("When chainid is bad", async () => {
                         it("Should revert", async () => {
 
                         })
                     })
                 })
 
-
-                describe("When sig has expired", async () => {
+                describe("When sig has not been verified by correct role due to bad signer", async () => {
                     it("Should revert", async () => {
 
                     })
+                })
+            })
+
+
+            describe("When sig has expired", async () => {
+                it("Should revert", async () => {
+
                 })
             })
 

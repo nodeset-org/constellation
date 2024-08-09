@@ -576,17 +576,17 @@ export async function createMerkleSig(setupData: SetupData, avgEthTreasuryFee: B
 }
 
 // sig schema keccak256(abi.encodePacked(_amount, _rewardee, nonces[_rewardee], address(this), block.chainid))
-export async function createClaimRewardSig(setupData: SetupData, rewardee: string, amount: BigNumber) {
-  return createClaimRewardSigWithNonce(setupData, rewardee, amount, await setupData.protocol.yieldDistributor.nonces(rewardee));
+export async function createClaimRewardSig(setupData: SetupData, token: string, rewardee: string, amount: BigNumber) {
+  return createClaimRewardSigWithNonce(setupData, token, rewardee, amount, await setupData.protocol.yieldDistributor.nonces(rewardee));
 }
 
-export async function createClaimRewardSigWithNonce(setupData: SetupData, rewardee: string, amount: BigNumber, nonce: BigNumber) {
+export async function createClaimRewardSigWithNonce(setupData: SetupData,  token: string, rewardee: string, amount: BigNumber, nonce: BigNumber) {
   const network = await ethers.provider.getNetwork();
   const chainId = network.chainId;
 
   const packedData = ethers.utils.solidityPack(
-    ['address', 'uint256', 'uint256', 'address', 'uint256'],
-    [rewardee, amount, nonce, setupData.protocol.yieldDistributor.address, chainId]
+    ['address', 'address', 'uint256', 'uint256', 'address', 'uint256'],
+    [token, rewardee, amount, nonce, setupData.protocol.yieldDistributor.address, chainId]
   );
 
   const messageHash = ethers.utils.keccak256(packedData);
