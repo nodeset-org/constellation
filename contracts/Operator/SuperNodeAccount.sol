@@ -49,10 +49,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     // Mapping of minipool address to the amount of ETH locked
     mapping(address => uint256) public lockedEth;
 
-    // keccak256(abi.encodePacked(subNodeOperator, _config.expectedMinipoolAddress))
-    // Mapping of keccak256 hash of subNodeOperator and minipool address to bool indicating if a minipool exists
-    mapping(bytes32 => bool) public subNodeOperatorHasMinipool;
-
     // Total amount of ETH locked in for all minipools
     uint256 public totalEthLocked;
 
@@ -115,7 +111,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     /// @notice Modifier to ensure a function can only be called by a sub-node operator of a specific minipool
     modifier onlySubNodeOperator(address _minipool) {
         require(
-            subNodeOperatorHasMinipool[keccak256(abi.encodePacked(msg.sender, _minipool))],
+            minipoolData[_minipool].subNodeOperator == msg.sender,
             'Can only be called by SubNodeOperator!'
         );
         _;
@@ -126,7 +122,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         if(allowSubOpDelegateChanges) { 
             require(
                 _directory.hasRole(Constants.ADMIN_ROLE, msg.sender) || 
-                    subNodeOperatorHasMinipool[keccak256(abi.encodePacked(msg.sender, _minipool))],
+                    minipoolData[_minipool].subNodeOperator == msg.sender,
                 'Can only be called by admin or sub node operator'
             );
         } else {
@@ -252,11 +248,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             );
         }
 
-        // track the new minipool and locked ETH
-        subNodeOperatorHasMinipool[
-            keccak256(abi.encodePacked(subNodeOperator, _config.expectedMinipoolAddress))
-        ] = true;
-
         lockedEth[_config.expectedMinipoolAddress] = msg.value;
         totalEthLocked += msg.value;
 
@@ -291,21 +282,13 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Registers a new node with the specified timezone location.
-     * @param _timezoneLocation The timezone location of the node.
-     */
-    function _registerNode(string memory _timezoneLocation) internal {
-        IRocketNodeManager(_directory.getRocketNodeManagerAddress()).registerNode(_timezoneLocation);
-    }
-
-    /**
      * @notice Stops tracking a specified minipool by removing it from the active list.
      * @dev Removes a minipool from the active tracking array and updates mappings to reflect this change.
      *      This is used when a minipool is destroyed or decommissioned.
-     * @param _minipool The address of the minipool to be removed from tracking.
+     * @param minipool The address of the minipool to be removed from tracking.
      */
-    function _stopTrackingMinipool(address _minipool) internal {
-        uint256 index = minipoolIndex[_minipool];
+    function onMinipoolRemoved(address minipool) external onlyProtocol() onlyRecognizedMinipool(address(minipool)) {
+        uint256 index = minipoolIndex[minipool];
         uint256 lastIndex = minipools.length - 1;
         address lastMinipool = minipools[lastIndex];
 
@@ -313,24 +296,16 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         minipoolIndex[lastMinipool] = index;
 
         minipools.pop();
-        delete minipoolIndex[_minipool];
+        delete minipoolIndex[minipool];
+        delete minipoolData[minipool];
     }
 
     /**
-     * @notice Stops tracking all minipools associated with a specific sub-node operator.
-     * @dev Iteratively calls `_stopTrackingMinipool` for each minipool associated with the sub-node operator.
-     *      This is typically used when a sub-node operator is decommissioned or their operation is terminated.
-     * @param _subNodeOperator The address of the sub-node operator whose minipools are to be stopped from tracking.
+     * @notice Registers a new node with the specified timezone location.
+     * @param _timezoneLocation The timezone location of the node.
      */
-    function stopTrackingOperatorMinipools(address _subNodeOperator) external onlyProtocol {
-        address[] storage minipoolList = subNodeOperatorMinipools[_subNodeOperator];
-        for (uint256 i = minipoolList.length; i > 0; i--) {
-            address minipool = minipoolList[i - 1];
-            _stopTrackingMinipool(minipool);
-            minipoolList.pop();
-            delete subNodeOperatorHasMinipool[keccak256(abi.encodePacked(_subNodeOperator, minipool))];
-        }
-        delete subNodeOperatorMinipools[_subNodeOperator];
+    function _registerNode(string memory _timezoneLocation) internal {
+        IRocketNodeManager(_directory.getRocketNodeManagerAddress()).registerNode(_timezoneLocation);
     }
 
     /**
@@ -359,15 +334,18 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     /**
      * @notice Closes a dissolved minipool and updates the tracking and financial records accordingly.
-     * @dev This function handles the administrative closure of a minipool, ensuring that the associated
-     *      records are updated. Only callable by an admin.
+     * @dev This is one of the two ways that minipools can be removed from the system (the other being exits or scrubs, which are handled
+     * by processMinipool). Calling this is necessary to ensure that the associated minipool records are updated and ETH is pulled back
+     * into the system.
+     * In future versions, it may be brought into minipool processing to automate the process, but there are a lot of base layer
+     * implications to consider before closing, and it would increase gas for the tick.
      * @param _subNodeOperator Address of the sub-node operator associated with the minipool.
      * @param _minipool Address of the minipool to close.
      */
     function close(address _subNodeOperator, address _minipool) external onlyRecognizedMinipool(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(_subNodeOperator);
-        _stopTrackingMinipool(_minipool);
+        this.onMinipoolRemoved(_minipool);
 
         minipool.close();
     }

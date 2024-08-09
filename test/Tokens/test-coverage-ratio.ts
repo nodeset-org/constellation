@@ -17,7 +17,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -28,9 +27,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
 
                     // Set minWethRplRatio to 200%
-                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("2000000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.utils.parseEther("2"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("3"));
 
                     // Mint 1 xWETH
                     // Check if it reverts
@@ -53,7 +52,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -64,9 +62,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
 
                     // Set minWethRplRatio to 200%
-                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("2000000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.utils.parseEther("2"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("3"));
                     
                     // Mint 100 xWETH 
                     // Check if it reverts                    
@@ -88,7 +86,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -99,9 +96,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
 
                     // Set minWethRplRatio to 101%
-                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("1010000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.utils.parseEther("1.01"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("3"));
                     
                     // Mint 100 xWETH (i.e. 200% ratio)
                     // Check that it passes      
@@ -122,7 +119,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -133,9 +129,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
 
                     // Set minWethRplRatio to 200%
-                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("2000000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.utils.parseEther("2"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("3"));
 
 
                     // Mint 2000 xWETH [confirm == 300% exactly]
@@ -157,7 +153,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -168,9 +163,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                     
                     // Set minWethRplRatio to 101%
-                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("1010000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.utils.parseEther("1.01"));
                     // Set maxWethRplRatio to 102%
-                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("1020000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("1.02"));
 
 
                     // Mint 100 xWETH (i.e. 200% ratio)
@@ -195,7 +190,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -208,7 +202,7 @@ describe("CoverageRatio", async function () {
                     // Set minWethRplRatio to 100%
                     await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("1000000000000000000"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("3"));
 
 
                     // Mint 100 xWETH (i.e. 200% ratio)
@@ -231,7 +225,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -244,7 +237,7 @@ describe("CoverageRatio", async function () {
                     // Set minWethRplRatio to 100%
                     await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("1000000000000000000"));
                     // Set maxWethRplRatio to 200%
-                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("2000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("2"));
 
 
                     // Mint 100 xWETH (i.e. 200% ratio)
@@ -267,7 +260,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -280,7 +272,7 @@ describe("CoverageRatio", async function () {
                     // Set minWethRplRatio to 100%
                     await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("1000000000000000000"));
                     // Set maxWethRplRatio to 200%
-                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("2000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("2"));
 
 
                     // Mint 2000 xWETH (i.e. 300% ratio)
@@ -304,7 +296,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -337,7 +328,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -350,7 +340,7 @@ describe("CoverageRatio", async function () {
                     // Set minWethRplRatio to 50%
                     await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("500000000000000000"));
                     // Set maxWethRplRatio to 200%
-                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("2000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("2"));
 
                     // Mint 100 xWETH (i.e. 200% ratio)
                     // Check that it passes
@@ -372,7 +362,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -410,7 +399,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -447,7 +435,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -487,7 +474,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -498,9 +484,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
                     
                     // Set minWethRplRatio to 200%
-                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("2000000000000000000"));
+                    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.utils.parseEther("2"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("3"));
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it reverts
@@ -526,7 +512,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -539,7 +524,7 @@ describe("CoverageRatio", async function () {
                     // Set minWethRplRatio to 100%
                     await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("1000000000000000000"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("3"));
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it reverts
@@ -563,7 +548,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -576,7 +560,7 @@ describe("CoverageRatio", async function () {
                     // Set minWethRplRatio to 1%
                     await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("100000000000000000"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("3"));
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it passes
@@ -600,7 +584,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -613,7 +596,7 @@ describe("CoverageRatio", async function () {
                     // Set minWethRplRatio to 50%
                     await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("500000000000000000"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("3"));
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it reverts
@@ -637,7 +620,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -650,7 +632,7 @@ describe("CoverageRatio", async function () {
                     // Set minWethRplRatio to 75%
                     await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from("750000000000000000"));
                     // Set maxWethRplRatio to 300%
-                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.BigNumber.from("3000000000000000000"));
+                    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("3"));
 
                     // Mint 10,000 xRPL (i.e. 50% ratio)
                     // Check that it reverts
@@ -675,7 +657,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -712,7 +693,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -749,7 +729,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -787,7 +766,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -824,7 +802,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -861,7 +838,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -899,7 +875,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
@@ -936,7 +911,6 @@ describe("CoverageRatio", async function () {
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
 
-                    // Why do we need to deposit to wETH?
                     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
