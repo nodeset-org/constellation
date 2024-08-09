@@ -162,12 +162,12 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
-        AssetRouter dp = AssetRouter(getDirectory().getAssetRouterAddress());
+        AssetRouter ar = AssetRouter(getDirectory().getAssetRouterAddress());
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         (uint256 distributableYield, bool signed) = getDistributableYield();
         return (
             uint256(
-                int(balanceWeth + dp.getTvlEth() + od.getTvlEth()) +
+                int(balanceWeth + ar.getTvlEth() + od.getTvlEth()) +
                     (signed ? -int(distributableYield) : int(distributableYield))
             )
         );
