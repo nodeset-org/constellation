@@ -98,17 +98,13 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         // Initialize the vault and operator distributor addresses
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
 
-        uint256 requiredWeth = vweth.getRequiredCollateral();
+        uint256 requiredWeth = vweth.getMissingLiquidity();
         uint256 wethBalance = IERC20(address(weth)).balanceOf(address(this));
         uint256 balanceEthAndWeth = IERC20(address(weth)).balanceOf(address(this)) + address(this).balance;
         if (balanceEthAndWeth >= requiredWeth) { 
             // there's extra ETH that can be kept here for minipools, so only send required amount
             // figure out how much to wrap, then wrap it
             uint256 wrapNeeded = requiredWeth > wethBalance ? requiredWeth - wethBalance : 0;
-            console.log("balanceEthAndWeth", balanceEthAndWeth);
-            console.log("wethBalance", wethBalance);
-            console.log("requiredWeth", requiredWeth);
-            console.log("wrapNeeded", wrapNeeded);
             if(wrapNeeded != 0) 
                 weth.deposit{value: wrapNeeded}();
             // send amount needed to vault
@@ -284,7 +280,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 _existingRplStake,
         uint256 _rpEthMatched
     ) public view returns (uint256 requiredStakeRpl) {
-        console.logAddress(getDirectory().getPriceFetcherAddress());
         uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
         uint256 matchedStakeRatio = _existingRplStake == 0
             ? 0
@@ -381,7 +376,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         // determine the difference in node share and remaining bond amount
         uint256 depositBalance = minipool.getNodeDepositBalance();
-        console.log('depositBalance', depositBalance);
         // if nodeshare - original deposit is <= 0 then it's an exit but there are no rewards (it's been penalized)
         uint256 rewards = 0;
         uint256 balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
@@ -392,14 +386,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             minipool.distributeBalance(false);
             // stop tracking
             this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
-            // both bond and rewards are received
+            // account for rewards 
             this.onEthRewardsReceived(rewards, treasuryFee, noFee, true);
         } else if (balanceAfterRefund < depositBalance) { // it's still staking
-            console.log("MINIPOOL STATUS: still staking");
-            rewards = minipool.calculateNodeShare(balanceAfterRefund);
+            uint256 priorBalance = address(this).balance;
             // withdrawal address calls distributeBalance(true)
             minipool.distributeBalance(true);
-            // calculate only rewards
+            // calculate rewards
+            rewards = address(this).balance > priorBalance ? address(this).balance - priorBalance : 0;
             this.onEthRewardsReceived(rewards, treasuryFee, noFee, true);
         }
  

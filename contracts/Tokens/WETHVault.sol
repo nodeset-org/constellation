@@ -185,14 +185,14 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Calculates the required collateral after a specified deposit.
-     * @dev This function calculates the required collateral to ensure the contract remains sufficiently collateralized
-     * after a specified deposit amount. It compares the current balance with the required collateral based on
+     * @notice Calculates the missing liquidity needed to meet the liquidity reserve after a specified deposit.
+     * @dev his function calculates the amount of assets needed to hit the liquidity reserve 
+     * after a specified deposit amount. It compares the current balance with the required liquidity based on
      * the total assets, including the deposit.
-     * @param deposit The amount of the deposit to consider in the collateral calculation.
-     * @return The amount of collateral required after the specified deposit.
+     * @param deposit The amount of the new deposit to consider in the liquidity calculation.
+     * @return The amount of liquidity required after the specified deposit.
      */
-    function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns (uint256) {
+    function getMissingLiquidityAfterDeposit(uint256 deposit) public view returns (uint256) {
         uint256 fullBalance = totalAssets() + deposit;
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
@@ -202,12 +202,22 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Calculates the required collateral to ensure the contract remains sufficiently collateralized.
+     * @notice Calculates the missing liquidity needed to meet the liquidity reserve.
+     * @dev This function calculates the current assets needed to hit the liquidity reserve 
+     * based the current total assets of the vault.
+     * @return The amount of liquidity required.
+     */
+    function getMissingLiquidity() public view returns (uint256) {
+        return getMissingLiquidityAfterDeposit(0);
+    }
+
+    /**
+     * @notice Calculates 
      * @dev This function calculates the required collateral based on the current total assets of the vault.
      * @return The amount of collateral required.
      */
-    function getRequiredCollateral() public view returns (uint256) {
-        return getRequiredCollateralAfterDeposit(0);
+    function getIncomeAfterFees(uint256 income) public view returns (uint256){
+        return income - income.mulDiv((treasuryFee + nodeOperatorFee), 1e18);
     }
 
     /**ADMIN FUNCTIONS */
