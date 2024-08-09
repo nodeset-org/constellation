@@ -37,8 +37,6 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     uint256 public minWethRplRatio; // weth coverage ratio
 
-    uint256 public balanceRpl;
-
     constructor() initializer {}
 
     /**
@@ -81,8 +79,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
         super._deposit(caller, receiver, assets, shares);
 
-        ar.onRplBalanceIncrease(assets);
-        SafeERC20.safeTransfer(IERC20(asset()), address(ar), assets);
+        ar.onRplBalanceIncrease(IERC20(asset()).balanceOf(address(this)));
+        SafeERC20.safeTransfer(IERC20(asset()), address(ar), IERC20(asset()).balanceOf(address(this)));
 
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
         ar.sendRplToDistributors();
@@ -108,10 +106,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
-        require(balanceRpl >= assets, 'Not enough liquidity to withdraw');
+        require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
         // required violation of CHECKS/EFFECTS/INTERACTIONS
-
-        balanceRpl -= assets;
 
         super._withdraw(caller, receiver, owner, assets, shares);
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
@@ -123,7 +119,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
-        return (balanceRpl +
+        return (IERC20(asset()).balanceOf(address(this)) +
             AssetRouter(_directory.getAssetRouterAddress()).getTvlRpl() +
             OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl());
     }
@@ -140,7 +136,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 fullBalance = totalAssets() + deposit;
         uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
-        return requiredBalance > currentBalance ? requiredBalance : 0;
+        return requiredBalance > currentBalance ? requiredBalance - currentBalance: 0;
     }
 
     /**
@@ -197,21 +193,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
         // rebalance entire balance of the contract to ensure the new liquidity reserve is respected
         AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
-        ar.onRplBalanceIncrease(balanceRpl);
-        SafeERC20.safeTransfer(IERC20(asset()), address(ar), balanceRpl);
-        balanceRpl = 0;
+        ar.onRplBalanceIncrease(IERC20(asset()).balanceOf(address(this)));
+        SafeERC20.safeTransfer(IERC20(asset()), address(ar), IERC20(asset()).balanceOf(address(this)));
         ar.sendRplToDistributors();
-    }
-
-    function onRplBalanceIncrease(uint256 _amount) external onlyProtocol {
-        balanceRpl += _amount;
-        console.log("rplVault.onRplBalanceIncrease.balanceRpl", balanceRpl);
-        console.log("rplVault.onRplBalanceIncrease.balacneOf.rpl", IERC20(asset()).balanceOf(address(this)));
-    }
-
-    function onRplBalanceDecrease(uint256 _amount) external onlyProtocol {
-        balanceRpl -= _amount;
-        console.log("rplVault.onRplBalanceDecrease.", balanceRpl);
     }
 
     /// Calculates the treasury portion of a specific RPL reward amount.

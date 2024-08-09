@@ -33,8 +33,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public treasuryFee; // Treasury fee in basis points
     uint256 public nodeOperatorFee; // NO fee in basis points
 
-    uint256 public balanceWeth;
-
     uint256 public totalCounts;
     uint256 public totalPenaltyBond;
     uint256 public penaltyBondCount;
@@ -113,12 +111,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
-        console.log('balanceWeth on withdraw xrETH',balanceWeth);
-        require(balanceWeth >= assets, 'Not enough liquidity to withdraw');
+        require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
         OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
-
-
-        balanceWeth -= assets;
 
         AssetRouter(_directory.getAssetRouterAddress()).sendEthToDistributors();
 
@@ -167,7 +161,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         (uint256 distributableYield, bool signed) = getDistributableYield();
         return (
             uint256(
-                int(balanceWeth + ar.getTvlEth() + od.getTvlEth()) +
+                int(IERC20(asset()).balanceOf(address(this)) + ar.getTvlEth() + od.getTvlEth()) +
                     (signed ? -int(distributableYield) : int(distributableYield))
             )
         );
@@ -202,8 +196,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns (uint256) {
         uint256 fullBalance = totalAssets() + deposit;
+        uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
-        return requiredBalance > balanceWeth ? requiredBalance - balanceWeth: 0;
+        return requiredBalance > currentBalance ? requiredBalance - currentBalance: 0;
     }
 
     /**
@@ -283,17 +278,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         // rebalance entire balance of the contract to ensure the new liquidity reserve is respected
         AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
-        ar.onWethBalanceIncrease(balanceWeth);
-        SafeERC20.safeTransfer(IERC20(asset()), address(ar), balanceWeth);
-        balanceWeth = 0;
+        ar.onWethBalanceIncrease(IERC20(asset()).balanceOf(address(this)));
+        SafeERC20.safeTransfer(IERC20(asset()), address(ar), IERC20(asset()).balanceOf(address(this)));
         ar.sendEthToDistributors();
-    }
-
-    function onWethBalanceIncrease(uint256 _amount) external onlyProtocol {
-        balanceWeth += _amount;
-    }
-
-    function onWethBalanceDecrease(uint256 _amount) external onlyProtocol {
-        balanceWeth -= _amount;
     }
 }

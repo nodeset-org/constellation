@@ -95,7 +95,7 @@ contract AssetRouter is UpgradeableBase {
         uint256 requiredCapital = vweth.getRequiredCollateral();
         if (balanceEthAndWeth >= requiredCapital) {
             balanceEthAndWeth -= requiredCapital;
-            vweth.onWethBalanceIncrease(requiredCapital);
+
             SafeERC20.safeTransfer(weth, address(vweth), requiredCapital);
 
             uint256 surplus = balanceEthAndWeth;
@@ -108,7 +108,7 @@ contract AssetRouter is UpgradeableBase {
         } else {
             uint256 shortfall = balanceEthAndWeth;
             balanceEthAndWeth = 0;
-            vweth.onWethBalanceIncrease(shortfall);
+
             SafeERC20.safeTransfer(IERC20(address(weth)), address(vweth), shortfall);
         }
     }
@@ -130,7 +130,6 @@ contract AssetRouter is UpgradeableBase {
 
             balanceRpl -= requiredCapital;
             SafeERC20.safeTransfer(IERC20(address(rpl)), address(vrpl), requiredCapital);
-            vrpl.onRplBalanceIncrease(requiredCapital);
 
             uint256 surplus = balanceRpl;
 
@@ -141,7 +140,6 @@ contract AssetRouter is UpgradeableBase {
             uint256 shortfall = balanceRpl;
             balanceRpl = 0;
             SafeERC20.safeTransfer(IERC20(address(rpl)), address(vrpl), shortfall);
-            vrpl.onRplBalanceIncrease(shortfall);
         }
     }
 
