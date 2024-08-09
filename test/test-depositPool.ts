@@ -4,7 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber as BN } from "ethers";
-import { assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract, registerNewValidator, createMerkleSig } from "./utils/utils";
+import { assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract, registerNewMinipools, createMerkleSig } from "./utils/utils";
 import { parseRewardsMap } from "./utils/merkleClaim";
 import { submitRewards } from "./rocketpool/rewards/scenario-submit-rewards";
 
@@ -17,7 +17,7 @@ describe(`AssetRouter`, () => {
             const { protocol, signers, rocketPool: rp } = setupData;
 
             await prepareOperatorDistributionContract(setupData, 2);
-            await registerNewValidator(setupData, [signers.random]);
+            await registerNewMinipools(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
             await rp.rplContract.connect(signers.rplWhale).transfer(protocol.assetRouter.address, amountStaked);
@@ -38,7 +38,7 @@ describe(`AssetRouter`, () => {
             const { protocol, signers, rocketPool: rp } = setupData;
 
             await prepareOperatorDistributionContract(setupData, 2);
-            await registerNewValidator(setupData, [signers.random]);
+            await registerNewMinipools(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
             await rp.rplContract.connect(signers.rplWhale).transfer(protocol.assetRouter.address, amountStaked);
@@ -73,7 +73,7 @@ describe(`AssetRouter`, () => {
     
             // Set up the distribution contract and register new validators
             await prepareOperatorDistributionContract(setupData, 2);
-            await registerNewValidator(setupData, [signers.random, signers.random2]);
+            await registerNewMinipools(setupData, [signers.random, signers.random2]);
     
             // Rewards data setup
             const rewards = [

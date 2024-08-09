@@ -312,8 +312,9 @@ export async function increaseEVMTime(seconds: number) {
  * then creates and stakes one minipool for each of them.
  * @param setupData 
  * @param subNodeOperators
+ * @returns array of addresses of the new minipools
  */
-export const registerNewValidator = async (setupData: SetupData, subNodeOperators: SignerWithAddress[]) => {
+export const registerNewMinipools = async (setupData: SetupData, subNodeOperators: SignerWithAddress[]) => {
   const requiredEth = ethers.utils.parseEther('8').mul(subNodeOperators.length);
 
   const { protocol, signers } = setupData;

@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
-import { assertAddOperator, evaluateModel, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, registerNewValidator } from "./utils/utils";
+import { assertAddOperator, evaluateModel, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, registerNewMinipools } from "./utils/utils";
 
 describe("Yield Distributor", function () {
   describe("Setters", function () {
@@ -47,7 +47,7 @@ describe("Yield Distributor", function () {
 
     const operators = [signers.random, signers.random2, signers.random3];
     await prepareOperatorDistributionContract(setupData, 3);
-    await registerNewValidator(setupData, operators);
+    await registerNewMinipools(setupData, operators);
 
     const expectedReward = ethers.BigNumber.from("333333333333333332");
 
@@ -90,7 +90,7 @@ describe("Yield Distributor", function () {
     await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
 
     await prepareOperatorDistributionContract(setupData, 3);
-    await registerNewValidator(setupData, [signers.random, signers.random2, signers.random3]);
+    await registerNewMinipools(setupData, [signers.random, signers.random2, signers.random3]);
 
     // update operator controllers for each operator
     await protocol.whitelist.connect(signers.random).setOperatorController(signers.random4.address);

@@ -3,11 +3,40 @@ import { ethers, upgrades } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber as BN } from "ethers";
-import { computeKeccak256FromBytes32, prepareOperatorDistributionContract, printEventDetails, registerNewValidator, upgradePriceFetcherToMock } from "./utils/utils";
+import { computeKeccak256FromBytes32, prepareOperatorDistributionContract, printEventDetails, registerNewMinipools, upgradePriceFetcherToMock } from "./utils/utils";
 import { IMinipool, MockMinipool } from "../typechain-types";
-import { RocketDepositPool } from "./rocketpool/_utils/artifacts";
+import { RocketDepositPool, RocketMinipoolDelegate } from "./rocketpool/_utils/artifacts";
+import { protocol } from "../typechain-types/contracts/Testing/Rocketpool/contract/dao";
 
 describe("Operator Distributor", function () {
+
+	it("Processes minipool rewards correctly even when an external user calls distributeBalance", async function (){
+		const setupData = await loadFixture(protocolFixture);
+		const { protocol, signers, rocketPool } = setupData;
+		const { operatorDistributor } = protocol;
+
+		// create 1 minipool
+		await prepareOperatorDistributionContract(setupData, 1);
+		const minipools = await registerNewMinipools(setupData, [signers.random]);
+
+		const priorAssets = await protocol.vCWETH.totalAssets();
+
+		// simulate rewards to minipool contract from beacon
+		const reward = ethers.utils.parseEther("1");
+		const xrETHPortion = await protocol.vCWETH.getRemainderAfterFees(reward);
+		await signers.ethWhale.sendTransaction({
+			to: minipools[0],
+			value: reward
+		  })
+		
+		// random person distributes the balance to increase nodeRefundBalance
+		await (await ethers.getContractAt("IMinipool", minipools[0])).connect(signers.random).distributeBalance(true);
+
+		// protocol sweeps in rewards
+		await protocol.operatorDistributor.connect(signers.random).processNextMinipool();
+		
+		expect(await protocol.vCWETH.totalAssets()).to.equal(priorAssets.add(xrETHPortion));
+	});
 
 	it("Tops up the RPL stake if it is below the minimum", async function () {
 		// load fixture
@@ -26,7 +55,7 @@ describe("Operator Distributor", function () {
 
 		console.log('amount staked after prep', await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address));
 		// create 2 minipools
-		await registerNewValidator(setupData, [signers.random, signers.random2]);
+		await registerNewMinipools(setupData, [signers.random, signers.random2]);
 
 		// send rpl to the operator distributor
 		const rplAmount = ethers.utils.parseEther("1000");
@@ -72,7 +101,7 @@ describe("Operator Distributor", function () {
 		const initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
 		expect(initialRplStake).equals(0)
 		await prepareOperatorDistributionContract(setupData, 1);
-		await registerNewValidator(setupData, [signers.random]);
+		await registerNewMinipools(setupData, [signers.random]);
 
 		const price = await protocol.priceFetcher.getPrice();
 		const expectedStake = ethers.utils.parseEther("8").mul(price);
@@ -98,7 +127,7 @@ describe("Operator Distributor", function () {
 		let initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
 		expect(initialRplStake).equals(0)
 		await prepareOperatorDistributionContract(setupData, 1);
-		await registerNewValidator(setupData, [signers.random]);
+		await registerNewMinipools(setupData, [signers.random]);
 		console.log("p=rpl stake after depo", await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address));
 
 		let price = await protocol.priceFetcher.getPrice();
@@ -124,7 +153,7 @@ describe("Operator Distributor", function () {
 		let initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
 		expect(initialRplStake).equals(0)
 		await prepareOperatorDistributionContract(setupData, 2);
-		await registerNewValidator(setupData, [signers.random]);
+		await registerNewMinipools(setupData, [signers.random]);
 		console.log("p=rpl stake after depo", await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address));
 
 		let price = await protocol.priceFetcher.getPrice();

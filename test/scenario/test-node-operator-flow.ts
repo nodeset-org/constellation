@@ -8,7 +8,7 @@ import { Signers } from "../test";
 import { RocketPool } from "../test";
 import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault, IWETH, RocketMinipoolInterface } from "../../typechain-types";
 import { OperatorStruct } from "../protocol-types/types";
-import { deployRPMinipool, registerNewValidator, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances, assertAddOperator, deployMinipool, increaseEVMTime } from "../utils/utils";
+import { deployRPMinipool, registerNewMinipools, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances, assertAddOperator, deployMinipool, increaseEVMTime } from "../utils/utils";
 import { generateDepositDataForStake } from "../rocketpool/_helpers/minipool";
 
 
@@ -191,7 +191,7 @@ describe("Node Operator Onboarding", function () {
             RPLbalancesBefore.push(allAddresses[i].name + " - " + await rocketPool.rplContract.balanceOf(allAddresses[i].address));
         }
 
-        registerNewValidator(setupData, [signers.hyperdriver]);
+        registerNewMinipools(setupData, [signers.hyperdriver]);
 
         //await ethers.connect(setupData.signers.ethWhale).transfer(, ethers.utils.parseEther("1"))l
 

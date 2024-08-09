@@ -215,6 +215,12 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         return getRequiredCollateralAfterDeposit(0);
     }
 
+    /// @notice Gets the amount of TVL increase expected from a specified amount of income after fees are taken
+    /// @param income the income expected
+    function getRemainderAfterFees(uint256 income) public view returns (uint256) {
+        return income - income.mulDiv((treasuryFee + nodeOperatorFee), 1e18);
+    }
+
     /**ADMIN FUNCTIONS */
 
     /**

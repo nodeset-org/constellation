@@ -4,7 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { expectNumberE18ToBeApproximately, getEventNames, prepareOperatorDistributionContract, registerNewValidator, upgradePriceFetcherToMock, whitelistUserServerSig } from "./utils/utils";
+import { expectNumberE18ToBeApproximately, getEventNames, prepareOperatorDistributionContract, registerNewMinipools, upgradePriceFetcherToMock, whitelistUserServerSig } from "./utils/utils";
 import { ContractTransaction } from "@ethersproject/contracts";
 import { wEth } from "../typechain-types/factories/contracts/Testing";
 
@@ -115,7 +115,7 @@ describe("xrETH", function () {
     const { protocol, signers, rocketPool } = setupData;
     
     const initialDeposit = await prepareOperatorDistributionContract(setupData, 1);
-		const minipools = await registerNewValidator(setupData, [signers.random]);
+		const minipools = await registerNewMinipools(setupData, [signers.random]);
 
     const depositAmount = ethers.utils.parseEther("100");
     const totalDeposit = initialDeposit.add(depositAmount);
@@ -209,7 +209,7 @@ describe("xrETH", function () {
     const { protocol, signers, rocketPool } = setupData;
     
     const initialDeposit = await prepareOperatorDistributionContract(setupData, 1);
-		const minipools = await registerNewValidator(setupData, [signers.random]);
+		const minipools = await registerNewMinipools(setupData, [signers.random]);
 
     const depositAmount = ethers.utils.parseEther("100");
     const totalDeposit = initialDeposit.add(depositAmount);
@@ -290,7 +290,7 @@ describe("xrETH", function () {
     const { protocol, signers, rocketPool } = setupData;
     
     const initialDeposit = await prepareOperatorDistributionContract(setupData, 1);
-		const minipools = await registerNewValidator(setupData, [signers.random]);
+		const minipools = await registerNewMinipools(setupData, [signers.random]);
 
     const depositAmount = ethers.utils.parseEther("100");
     const totalDeposit = initialDeposit.add(depositAmount);
