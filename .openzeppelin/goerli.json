@@ -1173,80 +1173,80 @@
             "offset": 0,
             "slot": "103",
             "type": "t_uint256",
-            "contract": "YieldDistributor",
-            "src": "contracts/Operator/YieldDistributor.sol:33"
+            "contract": "NodeSetOperatorRewardDistributor",
+            "src": "contracts/Operator/NodeSetOperatorRewardDistributor.sol:33"
           },
           {
             "label": "yieldAccruedInInterval",
             "offset": 0,
             "slot": "104",
             "type": "t_uint256",
-            "contract": "YieldDistributor",
-            "src": "contracts/Operator/YieldDistributor.sol:34"
+            "contract": "NodeSetOperatorRewardDistributor",
+            "src": "contracts/Operator/NodeSetOperatorRewardDistributor.sol:34"
           },
           {
             "label": "dustAccrued",
             "offset": 0,
             "slot": "105",
             "type": "t_uint256",
-            "contract": "YieldDistributor",
-            "src": "contracts/Operator/YieldDistributor.sol:35"
+            "contract": "NodeSetOperatorRewardDistributor",
+            "src": "contracts/Operator/NodeSetOperatorRewardDistributor.sol:35"
           },
           {
             "label": "claims",
             "offset": 0,
             "slot": "106",
             "type": "t_mapping(t_uint256,t_struct(Claim)14049_storage)",
-            "contract": "YieldDistributor",
-            "src": "contracts/Operator/YieldDistributor.sol:37"
+            "contract": "NodeSetOperatorRewardDistributor",
+            "src": "contracts/Operator/NodeSetOperatorRewardDistributor.sol:37"
           },
           {
             "label": "hasClaimed",
             "offset": 0,
             "slot": "107",
             "type": "t_mapping(t_address,t_mapping(t_uint256,t_bool))",
-            "contract": "YieldDistributor",
-            "src": "contracts/Operator/YieldDistributor.sol:38"
+            "contract": "NodeSetOperatorRewardDistributor",
+            "src": "contracts/Operator/NodeSetOperatorRewardDistributor.sol:38"
           },
           {
             "label": "currentInterval",
             "offset": 0,
             "slot": "108",
             "type": "t_uint256",
-            "contract": "YieldDistributor",
-            "src": "contracts/Operator/YieldDistributor.sol:40"
+            "contract": "NodeSetOperatorRewardDistributor",
+            "src": "contracts/Operator/NodeSetOperatorRewardDistributor.sol:40"
           },
           {
             "label": "currentIntervalGenesisTime",
             "offset": 0,
             "slot": "109",
             "type": "t_uint256",
-            "contract": "YieldDistributor",
-            "src": "contracts/Operator/YieldDistributor.sol:41"
+            "contract": "NodeSetOperatorRewardDistributor",
+            "src": "contracts/Operator/NodeSetOperatorRewardDistributor.sol:41"
           },
           {
             "label": "maxIntervalLengthSeconds",
             "offset": 0,
             "slot": "110",
             "type": "t_uint256",
-            "contract": "YieldDistributor",
-            "src": "contracts/Operator/YieldDistributor.sol:42"
+            "contract": "NodeSetOperatorRewardDistributor",
+            "src": "contracts/Operator/NodeSetOperatorRewardDistributor.sol:42"
           },
           {
             "label": "k",
             "offset": 0,
             "slot": "111",
             "type": "t_uint256",
-            "contract": "YieldDistributor",
-            "src": "contracts/Operator/YieldDistributor.sol:44"
+            "contract": "NodeSetOperatorRewardDistributor",
+            "src": "contracts/Operator/NodeSetOperatorRewardDistributor.sol:44"
           },
           {
             "label": "maxValidators",
             "offset": 0,
             "slot": "112",
             "type": "t_uint256",
-            "contract": "YieldDistributor",
-            "src": "contracts/Operator/YieldDistributor.sol:45"
+            "contract": "NodeSetOperatorRewardDistributor",
+            "src": "contracts/Operator/NodeSetOperatorRewardDistributor.sol:45"
           }
         ],
         "types": {

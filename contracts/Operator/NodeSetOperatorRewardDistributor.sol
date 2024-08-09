@@ -17,14 +17,14 @@ import './SuperNodeAccount.sol';
 import 'hardhat/console.sol';
 
 /**
- * @title YieldDistributor
- * @author Mike Leach
+ * @title NodeSetOperatorRewardDistributor
+ * @author Mike Leach, Theodore Clapp
  * @dev Distributes earned rewards to a decentralized operator set using a proof-of-authority model.
  * This is the first step for a rewards system, and future versions may be entirely on-chain using ZK-proofs of
  * beacon state information to check perforance data, validator status, etc. Currently, Rocket Pool fully trusts the oDAO
  * to handle rewards, however, so there is no point in this work until this is resolved at the base layer..
  */
-contract YieldDistributor is UpgradeableBase {
+contract NodeSetOperatorRewardDistributor is UpgradeableBase {
     event RewardDistributed(address _rewardee);
     event EthReceived(uint256);
 
@@ -46,7 +46,7 @@ contract YieldDistributor is UpgradeableBase {
      * @notice Distributes rewards accrued for a specific rewardee.
      * @param _sig The claim data, including amount and the authoritative signature
      */
-    function claimRewards(bytes calldata _sig, address _rewardee, uint256 _amount) public nonReentrant {
+    function claimRewards(bytes calldata _sig, address _token, address _rewardee, uint256 _amount) public nonReentrant {
         require(_rewardee != address(0), 'rewardee cannot be zero address');
         Whitelist whitelist = getWhitelist();
         Operator memory operator = getWhitelist().getOperatorAtAddress(_rewardee);
@@ -58,7 +58,7 @@ contract YieldDistributor is UpgradeableBase {
 
         address recoveredAddress = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(
-                keccak256(abi.encodePacked(_rewardee, _amount, nonces[_rewardee], address(this), block.chainid))
+                keccak256(abi.encodePacked(_token, _rewardee, _amount, nonces[_rewardee], address(this), block.chainid))
             ),
             _sig
         );
@@ -68,8 +68,12 @@ contract YieldDistributor is UpgradeableBase {
         );
 
         // send eth to rewardee
-        (bool success, ) = operator.operatorController.call{value: _amount}('');
-        require(success, '_rewardee failed to claim');
+        if (_token == address(0)) {
+            (bool success, ) = _rewardee.call{value: _amount}('');
+            require(success, '_rewardee failed to claim');
+        } else {
+            
+        }
 
         nonces[_rewardee]++;
 

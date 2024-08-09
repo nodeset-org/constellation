@@ -60,7 +60,6 @@ describe("Whitelist", function () {
         const operator = [
             timestamp,
             0,
-            0,
         ];
 
         const {sig, timestamp: timestamp2} = await whitelistUserServerSig(setupData, signers.random);

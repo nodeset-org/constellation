@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 import '../UpgradeableBase.sol';
-import '../Operator/YieldDistributor.sol';
+import '../Operator/NodeSetOperatorRewardDistributor.sol';
 import '../Operator/SuperNodeAccount.sol';
 import '../Utils/Constants.sol';
 
@@ -12,7 +12,6 @@ import '../Utils/Constants.sol';
 struct Operator {
     uint256 operationStartTime;
     uint256 activeValidatorCount;
-    address operatorController; // designated address to control the node operator's settings and collect rewards
 }
 
 /**
@@ -149,7 +148,7 @@ contract Whitelist is UpgradeableBase {
 
         numOperators++;
 
-        Operator memory operator = Operator(block.timestamp, 0, _operator);
+        Operator memory operator = Operator(block.timestamp, 0);
 
         nodeMap[_operator] = operator;
         nodeIndexMap[numOperators] = _operator;
@@ -170,7 +169,7 @@ contract Whitelist is UpgradeableBase {
 
     /// @notice Internal function to remove an operator from the whitelist.
     /// @dev This function is used internally to remove an operator from the whitelist, including updating permissions, clearing operator data,
-    ///      and notifying the OperatorDistributor and YieldDistributor contracts.
+    ///      and notifying the OperatorDistributor and NodeSetOperatorRewardDistributor contracts.
     /// @param nodeOperator The address of the operator to be removed.
     function _removeOperator(address nodeOperator) internal {
         _permissions[nodeOperator] = false;
@@ -222,23 +221,6 @@ contract Whitelist is UpgradeableBase {
             _removeOperator(operators[i]);
         }
         emit OperatorsRemoved(operators);
-    }
-
-    /// @notice Sets the operator controller for a node operator.
-    /// @dev This function allows a node operator or their authorized controller to set a new operator controller address.
-    ///      The function updates the mapping of operator controllers to node addresses and emits the 'OperatorControllerUpdated' event.
-    /// @param controller The address of the new operator controller.
-    /// @dev Throws an error if the sender is not the current operator controller for the specified node.
-    function setOperatorController(address controller) public {
-        address node = operatorControllerToNodeMap[msg.sender];
-        if (node == address(0)) {
-            node = msg.sender;
-        }
-        require(msg.sender == nodeMap[node].operatorController, Constants.OPERATOR_CONTROLLER_SET_FORBIDDEN_ERROR);
-        nodeMap[node].operatorController = controller;
-        operatorControllerToNodeMap[controller] = node;
-        operatorControllerToNodeMap[msg.sender] = address(0);
-        emit OperatorControllerUpdated(msg.sender, controller);
     }
 
     //----

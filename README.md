@@ -49,7 +49,7 @@ This repository contains Solidity smart contracts for Constellation, a second la
 12. **RPLVault.sol**
     - An ERC4626 vault for RPL tokens, managing deposits, withdrawals, and rewards distribution.
 
-13. **YieldDistributor.sol**
+13. **NodeSetOperatorRewardDistributor.sol**
     - Distributes rewards to node operators.
 
 14. **SuperNodeAccount.sol**
@@ -109,14 +109,14 @@ The protocol involves several actors, each with specific roles and incentives to
      - Data Provision Fees
      - Network Trust
 
-### Using the YieldDistributor
-The YieldDistributor is a crucial component of the system that handles the distribution of rewards (yield) to various participants, primarily the node operators. Here’s an in-depth look at how it works, who uses it, and how it is used.
+### Using the NodeSetOperatorRewardDistributor
+The NodeSetOperatorRewardDistributor is a crucial component of the system that handles the distribution of rewards (yield) to various participants, primarily the node operators. Here’s an in-depth look at how it works, who uses it, and how it is used.
 
-#### Who Uses the YieldDistributor?
+#### Who Uses the NodeSetOperatorRewardDistributor?
 - **Node Operators**: Claim their earned rewards based on their contributions to the network.
-- **Smart Contracts**: Other contracts within the protocol will send ETH to the YieldDistributor to manage rewards distribution in an automated manner.
+- **Smart Contracts**: Other contracts within the protocol will send ETH to the NodeSetOperatorRewardDistributor to manage rewards distribution in an automated manner.
 
-#### How the YieldDistributor is Used
+#### How the NodeSetOperatorRewardDistributor is Used
 1. **Harvesting Rewards**
    - **Function**: `harvest(address _rewardee, Claim claim)`
    - **Purpose**: Allow node operators to claim their rewards.

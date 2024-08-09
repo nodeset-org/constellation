@@ -4,7 +4,7 @@ import path from 'path';
 import { getNextContractAddress } from "../../test/utils/utils";
 import { getInitializerData } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import readline from 'readline';
-import { Treasury, Directory, AssetRouter, IRocketStorage, IBeaconOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, YieldDistributor, PoABeaconOracle } from "../../typechain-types";
+import { Treasury, Directory, AssetRouter, IRocketStorage, IBeaconOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, NodeSetOperatorRewardDistributor, PoABeaconOracle } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Protocol, Signers } from "../../test/test";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
@@ -106,7 +106,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
     })
 
     const yieldDistributorProxy = await retryOperation(async function () {
-        const yd = await upgrades.deployProxy(await ethers.getContractFactory("YieldDistributor", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        const yd = await upgrades.deployProxy(await ethers.getContractFactory("NodeSetOperatorRewardDistributor", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         if (log) console.log("yield distributor deployed to", yd.address)
         return yd
     })
@@ -192,7 +192,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
         vCRPL: vCRPLProxy as RPLVault,
         depositPool: depositPoolProxy as AssetRouter,
         operatorDistributor: operatorDistributorProxy as OperatorDistributor,
-        yieldDistributor: yieldDistributorProxy as YieldDistributor,
+        yieldDistributor: yieldDistributorProxy as NodeSetOperatorRewardDistributor,
         priceFetcher: priceFetcherProxy as PriceFetcher,
         oracle: oracleProxy as PoABeaconOracle,
         superNode: superNodeProxy as SuperNodeAccount,
