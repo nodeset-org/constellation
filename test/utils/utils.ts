@@ -545,7 +545,6 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   console.log('rplRequired', rplRequired);
   const protocolSigner = setupData.signers.protocolSigner;
   await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequired);
-  await setupData.protocol.operatorDistributor.connect(protocolSigner).onRplBalanceIncrease(rplRequired)
 
   return requiredEth;
 }

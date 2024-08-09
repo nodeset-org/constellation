@@ -96,7 +96,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         // Initialize the vault and operator distributor addresses
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
-        OperatorDistributor operatorDistributor = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
 
         uint256 requiredWeth = vweth.getRequiredCollateral();
         uint256 wethBalance = IERC20(address(weth)).balanceOf(address(this));
@@ -104,9 +103,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         if (balanceEthAndWeth >= requiredWeth) { 
             // there's extra ETH that can be kept here for minipools, so only send required amount
             // figure out how much to wrap, then wrap it
-            uint256 wrapNeeded = wethBalance > requiredWeth ? wethBalance : 0;
-            weth.deposit{value: wrapNeeded}();
-            // send amount needed
+            uint256 wrapNeeded = requiredWeth > wethBalance ? requiredWeth - wethBalance : 0;
+            console.log("balanceEthAndWeth", balanceEthAndWeth);
+            console.log("wethBalance", wethBalance);
+            console.log("requiredWeth", requiredWeth);
+            console.log("wrapNeeded", wrapNeeded);
+            if(wrapNeeded != 0) 
+                weth.deposit{value: wrapNeeded}();
+            // send amount needed to vault
             SafeERC20.safeTransfer(weth, address(vweth), requiredWeth);
             // unwrap the remaining balance to keep for minipool creation
             weth.withdraw(IERC20(address(weth)).balanceOf(address(this)));
@@ -124,7 +128,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         // Initialize the RPLVault and the Operator Distributor addresses
         RPLVault vrpl = RPLVault(getDirectory().getRPLVaultAddress());
-        OperatorDistributor operatorDistributor = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
+
         IERC20 rpl = IERC20(_directory.getRPLAddress());
         uint256 rplBalance = rpl.balanceOf(address(this));
 
@@ -165,22 +169,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         uint256 xrETHPortion = rewardAmount - treasuryPortion - nodeOperatorPortion;
 
-        IWETH(getDirectory().getWETHAddress()).deposit{value: xrETHPortion}();
-
         if(updateOracleError){
             OperatorDistributor(getDirectory().getOperatorDistributorAddress()).onIncreaseOracleError(xrETHPortion);
         }
-    }
-
-    /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode 
-    /// withdrawal address for both ETH and RPL from Rocket Pool.
-    /// Only takes in ETH and sends to WETHVault/OperatorDistributor depending on liquidity conditions based on the 
-    /// bondAmount expected. Does NOT take fees.
-    function onEthBondReceived(uint256 bondAmount) public onlyProtocol {
-        if(bondAmount == 0)
-            return;
-
-        IWETH(getDirectory().getWETHAddress()).deposit{value: bondAmount}();
     }
 
     /// @notice Called by the protocol when RPL rewards are distributed to this contract, which acts as the SuperNode 
@@ -195,12 +186,12 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Returns the total ETH managed by the contract, including both the balance of this contract 
+     * @notice Returns the total ETH and WETH managed by the contract, including both the ETH+WETH balances of this contract 
      * and the SuperNode's staked ETH.
      * @return uint256 Total amount of ETH under the management of the contract.
      */
     function getTvlEth() public view returns (uint) {
-        return address(this).balance + SuperNodeAccount(_directory.getSuperNodeAddress()).getTotalEthStaked();
+        return address(this).balance + IWETH(_directory.getWETHAddress()).balanceOf(address(this)) + SuperNodeAccount(_directory.getSuperNodeAddress()).getTotalEthStaked();
     }
 
     /**
@@ -217,8 +208,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @param _bond The amount of ETH required to be staked for the minipool.
      */
     function provisionLiquiditiesForMinipoolCreation(uint256 _bond) external onlyProtocol {
-        IWETH weth = IWETH(_directory.getWETHAddress());
-
         rebalanceWethVault();
         rebalanceRplVault();
 
@@ -397,28 +386,23 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
 
         if(balanceAfterRefund >= depositBalance) { // it's an exit, and any extra nodeShare is rewards
-            console.log("MINIPOOL STATUS: exited");
-            uint256 remainingBond = minipool.calculateNodeShare(balanceAfterRefund) < depositBalance ? minipool.calculateNodeShare(balanceAfterRefund) : depositBalance;
             rewards = minipool.calculateNodeShare(balanceAfterRefund) > depositBalance ? minipool.calculateNodeShare(balanceAfterRefund) - depositBalance : 0;  
-            console.log('exit rewards expected', rewards);
-            console.log('node share of bond', minipool.calculateNodeShare(balanceAfterRefund));
             // withdrawal address calls distributeBalance(false)
             minipool.distributeBalance(false);
             // stop tracking
             this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
             // both bond and rewards are received
-            onEthRewardsReceived(rewards, treasuryFee, noFee, true);
-            onEthBondReceived(remainingBond);
+            this.onEthRewardsReceived(rewards, treasuryFee, noFee, true);
         } else if (balanceAfterRefund < depositBalance) { // it's still staking
             console.log("MINIPOOL STATUS: still staking");
             rewards = minipool.calculateNodeShare(balanceAfterRefund);
             // withdrawal address calls distributeBalance(true)
             minipool.distributeBalance(true);
             // calculate only rewards
-            onEthRewardsReceived(rewards, treasuryFee, noFee, true);
+            this.onEthRewardsReceived(rewards, treasuryFee, noFee, true);
         }
-        console.log('rewards recieved', rewards);   
-        rebalanceWethVault();
+ 
+        this.rebalanceWethVault();
     }
 
     /**
@@ -471,4 +455,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     function onIncreaseOracleError(uint256 _amount) external onlyProtocol {
         oracleError += _amount;
     }
+
+    receive() external payable {}
 }

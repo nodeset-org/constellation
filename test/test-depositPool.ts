@@ -20,10 +20,10 @@ describe(`AssetRouter`, () => {
             await registerNewValidator(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
-            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.assetRouter.address, amountStaked);
+            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.operatorDistributor.address, amountStaked);
 
             const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
-            await protocol.assetRouter.connect(signers.protocolSigner).stakeRpl(amountStaked)
+            await protocol.operatorDistributor.connect(signers.protocolSigner).stakeRpl(amountStaked)
             const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(finalStake.sub(initialStake)).equals(amountStaked);
@@ -41,10 +41,10 @@ describe(`AssetRouter`, () => {
             await registerNewValidator(setupData, [signers.random]);
 
             const amountStaked = ethers.utils.parseUnits("1000", await rp.rplContract.decimals());
-            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.assetRouter.address, amountStaked);
+            await rp.rplContract.connect(signers.rplWhale).transfer(protocol.operatorDistributor.address, amountStaked);
 
             const initialStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
-            await protocol.assetRouter.connect(signers.protocolSigner).stakeRpl(amountStaked)
+            await protocol.operatorDistributor.connect(signers.protocolSigner).stakeRpl(amountStaked)
             const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(finalStake.sub(initialStake)).equals(amountStaked);
@@ -55,7 +55,7 @@ describe(`AssetRouter`, () => {
 
             const amountUnstaked = ethers.utils.parseUnits("70", await rp.rplContract.decimals());
             const initialStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
-            await protocol.assetRouter.connect(signers.protocolSigner).unstakeRpl(amountUnstaked)
+            await protocol.operatorDistributor.connect(signers.protocolSigner).unstakeRpl(amountUnstaked)
             const finalStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(initialStake2.sub(finalStake2)).equals(amountUnstaked);

@@ -48,7 +48,7 @@ describe("xRPL", function () {
     }
 
     const expectedRplInDP = ethers.utils.parseEther("0");
-    const actualRplInDP = await rocketPool.rplContract.balanceOf(protocol.assetRouter.address);
+    const actualRplInDP = await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address);
     expect(expectedRplInDP).equals(actualRplInDP)
 
   })
@@ -116,8 +116,8 @@ describe("xRPL", function () {
     await protocol.vCRPL.connect(signers.random).deposit(depositAmount, signers.random.address);
 
     expect(await protocol.vCRPL.totalAssets()).equals(depositAmount)
-    expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault);
-    expect(await protocol.operatorDistributor.balanceRpl()).equals(surplusSentToOD);
+    expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).equals(expectedReserveInVault);
+    expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).equals(surplusSentToOD);
 
     const shareValue = await protocol.vCRPL.convertToAssets(ethers.utils.parseEther("1"))
     const expectedRedeemValue = await protocol.vCRPL.previewRedeem(shareValue);
@@ -126,19 +126,19 @@ describe("xRPL", function () {
     await protocol.vCRPL.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     let postBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
-    expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("1")))
+    expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).equals(expectedReserveInVault.sub(ethers.utils.parseEther("1")))
 
     preBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     await protocol.vCRPL.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     postBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
-    expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("2")))
+    expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).equals(expectedReserveInVault.sub(ethers.utils.parseEther("2")))
 
     preBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     await protocol.vCRPL.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     postBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
-    expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("3")))
+    expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).equals(expectedReserveInVault.sub(ethers.utils.parseEther("3")))
   })
 
   it("success - tries to deposit and redeem from weth vault multiple times after getting merkle rewards", async () => {
@@ -193,8 +193,8 @@ describe("xRPL", function () {
     ));
 
     expect(await protocol.vCRPL.totalAssets()).equals(depositAmount.add(expectedCommunityPortion))
-    expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault);
-    expect(await protocol.operatorDistributor.balanceRpl()).equals(surplusSentToOD);
+    expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).equals(expectedReserveInVault);
+    expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).equals(surplusSentToOD);
 
     const shareValue = await protocol.vCRPL.convertToAssets(ethers.utils.parseEther("1"))
     const expectedRedeemValue = await protocol.vCRPL.previewRedeem(shareValue);
@@ -234,7 +234,7 @@ describe("xRPL", function () {
 
 
     // incoming funds to DP
-    await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.assetRouter.address, ethers.utils.parseEther("10"));
+    await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.operatorDistributor.address, ethers.utils.parseEther("10"));
 
     // random should be able to withdraw shares worth 10% more, aka, withdraw will trade one share for 1.1 - 1% admin fee RPL
     // admin should be allowed to take 1% of the 10 RPL that landed

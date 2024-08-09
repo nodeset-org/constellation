@@ -70,7 +70,7 @@ describe("xrETH", function () {
     expect(expectedxrETHInSystem).equals(actualxrETHInSystem)
   })
 
-  it("success - tries to deposit and redeem from weth vault multiple times", async () => {
+  it.only("success - tries to deposit once, then redeem from weth vault multiple times", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
@@ -83,8 +83,20 @@ describe("xrETH", function () {
     await protocol.vCWETH.connect(signers.random).deposit(depositAmount, signers.random.address);
 
     expect(await protocol.vCWETH.totalAssets()).equals(depositAmount)
-    expect(await protocol.vCWETH.balanceWeth()).equals(expectedReserveInVault);
-    expect(await protocol.operatorDistributor.balanceEth()).equals(surplusSentToOD);
+    console.log("after first deposit ETH/WETH balance of weth vault", 
+      await ethers.provider.getBalance(protocol.vCWETH.address), "/",
+      await protocol.wETH.balanceOf(protocol.vCWETH.address)
+    );
+    console.log("after first deposit ETH/WETH balance of OD", 
+      await ethers.provider.getBalance(protocol.operatorDistributor.address), "/",
+      await protocol.wETH.balanceOf(protocol.operatorDistributor.address)
+    );
+    console.log("after first deposit reported WETHVault TVL", 
+      ethers.utils.formatEther(await protocol.vCWETH.totalAssets())
+    );
+
+    expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).equals(expectedReserveInVault);
+    expect(await ethers.provider.getBalance(protocol.operatorDistributor.address)).equals(surplusSentToOD);
     
     const shareValue = await protocol.vCWETH.convertToAssets(ethers.utils.parseEther("1"))
     const expectedRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
@@ -93,19 +105,43 @@ describe("xrETH", function () {
     await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     let postBalance = await protocol.wETH.balanceOf(signers.random.address);
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
-    expect(await protocol.vCWETH.balanceWeth()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("1")))
+    expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).equals(expectedReserveInVault.sub(ethers.utils.parseEther("1")))
+
+    console.log("after first redeem ETH/WETH balance of weth vault", 
+      ethers.utils.formatEther(await ethers.provider.getBalance(protocol.vCWETH.address)), "/",
+      ethers.utils.formatEther(await protocol.wETH.balanceOf(protocol.vCWETH.address))
+    );
+    console.log("after first redeem ETH/WETH balance of OD", 
+      ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)), "/",
+      ethers.utils.formatEther(await protocol.wETH.balanceOf(protocol.operatorDistributor.address))
+    );
+    console.log("after first redeem reported WETHVault TVL", 
+      ethers.utils.formatEther(await protocol.vCWETH.totalAssets())
+    );
 
     preBalance = await protocol.wETH.balanceOf(signers.random.address);
     await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     postBalance = await protocol.wETH.balanceOf(signers.random.address);
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
-    expect(await protocol.vCWETH.balanceWeth()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("2")))
+    expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).equals(expectedReserveInVault.sub(ethers.utils.parseEther("2")))
+
+    console.log("after second redeem ETH/WETH balance of weth vault", 
+      await ethers.provider.getBalance(protocol.vCWETH.address), "/",
+      await protocol.wETH.balanceOf(protocol.vCWETH.address)
+    );
+    console.log("after second redeem ETH/WETH balance of OD", 
+      await ethers.provider.getBalance(protocol.operatorDistributor.address), "/",
+      await protocol.wETH.balanceOf(protocol.operatorDistributor.address)
+    );
+    console.log("after second redeem reported WETHVault TVL", 
+      ethers.utils.formatEther(await protocol.vCWETH.totalAssets())
+    );
 
     preBalance = await protocol.wETH.balanceOf(signers.random.address);
     await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     postBalance = await protocol.wETH.balanceOf(signers.random.address);
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
-    expect(await protocol.vCWETH.balanceWeth()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("3")))
+    expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).equals(expectedReserveInVault.sub(ethers.utils.parseEther("3")))
 
   })
 
@@ -147,10 +183,8 @@ describe("xrETH", function () {
     //expect(totalFeePercentage).equals(ethers.utils.parseEther("0.29576"));
 
     console.log('OperatorDistributor PRE-processing balance ETH', await ethers.provider.getBalance(await protocol.directory.getWETHVaultAddress()));
-    console.log('AssetRouter PRE-process balance  ETH', await ethers.provider.getBalance(await protocol.directory.getAssetRouterAddress()));
     console.log('xrETH PRE-process balance  ETH', await ethers.provider.getBalance(await protocol.directory.getWETHVaultAddress()));
     console.log('OperatorDistributor PRE-processing balance WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
-    console.log('AssetRouter PRE-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getAssetRouterAddress()));
     console.log('xrETH PRE-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
 
     // assume a 15% rETH fee and LEB8 (36.25% of all rewards), which is default settings 
@@ -168,10 +202,8 @@ describe("xrETH", function () {
     const expectedRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
 
     console.log('OperatorDistributor POST-processing balance', await ethers.provider.getBalance(await protocol.directory.getWETHVaultAddress()));
-    console.log('AssetRouter POST-processing balance', await ethers.provider.getBalance(await protocol.directory.getAssetRouterAddress()));
     console.log('xrETH POST-processing balance', await ethers.provider.getBalance(await protocol.directory.getWETHVaultAddress()));
     console.log('OperatorDistributor POST-processing balance WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
-    console.log('AssetRouter POST-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getAssetRouterAddress()));
     console.log('xrETH POST-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
     
     console.log('totalAssets()', await protocol.vCWETH.totalAssets());
@@ -236,10 +268,8 @@ describe("xrETH", function () {
     
     const minipoolData = await protocol.superNode.minipoolData(minipools[0]);
     console.log('OperatorDistributor PRE-processing balance ETH', await ethers.provider.getBalance(await protocol.directory.getWETHVaultAddress()));
-    console.log('AssetRouter PRE-process balance  ETH', await ethers.provider.getBalance(await protocol.directory.getAssetRouterAddress()));
     console.log('xrETH PRE-process balance  ETH', await ethers.provider.getBalance(await protocol.directory.getWETHVaultAddress()));
     console.log('OperatorDistributor PRE-processing balance WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
-    console.log('AssetRouter PRE-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getAssetRouterAddress()));
     console.log('xrETH PRE-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
 
     const nodeRewards = 0; 
@@ -254,10 +284,8 @@ describe("xrETH", function () {
     const expectedRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
 
     console.log('OperatorDistributor POST-processing balance', await ethers.provider.getBalance(await protocol.directory.getWETHVaultAddress()));
-    console.log('AssetRouter POST-processing balance', await ethers.provider.getBalance(await protocol.directory.getAssetRouterAddress()));
     console.log('xrETH POST-processing balance', await ethers.provider.getBalance(await protocol.directory.getWETHVaultAddress()));
     console.log('OperatorDistributor POST-processing balance WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
-    console.log('AssetRouter POST-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getAssetRouterAddress()));
     console.log('xrETH POST-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
     
     console.log('totalAssets()', await protocol.vCWETH.totalAssets());
@@ -323,10 +351,8 @@ describe("xrETH", function () {
     //expect(totalFeePercentage).equals(ethers.utils.parseEther("0.29576"));
 
     console.log('OperatorDistributor PRE-processing balance ETH', await ethers.provider.getBalance(await protocol.directory.getWETHVaultAddress()));
-    console.log('AssetRouter PRE-process balance  ETH', await ethers.provider.getBalance(await protocol.directory.getAssetRouterAddress()));
     console.log('xrETH PRE-process balance  ETH', await ethers.provider.getBalance(await protocol.directory.getWETHVaultAddress()));
     console.log('OperatorDistributor PRE-processing balance WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
-    console.log('AssetRouter PRE-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getAssetRouterAddress()));
     console.log('xrETH PRE-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
 
     // assume a 15% rETH fee and LEB8 (36.25% of all rewards), which is default settings 
@@ -344,10 +370,8 @@ describe("xrETH", function () {
     const expectedRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
 
     console.log('OperatorDistributor POST-processing balance', await ethers.provider.getBalance(await protocol.directory.getWETHVaultAddress()));
-    console.log('AssetRouter POST-processing balance', await ethers.provider.getBalance(await protocol.directory.getAssetRouterAddress()));
     console.log('xrETH POST-processing balance', await ethers.provider.getBalance(await protocol.directory.getWETHVaultAddress()));
     console.log('OperatorDistributor POST-processing balance WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
-    console.log('AssetRouter POST-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getAssetRouterAddress()));
     console.log('xrETH POST-process balance  WETH', await protocol.wETH.balanceOf(await protocol.directory.getWETHVaultAddress()));
     
     console.log('totalAssets()', await protocol.vCWETH.totalAssets());

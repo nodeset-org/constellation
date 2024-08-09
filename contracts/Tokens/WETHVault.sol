@@ -88,7 +88,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Handles withdrawals from the vault, updating the position and distributing fees to operators and the treasury.
-     * @dev This function distributes the assets to the receiver and also transfers the assets from the AssetRouter as necessary.
+     * @dev This function distributes the assets to the receiver and also transfers the assets from the OperatorDistributor as necessary.
      * May revert if the liquidity reserves are too low.
      * @param caller The address initiating the withdrawal.
      * @param receiver The address designated to receive the withdrawn assets.

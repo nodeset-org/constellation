@@ -442,7 +442,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         require(block.timestamp - _config.sigGenesisTime < merkleClaimSigExpiry, 'merkle sig expired');
         merkleClaimNonce++;
         
-        OperatorDistributor od = OperatorDistributor(odAddress);
+        OperatorDistributor od = OperatorDistributor(payable(odAddress));
         od.onEthRewardsReceived(ethReward, _config.avgEthTreasuryFee, _config.avgEthOperatorFee, false);
         od.onRplRewardsRecieved(rplReward, _config.avgRplTreasuryFee);
         od.rebalanceRplVault();
