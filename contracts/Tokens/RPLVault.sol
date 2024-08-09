@@ -107,11 +107,14 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         }
         require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
         
+        
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        // first process a minipool to give the best chance at actually withdrawing
+        od.processNextMinipool();
+
         // required violation of CHECKS/EFFECTS/INTERACTIONS: need to change RPL balance here before rebalancing the rest of the protocol
         super._withdraw(caller, receiver, owner, assets, shares);
         
-        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        od.processNextMinipool();
         od.rebalanceRplVault();
     }
 

@@ -70,7 +70,7 @@ describe("xrETH", function () {
     expect(expectedxrETHInSystem).equals(actualxrETHInSystem)
   })
 
-  it.only("success - tries to deposit once, then redeem from weth vault multiple times", async () => {
+  it("success - tries to deposit once, then redeem from weth vault multiple times", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
@@ -94,6 +94,11 @@ describe("xrETH", function () {
     console.log("after first deposit reported WETHVault TVL", 
       ethers.utils.formatEther(await protocol.vCWETH.totalAssets())
     );
+    console.log("after first deposit WETH liquidity reserve expected", 
+      ethers.utils.formatEther(((await protocol.vCWETH.totalAssets())
+      .mul(await protocol.vCWETH.liquidityReservePercent())
+      .div(ethers.utils.parseEther("1")))
+    ));
 
     expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).equals(expectedReserveInVault);
     expect(await ethers.provider.getBalance(protocol.operatorDistributor.address)).equals(surplusSentToOD);
@@ -105,7 +110,13 @@ describe("xrETH", function () {
     await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     let postBalance = await protocol.wETH.balanceOf(signers.random.address);
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
-    expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).equals(expectedReserveInVault.sub(ethers.utils.parseEther("1")))
+    let expectedTotalAssets = depositAmount.sub(expectedRedeemValue);
+    expect(await protocol.vCWETH.totalAssets()).equals(expectedTotalAssets);
+    expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).equals(
+      ((await protocol.vCWETH.totalAssets())
+      .mul(await protocol.vCWETH.liquidityReservePercent())
+      .div(ethers.utils.parseEther("1"))
+    ));
 
     console.log("after first redeem ETH/WETH balance of weth vault", 
       ethers.utils.formatEther(await ethers.provider.getBalance(protocol.vCWETH.address)), "/",
@@ -123,7 +134,13 @@ describe("xrETH", function () {
     await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     postBalance = await protocol.wETH.balanceOf(signers.random.address);
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
-    expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).equals(expectedReserveInVault.sub(ethers.utils.parseEther("2")))
+    expectedTotalAssets = expectedTotalAssets.sub(expectedRedeemValue);
+    expect(await protocol.vCWETH.totalAssets()).equals(expectedTotalAssets);
+    expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).equals(
+      (await protocol.vCWETH.totalAssets())
+      .mul(await protocol.vCWETH.liquidityReservePercent())
+      .div(ethers.utils.parseEther("1"))
+    );
 
     console.log("after second redeem ETH/WETH balance of weth vault", 
       await ethers.provider.getBalance(protocol.vCWETH.address), "/",
@@ -141,7 +158,13 @@ describe("xrETH", function () {
     await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     postBalance = await protocol.wETH.balanceOf(signers.random.address);
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
-    expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).equals(expectedReserveInVault.sub(ethers.utils.parseEther("3")))
+    expectedTotalAssets = expectedTotalAssets.sub(expectedRedeemValue);
+    expect(await protocol.vCWETH.totalAssets()).equals(expectedTotalAssets);
+    expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).equals(
+      (await protocol.vCWETH.totalAssets())
+      .mul(await protocol.vCWETH.liquidityReservePercent())
+      .div(ethers.utils.parseEther("1"))
+    );
 
   })
 

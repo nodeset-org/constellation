@@ -109,11 +109,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         }
         require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        // first process a minipool to give the best chance at actually withdrawing
         od.processNextMinipool();
 
-        od.rebalanceWethVault();
-
+        // required violation of CHECKS/EFFECTS/INTERACTIONS: need to change WETH balance here before rebalancing the rest of the protocol
         super._withdraw(caller, receiver, owner, assets, shares);
+
+        od.rebalanceWethVault();
     }
 
     /**
