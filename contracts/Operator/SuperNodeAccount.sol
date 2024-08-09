@@ -345,8 +345,11 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     /**
      * @notice Closes a dissolved minipool and updates the tracking and financial records accordingly.
-     * @dev This function handles the administrative closure of a minipool, ensuring that the associated
-     *      records are updated.
+     * @dev This is one of the two ways that minipools can be removed from the system (the other being exits or scrubs, which are handled
+     * by processMinipool). Calling this is necessary to ensure that the associated minipool records are updated and ETH is pulled back
+     * into the system.
+     * In future versions, it may be brought into minipool processing to automate the process, but there are a lot of base layer
+     * implications to consider before closing, and it would increase gas for the tick.
      * @param _subNodeOperator Address of the sub-node operator associated with the minipool.
      * @param _minipool Address of the minipool to close.
      */
