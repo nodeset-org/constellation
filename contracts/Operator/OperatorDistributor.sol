@@ -317,6 +317,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             // withdrawal address calls distributeBalance(false)
             ar.onExitedMinipool(minipool);
             // stop tracking
+            sna.onMinipoolRemoved(address(minipool));
             this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
             // both bond and rewards are received
             ar.onEthRewardsAndBondReceived(rewards, remainingBond, treasuryFee, noFee, true);
