@@ -203,7 +203,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns (uint256) {
         uint256 fullBalance = totalAssets() + deposit;
         uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
-        return requiredBalance > balanceWeth ? requiredBalance : 0;
+        return requiredBalance > balanceWeth ? requiredBalance - balanceWeth: 0;
     }
 
     /**
