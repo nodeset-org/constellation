@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import './OperatorDistributor.sol';
 import '../Whitelist/Whitelist.sol';
@@ -26,17 +27,9 @@ import 'hardhat/console.sol';
  */
 contract NodeSetOperatorRewardDistributor is UpgradeableBase {
     event RewardDistributed(address _rewardee);
-    event EthReceived(uint256);
 
     mapping(address => uint256) public nonces;
     mapping(bytes => bool) public claimSigsUsed;
-
-    /**
-     * @notice Initializes the contract with the specified directory address and sets the initial configurations.
-     * @dev This function is an override and should be called only once. It sets up the initial values
-     * for the contract.
-     * @param _directory The address of the directory contract or servu yesterday just got a lot more complicated so I could really use a lu
-    }
 
     /****
      * EXTERNAL
@@ -67,7 +60,7 @@ contract NodeSetOperatorRewardDistributor is UpgradeableBase {
             (bool success, ) = _rewardee.call{value: _amount}('');
             require(success, '_rewardee failed to claim');
         } else {
-
+            SafeERC20.safeTransfer(IERC20(_token), _rewardee, _amount);
         }
 
         nonces[_rewardee]++;
@@ -77,35 +70,6 @@ contract NodeSetOperatorRewardDistributor is UpgradeableBase {
         emit RewardDistributed(_rewardee);
     }
 
-    /**
-     * @notice Transfers ETH to the Treasurer directly. In case of problems with rewards claiming, the Treasurer can manually rectify the situation.
-     * @dev This function can only be called by the treasurer.
-     */
-    function treasurySweep(uint256 amount) public onlyTreasurer {
-        require(amount < address(this).balance, 'amount must be less than contract balance');
-        (bool success, ) = getDirectory().getTreasuryAddress().call{value: amount}('');
-        require(success, 'Failed to send ETH to treasury');
-    }
-
-    /**
-     * @notice Retrieves the current Whitelist contract instance.
-     * @return Whitelist The current Whitelist contract instance.
-     * @dev This is a private helper function used internally to obtain the Whitelist contract instance from the directory.
-     */
-    function getWhitelist() private view returns (Whitelist) {
-        return Whitelist(_directory.getWhitelistAddress());
-    }
-
-    /**
-     * @notice Modifier to ensure the calling account is a whitelisted operator.
-     * @dev Throws if the calling account is not in the operator whitelist.
-     */
-    modifier onlyOperator() {
-        require(getWhitelist().getIsAddressInWhitelist(msg.sender));
-        _;
-    }
-
     receive() external payable {
-        emit EthReceived(msg.value);
     }
 }
