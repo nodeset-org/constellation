@@ -339,7 +339,15 @@ describe("xrETH", function () {
     const expectedCommunityPortion = nodeRewards.sub(expectedTreasuryPortion).sub(expectedNodeOperatorPortion);
     console.log("expectedCommunityPortion (executionLayerReward-fees)", expectedCommunityPortion);
     const initalTreasuryBalance = await ethers.provider.getBalance(await protocol.directory.getTreasuryAddress());
+
+    //expect(await protocol.superNode.minipoolIndex(minipools[0])).to.not.equal(0);
+    expect((await protocol.superNode.minipoolData(minipools[0])).subNodeOperator).to.not.equal(0);
+
     await protocol.operatorDistributor.connect(signers.random).processNextMinipool();
+
+    // expect the minipool to be removed from the SNA accounting
+    expect(await protocol.superNode.minipoolIndex(minipools[0])).to.equal(0);
+    expect((await protocol.superNode.minipoolData(minipools[0])).subNodeOperator).to.equal(ethers.constants.AddressZero);
     const finalTreasuryBalance = await ethers.provider.getBalance(await protocol.directory.getTreasuryAddress());
     const expectedRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
 
