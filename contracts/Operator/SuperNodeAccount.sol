@@ -248,7 +248,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             );
             require(
                 _directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress),
-                'signer must have permission from admin server role'
+                'bad signer role, params, or encoding'
             );
         }
 
