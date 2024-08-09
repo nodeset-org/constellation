@@ -29,7 +29,7 @@ contract NodeSetOperatorRewardDistributor is UpgradeableBase {
     event RewardDistributed(address _rewardee);
 
     mapping(address => uint256) public nonces;
-    mapping(bytes => bool) public claimSigsUsed;
+    mapping(bytes => bool) public claimSigByOwner;
 
     /****
      * EXTERNAL
@@ -41,8 +41,8 @@ contract NodeSetOperatorRewardDistributor is UpgradeableBase {
      */
     function claimRewards(bytes calldata _sig, address _token, address _rewardee, uint256 _amount) public nonReentrant {
         require(_rewardee != address(0), 'rewardee cannot be zero address');
-        require(!claimSigsUsed[_sig], 'sig already used');
-        claimSigsUsed[_sig] = true;
+        require(!claimSigByOwner[_sig], 'sig already used');
+        claimSigByOwner[_sig] = true;
 
         address recoveredAddress = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(
@@ -50,6 +50,7 @@ contract NodeSetOperatorRewardDistributor is UpgradeableBase {
             ),
             _sig
         );
+
         require(
             _directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress),
             'signer must have permission from admin server role'
