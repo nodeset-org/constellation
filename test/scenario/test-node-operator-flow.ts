@@ -104,12 +104,12 @@ describe("Node Operator Onboarding", function () {
 
     it("eth whale supplies Constellation vaults with eth and rpl", async function () {
         // ethWhale gets shares of xrETH
-        const initialBalance = await weth.balanceOf(protocol.assetRouter.address);
+        const initialBalance = await weth.balanceOf(protocol.operatorDistributor.address);
         await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
         await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
         await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
         const expectedAmountInDP = ethers.utils.parseEther("0"); // should be zero bc funds always get swept and rebalanced during deposit
-        const actualAmountInDP = (await weth.balanceOf(protocol.assetRouter.address)).sub(initialBalance);
+        const actualAmountInDP = (await weth.balanceOf(protocol.operatorDistributor.address)).sub(initialBalance);
         expectNumberE18ToBeApproximately(actualAmountInDP, expectedAmountInDP, 0.05);
         const intialBalanceRpl = await protocol.vCRPL.totalAssets();
         await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
@@ -157,7 +157,7 @@ describe("Node Operator Onboarding", function () {
         console.log('ETHER balance of WETHVault', await ethers.provider.getBalance(protocol.vCWETH.address));
         console.log('xrETH/ETH value',await ethers.utils.formatEther(await protocol.vCWETH.convertToAssets(ethers.utils.parseEther("1"))));
         console.log("balance of deposit pool / opd")
-        console.log(await protocol.wETH.balanceOf(protocol.assetRouter.address));
+        console.log(await protocol.wETH.balanceOf(protocol.operatorDistributor.address));
         console.log(await protocol.wETH.balanceOf(protocol.operatorDistributor.address));
 
         console.log('liquidity reserve percent for WETHVault', await protocol.vCWETH.liquidityReservePercent());
@@ -215,8 +215,8 @@ describe("Node Operator Onboarding", function () {
             }
         }
 
-        console.log("vault eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.assetRouter.address)));
-        console.log("vault rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.assetRouter.address)));
+        console.log("vault eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)));
+        console.log("vault rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)));
         console.log("operator distribution pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)));
         console.log("operator distribution pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)));
 

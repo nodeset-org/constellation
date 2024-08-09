@@ -6,9 +6,9 @@ import '@openzeppelin/contracts/utils/math/Math.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 import './WETHVault.sol';
+import '../Operator/SuperNodeAccount.sol';
 
 import '../UpgradeableBase.sol';
-import '../AssetRouter.sol';
 import '../Operator/OperatorDistributor.sol';
 
 import 'hardhat/console.sol';
@@ -75,15 +75,14 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
         require(vweth.tvlRatioEthRpl(assets, false) >= minWethRplRatio, 'insufficient weth coverage ratio');
 
-        AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
 
         super._deposit(caller, receiver, assets, shares);
 
-        ar.onRplBalanceIncrease(IERC20(asset()).balanceOf(address(this)));
-        SafeERC20.safeTransfer(IERC20(asset()), address(ar), IERC20(asset()).balanceOf(address(this)));
+        SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));
 
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
-        ar.sendRplToDistributors();
+        od.processNextMinipool();
+        od.rebalanceRplVault();
     }
 
     /**
@@ -107,11 +106,13 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
             return;
         }
         require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
-        // required violation of CHECKS/EFFECTS/INTERACTIONS
-
+        
+        // required violation of CHECKS/EFFECTS/INTERACTIONS: need to change RPL balance here before rebalancing the rest of the protocol
         super._withdraw(caller, receiver, owner, assets, shares);
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
-        AssetRouter(_directory.getAssetRouterAddress()).sendRplToDistributors();
+        
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        od.processNextMinipool();
+        od.rebalanceRplVault();
     }
 
     /**
@@ -120,7 +121,6 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function totalAssets() public view override returns (uint256) {
         return (IERC20(asset()).balanceOf(address(this)) +
-            AssetRouter(_directory.getAssetRouterAddress()).getTvlRpl() +
             OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl());
     }
 
@@ -136,6 +136,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 fullBalance = totalAssets() + deposit;
         uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
+        console.log("RPL requiredCollateralAfterDeposit(",deposit,")");
+        console.log("requiredBalance:", requiredBalance, "currentBalance:", currentBalance);
         return requiredBalance > currentBalance ? requiredBalance - currentBalance: 0;
     }
 
@@ -192,10 +194,10 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         liquidityReservePercent = _liquidityReservePercent;
 
         // rebalance entire balance of the contract to ensure the new liquidity reserve is respected
-        AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
-        ar.onRplBalanceIncrease(IERC20(asset()).balanceOf(address(this)));
-        SafeERC20.safeTransfer(IERC20(asset()), address(ar), IERC20(asset()).balanceOf(address(this)));
-        ar.sendRplToDistributors();
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));
+        od.rebalanceRplVault();
+        od.rebalanceRplStake(SuperNodeAccount(getDirectory().getSuperNodeAddress()).getTotalEthStaked());
     }
 
     /// Calculates the treasury portion of a specific RPL reward amount.

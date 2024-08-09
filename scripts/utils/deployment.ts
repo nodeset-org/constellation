@@ -4,7 +4,7 @@ import path from 'path';
 import { getNextContractAddress } from "../../test/utils/utils";
 import { getInitializerData } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import readline from 'readline';
-import { Treasury, Directory, AssetRouter, IRocketStorage, IBeaconOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, YieldDistributor, PoABeaconOracle } from "../../typechain-types";
+import { Treasury, Directory, IRocketStorage, IBeaconOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, YieldDistributor, PoABeaconOracle } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Protocol, Signers } from "../../test/test";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
@@ -93,12 +93,6 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
         return vCRPL
     })
 
-    const depositPoolProxy = await retryOperation(async function () {
-        const dp = await upgrades.deployProxy(await ethers.getContractFactory("AssetRouter", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-        if (log) console.log("Fund Router (Deposit Pool) deployed to", dp.address)
-        return dp
-    })
-
     const operatorDistributorProxy = await retryOperation(async function () {
         const od = await upgrades.deployProxy(await ethers.getContractFactory("OperatorDistributor", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         if (log) console.log("operator distributor deployed to", od.address)
@@ -134,7 +128,6 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
         console.log("whitelistProxy.address", whitelistProxy.address)
         console.log("vCWETHProxy.address", vCWETHProxy.address)
         console.log("vCRPLProxy.address", vCRPLProxy.address)
-        console.log("depositPoolProxy.address", depositPoolProxy.address)
         console.log("operatorDistributorProxy.address", operatorDistributorProxy.address)
         console.log("yieldDistributorProxy.address", yieldDistributorProxy.address)
         console.log("oracle", oracleProxy.address)
@@ -152,7 +145,6 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
                     whitelistProxy.address,
                     vCWETHProxy.address,
                     vCRPLProxy.address,
-                    depositPoolProxy.address,
                     operatorDistributorProxy.address,
                     yieldDistributorProxy.address,
                     oracleProxy.address,
@@ -190,7 +182,6 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
         whitelist: whitelistProxy as Whitelist,
         vCWETH: vCWETHProxy as WETHVault,
         vCRPL: vCRPLProxy as RPLVault,
-        depositPool: depositPoolProxy as AssetRouter,
         operatorDistributor: operatorDistributorProxy as OperatorDistributor,
         yieldDistributor: yieldDistributorProxy as YieldDistributor,
         priceFetcher: priceFetcherProxy as PriceFetcher,
@@ -227,7 +218,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
 
     const deployer = (await ethers.getSigners())[0];
 
-    const { whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury } = await fastDeployProtocol(
+    const { whitelist, vCWETH, vCRPL, operatorDistributor, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury } = await fastDeployProtocol(
         signers.treasurer,
         signers.deployer,
         signers.random5,
@@ -270,7 +261,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     tx = await directory.connect(signers.admin).setTreasury(deployer.address);
     await tx.wait();
 
-    const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, assetRouter: depositPool, operatorDistributor, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
+    const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, operatorDistributor, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
 
     // send all rpl from admin to rplWhale
     const rplWhaleBalance = await rplContract.balanceOf(signers.deployer.address);

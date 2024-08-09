@@ -6,7 +6,6 @@ import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgrad
 import './RPLVault.sol';
 import '../PriceFetcher.sol';
 import '../UpgradeableBase.sol';
-import '../AssetRouter.sol';
 import '../Operator/YieldDistributor.sol';
 import '../Utils/Constants.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
@@ -78,16 +77,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        od.processNextMinipool();
         require(tvlRatioEthRpl(assets, true) <= maxWethRplRatio, 'insufficient RPL coverage');
         super._deposit(caller, receiver, assets, shares);
 
-        AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
-
-        ar.onWethBalanceIncrease(assets);
-        SafeERC20.safeTransfer(IERC20(asset()), address(ar), assets);
-
-        ar.sendEthToDistributors();
+        SafeERC20.safeTransfer(IERC20(asset()), address(od), assets);
+        od.rebalanceWethVault();
     }
 
     /**
@@ -112,9 +108,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             return;
         }
         require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        od.processNextMinipool();
 
-        AssetRouter(_directory.getAssetRouterAddress()).sendEthToDistributors();
+        od.rebalanceWethVault();
 
         super._withdraw(caller, receiver, owner, assets, shares);
     }
@@ -152,16 +149,15 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     /**
      * @notice Returns the total assets managed by this vault. That is, all the ETH backing xrETH.
      * @dev This function calculates the total assets by summing the vault's own assets, the distributable yield,
-     * and the assets held in the AssetRouter and OperatorDistributor. 
+     * and the assets held in OperatorDistributor. 
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
-        AssetRouter ar = AssetRouter(getDirectory().getAssetRouterAddress());
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         (uint256 distributableYield, bool signed) = getDistributableYield();
         return (
             uint256(
-                int(IERC20(asset()).balanceOf(address(this)) + ar.getTvlEth() + od.getTvlEth()) +
+                int(IERC20(asset()).balanceOf(address(this)) + od.getTvlEth()) +
                     (signed ? -int(distributableYield) : int(distributableYield))
             )
         );
@@ -198,6 +194,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 fullBalance = totalAssets() + deposit;
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
+        console.log("ETH requiredCollateralAfterDeposit(",deposit,")");
+        console.log("requiredBalance:", requiredBalance, "currentBalance:", currentBalance);
         return requiredBalance > currentBalance ? requiredBalance - currentBalance: 0;
     }
 
@@ -277,9 +275,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         liquidityReservePercent = _liquidityReservePercent;
 
         // rebalance entire balance of the contract to ensure the new liquidity reserve is respected
-        AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
-        ar.onWethBalanceIncrease(IERC20(asset()).balanceOf(address(this)));
-        SafeERC20.safeTransfer(IERC20(asset()), address(ar), IERC20(asset()).balanceOf(address(this)));
-        ar.sendEthToDistributors();
+        OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
+        SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));
+        od.rebalanceWethVault();
     }
 }

@@ -45,6 +45,18 @@ describe("Liquidity Reserve", async function () {
             expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).to.equal(ethers.utils.parseEther("50"));
             expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("950"));
 
+            console.log("FIRST Weth/ETH balance of WETHVault", 
+                ethers.utils.formatEther(await protocol.wETH.balanceOf(protocol.vCWETH.address)), "/", 
+                ethers.utils.formatEther(await ethers.provider.getBalance(protocol.vCWETH.address),
+            ));
+            console.log("FIRST RPL balance of RPLVault", 
+                ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)));
+            console.log("FIRST Weth/ETH/RPL balance of operatorDistributor", 
+                ethers.utils.formatEther(await protocol.wETH.balanceOf(protocol.operatorDistributor.address)), "/", 
+                ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)), "/",
+                ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address))
+            );
+
             // Mint 1 xWETH and 1 xRPL to change states and move funds around.
             await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address);
 
@@ -52,10 +64,34 @@ describe("Liquidity Reserve", async function () {
             await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
             await protocol.vCRPL.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address); 
 
+            console.log("MID Weth/ETH balance of WETHVault", 
+                ethers.utils.formatEther(await protocol.wETH.balanceOf(protocol.vCWETH.address)), "/", 
+                ethers.utils.formatEther(await ethers.provider.getBalance(protocol.vCWETH.address),
+            ));
+            console.log("MID RPL balance of RPLVault", 
+                ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)));
+            console.log("MID Weth/ETH/RPL balance of operatorDistributor", 
+                ethers.utils.formatEther(await protocol.wETH.balanceOf(protocol.operatorDistributor.address)), "/", 
+                ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)), "/",
+                ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address))
+            );
+
             // Redeem 1 xWETH and 1 xRPL
             await protocol.vCWETH.connect(signers.ethWhale).redeem(ethers.utils.parseEther("1"), signers.ethWhale.address, signers.ethWhale.address);
             await protocol.vCRPL.connect(signers.ethWhale).redeem(ethers.utils.parseEther("1"), signers.ethWhale.address, signers.ethWhale.address);
             
+            console.log("FINAL Weth/ETH balance of WETHVault", 
+                ethers.utils.formatEther(await protocol.wETH.balanceOf(protocol.vCWETH.address)), "/", 
+                ethers.utils.formatEther(await ethers.provider.getBalance(protocol.vCWETH.address),
+            ));
+            console.log("FINAL RPL balance of RPLVault", 
+                ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)));
+            console.log("FINAL Weth/ETH/RPL balance of operatorDistributor", 
+                ethers.utils.formatEther(await protocol.wETH.balanceOf(protocol.operatorDistributor.address)), "/", 
+                ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)), "/",
+                ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address))
+            );
+
             // Assert 1 ETH and 50 RPL are in vault (rest in operator distributor) again after all the state changes
             expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).to.equal(ethers.utils.parseEther("1"));
             expect(await protocol.wETH.balanceOf(protocol.operatorDistributor.address)).to.equal(ethers.utils.parseEther("0"));

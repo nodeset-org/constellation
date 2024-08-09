@@ -20,7 +20,6 @@ struct Protocol {
     address whitelist;
     address payable wethVault;
     address rplVault;
-    address payable assetRouter;
     address payable operatorDistributor;
     address payable yieldDistributor;
     address oracle;
@@ -93,10 +92,6 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     function getRPLVaultAddress() public view returns (address) {
         return _protocol.rplVault;
-    }
-
-    function getAssetRouterAddress() public view returns (address payable) {
-        return _protocol.assetRouter;
     }
 
     function getOracleAddress() public view returns (address) {
@@ -210,10 +205,6 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         );
         require(_protocol.rplVault == address(0) && newProtocol.rplVault != address(0), Constants.INITIALIZATION_ERROR);
         require(
-            _protocol.assetRouter == address(0) && newProtocol.assetRouter != address(0),
-            Constants.INITIALIZATION_ERROR
-        );
-        require(
             _protocol.operatorDistributor == address(0) && newProtocol.operatorDistributor != address(0),
             Constants.INITIALIZATION_ERROR
         );
@@ -252,7 +243,6 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.whitelist);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.wethVault);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.rplVault);
-        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.assetRouter);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.operatorDistributor);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.yieldDistributor);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.oracle);
