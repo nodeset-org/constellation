@@ -488,7 +488,7 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   const vweth = setupData.protocol.vCWETH;
   let depositAmount = ethers.utils.parseEther('8').mul(BigNumber.from(numOperators));
   depositAmount = depositAmount.sub(await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address));
-  const vaultMinimum = await vweth.getRequiredCollateralAfterDeposit(depositAmount);
+  const vaultMinimum = await vweth.getMissingLiquidityAfterDeposit(depositAmount);
 
   console.log('REQUIRE COLLAT', vaultMinimum);
   const requiredEth = depositAmount

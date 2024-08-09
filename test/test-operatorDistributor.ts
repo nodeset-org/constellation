@@ -21,11 +21,13 @@ describe("Operator Distributor", function () {
 		const priorAssets = await protocol.vCWETH.totalAssets();
 
 		// simulate rewards to minipool contract from beacon
-		const reward = ethers.utils.parseEther("1");
-		const xrETHPortion = await protocol.vCWETH.getValueAfterFees(reward);
+		const baconReward = ethers.utils.parseEther("1");
+		// assume a 15% rETH fee and LEB8 (36.25% of all rewards), which is default settings for RP
+		const constellationPortion = baconReward.mul(ethers.utils.parseEther(".3625")).div(ethers.utils.parseEther("1"));
+		const xrETHPortion = await protocol.vCWETH.getIncomeAfterFees(constellationPortion);
 		await signers.ethWhale.sendTransaction({
 			to: minipools[0],
-			value: reward
+			value: baconReward
 		  })
 		
 		// random person distributes the balance to increase nodeRefundBalance
@@ -39,7 +41,12 @@ describe("Operator Distributor", function () {
 			await ethers.provider.getBalance(protocol.operatorDistributor.address), "/",
 			await protocol.wETH.balanceOf(protocol.operatorDistributor.address)
 		  );
-		
+		console.log("TVL OD", await protocol.operatorDistributor.getTvlEth());
+		console.log("WETHVault balance ETH/WETH", 
+			await ethers.provider.getBalance(protocol.vCWETH.address), "/",
+			await protocol.wETH.balanceOf(protocol.vCWETH.address)
+		  );
+
 		expect(await protocol.vCWETH.totalAssets()).to.equal(priorAssets.add(xrETHPortion));
 	});
 
