@@ -22,6 +22,7 @@ import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
  * @author Theodore Clapp, Mike Leach
  * @dev Manages distribution and staking of ETH and RPL tokens for 
  * decentralized node operators to stake with a single Rocket Pool "supernode".
+ * Serves as the withdrawal address for the SuperNode and has functions for rebalancing liquidity across the protocol.
  * Inherits from UpgradeableBase and Errors to use their functionalities for upgradeability and error handling.
  */
 contract OperatorDistributor is UpgradeableBase, Errors {

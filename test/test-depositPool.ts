@@ -8,7 +8,7 @@ import { assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract
 import { parseRewardsMap } from "./utils/merkleClaim";
 import { submitRewards } from "./rocketpool/rewards/scenario-submit-rewards";
 
-describe(`AssetRouter`, () => {
+describe(`RPL staking`, () => {
 
     describe('stakeRPLFor', () => {
 
