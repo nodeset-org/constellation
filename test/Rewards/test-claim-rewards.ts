@@ -233,7 +233,7 @@ describe("Claiming Rewards", async () => {
                 })
 
                 describe("When _token is not ETH (ERC20)", async () => {
-                    describe("When contract does not have enough token to send to _rewardee", async () => {
+                    describe("When contract does have enough token to send to _rewardee", async () => {
                         describe("when there is one user claiming", async () => {
                             describe("When caller is the rewardee", async () => {
                                 it("Should pass", async () => {
