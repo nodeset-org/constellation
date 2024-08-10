@@ -19,7 +19,7 @@ pragma solidity 0.8.17;
 contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
     struct PoAOracleSignatureData {
         int256 newTotalYieldAccrued; // The new total yield accrued.
-        uint256 currentOracleError; // The expected current oracle error of the protocol
+        uint256 expectedOracleError; // The expected current oracle error of the protocol
         uint256 timeStamp; //The timestamp of the signature.
     }
 
@@ -61,7 +61,7 @@ contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
             ECDSA.toEthSignedMessageHash(
                 keccak256(abi.encodePacked(
                     sigData.newTotalYieldAccrued, 
-                    sigData.currentOracleError, 
+                    sigData.expectedOracleError, 
                     sigData.timeStamp, 
                     address(this), 
                     block.chainid))
@@ -78,8 +78,16 @@ contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
 
         // Prevent a front-running attack/accident where a valid sig is generated, then a minipool is processed before 
         // this function is called, causing a double-count of rewards.
-        if(sigData.currentOracleError < od.oracleError() && sigData.newTotalYieldAccrued > 0) {
-            _totalYieldAccrued = sigData.newTotalYieldAccrued - int(od.oracleError() - sigData.currentOracleError);
+        if(sigData.expectedOracleError < od.oracleError()) {
+            if(sigData.newTotalYieldAccrued > 0) {
+                _totalYieldAccrued = sigData.newTotalYieldAccrued - int(od.oracleError() - sigData.expectedOracleError);
+            }
+            else if(sigData.newTotalYieldAccrued < 0) {
+                _totalYieldAccrued = sigData.newTotalYieldAccrued + int(od.oracleError() - sigData.expectedOracleError);
+            }
+            else {
+                _totalYieldAccrued = 0;
+            }
         } else {
             _totalYieldAccrued = sigData.newTotalYieldAccrued;
         }
