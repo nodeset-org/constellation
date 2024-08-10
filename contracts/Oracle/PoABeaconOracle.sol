@@ -11,9 +11,18 @@ pragma solidity 0.8.17;
 /**
  * @title PoABeaconOracle
  * @notice Protocol interface for a proof-of-authority oracle that provides total yield accrued by xrETH from the beacon chain.
- * The reported yield is the sum of the rewards or penalties for all validators and minipool contract balances (i.e. it does NOT include bonds).
+ * The reported yield is the sum of the rewards or penalties for all validators and minipool contract balances (i.e. it does NOT include bonds)
+ * with the treasury and NO fees already subtracted. 
+ * @dev When the protocol receives rewards, it will remove these fees and keep track of an 
+ * the amount received so that it is not double counted against the last reported oracle value. See also: OperatorDistributor.onEthRewardsReceived()
  */
 contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
+    struct PoAOracleSignatureData {
+        int256 newTotalYieldAccrued; // The new total yield accrued.
+        uint256 currentOracleError; // The expected current oracle error of the protocol
+        uint256 timeStamp; //The timestamp of the signature.
+    }
+
     event TotalYieldAccruedUpdated(int256 _amount);
 
     /// @dev This takes into account the validator and minipool contract balances
@@ -44,14 +53,18 @@ contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
      * @notice Internal function to set the total yield accrued, which takes into account the validator and minipool contract balances.
      * @dev The reported yield should be the sum of the rewards or penalties for all validators and minipool contract balances 
      * (i.e. it should NOT include bonds).
-     * @param _sig The signature.
-     * @param _newTotalYieldAccrued The new total yield accrued.
-     * @param _sigTimeStamp The timestamp of the signature.
+     * @param _sig The signature
+     * @param sigData The signed data
      */
-    function _setTotalYieldAccrued(bytes calldata _sig, int256 _newTotalYieldAccrued, uint256 _sigTimeStamp) internal {
+    function setTotalYieldAccrued(bytes calldata _sig, PoAOracleSignatureData calldata sigData) external {
         address recoveredAddress = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(
-                keccak256(abi.encodePacked(_newTotalYieldAccrued, _sigTimeStamp, address(this), block.chainid))
+                keccak256(abi.encodePacked(
+                    sigData.newTotalYieldAccrued, 
+                    sigData.currentOracleError, 
+                    sigData.timeStamp, 
+                    address(this), 
+                    block.chainid))
             ),
             _sig
         );
@@ -59,25 +72,21 @@ contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
             _directory.hasRole(Constants.ADMIN_ORACLE_ROLE, recoveredAddress),
             'signer must have permission from admin oracle role'
         );
-        require(_sigTimeStamp > _lastUpdatedTotalYieldAccrued, 'cannot update tya using old data');
+        require(sigData.timeStamp > _lastUpdatedTotalYieldAccrued, 'cannot update oracle using old data');
 
-        _totalYieldAccrued = _newTotalYieldAccrued;
+        // Prevent a front-running attack/accident where a valid sig is generated, then a minipool is processed before this function is called,
+        // causing a double-count of rewards. Technically, this introduces an DoS where someone could stop the oracle from updating by 
+        // processing minipools constantly, but there is no need for an oracle update in that scenario anyway since rewards are being skimmed continuously.
+        require(
+            sigData.currentOracleError == OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleError(),
+            "oracle error is out of date"
+        );
+
+        _totalYieldAccrued = sigData.newTotalYieldAccrued;
         _lastUpdatedTotalYieldAccrued = block.timestamp;
         emit TotalYieldAccruedUpdated(_totalYieldAccrued);
 
         OperatorDistributor(_directory.getOperatorDistributorAddress()).resetOracleError();
-    }
-
-    /**
-     * @notice Sets the total yield accrued.
-     * @dev The reported yield should be the sum of the rewards or penalties for all validators and minipool contract balances 
-     * (i.e. it should NOT include bonds).
-     * @param _sig Signature provided by the Constants.ADMIN_ORACLE_ROLE.
-     * @param _newTotalYieldAccrued The new total yield accrued.
-     * @param _sigTimeStamp The timestamp of the signature.
-     */
-    function setTotalYieldAccrued(bytes calldata _sig, int256 _newTotalYieldAccrued, uint256 _sigTimeStamp) external {
-        _setTotalYieldAccrued(_sig, _newTotalYieldAccrued, _sigTimeStamp);
     }
 
     function getLastUpdatedTotalYieldAccrued() external view override returns (uint256) {

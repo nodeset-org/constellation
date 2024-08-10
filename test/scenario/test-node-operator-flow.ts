@@ -132,13 +132,12 @@ describe("Node Operator Onboarding", function () {
         const network = await ethers.provider.getNetwork();
         const chainId = network.chainId;
         const newTotalYield = ethers.utils.parseEther("3");
-        const incorrectMessageHash = ethers.utils.solidityKeccak256(
-            ["int256", "uint256", "address", "uint256"], 
-            [newTotalYield, timestamp, protocol.oracle.address, chainId]
-        );
-        const signature = await signers.admin.signMessage(ethers.utils.arrayify(incorrectMessageHash));
+        const currentOracleError = await protocol.operatorDistributor.oracleError();
+        const sigData = { newTotalYieldAccrued: newTotalYield, currentOracleError: currentOracleError, timeStamp: timestamp };
+        const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, protocol.oracle.address, chainId]);
+        const signature = await signers.admin.signMessage(ethers.utils.arrayify(messageHash));
         // accrue yield via oracle
-        await protocol.oracle.connect(signers.admin).setTotalYieldAccrued(signature, newTotalYield, timestamp)
+        await protocol.oracle.connect(signers.admin).setTotalYieldAccrued(signature, sigData)
 
         console.log("total supply of shares")
         console.log(await protocol.vCWETH.totalSupply())
@@ -184,8 +183,6 @@ describe("Node Operator Onboarding", function () {
         }
 
         registerNewValidator(setupData, [signers.hyperdriver]);
-
-        //await ethers.connect(setupData.signers.ethWhale).transfer(, ethers.utils.parseEther("1"))l
 
         await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
 
