@@ -74,19 +74,20 @@ contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
         );
         require(sigData.timeStamp > _lastUpdatedTotalYieldAccrued, 'cannot update oracle using old data');
 
-        // Prevent a front-running attack/accident where a valid sig is generated, then a minipool is processed before this function is called,
-        // causing a double-count of rewards. Technically, this introduces an DoS where someone could stop the oracle from updating by 
-        // processing minipools constantly, but there is no need for an oracle update in that scenario anyway since rewards are being skimmed continuously.
-        require(
-            sigData.currentOracleError == OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleError(),
-            "oracle error is out of date"
-        );
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
 
-        _totalYieldAccrued = sigData.newTotalYieldAccrued;
+        // Prevent a front-running attack/accident where a valid sig is generated, then a minipool is processed before 
+        // this function is called, causing a double-count of rewards.
+        if(sigData.currentOracleError < od.oracleError() && sigData.newTotalYieldAccrued > 0) {
+            _totalYieldAccrued = sigData.newTotalYieldAccrued - int(od.oracleError() - sigData.currentOracleError);
+        } else {
+            _totalYieldAccrued = sigData.newTotalYieldAccrued;
+        }
+        
         _lastUpdatedTotalYieldAccrued = block.timestamp;
         emit TotalYieldAccruedUpdated(_totalYieldAccrued);
 
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).resetOracleError();
+        od.resetOracleError();
     }
 
     function getLastUpdatedTotalYieldAccrued() external view override returns (uint256) {
