@@ -184,8 +184,6 @@ describe("Node Operator Onboarding", function () {
 
         registerNewValidator(setupData, [signers.hyperdriver]);
 
-        //await ethers.connect(setupData.signers.ethWhale).transfer(, ethers.utils.parseEther("1"))l
-
         await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
 
         const currentInterval = (await protocol.yieldDistributor.currentInterval()).sub(1);

@@ -6,7 +6,7 @@ import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgrad
 import './RPLVault.sol';
 import '../PriceFetcher.sol';
 import '../UpgradeableBase.sol';
-import '../Operator/YieldDistributor.sol';
+import '../Operator/NodeSetOperatorRewardDistributor.sol';
 import '../Utils/Constants.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/Oracles/IBeaconOracle.sol';

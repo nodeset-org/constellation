@@ -291,7 +291,7 @@ WARNING: You are currently using Node.js v21.4.0, which is not supported by Hard
  ··········································|································|·································
  |  XRETHOracle                            ·                 3.576 (0.000)  ·                 4.244 (0.000)  │
  ··········································|································|·································
- |  YieldDistributor                       ·                13.760 (0.000)  ·                14.147 (0.000)  │
+ |  NodeSetOperatorRewardDistributor                       ·                13.760 (0.000)  ·                14.147 (0.000)  │
  ·-----------------------------------------|--------------------------------|--------------------------------·
 (node:20130) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
