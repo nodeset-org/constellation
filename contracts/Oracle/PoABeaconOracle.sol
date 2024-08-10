@@ -77,8 +77,8 @@ contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
 
         // Prevent a front-running attack/accident where a valid sig is generated, then a minipool is processed before 
-        // this function is called, causing a double-count of rewards.
-        if(sigData.expectedOracleError < od.oracleError()) {
+        // this function is called, causing a double-count of rewards. 
+        if(sigData.expectedOracleError < od.oracleError()) { 
             if(sigData.newTotalYieldAccrued > 0) {
                 _totalYieldAccrued = sigData.newTotalYieldAccrued - int(od.oracleError() - sigData.expectedOracleError);
             }
@@ -88,8 +88,12 @@ contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
             else {
                 _totalYieldAccrued = 0;
             }
-        } else {
+        } else if(sigData.expectedOracleError == od.oracleError()) {
             _totalYieldAccrued = sigData.newTotalYieldAccrued;
+        } else {
+            // Note that actual oracle error will only ever increase or be reset to 0,
+            // so if expectedOracleError is not <= actual oracleError, there is something wrong with the oracle.
+            revert("expectedOracleError was less than actual oracleError");
         }
         
         _lastUpdatedTotalYieldAccrued = block.timestamp;
