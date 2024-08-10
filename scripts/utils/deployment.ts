@@ -4,7 +4,7 @@ import path from 'path';
 import { getNextContractAddress } from "../../test/utils/utils";
 import { getInitializerData } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import readline from 'readline';
-import { Treasury, Directory, IRocketStorage, IBeaconOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, YieldDistributor, PoABeaconOracle } from "../../typechain-types";
+import { Treasury, Directory, IRocketStorage, IConstellationOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, YieldDistributor, PoAConstellationOracle } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Protocol, Signers } from "../../test/test";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
@@ -71,7 +71,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
     });
 
     const oracleProxy = await retryOperation(async () => {
-        const oracle = await upgrades.deployProxy(await ethers.getContractFactory("PoABeaconOracle", deployer), [directoryAddress], { 'initializer': 'initializeOracle', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        const oracle = await upgrades.deployProxy(await ethers.getContractFactory("PoAConstellationOracle", deployer), [directoryAddress], { 'initializer': 'initializeOracle', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         if (log) console.log("admin oracle deployed to", oracle.address)
         return oracle;
     });
@@ -185,7 +185,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
         operatorDistributor: operatorDistributorProxy as OperatorDistributor,
         yieldDistributor: yieldDistributorProxy as YieldDistributor,
         priceFetcher: priceFetcherProxy as PriceFetcher,
-        oracle: oracleProxy as PoABeaconOracle,
+        oracle: oracleProxy as PoAConstellationOracle,
         superNode: superNodeProxy as SuperNodeAccount,
         treasury: treasuryProxy as Treasury,
         directory: directoryProxy as Directory

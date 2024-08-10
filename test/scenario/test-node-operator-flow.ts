@@ -133,7 +133,7 @@ describe("Node Operator Onboarding", function () {
         const chainId = network.chainId;
         const newTotalYield = ethers.utils.parseEther("3");
         const currentOracleError = await protocol.operatorDistributor.oracleError();
-        const sigData = { newTotalYieldAccrued: newTotalYield, currentOracleError: currentOracleError, timeStamp: timestamp };
+        const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: currentOracleError, timeStamp: timestamp };
         const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, protocol.oracle.address, chainId]);
         const signature = await signers.admin.signMessage(ethers.utils.arrayify(messageHash));
         // accrue yield via oracle

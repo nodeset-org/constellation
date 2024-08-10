@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
-import '../Interfaces/Oracles/IBeaconOracle.sol';
+import '../Interfaces/Oracles/IConstellationOracle.sol';
 import '../UpgradeableBase.sol';
 import '../Operator/SuperNodeAccount.sol';
 import '../Tokens/WETHVault.sol';
@@ -9,14 +9,17 @@ import '../Tokens/WETHVault.sol';
 pragma solidity 0.8.17;
 
 /**
- * @title PoABeaconOracle
- * @notice Protocol interface for a proof-of-authority oracle that provides total yield accrued by xrETH from the beacon chain.
- * The reported yield is the sum of the rewards or penalties for all validators and minipool contract balances (i.e. it does NOT include bonds)
+ * @title PoAConstellationOracle
+ * @notice Protocol interface for a proof-of-authority oracle that provides total yield accrued by xrETH and xRPL from the beacon chain
+ * and current reward intervals for Rocket Pool.
+ * The reported yield is the sum of :
+ * - The rewards or penalties for all validators and minipool contract balances (i.e. it does NOT include bonds)
+ * - The rewards accrued for RPL
  * with the treasury and NO fees already subtracted. 
  * @dev When the protocol receives rewards, it will remove these fees and keep track of an 
  * the amount received so that it is not double counted against the last reported oracle value. See also: OperatorDistributor.onEthRewardsReceived()
  */
-contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
+contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
     struct PoAOracleSignatureData {
         int256 newTotalYieldAccrued; // The new total yield accrued.
         uint256 expectedOracleError; // The expected current oracle error of the protocol
@@ -80,15 +83,19 @@ contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
         // this function is called, causing a double-count of rewards. 
         if(sigData.expectedOracleError < od.oracleError()) { 
             if(sigData.newTotalYieldAccrued > 0) {
+                console.log("new yield is positive");
                 _totalYieldAccrued = sigData.newTotalYieldAccrued - int(od.oracleError() - sigData.expectedOracleError);
             }
             else if(sigData.newTotalYieldAccrued < 0) {
+                console.log("new yield is negative");
                 _totalYieldAccrued = sigData.newTotalYieldAccrued + int(od.oracleError() - sigData.expectedOracleError);
             }
             else {
+                 console.log("new yield is zero");
                 _totalYieldAccrued = 0;
             }
         } else if(sigData.expectedOracleError == od.oracleError()) {
+            console.log("errors are equal");
             _totalYieldAccrued = sigData.newTotalYieldAccrued;
         } else {
             // Note that actual oracle error will only ever increase or be reset to 0,

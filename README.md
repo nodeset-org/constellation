@@ -22,7 +22,7 @@ This repository contains Solidity smart contracts for Constellation, a second la
 2. **Whitelist.sol**
    - Manages a list of approved node operators and their controllers.
 
-4. **PoABeaconOracle.sol**
+4. **PoAConstellationOracle.sol**
    - Uses proof-of-authority to allow updates to the total yield accrued using ECDSA signatures.
 
 5. **ProtocolMath.sol**
