@@ -93,7 +93,7 @@ contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
         } else {
             // Note that actual oracle error will only ever increase or be reset to 0,
             // so if expectedOracleError is not <= actual oracleError, there is something wrong with the oracle.
-            revert("expectedOracleError was less than actual oracleError");
+            revert("actual oracleError was less than expectedOracleError");
         }
         
         _lastUpdatedTotalYieldAccrued = block.timestamp;
