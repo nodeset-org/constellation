@@ -10,12 +10,10 @@ pragma solidity 0.8.17;
 
 /**
  * @title PoAConstellationOracle
- * @notice Protocol interface for a proof-of-authority oracle that provides total yield accrued by xrETH and xRPL from the beacon chain
+ * @notice Protocol interface for a proof-of-authority oracle that provides total yield accrued by xrETH from the beacon chain
  * and current reward intervals for Rocket Pool.
- * The reported yield is the sum of :
- * - The rewards or penalties for all validators and minipool contract balances (i.e. it does NOT include bonds)
- * - The rewards accrued for RPL
- * with the treasury and NO fees already subtracted. 
+ * The reported yield is the sum of the rewards or penalties for all validators and minipool contract balances
+ * with the treasury and NO fees already subtracted. It does NOT include bonds, which are already tracked upon minipool creation.
  * @dev When the protocol receives rewards, it will remove these fees and keep track of an 
  * the amount received so that it is not double counted against the last reported oracle value. See also: OperatorDistributor.onEthRewardsReceived()
  */
