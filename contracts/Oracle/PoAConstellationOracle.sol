@@ -14,15 +14,18 @@ pragma solidity 0.8.17;
  * and current reward intervals for Rocket Pool.
  * The reported yield is the sum of :
  * - The rewards or penalties for all validators and minipool contract balances (i.e. it does NOT include bonds)
- * - The rewards accrued for RPL
+ * - The rewards accrued for RPL during the current rewards period
+ * - The rewards accrued for ETH
  * with the treasury and NO fees already subtracted. 
  * @dev When the protocol receives rewards, it will remove these fees and keep track of an 
  * the amount received so that it is not double counted against the last reported oracle value. See also: OperatorDistributor.onEthRewardsReceived()
  */
 contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
     struct PoAOracleSignatureData {
-        int256 newTotalYieldAccrued; // The new total yield accrued.
-        uint256 expectedOracleError; // The expected current oracle error of the protocol
+        int256 newTotalEthYieldAccrued; // The new total ETH yield accrued
+        int256 newTotalRplYieldAccrued; // The new total RPL yield accrued
+        uint256 expectedEthOracleError; // The expected current ETH oracle error of the protocol
+        uint256 expectedRplOracleError; // The expected current RPL oracle error of the protocol
         uint256 timeStamp; //The timestamp of the signature.
     }
 
@@ -63,8 +66,8 @@ contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
         address recoveredAddress = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(
                 keccak256(abi.encodePacked(
-                    sigData.newTotalYieldAccrued, 
-                    sigData.expectedOracleError, 
+                    sigData.newTotalEthYieldAccrued, 
+                    sigData.expectedEthOracleError, 
                     sigData.timeStamp, 
                     address(this), 
                     block.chainid))
@@ -81,22 +84,18 @@ contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
 
         // Prevent a front-running attack/accident where a valid sig is generated, then a minipool is processed before 
         // this function is called, causing a double-count of rewards. 
-        if(sigData.expectedOracleError < od.oracleError()) { 
-            if(sigData.newTotalYieldAccrued > 0) {
-                console.log("new yield is positive");
-                _totalYieldAccrued = sigData.newTotalYieldAccrued - int(od.oracleError() - sigData.expectedOracleError);
+        if(sigData.expectedEthOracleError < od.oracleError()) { 
+            if(sigData.newTotalEthYieldAccrued > 0) {
+                _totalYieldAccrued = sigData.newTotalEthYieldAccrued - int(od.oracleError() - sigData.expectedEthOracleError);
             }
-            else if(sigData.newTotalYieldAccrued < 0) {
-                console.log("new yield is negative");
-                _totalYieldAccrued = sigData.newTotalYieldAccrued + int(od.oracleError() - sigData.expectedOracleError);
+            else if(sigData.newTotalEthYieldAccrued < 0) {
+                _totalYieldAccrued = sigData.newTotalEthYieldAccrued + int(od.oracleError() - sigData.expectedEthOracleError);
             }
             else {
-                 console.log("new yield is zero");
                 _totalYieldAccrued = 0;
             }
-        } else if(sigData.expectedOracleError == od.oracleError()) {
-            console.log("errors are equal");
-            _totalYieldAccrued = sigData.newTotalYieldAccrued;
+        } else if(sigData.expectedEthOracleError == od.oracleError()) {
+            _totalYieldAccrued = sigData.newTotalEthYieldAccrued;
         } else {
             // Note that actual oracle error will only ever increase or be reset to 0,
             // so if expectedOracleError is not <= actual oracleError, there is something wrong with the oracle.
