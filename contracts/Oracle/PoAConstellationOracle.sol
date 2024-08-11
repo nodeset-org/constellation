@@ -12,28 +12,32 @@ pragma solidity 0.8.17;
  * @title PoAConstellationOracle
  * @notice Protocol interface for a proof-of-authority oracle that provides total yield accrued by xrETH and xRPL from the beacon chain
  * and current reward intervals for Rocket Pool.
- * The reported yield is the sum of :
+ * The reported yield is the sum of...
  * - The rewards or penalties for all validators and minipool contract balances (i.e. it does NOT include bonds)
- * - The rewards accrued for RPL during the current rewards period
- * - The rewards accrued for ETH
- * with the treasury and NO fees already subtracted. 
+ * - The rewards accrued for RPL during the current rewards period for RP
+ * - The rewards accrued for ETH during the current rewards period for RP
+ * ...with the treasury and NO fees already subtracted. 
  * @dev When the protocol receives rewards, it will remove these fees and keep track of an 
  * the amount received so that it is not double counted against the last reported oracle value. See also: OperatorDistributor.onEthRewardsReceived()
  */
 contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
     struct PoAOracleSignatureData {
-        int256 newTotalEthYieldAccrued; // The new total ETH yield accrued
-        int256 newTotalRplYieldAccrued; // The new total RPL yield accrued
+        int256 newOutstandingEthYield; // The new total ETH yield accrued
+        int256 newOutstandingRplYield; // The new total RPL yield accrued
         uint256 expectedEthOracleError; // The expected current ETH oracle error of the protocol
         uint256 expectedRplOracleError; // The expected current RPL oracle error of the protocol
         uint256 timeStamp; //The timestamp of the signature.
     }
 
-    event TotalYieldAccruedUpdated(int256 _amount);
+    event OutstandingYieldUpdated(int256 ethAmount, int256 rplAmount);
 
-    /// @dev This takes into account the validator and minipool contract balances
-    int256 internal _totalYieldAccrued;
-    uint256 internal _lastUpdatedTotalYieldAccrued;
+    /// @dev This takes into account the validator and minipool contract balances and outstanding merkle rewards AFTER fees and WITHOUT bonds
+    // This is all the ETH outside the view of the protocol contracts which is attributable to xrETH
+    int256 public outstandingEthYield;
+    /// @dev This takes into account the outstanding merkle rewards AFTER fees
+    // This is all the RPL outside the view of the protocol contracts which is attributable to xRPL
+    int256 public outstandingRplYield;
+    uint256 public lastUpdateTime;
 
     constructor() initializer {}
 
@@ -46,28 +50,21 @@ contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
     }
 
     /**
-     * @notice Retrieves the total yield accrued.
-     * @dev The reported yield is the sum of the rewards or penalties for all validators and minipool contract balances 
-     * (i.e. it does NOT include bonds).
-     * @return The total yield accrued.
-     */
-    function getTotalYieldAccrued() external view override returns (int256) {
-        return _totalYieldAccrued;
-    }
-
-    /**
-     * @notice Internal function to set the total yield accrued, which takes into account the validator and minipool contract balances.
+     * @notice Internal function to set the outstanding yield accrued, which takes into account the validator and minipool contract balances 
+     * as well as an estimate of what the next merkle claim will return.
      * @dev The reported yield should be the sum of the rewards or penalties for all validators and minipool contract balances 
      * (i.e. it should NOT include bonds).
      * @param _sig The signature
      * @param sigData The signed data
      */
-    function setTotalYieldAccrued(bytes calldata _sig, PoAOracleSignatureData calldata sigData) external {
+    function setOutstandingYield(bytes calldata _sig, PoAOracleSignatureData calldata sigData) external {
         address recoveredAddress = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(
                 keccak256(abi.encodePacked(
                     sigData.newTotalEthYieldAccrued, 
+                    sigData.newTotalRplYieldAccrued, 
                     sigData.expectedEthOracleError, 
+                    sigData.expectedRplOracleError, 
                     sigData.timeStamp, 
                     address(this), 
                     block.chainid))
@@ -78,37 +75,41 @@ contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
             _directory.hasRole(Constants.ADMIN_ORACLE_ROLE, recoveredAddress),
             'signer must have permission from admin oracle role'
         );
-        require(sigData.timeStamp > _lastUpdatedTotalYieldAccrued, 'cannot update oracle using old data');
+        require(sigData.timeStamp > lastUpdateTime, 'cannot update oracle using old data');
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
 
-        // Prevent a front-running attack/accident where a valid sig is generated, then a minipool is processed before 
-        // this function is called, causing a double-count of rewards. 
-        if(sigData.expectedEthOracleError < od.oracleError()) { 
-            if(sigData.newTotalEthYieldAccrued > 0) {
-                _totalYieldAccrued = sigData.newTotalEthYieldAccrued - int(od.oracleError() - sigData.expectedEthOracleError);
-            }
-            else if(sigData.newTotalEthYieldAccrued < 0) {
-                _totalYieldAccrued = sigData.newTotalEthYieldAccrued + int(od.oracleError() - sigData.expectedEthOracleError);
-            }
-            else {
-                _totalYieldAccrued = 0;
-            }
-        } else if(sigData.expectedEthOracleError == od.oracleError()) {
-            _totalYieldAccrued = sigData.newTotalEthYieldAccrued;
-        } else {
-            // Note that actual oracle error will only ever increase or be reset to 0,
-            // so if expectedOracleError is not <= actual oracleError, there is something wrong with the oracle.
-            revert("actual oracleError was less than expectedOracleError");
-        }
+        outstandingEthYield = getActualYieldAccrued(sigData.newTotalEthYieldAccrued, sigData.expectedEthOracleError, od.oracleEthError());
+        outstandingRplYield = getActualYieldAccrued(sigData.newTotalRplYieldAccrued, sigData.expectedRplOracleError, od.oracleRplError());
         
-        _lastUpdatedTotalYieldAccrued = block.timestamp;
-        emit TotalYieldAccruedUpdated(_totalYieldAccrued);
+        lastUpdateTime = block.timestamp;
+        emit OutstandingYieldUpdated(outstandingEthYield, outstandingRplYield);
 
         od.resetOracleError();
     }
 
-    function getLastUpdatedTotalYieldAccrued() external view override returns (uint256) {
-        return _lastUpdatedTotalYieldAccrued;
+    /// @notice Utility function to determine actual yield accrued from an oracle update. 
+    /// This prevents a front-running attack/accident where a valid sig is generated, then a minipool or merkle claim is processed before 
+    /// an oracle update is called, causing a double-count of rewards. 
+    /// @param reportedYield The yield reported by the oracle
+    /// @param expectedError The expected error accrued
+    /// @param actualError The actual error accrued
+    /// @return Actual yield accrued
+    /// @dev Actual oracle error should only ever increase or be reset to 0, so the expected error must be greater or this will revert.
+    function getActualYieldAccrued(uint256 reportedYield, uint256 expectedError, uint256 actualError) public view returns (uint256){
+        require(expectedError >= actualError, "actual error was less than expected error");
+        
+        int256 actualYieldAccrued = 0;
+        if(expectedError < actualError) { 
+            if(reportedYield > 0) {
+                actualYieldAccrued = expectedError - int(actualError - expectedError);
+            }
+            else if(reportedYield < 0) {
+                actualYieldAccrued = expectedError + int(actualError - expectedError);
+            }
+        } else if(expectedError == actualError) {
+            actualYieldAccrued = expectedError;
+        }
+        return actualYieldAccrued;
     }
 }

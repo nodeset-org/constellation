@@ -48,11 +48,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     // Index for the current minipool being processed
     uint256 public currentMinipool;
 
-    // The amount the oracle has already included in its summation
-    // This is important to track because when a minipool is skimmed, its balance will have 
-    // been reported already by the oracle, so there will be an extra amount of ETH TVL reported
-    // otherwise
-    uint256 public oracleError;
+    // The amount the oracle has already included in its ETH and RPL summations.
+    // When a minipool is skimmed or merkle claims are made, the income will have been reported 
+    // already by the oracle, so there will be an extra amount of yield that needs to be ignored in accounting
+    uint256 public oracleEthError;
+    uint256 public oracleRplError;
 
     constructor() initializer {}
 
@@ -149,9 +149,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /// @param rewardAmount amount of ETH rewards expected
     /// @param avgTreasuryFee Average treasury fee for the rewards received across all the minipools the rewards came from
     /// @param avgOperatorsFee Average operator fee for the rewards received across all the minipools the rewards came from
-    /// @param updateOracleError Should the oracle error be updated? Should be true if the ETH is coming from a minipool distribution,
-    /// otherwise (for merkle claims) it should be false
-    function onEthRewardsReceived(uint256 rewardAmount, uint256 avgTreasuryFee, uint256 avgOperatorsFee, bool updateOracleError) public onlyProtocol {
+    function onEthRewardsReceived(uint256 rewardAmount, uint256 avgTreasuryFee, uint256 avgOperatorsFee) public onlyProtocol {
         if(rewardAmount == 0)
             return;
 
@@ -161,25 +159,25 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         (bool success, ) = getDirectory().getTreasuryAddress().call{value: treasuryPortion}('');
         require(success, 'Transfer to treasury failed');
 
-        (bool success2, ) = getDirectory().getYieldDistributorAddress().call{value: nodeOperatorPortion}('');
+        (bool success2, ) = getDirectory().getNodeSetOperatorRewardDistributorAddress().call{value: nodeOperatorPortion}('');
         require(success2, 'Transfer to yield distributor failed');
 
         uint256 xrETHPortion = rewardAmount - treasuryPortion - nodeOperatorPortion;
 
-        if(updateOracleError){
-            OperatorDistributor(getDirectory().getOperatorDistributorAddress()).onIncreaseOracleError(xrETHPortion);
-        }
+        this.increaseOracleEthError(xrETHPortion);
     }
 
     /// @notice Called by the protocol when RPL rewards are distributed to this contract, which acts as the SuperNode 
     /// withdrawal address for both ETH and RPL rewards from Rocket Pool.
     /// Splits incoming assets up among the Treasury, YieldDistributor, and the WETHVault/OperatorDistributor.
-    /// @param _amount amount of RPL rewards expected
+    /// @param amount amount of RPL rewards expected
     /// @param avgTreasuryFee Average treasury fee for the rewards received across all the minipools the rewards came from
-    function onRplRewardsRecieved(uint256 _amount, uint256 avgTreasuryFee) external onlyProtocol {
-        uint256 treasuryPortion = _amount.mulDiv(avgTreasuryFee, 1e18);
+    function onRplRewardsRecieved(uint256 amount, uint256 avgTreasuryFee) external onlyProtocol {
+        uint256 treasuryPortion = amount.mulDiv(avgTreasuryFee, 1e18);
         IERC20 rpl = IERC20(_directory.getRPLAddress());
         SafeERC20.safeTransfer(rpl, _directory.getTreasuryAddress(), treasuryPortion);
+
+        this.increaseOracleRplError(amount-treasuryPortion);
     }
 
     /**
@@ -442,14 +440,20 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Resets the oracle error.
+     * @notice Resets the oracle error values to zero.
+     * @dev intended to be called on oracle update
      */
-    function resetOracleError() external onlyProtocol {
-        oracleError = 0;
+    function resetEthOracleError() external onlyProtocol {
+        oracleEthError = 0;
+        oracleRplError = 0;
     }
 
-    function onIncreaseOracleError(uint256 _amount) external onlyProtocol {
-        oracleError += _amount;
+    function increaseOracleEthError(uint256 _amount) external onlyProtocol {
+        oracleEthError += _amount;
+    }
+
+    function increaseOracleRplError(uint256 _amount) external onlyProtocol {
+        oracleRplError += _amount;
     }
 
     receive() external payable {}

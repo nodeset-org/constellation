@@ -421,7 +421,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         merkleClaimNonce++;
         
         OperatorDistributor od = OperatorDistributor(payable(odAddress));
-        od.onEthRewardsReceived(ethReward, _config.avgEthTreasuryFee, _config.avgEthOperatorFee, false);
+        od.onEthRewardsReceived(ethReward, _config.avgEthTreasuryFee, _config.avgEthOperatorFee);
         od.onRplRewardsRecieved(rplReward, _config.avgRplTreasuryFee);
         od.rebalanceRplVault();
         od.rebalanceWethVault();

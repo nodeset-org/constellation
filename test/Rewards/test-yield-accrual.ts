@@ -51,7 +51,7 @@ describe("Yield Accrual", function () {
                             { avgTreasuryFeeRaw: 1, avgOperatorsFeeRaw: 0, },
                             { avgTreasuryFeeRaw: 0, avgOperatorsFeeRaw: 1, }
                         ].forEach((params: ParamsType) => {
-                            it(`should increase balance & call onIncreaseOracleError: avgTreasuryFee=${params.avgTreasuryFeeRaw}, avgOperatorsFee=${params.avgOperatorsFeeRaw}`, async () => {
+                            it(`should increase balance & call increaseOracleError: avgTreasuryFee=${params.avgTreasuryFeeRaw}, avgOperatorsFee=${params.avgOperatorsFeeRaw}`, async () => {
                                 const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
                                 const reward = ethers.utils.parseEther("1")
                                 const avgTreasuryFee = ethers.utils.parseEther(`${params.avgTreasuryFeeRaw}`) // 50%
@@ -103,7 +103,7 @@ describe("Yield Accrual", function () {
                             { avgTreasuryFeeRaw: 1, avgOperatorsFeeRaw: 0, },
                             { avgTreasuryFeeRaw: 0, avgOperatorsFeeRaw: 1, }
                         ].forEach((params: ParamsType) => {
-                            it(`should increase balanceEthAndWeth & not call onIncreaseOracleError: avgTreasuryFee=${params.avgTreasuryFeeRaw}, avgOperatorsFee=${params.avgOperatorsFeeRaw}`, async () => {
+                            it(`should increase balanceEthAndWeth & not call increaseOracleError: avgTreasuryFee=${params.avgTreasuryFeeRaw}, avgOperatorsFee=${params.avgOperatorsFeeRaw}`, async () => {
                                 const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
                                 const reward = ethers.utils.parseEther("1")
                                 const avgTreasuryFee = ethers.utils.parseEther(`${params.avgTreasuryFeeRaw}`) // 50%
