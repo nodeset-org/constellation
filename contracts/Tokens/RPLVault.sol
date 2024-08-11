@@ -11,6 +11,8 @@ import '../Operator/SuperNodeAccount.sol';
 import '../UpgradeableBase.sol';
 import '../Operator/OperatorDistributor.sol';
 
+import '../Interfaces/Oracles/IConstellationOracle.sol';
+
 import 'hardhat/console.sol';
 
 /**
@@ -119,12 +121,36 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
+     * @notice Retrieves the total yield available for distribution.
+     * @dev This function calculates the yield that can be distributed by subtracting the total yield already distributed 
+     * from the total yield accrued as reported by the Oracle.
+     * @return distributableYield The total yield available for distribution.
+     */
+    function getDistributableYield() public view returns (uint256 distributableYield, bool signed) {
+        int256 oracleError = int256(OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleRplError());
+        int256 totalUnrealizedAccrual = IConstellationOracle(getDirectory().getOracleAddress()).getOutstandingEthYield() - oracleError;
+
+        int256 diff = totalUnrealizedAccrual;
+        if (diff >= 0) {
+            signed = false;
+            distributableYield = uint256(diff);
+        } else {
+            signed = true;
+            distributableYield = uint256(-diff);
+        }
+    }
+
+    /**
      * @notice Returns the total assets managed by this vault. That is, all the RPL backing xRPL.
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
-        return (IERC20(asset()).balanceOf(address(this)) +
-            OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl());
+        OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
+        (uint256 distributableYield, bool signed) = this.getDistributableYield();
+        return uint256(
+            int((IERC20(asset()).balanceOf(address(this)) + od.getTvlRpl())) +
+            (signed ? -int(distributableYield) : int(distributableYield))
+        );
     }
 
     /**

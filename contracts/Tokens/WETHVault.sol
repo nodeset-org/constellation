@@ -155,7 +155,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function totalAssets() public view override returns (uint256) {
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
-        (uint256 distributableYield, bool signed) = getDistributableYield();
+        (uint256 distributableYield, bool signed) = this.getDistributableYield();
         return (
             uint256(
                 int(IERC20(asset()).balanceOf(address(this)) + od.getTvlEth()) +

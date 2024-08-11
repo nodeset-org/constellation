@@ -247,6 +247,8 @@ describe("XRETHOracle", function () {
                     expect(expectedOracleError < currentOracleError); 
                     await oracle.connect(admin).setOutstandingYield(signature, sigData)
                     newTotalYield = newTotalYield.sub(actualYieldIncrease);
+                    console.log("newTotalYield", newTotalYield);
+                    console.log("actualYieldIncrease", actualYieldIncrease);
                     expect(await oracle.getOutstandingEthYield()).to.equal(newTotalYield);
                 });
             });
