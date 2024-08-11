@@ -31,6 +31,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     uint256 public treasuryFee; // Treasury fee in basis points
     uint256 public nodeOperatorFee; // NO fee in basis points
+    
+    // to prevent oracle sandwich attacks, there is a small fee charged on mint
+    // see the original issue for RP for more details: https://consensys.io/diligence/audits/2021/04/rocketpool/#rockettokenreth---sandwiching-opportunity-on-price-updates
+    uint256 public mintFee;
 
     uint256 public totalCounts;
     uint256 public totalPenaltyBond;
@@ -56,6 +60,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         // default fees with 14% rETH commission mean WETHVault share returns are equal to base ETH staking rewards
         treasuryFee = 0.14788e18; 
         nodeOperatorFee = 0.14788e18;
+        mintFee = 0.0005e18; // .05% by default
     }
 
     /**
@@ -126,7 +131,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function getDistributableYield() public view returns (uint256 distributableYield, bool signed) {
         int256 oracleError = int256(OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleEthError());
-        int256 totalUnrealizedAccrual = getOracle().getOutstandingEthYield() - oracleError;
+        int256 outstandingYield = (IConstellationOracle(getDirectory().getOracleAddress())).getOutstandingEthYield();
+        // if the most recent reported yield is less than the oracleError, there's no unrealized yield remaining
+        int256 totalUnrealizedAccrual = outstandingYield >= 0 ? outstandingYield - oracleError : outstandingYield + oracleError;
 
         int256 diff = totalUnrealizedAccrual;
         if (diff >= 0) {
@@ -136,15 +143,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             signed = true;
             distributableYield = uint256(-diff);
         }
-    }
-
-    /**
-     * @notice Retrieves the address of the Oracle contract.
-     * @dev This function gets the address of the Oracle contract from the Directory contract.
-     * @return The address of the Oracle contract.
-     */
-    function getOracle() public view returns (IConstellationOracle) {
-        return IConstellationOracle(getDirectory().getOracleAddress());
     }
 
     /**
@@ -289,5 +287,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));
         od.rebalanceWethVault();
+    }
+
+    function setMintFee(uint256 newMintFee) external onlyMediumTimelock() {
+        require(newMintFee >= 0 && newMintFee <= 1e18, "new mint fee must be between 0 and 100%");
+        mintFee = newMintFee;
     }
 }

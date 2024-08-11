@@ -15,7 +15,7 @@ describe("Operator Distributor", function () {
 		const { operatorDistributor } = protocol;
 
 		// create 1 minipool
-		await prepareOperatorDistributionContract(setupData, 1);
+		//await prepareOperatorDistributionContract(setupData, 1);
 		const minipools = await registerNewValidator(setupData, [signers.random]);
 
 		const priorAssets = await protocol.vCWETH.totalAssets();
@@ -33,16 +33,26 @@ describe("Operator Distributor", function () {
 		// random person distributes the balance to increase nodeRefundBalance
 		await (await ethers.getContractAt("IMinipool", minipools[0])).connect(signers.random).distributeBalance(true);
 
+		console.log("OD balance ETH/WETH BEFORE UPDATE", 
+			await ethers.provider.getBalance(protocol.operatorDistributor.address), "/",
+			await protocol.wETH.balanceOf(protocol.operatorDistributor.address)
+		  );
+		console.log("TVL OD BEFORE UPDATE", await protocol.operatorDistributor.getTvlEth());
+		console.log("WETHVault balance ETH/WETH BEFORE UPDATE", 
+			await ethers.provider.getBalance(protocol.vCWETH.address), "/",
+			await protocol.wETH.balanceOf(protocol.vCWETH.address)
+		  );
+
 		// protocol sweeps in rewards
 		await protocol.operatorDistributor.connect(signers.random).processMinipool(minipools[0]);
 		console.log("priorAssets", priorAssets);
 		console.log("xrETHPortion", xrETHPortion);
-		console.log("OD balance ETH/WETH", 
+		console.log("OD balance ETH/WETH AFTER UPDATE", 
 			await ethers.provider.getBalance(protocol.operatorDistributor.address), "/",
 			await protocol.wETH.balanceOf(protocol.operatorDistributor.address)
 		  );
-		console.log("TVL OD", await protocol.operatorDistributor.getTvlEth());
-		console.log("WETHVault balance ETH/WETH", 
+		console.log("TVL OD AFTER UPDATE", await protocol.operatorDistributor.getTvlEth());
+		console.log("WETHVault balance ETH/WETH AFTER UPDATE", 
 			await ethers.provider.getBalance(protocol.vCWETH.address), "/",
 			await protocol.wETH.balanceOf(protocol.vCWETH.address)
 		  );

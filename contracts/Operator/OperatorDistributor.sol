@@ -384,18 +384,17 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             minipool.distributeBalance(false);
             // stop tracking
             sna.onMinipoolRemoved(address(minipool));
-            this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
-            // account for rewards 
-            this.onEthRewardsReceived(rewards, treasuryFee, noFee);
+            this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool))); 
         } else if (balanceAfterRefund < depositBalance) { // it's still staking
             uint256 priorBalance = address(this).balance;
             // withdrawal address calls distributeBalance(true)
             minipool.distributeBalance(true);
             // calculate rewards
             rewards = address(this).balance > priorBalance ? address(this).balance - priorBalance : 0;
-            this.onEthRewardsReceived(rewards, treasuryFee, noFee);
         }
  
+        // account for rewards 
+        this.onEthRewardsReceived(rewards, treasuryFee, noFee);
         this.rebalanceWethVault();
     }
 

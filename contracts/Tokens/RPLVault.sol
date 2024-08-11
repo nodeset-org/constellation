@@ -30,6 +30,10 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     uint256 public treasuryFee;
 
+    // to prevent oracle sandwich attacks, there is a small fee charged on mint
+    // see the original issue for RP for more details: https://consensys.io/diligence/audits/2021/04/rocketpool/#rockettokenreth---sandwiching-opportunity-on-price-updates
+    uint256 public mintFee;
+
     /**
      * @notice Sets the liquidity reserve as a percentage of TVL. E.g. if set to 2% (0.02e18), then 2% of the 
      * RPL backing xRPL will be reserved for withdrawals. If the reserve is below maximum, it will be refilled before assets are
@@ -54,7 +58,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
         liquidityReservePercent = 0.02e18;
         minWethRplRatio = 0; // 0% by default
-        treasuryFee = 0.01e18;
+        treasuryFee = 0.3e18; // 30% by default
+        mintFee = 0.0005e18; // 0.05% by default
     }
 
     /**
@@ -126,18 +131,11 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * from the total yield accrued as reported by the Oracle.
      * @return distributableYield The total yield available for distribution.
      */
-    function getDistributableYield() public view returns (uint256 distributableYield, bool signed) {
-        int256 oracleError = int256(OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleRplError());
-        int256 totalUnrealizedAccrual = IConstellationOracle(getDirectory().getOracleAddress()).getOutstandingEthYield() - oracleError;
-
-        int256 diff = totalUnrealizedAccrual;
-        if (diff >= 0) {
-            signed = false;
-            distributableYield = uint256(diff);
-        } else {
-            signed = true;
-            distributableYield = uint256(-diff);
-        }
+    function getDistributableYield() public view returns (uint256) {
+        uint256 oracleError = OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleRplError();
+        uint256 outstandingYield = (IConstellationOracle(getDirectory().getOracleAddress())).getOutstandingRplYield();
+        // if the most recent reported yield is less than the oracleError, there's no unrealized yield remaining
+        return outstandingYield >= oracleError ? outstandingYield - oracleError : 0;
     }
 
     /**
@@ -146,10 +144,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function totalAssets() public view override returns (uint256) {
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
-        (uint256 distributableYield, bool signed) = this.getDistributableYield();
         return uint256(
-            int((IERC20(asset()).balanceOf(address(this)) + od.getTvlRpl())) +
-            (signed ? -int(distributableYield) : int(distributableYield))
+            (IERC20(asset()).balanceOf(address(this)) + od.getTvlRpl()) +
+            this.getDistributableYield()
         );
     }
 
@@ -227,6 +224,11 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));
         od.rebalanceRplVault();
         od.rebalanceRplStake(SuperNodeAccount(getDirectory().getSuperNodeAddress()).getTotalEthStaked());
+    }
+
+    function setMintFee(uint256 newMintFee) external onlyMediumTimelock() {
+        require(newMintFee >= 0 && newMintFee <= 1e18, "new mint fee must be between 0 and 100%");
+        mintFee = newMintFee;
     }
 
     /// Calculates the treasury portion of a specific RPL reward amount.

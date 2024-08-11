@@ -23,24 +23,24 @@ pragma solidity 0.8.17;
 contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
     struct PoAOracleSignatureData {
         int256 newOutstandingEthYield; // The new total ETH yield accrued
-        int256 newOutstandingRplYield; // The new total RPL yield accrued
+        uint256 newOutstandingRplYield; // The new total RPL yield accrued
         uint256 expectedEthOracleError; // The expected current ETH oracle error of the protocol
         uint256 expectedRplOracleError; // The expected current RPL oracle error of the protocol
         uint256 timeStamp; //The timestamp of the signature.
     }
 
-    event OutstandingYieldUpdated(int256 ethAmount, int256 rplAmount);
+    event OutstandingYieldUpdated(int256 ethAmount, uint256 rplAmount);
 
     /// @dev This takes into account the validator and minipool contract balances and outstanding merkle rewards AFTER fees and WITHOUT bonds
     // This is all the ETH outside the view of the protocol contracts which is attributable to xrETH
     int256 public outstandingEthYield;
     /// @dev This takes into account the outstanding merkle rewards AFTER fees
     // This is all the RPL outside the view of the protocol contracts which is attributable to xRPL
-    int256 public outstandingRplYield;
+    uint256 public outstandingRplYield;
     uint256 public lastUpdateTime;
 
     function getOutstandingEthYield() external view override returns (int256) { return outstandingEthYield; }
-    function getOutstandingRplYield() external view override returns (int256) { return outstandingRplYield; }
+    function getOutstandingRplYield() external view override returns (uint256) { return outstandingRplYield; }
 
     constructor() initializer {}
 
@@ -83,7 +83,7 @@ contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
 
         outstandingEthYield = getActualYieldAccrued(sigData.newOutstandingEthYield, sigData.expectedEthOracleError, od.oracleEthError());
-        outstandingRplYield = getActualYieldAccrued(sigData.newOutstandingRplYield, sigData.expectedRplOracleError, od.oracleRplError());
+        outstandingRplYield = uint256(getActualYieldAccrued(int(sigData.newOutstandingRplYield), sigData.expectedRplOracleError, od.oracleRplError()));
         
         lastUpdateTime = block.timestamp;
         emit OutstandingYieldUpdated(outstandingEthYield, outstandingRplYield);

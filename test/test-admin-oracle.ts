@@ -226,7 +226,7 @@ describe("XRETHOracle", function () {
                     let newTotalYield = ethers.utils.parseEther("100");
                     let currentOracleError = await protocol.operatorDistributor.oracleEthError();
                     const expectedOracleError = currentOracleError;
-                    const sigData = { newOutstandingEthYield: newTotalYield, newOutstandingRplYield: 0, expectedEthOracleError: currentOracleError, expectedRplOracleError:0, timeStamp: timestamp };
+                    const sigData = { newOutstandingEthYield: newTotalYield, newOutstandingRplYield: 0, expectedEthOracleError: expectedOracleError, expectedRplOracleError:0, timeStamp: timestamp };
                     const messageHash = ethers.utils.solidityKeccak256(
                         ["int256", "int256", "uint256", "uint256", "uint256", "address", "uint256"], 
                         [newTotalYield, 0, currentOracleError, 0, timestamp, protocol.oracle.address, chainId]);
@@ -240,10 +240,15 @@ describe("XRETHOracle", function () {
                         value: newRewards
                     })
 
+
+
+
+                    
                     await protocol.operatorDistributor.processMinipool(minipools[0]);
 
                     const actualYieldIncrease = (await protocol.vCWETH.totalAssets()).sub(priorBalance);
-                    
+                    currentOracleError = await protocol.operatorDistributor.oracleEthError();
+
                     expect(expectedOracleError < currentOracleError); 
                     await oracle.connect(admin).setOutstandingYield(signature, sigData)
                     newTotalYield = newTotalYield.sub(actualYieldIncrease);
