@@ -4,7 +4,7 @@ import path from 'path';
 import { getNextContractAddress } from "../../test/utils/utils";
 import { getInitializerData } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import readline from 'readline';
-import { Treasury, Directory, IRocketStorage, IConstellationOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, YieldDistributor, PoAConstellationOracle } from "../../typechain-types";
+import { Treasury, Directory, IRocketStorage, IConstellationOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, NodeSetOperatorRewardDistributor, PoAConstellationOracle } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Protocol, Signers } from "../../test/test";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
@@ -100,7 +100,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
     })
 
     const yieldDistributorProxy = await retryOperation(async function () {
-        const yd = await upgrades.deployProxy(await ethers.getContractFactory("YieldDistributor", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        const yd = await upgrades.deployProxy(await ethers.getContractFactory("NodeSetOperatorRewardDistributor", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         if (log) console.log("yield distributor deployed to", yd.address)
         return yd
     })
@@ -183,7 +183,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
         vCWETH: vCWETHProxy as WETHVault,
         vCRPL: vCRPLProxy as RPLVault,
         operatorDistributor: operatorDistributorProxy as OperatorDistributor,
-        yieldDistributor: yieldDistributorProxy as YieldDistributor,
+        yieldDistributor: yieldDistributorProxy as NodeSetOperatorRewardDistributor,
         priceFetcher: priceFetcherProxy as PriceFetcher,
         oracle: oracleProxy as PoAConstellationOracle,
         superNode: superNodeProxy as SuperNodeAccount,
@@ -261,7 +261,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     tx = await directory.connect(signers.admin).setTreasury(deployer.address);
     await tx.wait();
 
-    const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, operatorDistributor, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
+    const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, operatorDistributor, superNode, oracle, priceFetcher, wETH, sanctions, yieldDistributor };
 
     // send all rpl from admin to rplWhale
     const rplWhaleBalance = await rplContract.balanceOf(signers.deployer.address);

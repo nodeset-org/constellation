@@ -6,7 +6,7 @@ import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgrad
 import './RPLVault.sol';
 import '../PriceFetcher.sol';
 import '../UpgradeableBase.sol';
-import '../Operator/YieldDistributor.sol';
+import '../Operator/NodeSetOperatorRewardDistributor.sol';
 import '../Utils/Constants.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/Oracles/IConstellationOracle.sol';
@@ -125,9 +125,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @return distributableYield The total yield available for distribution.
      */
     function getDistributableYield() public view returns (uint256 distributableYield, bool signed) {
-        uint256 lastUpdate = getOracle().getLastUpdatedTotalYieldAccrued();
         int256 oracleError = int256(OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleEthError());
-        int256 totalUnrealizedAccrual = getOracle().getTotalYieldAccrued() - (lastUpdate == 0 ? int256(0) : oracleError);
+        int256 totalUnrealizedAccrual = getOracle().getOutstandingEthYield() - oracleError;
 
         int256 diff = totalUnrealizedAccrual;
         if (diff >= 0) {

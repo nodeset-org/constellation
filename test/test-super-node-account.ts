@@ -384,7 +384,7 @@ describe("SuperNodeAccount", function () {
             sig: sig
         }, {
             value: ethers.utils.parseEther("1")
-        })).to.be.revertedWith("signer must have permission from admin server role");
+        })).to.be.revertedWith("bad signer role, params, or encoding");
     });
 
     it("fails - forget to lock 1 eth", async function () {

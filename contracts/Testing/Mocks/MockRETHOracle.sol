@@ -7,13 +7,6 @@ import '../../UpgradeableBase.sol';
 contract MockRETHOracle is IConstellationOracle, UpgradeableBase {
     int256 private _yield = 0 ether;
 
-    function setTotalYieldAccrued(int256 yield) public {
-        _yield = yield;
-    }
-
-    function getTotalYieldAccrued() public view override returns (int256) {
-        return _yield;
-    }
-
-    function getLastUpdatedTotalYieldAccrued() external view override returns (uint256) {}
+    function getOutstandingEthYield() external view override returns (int256) { return _yield; }
+    function getOutstandingRplYield() external view override returns (int256) { return _yield; }
 }

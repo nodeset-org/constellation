@@ -15,16 +15,16 @@ describe("Distributable Yield", async () => {
                 const network = await ethers.provider.getNetwork();
                 const chainId = network.chainId;
                 const newTotalYield = ethers.utils.parseEther("100");
-                const currentOracleError = await protocol.operatorDistributor.oracleError();
+                const currentOracleError = await protocol.operatorDistributor.oracleEthError();
                 const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: currentOracleError, timeStamp: timestamp };
                 const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, protocol.oracle.address, chainId]);
                 const signature = await signers.random.signMessage(ethers.utils.arrayify(messageHash));
-                const tx = await protocol.oracle.connect(signers.admin).setTotalYieldAccrued(signature, sigData);
+                const tx = await protocol.oracle.connect(signers.admin).setOutstandingYield(signature, sigData);
                 const receipt = await tx.wait();
                 const block = await ethers.provider.getBlock(receipt.blockNumber)
                 
-                expect(await protocol.oracle.getLastUpdatedTotalYieldAccrued()).equals(block.timestamp);
-                expect(await protocol.operatorDistributor.oracleError()).equals(0);
+                expect(await protocol.oracle.lastUpdateTime()).equals(block.timestamp);
+                expect(await protocol.operatorDistributor.oracleEthError()).equals(0);
 
                 const {signed, distributableYield} = await protocol.vCWETH.getDistributableYield();
                 expect(signed).equals(false)
@@ -42,7 +42,7 @@ describe("Distributable Yield", async () => {
                 const network = await ethers.provider.getNetwork();
                 const chainId = network.chainId;
                 const newTotalYield = ethers.utils.parseEther("0");
-                const currentOracleError = await protocol.operatorDistributor.oracleError();
+                const currentOracleError = await protocol.operatorDistributor.oracleEthError();
                 const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: currentOracleError, timeStamp: timestamp };
                 const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, protocol.oracle.address, chainId]);
                 const signature = await signers.random.signMessage(ethers.utils.arrayify(messageHash));
@@ -50,9 +50,9 @@ describe("Distributable Yield", async () => {
                 const receipt = await tx.wait();
                 const block = await ethers.provider.getBlock(receipt.blockNumber)
                 
-                expect(await protocol.oracle.getLastUpdatedTotalYieldAccrued()).equals(block.timestamp);
-                expect(await protocol.oracle.getLastUpdatedTotalYieldAccrued()).not.equals(0);
-                expect(await protocol.operatorDistributor.oracleError()).equals(0);
+                expect(await protocol.oracle.lastUpdateTime()).equals(block.timestamp);
+                expect(await protocol.oracle.lastUpdateTime()).not.equals(0);
+                expect(await protocol.operatorDistributor.oracleEthError()).equals(0);
 
                 const {signed, distributableYield} = await protocol.vCWETH.getDistributableYield();
                 expect(signed).equals(false)
@@ -70,17 +70,17 @@ describe("Distributable Yield", async () => {
                 const network = await ethers.provider.getNetwork();
                 const chainId = network.chainId;
                 const newTotalYield = ethers.utils.parseEther("-10");
-                const currentOracleError = await protocol.operatorDistributor.oracleError();
-                const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: currentOracleError, timeStamp: timestamp };
+                const currentOracleError = await protocol.operatorDistributor.oracleEthError();
+                const sigData = { newTotalEthYieldAccrued: newTotalYield, expectedOracleError: currentOracleError, timeStamp: timestamp };
                 const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, protocol.oracle.address, chainId]);
                 const signature = await signers.random.signMessage(ethers.utils.arrayify(messageHash));
-                const tx = await protocol.oracle.connect(signers.admin).setTotalYieldAccrued(signature, sigData);
+                const tx = await protocol.oracle.connect(signers.admin).setOutstandingYield(signature, sigData);
                 const receipt = await tx.wait();
                 const block = await ethers.provider.getBlock(receipt.blockNumber)
                 
-                expect(await protocol.oracle.getLastUpdatedTotalYieldAccrued()).equals(block.timestamp);
-                expect(await protocol.oracle.getLastUpdatedTotalYieldAccrued()).not.equals(0);
-                expect(await protocol.operatorDistributor.oracleError()).equals(0);
+                expect(await protocol.oracle.lastUpdateTime()).equals(block.timestamp);
+                expect(await protocol.oracle.lastUpdateTime()).not.equals(0);
+                expect(await protocol.operatorDistributor.oracleEthError()).equals(0);
 
                 const {signed, distributableYield} = await protocol.vCWETH.getDistributableYield();
                 expect(signed).equals(true)
@@ -95,8 +95,8 @@ describe("Distributable Yield", async () => {
             it("should return positive totalUnrealizedAccrual", async () => {
                 const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
 
-                expect(await protocol.oracle.getLastUpdatedTotalYieldAccrued()).equals(0);
-                expect(await protocol.operatorDistributor.oracleError()).equals(0);
+                expect(await protocol.oracle.lastUpdateTime()).equals(0);
+                expect(await protocol.operatorDistributor.oracleEthError()).equals(0);
 
                 const {signed, distributableYield} = await protocol.vCWETH.getDistributableYield();
 

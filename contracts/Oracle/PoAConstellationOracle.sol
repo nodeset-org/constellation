@@ -39,6 +39,9 @@ contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
     int256 public outstandingRplYield;
     uint256 public lastUpdateTime;
 
+    function getOutstandingEthYield() external view override returns (int256) { return outstandingEthYield; }
+    function getOutstandingRplYield() external view override returns (int256) { return outstandingRplYield; }
+
     constructor() initializer {}
 
     /**
@@ -61,8 +64,8 @@ contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
         address recoveredAddress = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(
                 keccak256(abi.encodePacked(
-                    sigData.newTotalEthYieldAccrued, 
-                    sigData.newTotalRplYieldAccrued, 
+                    sigData.newOutstandingEthYield, 
+                    sigData.newOutstandingRplYield, 
                     sigData.expectedEthOracleError, 
                     sigData.expectedRplOracleError, 
                     sigData.timeStamp, 
@@ -79,8 +82,8 @@ contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
 
-        outstandingEthYield = getActualYieldAccrued(sigData.newTotalEthYieldAccrued, sigData.expectedEthOracleError, od.oracleEthError());
-        outstandingRplYield = getActualYieldAccrued(sigData.newTotalRplYieldAccrued, sigData.expectedRplOracleError, od.oracleRplError());
+        outstandingEthYield = getActualYieldAccrued(sigData.newOutstandingEthYield, sigData.expectedEthOracleError, od.oracleEthError());
+        outstandingRplYield = getActualYieldAccrued(sigData.newOutstandingRplYield, sigData.expectedRplOracleError, od.oracleRplError());
         
         lastUpdateTime = block.timestamp;
         emit OutstandingYieldUpdated(outstandingEthYield, outstandingRplYield);
@@ -96,19 +99,19 @@ contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
     /// @param actualError The actual error accrued
     /// @return Actual yield accrued
     /// @dev Actual oracle error should only ever increase or be reset to 0, so the expected error must be greater or this will revert.
-    function getActualYieldAccrued(uint256 reportedYield, uint256 expectedError, uint256 actualError) public view returns (uint256){
+    function getActualYieldAccrued(int256 reportedYield, uint256 expectedError, uint256 actualError) public view returns (int256){
         require(expectedError >= actualError, "actual error was less than expected error");
         
         int256 actualYieldAccrued = 0;
         if(expectedError < actualError) { 
             if(reportedYield > 0) {
-                actualYieldAccrued = expectedError - int(actualError - expectedError);
+                actualYieldAccrued = reportedYield - int(actualError - expectedError);
             }
             else if(reportedYield < 0) {
-                actualYieldAccrued = expectedError + int(actualError - expectedError);
+                actualYieldAccrued = reportedYield + int(actualError - expectedError);
             }
         } else if(expectedError == actualError) {
-            actualYieldAccrued = expectedError;
+            actualYieldAccrued = reportedYield;
         }
         return actualYieldAccrued;
     }

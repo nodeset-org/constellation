@@ -303,9 +303,9 @@ describe("XRETHOracle", function () {
                     })
                     await protocol.operatorDistributor.processMinipool(minipools[0]);
                     expect(expectedOracleError < currentOracleError);                    
-                    await oracle.connect(admin).setTotalYieldAccrued(signature, sigData)
+                    await oracle.connect(admin).setOutstandingYield(signature, sigData)
 
-                    expect(await oracle.getTotalYieldAccrued()).to.equal(0);
+                    expect(await oracle.getOutstandingEthYield()).to.equal(0);
                 });
             });
         });
@@ -323,7 +323,7 @@ describe("XRETHOracle", function () {
                 const network = await ethers.provider.getNetwork();
                 const chainId = network.chainId;
                 let newTotalYield = ethers.utils.parseEther("100");
-                let currentOracleError = await protocol.operatorDistributor.oracleError();
+                let currentOracleError = await protocol.operatorDistributor.oracleEthError();
                 const expectedOracleError = currentOracleError;
                 const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: expectedOracleError, timeStamp: timestamp };
                 const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, oracle.address, chainId]);

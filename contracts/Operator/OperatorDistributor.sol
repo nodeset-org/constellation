@@ -386,14 +386,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             sna.onMinipoolRemoved(address(minipool));
             this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
             // account for rewards 
-            this.onEthRewardsReceived(rewards, treasuryFee, noFee, true);
+            this.onEthRewardsReceived(rewards, treasuryFee, noFee);
         } else if (balanceAfterRefund < depositBalance) { // it's still staking
             uint256 priorBalance = address(this).balance;
             // withdrawal address calls distributeBalance(true)
             minipool.distributeBalance(true);
             // calculate rewards
             rewards = address(this).balance > priorBalance ? address(this).balance - priorBalance : 0;
-            this.onEthRewardsReceived(rewards, treasuryFee, noFee, true);
+            this.onEthRewardsReceived(rewards, treasuryFee, noFee);
         }
  
         this.rebalanceWethVault();
@@ -443,7 +443,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @notice Resets the oracle error values to zero.
      * @dev intended to be called on oracle update
      */
-    function resetEthOracleError() external onlyProtocol {
+    function resetOracleError() external onlyProtocol {
         oracleEthError = 0;
         oracleRplError = 0;
     }
