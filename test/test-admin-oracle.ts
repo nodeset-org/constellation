@@ -240,10 +240,6 @@ describe("XRETHOracle", function () {
                         value: newRewards
                     })
 
-
-
-
-                    
                     await protocol.operatorDistributor.processMinipool(minipools[0]);
 
                     const actualYieldIncrease = (await protocol.vCWETH.totalAssets()).sub(priorBalance);
@@ -384,7 +380,7 @@ describe("XRETHOracle", function () {
                 const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
                  
                 await expect(oracle.connect(admin).setOutstandingYield(signature, sigData))
-                    .to.be.revertedWith('actual oracleError was less than expectedOracleError');
+                    .to.be.revertedWith('actual error was less than expected error');
             });
         });
         
