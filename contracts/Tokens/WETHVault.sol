@@ -32,7 +32,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public treasuryFee; // Treasury fee in basis points
     uint256 public nodeOperatorFee; // NO fee in basis points
     
-    // to prevent oracle sandwich attacks, there is a small fee charged on mint
+    // To prevent oracle sandwich attacks, there is a small fee charged on mint
     // see the original issue for RP for more details: https://consensys.io/diligence/audits/2021/04/rocketpool/#rockettokenreth---sandwiching-opportunity-on-price-updates
     uint256 public mintFee;
 
@@ -83,12 +83,21 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             return;
         }
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        od.processNextMinipool();
+        
         require(tvlRatioEthRpl(assets, true) <= maxWethRplRatio, 'insufficient RPL coverage');
-        super._deposit(caller, receiver, assets, shares);
 
-        SafeERC20.safeTransfer(IERC20(asset()), address(od), assets);
-        od.rebalanceWethVault();
+        uint256 mintFeePortion = this.getMintFeePortion(assets);
+
+        super._deposit(caller, receiver, assets, shares);
+        
+        address treasuryAddress = getDirectory().getTreasuryAddress();
+        if(mintFeePortion > 0 && treasuryAddress != address(this))
+            SafeERC20.safeTransfer(IERC20(asset()), treasuryAddress, assets); // transfer the mint fee to the treasury
+
+        // move everything to operator distributor in anticipation of rebalancing everything
+        SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));
+        od.processNextMinipool();
+        od.rebalanceWethVault(); // just in case there is no minipool balances to process, rebalance anyway
     }
 
     /**
@@ -218,6 +227,12 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function getIncomeAfterFees(uint256 income) public view returns (uint256){
         return income - income.mulDiv((treasuryFee + nodeOperatorFee), 1e18);
+    }
+
+    /// Calculates the mint fee portion of a specific deposit amount.
+    /// @param _amount The deposit expected
+    function getMintFeePortion(uint256 _amount) external view returns (uint256) {
+        return _amount.mulDiv(mintFee, 1e18, Math.Rounding.Up);
     }
 
     /**ADMIN FUNCTIONS */

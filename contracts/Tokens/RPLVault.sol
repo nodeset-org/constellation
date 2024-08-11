@@ -30,7 +30,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
     uint256 public treasuryFee;
 
-    // to prevent oracle sandwich attacks, there is a small fee charged on mint
+    // To prevent oracle sandwich attacks, there is a small fee charged on mint
     // see the original issue for RP for more details: https://consensys.io/diligence/audits/2021/04/rocketpool/#rockettokenreth---sandwiching-opportunity-on-price-updates
     uint256 public mintFee;
 
@@ -84,12 +84,29 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
 
+        uint256 mintFeePortion = this.getMintFeePortion(assets);
         super._deposit(caller, receiver, assets, shares);
 
-        SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));
+        address treasuryAddress = getDirectory().getTreasuryAddress();
+        if(mintFeePortion > 0 && treasuryAddress != address(this))
+            SafeERC20.safeTransfer(IERC20(asset()), treasuryAddress, assets); // transfer the mint fee to the treasury
 
+        // move everything to operator distributor in anticipation of rebalancing everything
+        SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));
         od.processNextMinipool();
         od.rebalanceRplVault();
+    }
+
+    /// @dev Preview an entry fee on deposit. See {IERC4626-previewDeposit}.
+    function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
+        uint256 fee = this.getMintFeePortion(assets);
+        return super.previewDeposit(assets - fee);
+    }
+
+    /// @dev Preview an entry fee on mint. See {IERC4626-previewMint}.
+    function previewMint(uint256 shares) public view virtual override returns (uint256) {
+        uint256 assets = super.previewMint(shares);
+        return assets + this.getMintFeePortion(assets);
     }
 
     /**
@@ -234,6 +251,12 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     /// Calculates the treasury portion of a specific RPL reward amount.
     /// @param _amount The RPL reward expected
     function getTreasuryPortion(uint256 _amount) external view returns (uint256) {
-        return _amount.mulDiv(treasuryFee, 1e18);
+        return _amount.mulDiv(treasuryFee, 1e18, Math.Rounding.Up);
+    }
+
+    /// Calculates the mint fee portion of a specific deposit amount.
+    /// @param _amount The deposit expected
+    function getMintFeePortion(uint256 _amount) external view returns (uint256) {
+        return _amount.mulDiv(mintFee, 1e18, Math.Rounding.Up);
     }
 }
