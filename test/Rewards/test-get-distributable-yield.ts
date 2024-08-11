@@ -14,10 +14,12 @@ describe("Distributable Yield", async () => {
                 const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
                 const network = await ethers.provider.getNetwork();
                 const chainId = network.chainId;
-                const newTotalYield = ethers.utils.parseEther("100");
+                const newTotalEthYield = ethers.utils.parseEther("100");
                 const currentOracleError = await protocol.operatorDistributor.oracleEthError();
-                const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: currentOracleError, timeStamp: timestamp };
-                const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, protocol.oracle.address, chainId]);
+                const sigData = { newOutstandingEthYield: newTotalEthYield, newOutstandingRplYield: 0, expectedEthOracleError: currentOracleError, expectedRplOracleError:0, timeStamp: timestamp };
+                const messageHash = ethers.utils.solidityKeccak256(
+                    ["int256", "int256", "uint256", "uint256", "uint256", "address", "uint256"], 
+                    [newTotalEthYield, 0, currentOracleError, 0, timestamp, protocol.oracle.address, chainId]);
                 const signature = await signers.random.signMessage(ethers.utils.arrayify(messageHash));
                 const tx = await protocol.oracle.connect(signers.admin).setOutstandingYield(signature, sigData);
                 const receipt = await tx.wait();
@@ -28,7 +30,7 @@ describe("Distributable Yield", async () => {
 
                 const {signed, distributableYield} = await protocol.vCWETH.getDistributableYield();
                 expect(signed).equals(false)
-                expect(distributableYield).equals(newTotalYield)
+                expect(distributableYield).equals(newTotalEthYield)
             })
         })
 
@@ -43,10 +45,12 @@ describe("Distributable Yield", async () => {
                 const chainId = network.chainId;
                 const newTotalYield = ethers.utils.parseEther("0");
                 const currentOracleError = await protocol.operatorDistributor.oracleEthError();
-                const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: currentOracleError, timeStamp: timestamp };
-                const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, protocol.oracle.address, chainId]);
+                const sigData = { newOutstandingEthYield: newTotalYield, newOutstandingRplYield: 0, expectedEthOracleError: currentOracleError, expectedRplOracleError:0, timeStamp: timestamp };
+                const messageHash = ethers.utils.solidityKeccak256(
+                    ["int256", "int256", "uint256", "uint256", "uint256", "address", "uint256"], 
+                    [newTotalYield, 0, currentOracleError, 0, timestamp, protocol.oracle.address, chainId]);
                 const signature = await signers.random.signMessage(ethers.utils.arrayify(messageHash));
-                const tx = await protocol.oracle.connect(signers.admin).setTotalYieldAccrued(signature, sigData);
+                const tx = await protocol.oracle.connect(signers.admin).setOutstandingYield(signature, sigData);
                 const receipt = await tx.wait();
                 const block = await ethers.provider.getBlock(receipt.blockNumber)
                 
@@ -71,8 +75,10 @@ describe("Distributable Yield", async () => {
                 const chainId = network.chainId;
                 const newTotalYield = ethers.utils.parseEther("-10");
                 const currentOracleError = await protocol.operatorDistributor.oracleEthError();
-                const sigData = { newTotalEthYieldAccrued: newTotalYield, expectedOracleError: currentOracleError, timeStamp: timestamp };
-                const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, protocol.oracle.address, chainId]);
+                const sigData = { newOutstandingEthYield: newTotalYield, newOutstandingRplYield: 0, expectedEthOracleError: currentOracleError, expectedRplOracleError:0, timeStamp: timestamp };
+                const messageHash = ethers.utils.solidityKeccak256(
+                    ["int256", "int256", "uint256", "uint256", "uint256", "address", "uint256"], 
+                    [newTotalYield, 0, currentOracleError, 0, timestamp, protocol.oracle.address, chainId]);
                 const signature = await signers.random.signMessage(ethers.utils.arrayify(messageHash));
                 const tx = await protocol.oracle.connect(signers.admin).setOutstandingYield(signature, sigData);
                 const receipt = await tx.wait();

@@ -51,7 +51,8 @@ describe("XRETHOracle", function () {
             const { oracle, directory } = protocol;
             const { admin } = signers;
 
-            expect(await oracle.getTotalYieldAccrued()).to.equal(0);
+            expect(await oracle.getOutstandingEthYield()).to.equal(0);
+            expect(await oracle.getOutstandingRplYield()).to.equal(0);
         });
 
         it("Should set total yield accrued with valid signature", async function () {
@@ -68,14 +69,16 @@ describe("XRETHOracle", function () {
             const chainId = network.chainId;
 
             const newTotalYield = ethers.utils.parseEther("100");
-            const currentOracleError = await protocol.operatorDistributor.oracleError();
-            const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: currentOracleError, timeStamp: timestamp };
-            const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, oracle.address, chainId]);
+            const currentOracleError = await protocol.operatorDistributor.oracleEthError();
+            const sigData = { newOutstandingEthYield: newTotalYield, newOutstandingRplYield: 0, expectedEthOracleError: currentOracleError, expectedRplOracleError:0, timeStamp: timestamp };
+            const messageHash = ethers.utils.solidityKeccak256(
+                ["int256", "int256", "uint256", "uint256", "uint256", "address", "uint256"], 
+                [newTotalYield, 0, currentOracleError, 0, timestamp, protocol.oracle.address, chainId]);
             const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
 
 
-            await oracle.connect(admin).setTotalYieldAccrued(signature, sigData);
-            expect(await oracle.getTotalYieldAccrued()).to.equal(newTotalYield);
+            await oracle.connect(admin).setOutstandingYield(signature, sigData);
+            expect(await oracle.getOutstandingEthYield()).to.equal(newTotalYield);
         });
 
         it("Should set total yield accrued with valid signature adjusting for 0 fees (expect no impact)", async function () {
@@ -96,13 +99,15 @@ describe("XRETHOracle", function () {
 
             const newTotalYield = ethers.utils.parseEther("100");
 
-            const currentOracleError = await protocol.operatorDistributor.oracleError();
-            const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: currentOracleError, timeStamp: timestamp };
-            const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, oracle.address, chainId]);
+            const currentOracleError = await protocol.operatorDistributor.oracleEthError();
+            const sigData = { newOutstandingEthYield: newTotalYield, newOutstandingRplYield: 0, expectedEthOracleError: currentOracleError, expectedRplOracleError:0, timeStamp: timestamp };
+            const messageHash = ethers.utils.solidityKeccak256(
+                ["int256", "int256", "uint256", "uint256", "uint256", "address", "uint256"], 
+                [newTotalYield, 0, currentOracleError, 0, timestamp, protocol.oracle.address, chainId]);
             const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
 
-            await oracle.connect(admin).setTotalYieldAccrued(signature, sigData);
-            expect(await oracle.getTotalYieldAccrued()).to.equal(newTotalYield);
+            await oracle.connect(admin).setOutstandingYield(signature, sigData);
+            expect(await oracle.getOutstandingEthYield()).to.equal(newTotalYield);
         });
 
         it("Should set total yield accrued with valid signature adjusting for 100% fees (expect no impact)", async function () {
@@ -123,13 +128,15 @@ describe("XRETHOracle", function () {
 
             const newTotalYield = ethers.utils.parseEther("100");
 
-            const currentOracleError = await protocol.operatorDistributor.oracleError();
-            const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: currentOracleError, timeStamp: timestamp };
-            const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, oracle.address, chainId]);
+            const currentOracleError = await protocol.operatorDistributor.oracleEthError();
+            const sigData = { newOutstandingEthYield: newTotalYield, newOutstandingRplYield: 0, expectedEthOracleError: currentOracleError, expectedRplOracleError:0, timeStamp: timestamp };
+            const messageHash = ethers.utils.solidityKeccak256(
+                ["int256", "int256", "uint256", "uint256", "uint256", "address", "uint256"], 
+                [newTotalYield, 0, currentOracleError, 0, timestamp, protocol.oracle.address, chainId]);
             const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
 
-            await oracle.connect(admin).setTotalYieldAccrued(signature, sigData);
-            expect(await oracle.getTotalYieldAccrued()).to.equal(newTotalYield);
+            await oracle.connect(admin).setOutstandingYield(signature, sigData);
+            expect(await oracle.getOutstandingEthYield()).to.equal(newTotalYield);
         });
 
         it("Should fail to set total yield accrued with invalid signature", async function () {
@@ -142,13 +149,15 @@ describe("XRETHOracle", function () {
             const chainId = network.chainId;
 
             const newTotalYield = ethers.utils.parseEther("100");
-            const currentOracleError = await protocol.operatorDistributor.oracleError();
-            const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: currentOracleError, timeStamp: timestamp };
-            const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, oracle.address, chainId]);
+            const currentOracleError = await protocol.operatorDistributor.oracleEthError();
+            const sigData = { newOutstandingEthYield: newTotalYield, newOutstandingRplYield: 0, expectedEthOracleError: currentOracleError, expectedRplOracleError:0, timeStamp: timestamp };
+            const messageHash = ethers.utils.solidityKeccak256(
+                ["int256", "int256", "uint256", "uint256", "uint256", "address", "uint256"], 
+                [newTotalYield, 0, currentOracleError, 0, timestamp, protocol.oracle.address, chainId]);
             const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
 
             await expect(
-                oracle.connect(admin).setTotalYieldAccrued(signature, sigData)
+                oracle.connect(admin).setOutstandingYield(signature, sigData)
             ).to.be.revertedWith("signer must have permission from admin oracle role");
         });
 
@@ -165,13 +174,13 @@ describe("XRETHOracle", function () {
             await directory.connect(admin).grantRole(adminOracleRole, random.address);
 
             const newTotalYield = ethers.utils.parseEther("100");
-            const currentOracleError = await protocol.operatorDistributor.oracleError();
-            const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: currentOracleError, timeStamp: timestamp };
+            const currentOracleError = await protocol.operatorDistributor.oracleEthError();
+            const sigData = { newOutstandingEthYield: newTotalYield, newOutstandingRplYield: 0, expectedEthOracleError: currentOracleError, expectedRplOracleError:0, timeStamp: timestamp };
             const incorrectMessageHash = ethers.utils.solidityKeccak256(["int256"], [newTotalYield]);
             const signature = await random.signMessage(ethers.utils.arrayify(incorrectMessageHash));
 
             await expect(
-                oracle.connect(random).setTotalYieldAccrued(signature, sigData)
+                oracle.connect(random).setOutstandingYield(signature, sigData)
             ).to.be.revertedWith("signer must have permission from admin oracle role");
         });
 
@@ -187,14 +196,16 @@ describe("XRETHOracle", function () {
             const network = await ethers.provider.getNetwork();
             const chainId = network.chainId;
             const newTotalYield = ethers.utils.parseEther("100");
-            const currentOracleError = await protocol.operatorDistributor.oracleError();
-            const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: currentOracleError, timeStamp: timestamp };
-            const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, oracle.address, chainId]);
+            const currentOracleError = await protocol.operatorDistributor.oracleEthError();
+            const sigData = { newOutstandingEthYield: newTotalYield, newOutstandingRplYield: 0, expectedEthOracleError: currentOracleError, expectedRplOracleError:0, timeStamp: timestamp };
+            const messageHash = ethers.utils.solidityKeccak256(
+                ["int256", "int256", "uint256", "uint256", "uint256", "address", "uint256"], 
+                [newTotalYield, 0, currentOracleError, 0, timestamp, protocol.oracle.address, chainId]);
             const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
-            await oracle.connect(admin).setTotalYieldAccrued(signature, sigData)
+            await oracle.connect(admin).setOutstandingYield(signature, sigData)
 
             await expect(
-                oracle.connect(admin).setTotalYieldAccrued(signature, sigData)
+                oracle.connect(admin).setOutstandingYield(signature, sigData)
             ).to.be.revertedWith("cannot update oracle using old data");
         })
 
@@ -213,10 +224,12 @@ describe("XRETHOracle", function () {
                     const network = await ethers.provider.getNetwork();
                     const chainId = network.chainId;
                     let newTotalYield = ethers.utils.parseEther("100");
-                    let currentOracleError = await protocol.operatorDistributor.oracleError();
+                    let currentOracleError = await protocol.operatorDistributor.oracleEthError();
                     const expectedOracleError = currentOracleError;
-                    const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: expectedOracleError, timeStamp: timestamp };
-                    const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, oracle.address, chainId]);
+                    const sigData = { newOutstandingEthYield: newTotalYield, newOutstandingRplYield: 0, expectedEthOracleError: currentOracleError, expectedRplOracleError:0, timeStamp: timestamp };
+                    const messageHash = ethers.utils.solidityKeccak256(
+                        ["int256", "int256", "uint256", "uint256", "uint256", "address", "uint256"], 
+                        [newTotalYield, 0, currentOracleError, 0, timestamp, protocol.oracle.address, chainId]);
                     const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
 
                     const minipools = await registerNewValidator(setupData, [random]);
@@ -231,10 +244,10 @@ describe("XRETHOracle", function () {
 
                     const actualYieldIncrease = (await protocol.vCWETH.totalAssets()).sub(priorBalance);
                     
-                    await oracle.connect(admin).setTotalYieldAccrued(signature, sigData)
+                    await oracle.connect(admin).setOutstandingYield(signature, sigData)
                     newTotalYield = newTotalYield.sub(actualYieldIncrease);
                     expect(expectedOracleError < currentOracleError); 
-                    expect(await oracle.getTotalYieldAccrued()).to.equal(newTotalYield);
+                    expect(await oracle.getOutstandingEthYield()).to.equal(newTotalYield);
                 });
             });
             describe("When new yield is less than 0", function () {
@@ -251,10 +264,12 @@ describe("XRETHOracle", function () {
                     const network = await ethers.provider.getNetwork();
                     const chainId = network.chainId;
                     let newTotalYield = ethers.utils.parseEther("-100");
-                    let currentOracleError = await protocol.operatorDistributor.oracleError();
+                    let currentOracleError = await protocol.operatorDistributor.oracleEthError();
                     const expectedOracleError = currentOracleError;
-                    const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: expectedOracleError, timeStamp: timestamp };
-                    const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, oracle.address, chainId]);
+                    const sigData = { newOutstandingEthYield: newTotalYield, newOutstandingRplYield: 0, expectedEthOracleError: currentOracleError, expectedRplOracleError:0, timeStamp: timestamp };
+                    const messageHash = ethers.utils.solidityKeccak256(
+                        ["int256", "int256", "uint256", "uint256", "uint256", "address", "uint256"], 
+                        [newTotalYield, 0, currentOracleError, 0, timestamp, protocol.oracle.address, chainId]);
                     const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
 
                     const minipools = await registerNewValidator(setupData, [random]);
@@ -269,10 +284,10 @@ describe("XRETHOracle", function () {
 
                     const actualYieldIncrease = (await protocol.vCWETH.totalAssets()).sub(priorBalance);
                     
-                    await oracle.connect(admin).setTotalYieldAccrued(signature, sigData)
+                    await oracle.connect(admin).setOutstandingYield(signature, sigData)
                     newTotalYield = newTotalYield.add(actualYieldIncrease);
                     expect(expectedOracleError < currentOracleError); 
-                    expect(await oracle.getTotalYieldAccrued()).to.equal(newTotalYield);
+                    expect(await oracle.getOutstandingEthYield()).to.equal(newTotalYield);
                 });
             });
             describe("When new yield is equal to 0", function () {
@@ -289,10 +304,12 @@ describe("XRETHOracle", function () {
                     const network = await ethers.provider.getNetwork();
                     const chainId = network.chainId;
                     let newTotalYield = ethers.utils.parseEther("0");
-                    let currentOracleError = await protocol.operatorDistributor.oracleError();
+                    let currentOracleError = await protocol.operatorDistributor.oracleEthError();
                     const expectedOracleError = currentOracleError;
-                    const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: expectedOracleError, timeStamp: timestamp };
-                    const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, oracle.address, chainId]);
+                    const sigData = { newOutstandingEthYield: newTotalYield, newOutstandingRplYield: 0, expectedEthOracleError: currentOracleError, expectedRplOracleError:0, timeStamp: timestamp };
+                    const messageHash = ethers.utils.solidityKeccak256(
+                        ["int256", "int256", "uint256", "uint256", "uint256", "address", "uint256"], 
+                        [newTotalYield, 0, currentOracleError, 0, timestamp, protocol.oracle.address, chainId]);
                     const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
 
                     const minipools = await registerNewValidator(setupData, [random]);
@@ -325,14 +342,16 @@ describe("XRETHOracle", function () {
                 let newTotalYield = ethers.utils.parseEther("100");
                 let currentOracleError = await protocol.operatorDistributor.oracleEthError();
                 const expectedOracleError = currentOracleError;
-                const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: expectedOracleError, timeStamp: timestamp };
-                const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, oracle.address, chainId]);
+                const sigData = { newOutstandingEthYield: newTotalYield, newOutstandingRplYield: 0, expectedEthOracleError: currentOracleError, expectedRplOracleError:0, timeStamp: timestamp };
+                const messageHash = ethers.utils.solidityKeccak256(
+                    ["int256", "int256", "uint256", "uint256", "uint256", "address", "uint256"], 
+                    [newTotalYield, 0, currentOracleError, 0, timestamp, protocol.oracle.address, chainId]);
                 const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
                 
-                await oracle.connect(admin).setTotalYieldAccrued(signature, sigData)
+                await oracle.connect(admin).setOutstandingYield(signature, sigData)
 
                 expect(expectedOracleError).equals(currentOracleError); 
-                expect(await oracle.getTotalYieldAccrued()).to.equal(newTotalYield); 
+                expect(await oracle.getOutstandingEthYield()).to.equal(newTotalYield); 
             });
         });
         describe("When expected oracle error is greater than the actual error", function () {
@@ -349,12 +368,14 @@ describe("XRETHOracle", function () {
                 const network = await ethers.provider.getNetwork();
                 const chainId = network.chainId;
                 const newTotalYield = ethers.utils.parseEther("100");
-                let currentOracleError = (await protocol.operatorDistributor.oracleError()).add(1); // add a bit to simulate a broken oracle
-                const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: currentOracleError, timeStamp: timestamp };
-                const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, oracle.address, chainId]);
+                let currentOracleError = (await protocol.operatorDistributor.oracleEthError()).add(1); // add a bit to simulate a broken oracle
+                const sigData = { newOutstandingEthYield: newTotalYield, newOutstandingRplYield: 0, expectedEthOracleError: currentOracleError, expectedRplOracleError:0, timeStamp: timestamp };
+                const messageHash = ethers.utils.solidityKeccak256(
+                    ["int256", "int256", "uint256", "uint256", "uint256", "address", "uint256"], 
+                    [newTotalYield, 0, currentOracleError, 0, timestamp, protocol.oracle.address, chainId]);
                 const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
                 
-                await expect(oracle.connect(admin).setTotalYieldAccrued(signature, sigData))
+                await expect(oracle.connect(admin).setOutstandingYield(signature, sigData))
                     .to.be.revertedWith('actual oracleError was less than expectedOracleError');
             });
         });

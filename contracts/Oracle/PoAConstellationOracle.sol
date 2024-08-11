@@ -99,7 +99,7 @@ contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
     /// @param actualError The actual error accrued
     /// @return Actual yield accrued
     /// @dev Actual oracle error should only ever increase or be reset to 0, so the expected error must be greater or this will revert.
-    function getActualYieldAccrued(int256 reportedYield, uint256 expectedError, uint256 actualError) public view returns (int256){
+    function getActualYieldAccrued(int256 reportedYield, uint256 expectedError, uint256 actualError) public pure returns (int256){
         require(expectedError >= actualError, "actual error was less than expected error");
         
         int256 actualYieldAccrued = 0;
