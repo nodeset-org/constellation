@@ -240,8 +240,11 @@ describe("XRETHOracle", function () {
                         value: newRewards
                     })
 
+                    console.log("total WETHVault assets before processing", priorBalance);
+
                     await protocol.operatorDistributor.processMinipool(minipools[0]);
 
+                    console.log("total WETHVault assets after processing", await protocol.vCWETH.totalAssets());
                     const actualYieldIncrease = (await protocol.vCWETH.totalAssets()).sub(priorBalance);
                     currentOracleError = await protocol.operatorDistributor.oracleEthError();
 

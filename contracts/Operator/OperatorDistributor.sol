@@ -393,6 +393,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             rewards = address(this).balance > priorBalance ? address(this).balance - priorBalance : 0;
         }
  
+        console.log("rewards received on process minipool", rewards);
+
         // account for rewards 
         this.onEthRewardsReceived(rewards, treasuryFee, noFee);
         this.rebalanceWethVault();

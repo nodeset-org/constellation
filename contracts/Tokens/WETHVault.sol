@@ -132,6 +132,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function getDistributableYield() public view returns (uint256 distributableYield, bool signed) {
         int256 oracleError = int256(OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleEthError());
         int256 outstandingYield = (IConstellationOracle(getDirectory().getOracleAddress())).getOutstandingEthYield();
+        if(outstandingYield == 0)
+            return (0, false);
         // if the most recent reported yield is less than the oracleError, there's no unrealized yield remaining
         int256 totalUnrealizedAccrual = outstandingYield >= 0 ? outstandingYield - oracleError : outstandingYield + oracleError;
 
@@ -154,6 +156,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function totalAssets() public view override returns (uint256) {
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         (uint256 distributableYield, bool signed) = this.getDistributableYield();
+        console.log(signed ? "-" : "+", "distributableYield",distributableYield);
         return (
             uint256(
                 int(IERC20(asset()).balanceOf(address(this)) + od.getTvlEth()) +

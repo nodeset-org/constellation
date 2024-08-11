@@ -135,7 +135,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 oracleError = OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleRplError();
         uint256 outstandingYield = (IConstellationOracle(getDirectory().getOracleAddress())).getOutstandingRplYield();
         // if the most recent reported yield is less than the oracleError, there's no unrealized yield remaining
-        return outstandingYield >= oracleError ? outstandingYield - oracleError : 0;
+        return outstandingYield > oracleError ? outstandingYield - oracleError : 0;
     }
 
     /**
