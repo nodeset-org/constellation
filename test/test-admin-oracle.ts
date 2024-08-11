@@ -244,9 +244,9 @@ describe("XRETHOracle", function () {
 
                     const actualYieldIncrease = (await protocol.vCWETH.totalAssets()).sub(priorBalance);
                     
+                    expect(expectedOracleError < currentOracleError); 
                     await oracle.connect(admin).setOutstandingYield(signature, sigData)
                     newTotalYield = newTotalYield.sub(actualYieldIncrease);
-                    expect(expectedOracleError < currentOracleError); 
                     expect(await oracle.getOutstandingEthYield()).to.equal(newTotalYield);
                 });
             });
@@ -284,9 +284,10 @@ describe("XRETHOracle", function () {
 
                     const actualYieldIncrease = (await protocol.vCWETH.totalAssets()).sub(priorBalance);
                     
+                    expect(expectedOracleError < currentOracleError); 
                     await oracle.connect(admin).setOutstandingYield(signature, sigData)
                     newTotalYield = newTotalYield.add(actualYieldIncrease);
-                    expect(expectedOracleError < currentOracleError); 
+                    
                     expect(await oracle.getOutstandingEthYield()).to.equal(newTotalYield);
                 });
             });
@@ -348,9 +349,9 @@ describe("XRETHOracle", function () {
                     [newTotalYield, 0, currentOracleError, 0, timestamp, protocol.oracle.address, chainId]);
                 const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
                 
-                await oracle.connect(admin).setOutstandingYield(signature, sigData)
 
                 expect(expectedOracleError).equals(currentOracleError); 
+                await oracle.connect(admin).setOutstandingYield(signature, sigData)
                 expect(await oracle.getOutstandingEthYield()).to.equal(newTotalYield); 
             });
         });
@@ -374,7 +375,7 @@ describe("XRETHOracle", function () {
                     ["int256", "int256", "uint256", "uint256", "uint256", "address", "uint256"], 
                     [newTotalYield, 0, currentOracleError, 0, timestamp, protocol.oracle.address, chainId]);
                 const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
-                
+                 
                 await expect(oracle.connect(admin).setOutstandingYield(signature, sigData))
                     .to.be.revertedWith('actual oracleError was less than expectedOracleError');
             });
