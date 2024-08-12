@@ -26,9 +26,10 @@ import 'hardhat/console.sol';
  * to handle rewards, however, so there is no point in this work until this is resolved at the base layer..
  */
 contract NodeSetOperatorRewardDistributor is UpgradeableBase {
-    event RewardDistributed(address _rewardee);
 
-    mapping(address => uint256) public nonces;
+    event RewardDistributed(bytes32 indexed _did, address indexed _rewardee);
+
+    mapping(bytes32 => uint256) public nonces;
     mapping(bytes => bool) public claimSigsUsed;
 
     /****
@@ -39,14 +40,14 @@ contract NodeSetOperatorRewardDistributor is UpgradeableBase {
      * @notice Distributes rewards accrued for a specific rewardee.
      * @param _sig The claim data, including amount and the authoritative signature
      */
-    function claimRewards(bytes calldata _sig, address _token, address _rewardee, uint256 _amount) public nonReentrant {
+    function claimRewards(bytes calldata _sig, address _token, bytes32 _did, address _rewardee, uint256 _amount) public nonReentrant {
         require(_rewardee != address(0), 'rewardee cannot be zero address');
         require(!claimSigsUsed[_sig], 'sig already used');
         claimSigsUsed[_sig] = true;
 
         address recoveredAddress = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(
-                keccak256(abi.encodePacked(_token, _rewardee, _amount, nonces[_rewardee], address(this), block.chainid))
+                keccak256(abi.encodePacked(_token, _did, _rewardee, _amount, nonces[_did], address(this), block.chainid))
             ),
             _sig
         );
@@ -64,11 +65,11 @@ contract NodeSetOperatorRewardDistributor is UpgradeableBase {
             SafeERC20.safeTransfer(IERC20(_token), _rewardee, _amount);
         }
 
-        nonces[_rewardee]++;
+        nonces[_did]++;
 
         OperatorDistributor(getDirectory().getOperatorDistributorAddress()).processNextMinipool();
 
-        emit RewardDistributed(_rewardee);
+        emit RewardDistributed(_did, _rewardee);
     }
 
     receive() external payable {
