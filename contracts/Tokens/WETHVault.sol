@@ -195,14 +195,12 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Calculates the missing liquidity needed to meet the liquidity reserve after a specified deposit.
-     * @dev his function calculates the amount of assets needed to hit the liquidity reserve 
-     * after a specified deposit amount. It compares the current balance with the required liquidity based on
-     * the total assets, including the deposit.
+     * @dev Compares the current balance with the required liquidity based on the total assets including the deposit and mint fee.
      * @param deposit The amount of the new deposit to consider in the liquidity calculation.
      * @return The amount of liquidity required after the specified deposit.
      */
     function getMissingLiquidityAfterDeposit(uint256 deposit) public view returns (uint256) {
-        uint256 fullBalance = totalAssets() + deposit;
+        uint256 fullBalance = totalAssets() + deposit - this.getMintFeePortion(deposit);
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
         console.log("ETH requiredCollateralAfterDeposit(",deposit,")");
@@ -221,15 +219,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Calculates 
-     * @dev This function calculates the required collateral based on the current total assets of the vault.
-     * @return The amount of collateral required.
+     * @notice Calculates the xrETH portion of rewards for a specified amount of income
      */
     function getIncomeAfterFees(uint256 income) public view returns (uint256){
         return income - income.mulDiv((treasuryFee + nodeOperatorFee), 1e18);
     }
 
-    /// Calculates the mint fee portion of a specific deposit amount.
+    /// @notice Calculates the mint fee portion of a specific deposit amount.
     /// @param _amount The deposit expected
     function getMintFeePortion(uint256 _amount) external view returns (uint256) {
         return _amount.mulDiv(mintFee, 1e18, Math.Rounding.Up);

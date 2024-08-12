@@ -168,16 +168,14 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Calculates the required collateral after a specified deposit.
-     * @dev This function calculates the required collateral to ensure the contract remains sufficiently collateralized
-     * after a specified deposit amount. It compares the current balance with the required collateral based on
-     * the total assets, including the deposit.
-     * @param deposit The amount of the deposit to consider in the collateral calculation.
-     * @return The amount of collateral required after the specified deposit.
+     * @notice Calculates the missing liquidity needed to meet the liquidity reserve after a specified deposit.
+     * @dev Compares the current balance with the required liquidity based on the total assets including the deposit and mint fee.
+     * @param deposit The amount of the new deposit to consider in the liquidity calculation.
+     * @return The amount of liquidity required after the specified deposit.
      */
-    function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns (uint256) {
+    function getMissingLiquidityAfterDeposit(uint256 deposit) public view returns (uint256) {
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
-        uint256 fullBalance = totalAssets() + deposit;
+        uint256 fullBalance = totalAssets() + deposit - this.getMintFeePortion(deposit);
         uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
         console.log("RPL requiredCollateralAfterDeposit(",deposit,")");
         console.log("requiredBalance:", requiredBalance, "currentBalance:", currentBalance);
