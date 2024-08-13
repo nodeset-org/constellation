@@ -3,17 +3,10 @@ pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
-import './OperatorDistributor.sol';
-import '../Whitelist/Whitelist.sol';
-import '../Utils/ProtocolMath.sol';
-import '../UpgradeableBase.sol';
-
-import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
-import '../Interfaces/Oracles/IBeaconOracle.sol';
-import '../Utils/Constants.sol';
-
-import './SuperNodeAccount.sol';
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
 import 'hardhat/console.sol';
 
@@ -21,24 +14,40 @@ import 'hardhat/console.sol';
  * @title NodeSetOperatorRewardDistributor
  * @author Mike Leach, Theodore Clapp
  * @dev Distributes earned rewards to a decentralized operator set using a proof-of-authority model.
- * This is the first step for a rewards system, and future versions may be entirely on-chain using ZK-proofs of
- * beacon state information to check perforance data, validator status, etc. Currently, Rocket Pool fully trusts the oDAO
- * to handle rewards, however, so there is no point in this work until this is resolved at the base layer..
+ * This is the first step for a rewards system. It allows for all use-cases and is cheap to use, yet centralized.
+ * Potential future upgrades:
+ * - categorized income streams 
+ * - ZK-proven earnings
+ * - utilize an on-chain operator database
  */
-contract NodeSetOperatorRewardDistributor is UpgradeableBase {
+contract NodeSetOperatorRewardDistributor is UUPSUpgradeable, AccessControlUpgradeable, ReentrancyGuard {
+
+    bytes32 internal constant ADMIN_SERVER_ROLE = keccak256('ADMIN_SERVER_ROLE');
+    bytes32 internal constant ADMIN_ROLE = keccak256('ADMIN_ROLE');
 
     event RewardDistributed(bytes32 indexed _did, address indexed _rewardee);
 
     mapping(bytes32 => uint256) public nonces;
     mapping(bytes => bool) public claimSigsUsed;
 
-    /****
-     * EXTERNAL
-     */
+    constructor() initializer {}
+
+    function initialize(address admin) public initializer {
+        _grantRole(ADMIN_ROLE, admin);
+        _setRoleAdmin(ADMIN_SERVER_ROLE, ADMIN_ROLE);
+    }
+
+    /// @notice Internal function to authorize contract upgrades.
+    /// @dev This function is used internally to ensure that only administrators can authorize contract upgrades.
+    ///      It checks whether the sender has the required ADMIN_ROLE before allowing the upgrade.
+    function _authorizeUpgrade(address) internal view override {
+        require(hasRole(ADMIN_ROLE, msg.sender), 'Upgrading only allowed by admin!');
+    }
 
     /**
      * @notice Distributes rewards accrued for a specific rewardee.
      * @param _sig The claim data, including amount and the authoritative signature
+     * @param _did The unique, unchanging id of the operator making the claim.
      */
     function claimRewards(bytes calldata _sig, address _token, bytes32 _did, address _rewardee, uint256 _amount) public nonReentrant {
         require(_rewardee != address(0), 'rewardee cannot be zero address');
@@ -53,7 +62,7 @@ contract NodeSetOperatorRewardDistributor is UpgradeableBase {
         );
 
         require(
-            _directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress),
+            this.hasRole(ADMIN_SERVER_ROLE, recoveredAddress),
             'bad signer role, params, or encoding'
         );
 
@@ -67,11 +76,8 @@ contract NodeSetOperatorRewardDistributor is UpgradeableBase {
 
         nonces[_did]++;
 
-        OperatorDistributor(getDirectory().getOperatorDistributorAddress()).processNextMinipool();
-
         emit RewardDistributed(_did, _rewardee);
     }
 
-    receive() external payable {
-    }
+    receive() external payable {}
 }
