@@ -69,7 +69,9 @@ export type Signers = {
 	adminServer: SignerWithAddress,
 	timelock24hour: SignerWithAddress,
 	protocolSigner: SignerWithAddress,
-	treasurer: SignerWithAddress
+	treasurer: SignerWithAddress,
+  nodesetServerAdmin: SignerWithAddress,
+  nodesetAdmin: SignerWithAddress
 }
 
 export type RocketPool = {
@@ -182,7 +184,7 @@ export async function createSigners(): Promise<Signers> {
 	const signersArray: SignerWithAddress[] = (await ethers.getSigners());
 	return {
 		deployer: signersArray[0],
-		admin: signersArray[13], // contracts are deployed using the first signer/account by default
+		admin: signersArray[14], // contracts are deployed using the first signer/account by default
 		random: signersArray[1],
 		operator: signersArray[2],
 		random2: signersArray[3],
@@ -195,7 +197,9 @@ export async function createSigners(): Promise<Signers> {
 		timelock24hour: signersArray[10],
 		protocolSigner: signersArray[11],
 		rplWhale: signersArray[12],
-		treasurer: signersArray[13]
+		treasurer: signersArray[13],
+    nodesetAdmin: signersArray[15],
+    nodesetServerAdmin: signersArray[16],
 	};
 }
 

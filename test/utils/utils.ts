@@ -608,12 +608,12 @@ export async function createClaimRewardSigWithNonce(setupData: SetupData, token:
   const messageHash = ethers.utils.keccak256(packedData);
 
   const messageHashBytes = ethers.utils.arrayify(messageHash);
-  const adminServerHasAdminServerRole = await setupData.protocol.directory.hasRole(
-    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('ADMIN_SERVER_ROLE'))),
-    setupData.signers.adminServer.address
+  const adminServerHasAdminServerRole = await setupData.protocol.yieldDistributor.hasRole(
+    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('NODESET_ADMIN_SERVER_ROLE'))),
+    setupData.signers.nodesetServerAdmin.address
   );
   expect(adminServerHasAdminServerRole).equals(true);
-  const sig = await setupData.signers.adminServer.signMessage(messageHashBytes);
+  const sig = await setupData.signers.nodesetServerAdmin.signMessage(messageHashBytes);
 
   return sig;
 }
@@ -630,12 +630,12 @@ export async function createClaimRewardBadTargetSigWithNonce(setupData: SetupDat
   const messageHash = ethers.utils.keccak256(packedData);
 
   const messageHashBytes = ethers.utils.arrayify(messageHash);
-  const adminServerHasAdminServerRole = await setupData.protocol.directory.hasRole(
-    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('ADMIN_SERVER_ROLE'))),
-    setupData.signers.adminServer.address
+  const adminServerHasAdminServerRole = await setupData.protocol.yieldDistributor.hasRole(
+    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('NODESET_ADMIN_SERVER_ROLE'))),
+    setupData.signers.nodesetServerAdmin.address
   );
   expect(adminServerHasAdminServerRole).equals(true);
-  const sig = await setupData.signers.adminServer.signMessage(messageHashBytes);
+  const sig = await setupData.signers.nodesetServerAdmin.signMessage(messageHashBytes);
 
   return sig;
 }
@@ -652,12 +652,12 @@ export async function createClaimRewardBadChainIdSigWithNonce(setupData: SetupDa
   const messageHash = ethers.utils.keccak256(packedData);
 
   const messageHashBytes = ethers.utils.arrayify(messageHash);
-  const adminServerHasAdminServerRole = await setupData.protocol.directory.hasRole(
-    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('ADMIN_SERVER_ROLE'))),
-    setupData.signers.adminServer.address
+  const adminServerHasAdminServerRole = await setupData.protocol.yieldDistributor.hasRole(
+    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('NODESET_ADMIN_SERVER_ROLE'))),
+    setupData.signers.nodesetServerAdmin.address
   );
   expect(adminServerHasAdminServerRole).equals(true);
-  const sig = await setupData.signers.adminServer.signMessage(messageHashBytes);
+  const sig = await setupData.signers.nodesetServerAdmin.signMessage(messageHashBytes);
 
   return sig;
 }
@@ -673,8 +673,8 @@ export async function createClaimRewardBadSignerSigWithNonce(setupData: SetupDat
   const messageHash = ethers.utils.keccak256(packedData);
 
   const messageHashBytes = ethers.utils.arrayify(messageHash);
-  const adminServerHasAdminServerRole = await setupData.protocol.directory.hasRole(
-    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('ADMIN_SERVER_ROLE'))),
+  const adminServerHasAdminServerRole = await setupData.protocol.yieldDistributor.hasRole(
+    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('NODESET_ADMIN_SERVER_ROLE'))),
     badSigner.address
   );
   expect(adminServerHasAdminServerRole).equals(false);
@@ -694,12 +694,12 @@ export async function createClaimRewardBadEncodedSigWithNonce(setupData: SetupDa
   const messageHash = ethers.utils.keccak256(packedData);
 
   const messageHashBytes = ethers.utils.arrayify(messageHash);
-  const adminServerHasAdminServerRole = await setupData.protocol.directory.hasRole(
-    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('ADMIN_SERVER_ROLE'))),
-    setupData.signers.adminServer.address
+  const adminServerHasAdminServerRole = await setupData.protocol.yieldDistributor.hasRole(
+    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('NODESET_ADMIN_SERVER_ROLE'))),
+    setupData.signers.nodesetServerAdmin.address
   );
   expect(adminServerHasAdminServerRole).equals(true);
-  const sig = await setupData.signers.adminServer.signMessage(messageHashBytes);
+  const sig = await setupData.signers.nodesetServerAdmin.signMessage(messageHashBytes);
 
   return sig;
 }
