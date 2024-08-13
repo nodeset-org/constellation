@@ -380,6 +380,12 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 depositBalance = minipool.getNodeDepositBalance();
         // if nodeshare - original deposit is <= 0 then it's an exit but there are no rewards (it's been penalized)
         uint256 rewards = 0;
+
+        // In Constellation, the node refund balance is assumed to be 100% rewards, but this isn't always true in RP 
+        // there are three cases which should not be possible in Constellation:
+        // - LEB bond reductions
+        // - depositType == MinipoolDeposit.Full
+        // - prepareVacancy() -- used for solo node migrations to RP
         uint256 balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
 
         if(balanceAfterRefund >= depositBalance) { // it's an exit
