@@ -184,11 +184,6 @@ describe("Node Operator Onboarding", function () {
 
         registerNewValidator(setupData, [signers.hyperdriver]);
 
-        console.log("vault eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.assetRouter.address)));
-        console.log("vault rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.assetRouter.address)));
-        console.log("operator distribution pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)));
-        console.log("operator distribution pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)));
-
         const xrETHBalancesAfter = [];
         const xRPLBalancesAfter = [];
         const ETHbalancesAfter = [];
