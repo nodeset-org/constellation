@@ -68,7 +68,9 @@ export type Signers = {
 	adminServer: SignerWithAddress,
 	timelock24hour: SignerWithAddress,
 	protocolSigner: SignerWithAddress,
-	treasurer: SignerWithAddress
+	treasurer: SignerWithAddress,
+  nodesetServerAdmin: SignerWithAddress,
+  nodesetAdmin: SignerWithAddress
 }
 
 export type RocketPool = {
@@ -194,7 +196,9 @@ export async function createSigners(): Promise<Signers> {
 		timelock24hour: signersArray[10],
 		protocolSigner: signersArray[11],
 		rplWhale: signersArray[12],
-		treasurer: signersArray[13]
+		treasurer: signersArray[13],
+    nodesetAdmin: signersArray[15],
+    nodesetServerAdmin: signersArray[16],
 	};
 }
 

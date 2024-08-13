@@ -3,57 +3,88 @@ pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
-import './OperatorDistributor.sol';
-import '../Whitelist/Whitelist.sol';
-import '../Utils/ProtocolMath.sol';
-import '../UpgradeableBase.sol';
-
-import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
-import '../Interfaces/Oracles/IBeaconOracle.sol';
-import '../Utils/Constants.sol';
-
-import './SuperNodeAccount.sol';
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
 import 'hardhat/console.sol';
+
+library RewardDistributorConstants {
+    bytes32 internal constant NODESET_ADMIN_SERVER_ROLE = keccak256('NODESET_ADMIN_SERVER_ROLE');
+    bytes32 internal constant NODESET_ADMIN_ROLE = keccak256('NODESET_ADMIN_ROLE');
+}
+
+contract NodeSetOperatorRewardDistributorV1Storage {
+    event RewardDistributed(bytes32 indexed _did, address indexed _rewardee);
+
+    mapping(bytes32 => uint256) public nonces;
+    mapping(bytes => bool) public claimSigsUsed;
+}
 
 /**
  * @title NodeSetOperatorRewardDistributor
  * @author Mike Leach, Theodore Clapp
  * @dev Distributes earned rewards to a decentralized operator set using a proof-of-authority model.
- * This is the first step for a rewards system, and future versions may be entirely on-chain using ZK-proofs of
- * beacon state information to check perforance data, validator status, etc. Currently, Rocket Pool fully trusts the oDAO
- * to handle rewards, however, so there is no point in this work until this is resolved at the base layer..
+ * This is the first step for a rewards system. It allows for all use-cases and is cheap to use, yet centralized.
+ * Potential future upgrades:
+ * - categorized income streams
+ * - ZK-proven earnings
+ * - utilize an on-chain operator database
  */
-contract NodeSetOperatorRewardDistributor is UpgradeableBase {
-    event RewardDistributed(address _rewardee);
+contract NodeSetOperatorRewardDistributor is
+    UUPSUpgradeable,
+    AccessControlUpgradeable,
+    ReentrancyGuard,
+    NodeSetOperatorRewardDistributorV1Storage
+{
+    constructor() initializer {}
 
-    mapping(address => uint256) public nonces;
-    mapping(bytes => bool) public claimSigByOwner;
+    function initialize(address _admin, address _adminServer) public initializer {
+        _grantRole(RewardDistributorConstants.NODESET_ADMIN_ROLE, _admin);
+        _grantRole(RewardDistributorConstants.NODESET_ADMIN_SERVER_ROLE, _adminServer);
+        _setRoleAdmin(
+            RewardDistributorConstants.NODESET_ADMIN_SERVER_ROLE,
+            RewardDistributorConstants.NODESET_ADMIN_ROLE
+        );
+        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    }
 
-    /****
-     * EXTERNAL
-     */
+    /// @notice Internal function to authorize contract upgrades.
+    /// @dev This function is used internally to ensure that only administrators can authorize contract upgrades.
+    ///      It checks whether the sender has the required ADMIN_ROLE before allowing the upgrade.
+    function _authorizeUpgrade(address) internal view override {
+        require(hasRole(RewardDistributorConstants.NODESET_ADMIN_ROLE, msg.sender), 'Upgrading only allowed by admin!');
+    }
 
     /**
      * @notice Distributes rewards accrued for a specific rewardee.
      * @param _sig The claim data, including amount and the authoritative signature
+     * @param _did The unique, unchanging id of the operator making the claim.
      */
-    function claimRewards(bytes calldata _sig, address _token, address _rewardee, uint256 _amount) public nonReentrant {
+    function claimRewards(
+        bytes calldata _sig,
+        address _token,
+        bytes32 _did,
+        address _rewardee,
+        uint256 _amount
+    ) public nonReentrant {
         require(_rewardee != address(0), 'rewardee cannot be zero address');
-        require(!claimSigByOwner[_sig], 'sig already used');
-        claimSigByOwner[_sig] = true;
+        require(!claimSigsUsed[_sig], 'sig already used');
+        claimSigsUsed[_sig] = true;
 
         address recoveredAddress = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(
-                keccak256(abi.encodePacked(_token, _rewardee, _amount, nonces[_rewardee], address(this), block.chainid))
+                keccak256(
+                    abi.encodePacked(_token, _did, _rewardee, _amount, nonces[_did], address(this), block.chainid)
+                )
             ),
             _sig
         );
 
         require(
-            _directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress),
-            'signer must have permission from admin server role'
+            this.hasRole(RewardDistributorConstants.NODESET_ADMIN_SERVER_ROLE, recoveredAddress),
+            'bad signer role, params, or encoding'
         );
 
         // send eth to rewardee
@@ -64,13 +95,10 @@ contract NodeSetOperatorRewardDistributor is UpgradeableBase {
             SafeERC20.safeTransfer(IERC20(_token), _rewardee, _amount);
         }
 
-        nonces[_rewardee]++;
+        nonces[_did]++;
 
-        OperatorDistributor(getDirectory().getOperatorDistributorAddress()).processNextMinipool();
-
-        emit RewardDistributed(_rewardee);
+        emit RewardDistributed(_did, _rewardee);
     }
 
-    receive() external payable {
-    }
+    receive() external payable {}
 }
