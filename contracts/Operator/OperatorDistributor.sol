@@ -365,7 +365,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
         require(sna.getIsMinipoolRecognized(address(minipool)), "Must be a minipool managed by Constellation"); 
 
-        rebalanceRplStake(sna.getTotalEthStaked());
+        this.rebalanceRplStake(sna.getTotalEthStaked());
 
         MinipoolStatus status = minipool.getStatus();
 
@@ -382,7 +382,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 rewards = 0;
         uint256 balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
 
-        if(balanceAfterRefund >= depositBalance) { // it's an exit, and any extra nodeShare is rewards
+        if(balanceAfterRefund >= depositBalance) { // it's an exit
             // In case there is a penalty, just return so it can be handled manually.
             // This prevents the case where someone sends 8 ETH to the minipool and it's automatically closed, 
             // causing RP to think it's been slashed for 24 ETH even though the validator is still operating
