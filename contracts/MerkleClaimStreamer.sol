@@ -93,6 +93,13 @@ contract MerkleClaimStreamer is UpgradeableBase {
         return timeSinceLastClaim < streamingInterval ? priorRplStreamAmount * timeSinceLastClaim / streamingInterval : priorRplStreamAmount;
     }
 
+
+
+   // TODO
+        //
+        // consider this function more:
+        // - add sweep to tick before rebalance which reduces storage values
+
     /// @notice Sweeps the full amount of streamed TVL into the rest of the protocol. Only callable if the full streaming interval has passed.
     /// @dev Typically not necessary to call, as it's automatically called during each successive merkle claim.
     /// The only reason to call this otherwise is:
@@ -194,37 +201,20 @@ contract MerkleClaimStreamer is UpgradeableBase {
 
             ethReward -= treasuryPortion - nodeOperatorPortion;
         }
-        this.sweepLockedTVL();
-        // anything remaining at this point is just rewards for the next streaming interval 
-        priorEthStreamAmount = address(this).balance;
-
-
-        if(rplReward != 0) {
+        
+        if(rplReward > 0) {
             uint256 treasuryPortion = rplReward.mulDiv(RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee(), 1e18);
 
             // send treasury fee immediately
             SafeERC20.safeApprove(IERC20(getDirectory().getTreasuryAddress()), odAddress, treasuryPortion);
             SafeERC20.safeTransfer(IERC20(getDirectory().getTreasuryAddress()), odAddress, treasuryPortion);
         }
-        if(priorRplStreamAmount > 0){
-            // transfer the prior locked amount to the OD and rebalance liquidity
-            SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), odAddress, priorRplStreamAmount);
-            SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), odAddress, priorRplStreamAmount);
-            od.rebalanceRPLVault();
-        }
-        // anything remaining at this point is just rewards for the next streaming interval 
-        priorRplStreamAmount = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
 
-        // TODO
-        //
-        // here:
-        // 
-        // elsewhere:
-        // - create view functions to get TVL:
-        //      rewards/28 * percentageOfIntervalComplete
-        // - add sweep to tick before rebalance which reduces storage values
-        
-        od.rebalanceRplVault();
-        
+        // sweep all the prior interval's TVL
+        this.sweepLockedTVL();
+
+        // anything remaining at this point is counted as rewards for the next streaming interval 
+        priorRplStreamAmount = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
+        priorEthStreamAmount = address(this).balance;
     }
 }
