@@ -32,14 +32,6 @@ import '../Utils/Errors.sol';
 
 import 'hardhat/console.sol';
 
-struct MerkleRewardsConfig {
-    bytes sig;
-    uint256 sigGenesisTime;
-    uint256 avgEthTreasuryFee;
-    uint256 avgEthOperatorFee;
-    uint256 avgRplTreasuryFee;
-}
-
 /**
  * @title SuperNodeAccount
  * @author Theodore Clapp, Mike Leach
@@ -59,11 +51,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     bool public adminServerCheck;
     mapping(bytes => bool) public sigsUsed;
     uint256 public adminServerSigExpiry;
-
-    // Merkle claim signature data
-    uint256 public merkleClaimNonce;
-    mapping(bytes32 => bool) public merkleClaimSigUsed;
-    uint256 public merkleClaimSigExpiry;
 
     bool lazyInit;
 
@@ -166,7 +153,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         address od = directory.getOperatorDistributorAddress();
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), od, true);
         lazyInit = true;
-        merkleClaimSigExpiry = 1 days;
+        
         lockThreshold = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getPreLaunchValue();
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(true);
     }
@@ -362,70 +349,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
 
-    /**
-     * @notice Claims rewards for a node based on a Merkle proof, distributing specified amounts of RPL and ETH.
-     * @dev This function interfaces with the RocketMerkleDistributorMainnet to allow nodes to claim their rewards.
-     *      The rewards are determined by a Merkle proof which validates the amounts to be claimed.
-     * @param _rewardIndex Array of indices in the Merkle tree corresponding to reward entries.
-     * @param _amountRPL Array of amounts of RPL tokens to claim.
-     * @param _amountETH Array of amounts of ETH to claim.
-     * @param _merkleProof Array of Merkle proofs for each reward entry.
-     */
-    function merkleClaim(
-        uint256[] calldata _rewardIndex,
-        uint256[] calldata _amountRPL,
-        uint256[] calldata _amountETH,
-        bytes32[][] calldata _merkleProof,
-        MerkleRewardsConfig calldata _config
-    ) public {
-        address odAddress = _directory.getOperatorDistributorAddress();
-        IERC20 rpl = IERC20(_directory.getRPLAddress());
-
-        uint256 initialEthBalance = odAddress.balance;
-        uint256 initialRplBalance = rpl.balanceOf(odAddress);
-
-        IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
-            address(this),
-            _rewardIndex,
-            _amountRPL,
-            _amountETH,
-            _merkleProof
-        );
-
-
-        uint256 finalEthBalance = odAddress.balance;
-        uint256 finalRplBalance = rpl.balanceOf(odAddress);
-
-        uint256 ethReward = finalEthBalance - initialEthBalance;
-        uint256 rplReward = finalRplBalance - initialRplBalance;
-
-        bytes32 messageHash = keccak256(
-            abi.encodePacked(
-                _config.avgEthTreasuryFee,
-                _config.avgEthOperatorFee,
-                _config.avgRplTreasuryFee,
-                _config.sigGenesisTime,
-                address(this),
-                merkleClaimNonce,
-                block.chainid
-            )
-        );
-        require(!merkleClaimSigUsed[messageHash], 'merkle sig already used');
-        merkleClaimSigUsed[messageHash] = true;
-        address recoveredAddress = ECDSA.recover(ECDSA.toEthSignedMessageHash(messageHash), _config.sig);
-        require(
-            _directory.hasRole(Constants.ADMIN_ORACLE_ROLE, recoveredAddress),
-            'merkleClaim: signer must have permission from admin oracle role'
-        );
-        require(block.timestamp - _config.sigGenesisTime < merkleClaimSigExpiry, 'merkle sig expired');
-        merkleClaimNonce++;
-        
-        OperatorDistributor od = OperatorDistributor(payable(odAddress));
-        od.onEthRewardsReceived(ethReward, _config.avgEthTreasuryFee, _config.avgEthOperatorFee, false);
-        od.onRplRewardsRecieved(rplReward, _config.avgRplTreasuryFee);
-        od.rebalanceRplVault();
-        od.rebalanceWethVault();
-    }
+    
 
     /**
      * @notice Allows dmins to delegate an upgrade to the minipool's contract.
