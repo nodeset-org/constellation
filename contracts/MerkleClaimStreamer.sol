@@ -17,13 +17,15 @@ import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 import './UpgradeableBase.sol';
 import './Utils/Constants.sol';
 import './Operator/OperatorDistributor.sol';
+import './Tokens/WETHVault.sol';
+import './Tokens/RPLVault.sol';
 
 import 'hardhat/console.sol';
 
 /// @title MerkleClaimStreamer
 /// @author Mike Leach
-/// @notice Allows claiming of merkle rewards and streams them over a specified time period to the rest of the 
-/// protocol. This prevents the TVL from updating with a significant step which would allow for sandwich attacks.abi
+/// @notice Allows claiming of merkle rewards and reports a "streamed" TVL value them over a specified time interval to the rest of the 
+/// protocol. This prevents the TVL from updating with a significant step which would allow for sandwich attacks.
 /// See this issue with Rocket Pool for a deeper description: https://consensys.io/diligence/audits/2021/04/rocketpool/#rockettokenreth---sandwiching-opportunity-on-price-updates
 contract MerkleClaimStreamer is UpgradeableBase {
 
@@ -46,8 +48,29 @@ contract MerkleClaimStreamer is UpgradeableBase {
     mapping(bytes32 => bool) public merkleClaimSigUsed;
     uint256 public merkleClaimSigExpiry;
 
-    uint256 public streamingPeriod;
+    // the prior interval's rewards which are "streamed" to the TVL 
+    uint256 public priorEthStreamAmount;
+    uint256 public priorRplStreamAmount;
 
+    uint256 public lastClaimTime;
+
+    uint256 public streamingInterval;
+
+    function setStreamingInterval(uint256 newStreamingInterval) external onlyAdmin {
+        require(newStreamingInterval > 0 seconds && newStreamingInterval <= 365 days, "New streaming interval must be >= 0 seconds and <= 365 days");
+        require(newStreamingInterval != streamingInterval, "New streaming interval must be different");
+        
+        streamingInterval = newStreamingInterval;
+    }
+
+    // The admin needs to be able to disable merkle claims in case the RP rewards interval is reduced. That way, they can disable claims, then wait for
+    // the current streamingInterval to be completely finished, lower the streamingInterval, and re-enable claims.
+    bool public merkleClaimsEnabled;
+
+    function setMerkleClaimsEnabled(uint256 isEnabled) external onlyAdmin {
+        merkleClaimsEnabled = isEnabled;
+    }
+    
     constructor() initializer {}
     
     function initialize(address _directory) public override initializer {
@@ -55,7 +78,42 @@ contract MerkleClaimStreamer is UpgradeableBase {
 
         merkleClaimSigExpiry = 1 days;
 
-        streamingPeriod = 28 days; // default RP rewards period
+        streamingInterval = 28 days; // default RP rewards interval
+    }
+
+    /// @return The current amount of currently-locked TVL which is applicable to xrETH right now
+    function getStreamedTvlEth() public view returns (uint256){
+        uint256 timeSinceLastClaim = block.timestamp - lastClaimTime;
+        return timeSinceLastClaim < streamingInterval ? priorEthStreamAmount * timeSinceLastClaim / streamingInterval : priorEthStreamAmount;
+    }
+
+    /// @return The current amount of currently-locked TVL which is applicable to xRPL right now
+    function getStreamedTvlRpl() public view returns (uint256){
+        uint256 timeSinceLastClaim = block.timestamp - lastClaimTime;
+        return timeSinceLastClaim < streamingInterval ? priorRplStreamAmount * timeSinceLastClaim / streamingInterval : priorRplStreamAmount;
+    }
+
+    /// @notice Sweeps the full amount of streamed TVL into the rest of the protocol. Only callable if the full streaming interval has passed.
+    /// @dev Typically not necessary to call, as it's automatically called during each successive merkle claim.
+    /// The only reason to call this otherwise is:
+    /// - if there's something wrong with the RP rewards intervals and they are not completed as expected
+    /// - if RP rewards interval length changes, this can be called to sweep rewards from prior intervals before changing streamingInterval
+    function sweepLockedTVL() public {
+        require(block.timestamp - lastClaimTime > streamingInterval, "Current streaming interval is not finished");
+        
+        OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
+        
+        if(priorEthStreamAmount > 0){
+            (bool success, ) = od.call{value: priorEthStreamAmount};
+            require(success, "Failed to transfer ETH from MerkleClaimStreamer to OperatorDistributor");
+            od.rebalanceWethVault();
+        }
+        
+        if(priorRplStreamAmount > 0){
+            SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), getDirectory.getMerkleClaimStreamerAddress(), priorRplStreamAmount);
+            SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), getDirectory.getMerkleClaimStreamerAddress(), priorRplStreamAmount);
+            od.rebalanceRPLVault();
+        }
     }
 
     /**
@@ -74,12 +132,36 @@ contract MerkleClaimStreamer is UpgradeableBase {
         bytes32[][] calldata merkleProof,
         MerkleRewardsData calldata data
     ) public {
-        address odAddress = _directory.getOperatorDistributorAddress();
-        IERC20 rpl = IERC20(_directory.getRPLAddress());
+        require(merkleClaimsEnabled, "Merkle claims are disabled");
+
+        address odAddress = getDirectory().getOperatorDistributorAddress();
+        OperatorDistributor od = OperatorDistributor(odAddress);
+        IERC20 rpl = IERC20(getDirectory().getRPLAddress());
 
         uint256 initialEthBalance = odAddress.balance;
         uint256 initialRplBalance = rpl.balanceOf(odAddress);
-
+        
+        // check signature
+        bytes32 messageHash = keccak256(
+            abi.encodePacked(
+                data.priorEthStreamAmount,
+                data.priorRplStreamAmount,
+                data.sigGenesisTime,
+                address(this),
+                merkleClaimNonce,
+                block.chainid
+            )
+        );
+        require(!merkleClaimSigUsed[messageHash], 'merkle sig already used');
+        merkleClaimSigUsed[messageHash] = true;
+        address recoveredAddress = ECDSA.recover(ECDSA.toEthSignedMessageHash(messageHash), data.sig);
+        require(
+            _directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress),
+            'merkleClaim: signer must have permission from admin server role'
+        );
+        require(block.timestamp - data.sigGenesisTime < merkleClaimSigExpiry, 'merkle sig expired');
+        merkleClaimNonce++;
+        
         IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
             address(getDirectory().getSuperNodeAddress()),
             rewardIndex,
@@ -94,48 +176,55 @@ contract MerkleClaimStreamer is UpgradeableBase {
         uint256 ethReward = finalEthBalance - initialEthBalance;
         uint256 rplReward = finalRplBalance - initialRplBalance;
 
-        bytes32 messageHash = keccak256(
-            abi.encodePacked(
-                data.priorEthStreamAmount,
-                data.priorRplStreamAmount,
-                data.ethTreasuryFee,
-                data.ethOperatorFee,
-                data.rplTreasuryFee,
-                data.sigGenesisTime,
-                address(this),
-                merkleClaimNonce,
-                block.chainid
-            )
-        );
-        require(!merkleClaimSigUsed[messageHash], 'merkle sig already used');
-        merkleClaimSigUsed[messageHash] = true;
-        address recoveredAddress = ECDSA.recover(ECDSA.toEthSignedMessageHash(messageHash), data.sig);
-        require(
-            _directory.hasRole(Constants.ADMIN_ORACLE_ROLE, recoveredAddress),
-            'merkleClaim: signer must have permission from admin oracle role'
-        );
-        require(block.timestamp - data.sigGenesisTime < merkleClaimSigExpiry, 'merkle sig expired');
-        merkleClaimNonce++;
-        
+        require(ethReward != 0 || rplReward != 0, "ETH and RPL rewards were both zero");
+
+        // lock all rewards in this contract to be streamed
+        od.transferMerkleClaimToStreamer(ethReward, rplReward);
+
+        if(ethReward > 0) {
+            uint256 treasuryPortion = ethReward.mulDiv(WETHVault(getDirectory().getWETHVaultAddress()).treasuryFee(), 1e18);
+            uint256 nodeOperatorPortion = ethReward.mulDiv(RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee(), 1e18);
+
+            // send treasury and NO fees out immediately
+            (bool success, ) = getDirectory().getTreasuryAddress().call{value: treasuryPortion}('');
+            require(success, 'Transfer to treasury failed');
+
+            (success, ) = getDirectory().getYieldDistributorAddress().call{value: nodeOperatorPortion}('');
+            require(success, 'Transfer to operator fee distributor failed');
+
+            ethReward -= treasuryPortion - nodeOperatorPortion;
+        }
+        this.sweepLockedTVL();
+        // anything remaining at this point is just rewards for the next streaming interval 
+        priorEthStreamAmount = address(this).balance;
+
+
+        if(rplReward != 0) {
+            uint256 treasuryPortion = rplReward.mulDiv(RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee(), 1e18);
+
+            // send treasury fee immediately
+            SafeERC20.safeApprove(IERC20(getDirectory().getTreasuryAddress()), odAddress, treasuryPortion);
+            SafeERC20.safeTransfer(IERC20(getDirectory().getTreasuryAddress()), odAddress, treasuryPortion);
+        }
+        if(priorRplStreamAmount > 0){
+            // transfer the prior locked amount to the OD and rebalance liquidity
+            SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), odAddress, priorRplStreamAmount);
+            SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), odAddress, priorRplStreamAmount);
+            od.rebalanceRPLVault();
+        }
+        // anything remaining at this point is just rewards for the next streaming interval 
+        priorRplStreamAmount = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
 
         // TODO
         //
         // here:
-        // call into OperatorDistributor (withdrawal address) to immediately lock up any 
-        //      claimed rewards into this contract
-        // move any remaining balance from last rewards period over to protocol immediately
-        // set ETH and RPL storage values for amount of rewards to stream
         // 
         // elsewhere:
-        // create view functions to get TVL:
-        //      (rewards/28 * percentageOfPeriodComplete) OR deposit fee, whichever lower
-        // add sweep to tick before rebalance which reduces storage values
-
-
-        OperatorDistributor od = OperatorDistributor(payable(odAddress));
-        od.onEthRewardsReceived(ethReward, data.ethTreasuryFee, data.ethOperatorFee, false);
-        od.onRplRewardsRecieved(rplReward, data.rplTreasuryFee);
+        // - create view functions to get TVL:
+        //      rewards/28 * percentageOfIntervalComplete
+        // - add sweep to tick before rebalance which reduces storage values
+        
         od.rebalanceRplVault();
-        od.rebalanceWethVault();
+        
     }
 }
