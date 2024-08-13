@@ -40,25 +40,22 @@ This repository contains Solidity smart contracts for Constellation, a second la
 9. **Directory.sol**
    - Holds references to all protocol contracts and manages role mechanisms.
 
-10. **AssetRouter.sol**
-    - Manages protocol asset routing between vaults and other distributors.
-
-11. **WETHVault.sol**
+10. **WETHVault.sol**
     - An ERC4626 vault for WETH tokens, managing deposits, withdrawals, and rewards distribution.
 
-12. **RPLVault.sol**
+11. **RPLVault.sol**
     - An ERC4626 vault for RPL tokens, managing deposits, withdrawals, and rewards distribution.
 
 13. **NodeSetOperatorRewardDistributor.sol**
     - Distributes rewards to node operators.
 
-14. **SuperNodeAccount.sol**
+13. **SuperNodeAccount.sol**
     - Manages node operators and their minipools.
 
-15. **OperatorDistributor.sol**
+14. **OperatorDistributor.sol**
     - Manages distribution and staking of ETH and RPL tokens for node operators.
 
-16. **Treasury.sol**
+15. **Treasury.sol**
     - Manages and executes transfers of ETH and ERC20 tokens.
 
 ### Actors in the System and Their Incentives

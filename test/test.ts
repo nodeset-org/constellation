@@ -44,7 +44,6 @@ export type Protocol = {
   whitelist: Contract;
   vCWETH: WETHVault;
   vCRPL: RPLVault;
-  assetRouter: AssetRouter;
   operatorDistributor: OperatorDistributor;
   yieldDistributor: NodeSetOperatorRewardDistributor;
   oracle: PoABeaconOracle;

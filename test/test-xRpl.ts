@@ -48,7 +48,7 @@ describe("xRPL", function () {
     }
 
     const expectedRplInDP = ethers.utils.parseEther("0");
-    const actualRplInDP = await rocketPool.rplContract.balanceOf(protocol.assetRouter.address);
+    const actualRplInDP = await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address);
     expect(expectedRplInDP).equals(actualRplInDP)
 
   })
@@ -116,8 +116,8 @@ describe("xRPL", function () {
     await protocol.vCRPL.connect(signers.random).deposit(depositAmount, signers.random.address);
 
     expect(await protocol.vCRPL.totalAssets()).equals(depositAmount)
-    expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault);
-    expect(await protocol.operatorDistributor.balanceRpl()).equals(surplusSentToOD);
+    expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).equals(expectedReserveInVault);
+    expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).equals(surplusSentToOD);
 
     const shareValue = await protocol.vCRPL.convertToAssets(ethers.utils.parseEther("1"))
     const expectedRedeemValue = await protocol.vCRPL.previewRedeem(shareValue);
@@ -126,19 +126,31 @@ describe("xRPL", function () {
     await protocol.vCRPL.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     let postBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
-    expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("1")))
+    expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).equals(
+      (await protocol.vCRPL.totalAssets())
+      .mul(await protocol.vCRPL.liquidityReservePercent())
+      .div(ethers.utils.parseEther("1"))
+    );
 
     preBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     await protocol.vCRPL.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     postBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
-    expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("2")))
+    expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).equals(
+      (await protocol.vCRPL.totalAssets())
+      .mul(await protocol.vCRPL.liquidityReservePercent())
+      .div(ethers.utils.parseEther("1"))
+    );
 
     preBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     await protocol.vCRPL.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     postBalance = await rocketPool.rplContract.balanceOf(signers.random.address);
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
-    expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault.sub(ethers.utils.parseEther("3")))
+    expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).equals(
+      (await protocol.vCRPL.totalAssets())
+      .mul(await protocol.vCRPL.liquidityReservePercent())
+      .div(ethers.utils.parseEther("1"))
+    );
   })
 
   it("success - tries to deposit and redeem from weth vault multiple times after getting merkle rewards", async () => {
@@ -146,8 +158,7 @@ describe("xRPL", function () {
     const { protocol, signers, rocketPool } = setupData;
 
     const depositAmount = ethers.utils.parseEther("100000");
-    const expectedReserveInVault = ethers.utils.parseEther("2000");
-    const surplusSentToOD = ethers.utils.parseEther("98000");
+
 
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, depositAmount)
 
@@ -175,15 +186,11 @@ describe("xRPL", function () {
     const amountEth = [ethReward];
     const proof = [[ethers.utils.hexZeroPad("0x0", 32)], [ethers.utils.hexZeroPad("0x0", 32)]]
 
-
     const ethTreasuryFee = await setupData.protocol.vCWETH.treasuryFee();
     const ethOperatorFee = await setupData.protocol.vCWETH.nodeOperatorFee();
     const rplTreasuryFee = await setupData.protocol.vCRPL.treasuryFee();
     const expectedTreasuryPortion = rplReward.mul(rplTreasuryFee).div(ethers.utils.parseEther("1")); 
     const expectedCommunityPortion = rplReward.sub(expectedTreasuryPortion)
-
-    
-
 
     await protocol.superNode.merkleClaim(rewardIndex, amountRpl, amountEth, proof, await createMerkleSig(
       setupData,
@@ -192,9 +199,13 @@ describe("xRPL", function () {
       rplTreasuryFee
     ));
 
-    expect(await protocol.vCRPL.totalAssets()).equals(depositAmount.add(expectedCommunityPortion))
-    expect(await protocol.vCRPL.balanceRpl()).equals(expectedReserveInVault);
-    expect(await protocol.operatorDistributor.balanceRpl()).equals(surplusSentToOD);
+    let expectedTotalAssets = depositAmount.add(expectedCommunityPortion);
+    const expectedReserveInVault = expectedTotalAssets.mul(await setupData.protocol.vCRPL.liquidityReservePercent()).div(ethers.utils.parseEther("1"));
+    const surplusSentToOD = expectedTotalAssets.sub(expectedReserveInVault);
+
+    expect(await protocol.vCRPL.totalAssets()).equals(expectedTotalAssets);
+    expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).equals(expectedReserveInVault);
+    expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).equals(surplusSentToOD);
 
     const shareValue = await protocol.vCRPL.convertToAssets(ethers.utils.parseEther("1"))
     const expectedRedeemValue = await protocol.vCRPL.previewRedeem(shareValue);
@@ -215,37 +226,5 @@ describe("xRPL", function () {
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
 
     expect(await rocketPool.rplContract.balanceOf(await protocol.directory.getTreasuryAddress())).equals(expectedTreasuryPortion);
-
-  })
-
-  it("success - a random makes deposit, DP gets 10 rpl of untracked RPL, random gets correct amount and admin gets nothing", async () => {
-    const setupData = await loadFixture(protocolFixture);
-    const { protocol, signers, rocketPool } = setupData;
-
-    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, ethers.utils.parseEther("100"));
-    await assertAddOperator(setupData, signers.random);
-
-    await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
-    await protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("100"), signers.random.address);
-
-    const expectedRplInSystem = ethers.utils.parseEther("100");
-    const actualRplInSystem = await protocol.vCRPL.totalAssets();
-    expect(expectedRplInSystem).equals(actualRplInSystem)
-
-
-    // incoming funds to DP
-    await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.assetRouter.address, ethers.utils.parseEther("10"));
-
-    // random should be able to withdraw shares worth 10% more, aka, withdraw will trade one share for 1.1 - 1% admin fee RPL
-    // admin should be allowed to take 1% of the 10 RPL that landed
-    await protocol.vCRPL.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("1"));
-    const tx = await protocol.vCRPL.connect(signers.random).redeem(ethers.utils.parseEther("1"), signers.random.address, signers.random.address);
-    await assertMultipleTransfers(tx, [
-      {
-        from: protocol.vCRPL.address, to: signers.random.address, value: ethers.utils.parseEther("1")
-      },
-    ])
-
-
   })
 });

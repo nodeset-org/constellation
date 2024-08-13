@@ -9,6 +9,47 @@ import { RocketDepositPool } from "./rocketpool/_utils/artifacts";
 
 describe("Operator Distributor", function () {
 
+	it("Processes minipool rewards correctly even when an external user calls distributeBalance", async function (){
+		const setupData = await loadFixture(protocolFixture);
+		const { protocol, signers, rocketPool } = setupData;
+		const { operatorDistributor } = protocol;
+
+		// create 1 minipool
+		await prepareOperatorDistributionContract(setupData, 1);
+		const minipools = await registerNewValidator(setupData, [signers.random]);
+
+		const priorAssets = await protocol.vCWETH.totalAssets();
+
+		// simulate rewards to minipool contract from beacon
+		const baconReward = ethers.utils.parseEther("1");
+		// assume a 15% rETH fee and LEB8 (36.25% of all rewards), which is default settings for RP
+		const constellationPortion = baconReward.mul(ethers.utils.parseEther(".3625")).div(ethers.utils.parseEther("1"));
+		const xrETHPortion = await protocol.vCWETH.getIncomeAfterFees(constellationPortion);
+		await signers.ethWhale.sendTransaction({
+			to: minipools[0],
+			value: baconReward
+		  })
+		
+		// random person distributes the balance to increase nodeRefundBalance
+		await (await ethers.getContractAt("IMinipool", minipools[0])).connect(signers.random).distributeBalance(true);
+
+		// protocol sweeps in rewards
+		await protocol.operatorDistributor.connect(signers.random).processMinipool(minipools[0]);
+		console.log("priorAssets", priorAssets);
+		console.log("xrETHPortion", xrETHPortion);
+		console.log("OD balance ETH/WETH", 
+			await ethers.provider.getBalance(protocol.operatorDistributor.address), "/",
+			await protocol.wETH.balanceOf(protocol.operatorDistributor.address)
+		  );
+		console.log("TVL OD", await protocol.operatorDistributor.getTvlEth());
+		console.log("WETHVault balance ETH/WETH", 
+			await ethers.provider.getBalance(protocol.vCWETH.address), "/",
+			await protocol.wETH.balanceOf(protocol.vCWETH.address)
+		  );
+
+		expect(await protocol.vCWETH.totalAssets()).to.equal(priorAssets.add(xrETHPortion));
+	});
+
 	it("Tops up the RPL stake if it is below the minimum", async function () {
 		// load fixture
 		const setupData = await loadFixture(protocolFixture);
@@ -93,7 +134,7 @@ describe("Operator Distributor", function () {
 
 		await operatorDistributor.connect(admin).setTargetStakeRatio(ethers.utils.parseEther("1"));
 
-		await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.assetRouter.address, ethers.utils.parseEther("5000"));
+		await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.operatorDistributor.address, ethers.utils.parseEther("5000"));
 
 		let initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
 		expect(initialRplStake).equals(0)
@@ -119,7 +160,7 @@ describe("Operator Distributor", function () {
 
 		await operatorDistributor.connect(admin).setTargetStakeRatio(ethers.utils.parseEther(".5"));
 
-		await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.assetRouter.address, ethers.utils.parseEther("5000"));
+		await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.operatorDistributor.address, ethers.utils.parseEther("5000"));
 
 		let initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
 		expect(initialRplStake).equals(0)

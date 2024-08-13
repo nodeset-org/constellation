@@ -492,7 +492,7 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   const vweth = setupData.protocol.vCWETH;
   let depositAmount = ethers.utils.parseEther('8').mul(BigNumber.from(numOperators));
   depositAmount = depositAmount.sub(await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address));
-  const vaultMinimum = await vweth.getRequiredCollateralAfterDeposit(depositAmount);
+  const vaultMinimum = await vweth.getMissingLiquidityAfterDeposit(depositAmount);
 
   console.log('REQUIRE COLLAT', vaultMinimum);
   const requiredEth = depositAmount
@@ -549,7 +549,6 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   console.log('rplRequired', rplRequired);
   const protocolSigner = setupData.signers.protocolSigner;
   await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequired);
-  await setupData.protocol.operatorDistributor.connect(protocolSigner).onRplBalanceIncrease(rplRequired)
 
   return requiredEth;
 }
