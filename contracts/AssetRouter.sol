@@ -5,7 +5,7 @@ import '@openzeppelin/contracts/utils/Strings.sol';
 
 import './UpgradeableBase.sol';
 import './Operator/OperatorDistributor.sol';
-import './Operator/YieldDistributor.sol';
+import './Operator/NodeSetOperatorRewardDistributor.sol';
 import './Interfaces/RocketPool/IRocketNodeStaking.sol';
 import './Tokens/WETHVault.sol';
 import './Tokens/RPLVault.sol';
@@ -173,7 +173,7 @@ contract AssetRouter is UpgradeableBase {
 
     /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode 
     /// withdrawal address for both ETH and RPL from Rocket Pool.
-    /// Splits incoming assets up among the Treasury, YieldDistributor, and the WETHVault/OperatorDistributor based on the 
+    /// Splits incoming assets up among the Treasury, NodeSetOperatorRewardDistributor, and the WETHVault/OperatorDistributor based on the 
     /// rewardsAmount expected.
     /// @param rewardAmount amount of ETH rewards expected
     /// @param avgTreasuryFee Average treasury fee for the rewards received across all the minipools the rewards came from
@@ -190,7 +190,7 @@ contract AssetRouter is UpgradeableBase {
         (bool success, ) = getDirectory().getTreasuryAddress().call{value: treasuryPortion}('');
         require(success, 'Transfer to treasury failed');
 
-        (bool success2, ) = getDirectory().getYieldDistributorAddress().call{value: nodeOperatorPortion}('');
+        (bool success2, ) = getDirectory().getNodeSetOperatorRewardDistributorAddress().call{value: nodeOperatorPortion}('');
         require(success2, 'Transfer to yield distributor failed');
 
         uint256 communityPortion = rewardAmount - treasuryPortion - nodeOperatorPortion;
@@ -219,7 +219,7 @@ contract AssetRouter is UpgradeableBase {
 
     /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode 
     /// withdrawal address for both ETH and RPL from Rocket Pool.
-    /// Splits incoming assets up among the Treasury, YieldDistributor, and the WETHVault/OperatorDistributor based on
+    /// Splits incoming assets up among the Treasury, NodeSetOperatorRewardDistributor, and the WETHVault/OperatorDistributor based on
     /// the rewardsAmount and bondAmount specified.
     /// @param rewardAmount amount of ETH rewards expected
     /// @param bondAmount amount of ETH bond expected
@@ -233,7 +233,7 @@ contract AssetRouter is UpgradeableBase {
 
     /// @notice Called by the protocol when RPL rewards are distributed to this contract, which acts as the SuperNode 
     /// withdrawal address for both ETH and RPL rewards from Rocket Pool.
-    /// Splits incoming assets up among the Treasury, YieldDistributor, and the WETHVault/OperatorDistributor.
+    /// Splits incoming assets up among the Treasury, NodeSetOperatorRewardDistributor, and the WETHVault/OperatorDistributor.
     /// @param _amount amount of RPL rewards expected
     /// @param avgTreasuryFee Average treasury fee for the rewards received across all the minipools the rewards came from
     function onRplRewardsRecieved(uint256 _amount, uint256 avgTreasuryFee) external onlyProtocol {

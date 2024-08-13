@@ -7,7 +7,7 @@ import './RPLVault.sol';
 import '../PriceFetcher.sol';
 import '../UpgradeableBase.sol';
 import '../AssetRouter.sol';
-import '../Operator/YieldDistributor.sol';
+import '../Operator/NodeSetOperatorRewardDistributor.sol';
 import '../Utils/Constants.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/Oracles/IBeaconOracle.sol';

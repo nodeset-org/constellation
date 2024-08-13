@@ -4,7 +4,7 @@ import path from 'path';
 import { getNextContractAddress } from "../../test/utils/utils";
 import { getInitializerData } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import readline from 'readline';
-import { Treasury, Directory, AssetRouter, IRocketStorage, IBeaconOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, YieldDistributor, PoABeaconOracle } from "../../typechain-types";
+import { Treasury, Directory, AssetRouter, IRocketStorage, IBeaconOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, NodeSetOperatorRewardDistributor, PoABeaconOracle } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Protocol, Signers } from "../../test/test";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
@@ -54,7 +54,7 @@ export const generateBytes32Identifier = (identifier: string) => {
     return ethers.utils.solidityKeccak256(["string"], [`contract.address${identifier}`]);
 };
 
-export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer: SignerWithAddress, directoryDeployer: SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, admin: string, log: boolean, defaultOffset = 1) {
+export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer: SignerWithAddress, nodesetAdmin: SignerWithAddress, nodesetServerAdmin: SignerWithAddress, directoryDeployer: SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, admin: string, log: boolean, defaultOffset = 1) {
 
     const directoryAddress = await getNextContractAddress(directoryDeployer, defaultOffset)
 
@@ -106,7 +106,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
     })
 
     const yieldDistributorProxy = await retryOperation(async function () {
-        const yd = await upgrades.deployProxy(await ethers.getContractFactory("YieldDistributor", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        const yd = await upgrades.deployProxy(await ethers.getContractFactory("NodeSetOperatorRewardDistributor", deployer), [nodesetAdmin.address, nodesetServerAdmin.address], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         if (log) console.log("yield distributor deployed to", yd.address)
         return yd
     })
@@ -192,7 +192,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
         vCRPL: vCRPLProxy as RPLVault,
         depositPool: depositPoolProxy as AssetRouter,
         operatorDistributor: operatorDistributorProxy as OperatorDistributor,
-        yieldDistributor: yieldDistributorProxy as YieldDistributor,
+        yieldDistributor: yieldDistributorProxy as NodeSetOperatorRewardDistributor,
         priceFetcher: priceFetcherProxy as PriceFetcher,
         oracle: oracleProxy as PoABeaconOracle,
         superNode: superNodeProxy as SuperNodeAccount,
@@ -230,6 +230,8 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     const { whitelist, vCWETH, vCRPL, depositPool, operatorDistributor, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury } = await fastDeployProtocol(
         signers.treasurer,
         signers.deployer,
+        signers.nodesetAdmin,
+        signers.nodesetServerAdmin,
         signers.random5,
         rockStorageContract.address,
         wETH.address,

@@ -185,28 +185,6 @@ describe("Node Operator Onboarding", function () {
 
         registerNewValidator(setupData, [signers.hyperdriver]);
 
-        //await ethers.connect(setupData.signers.ethWhale).transfer(, ethers.utils.parseEther("1"))l
-
-        await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
-
-        const currentInterval = (await protocol.yieldDistributor.currentInterval()).sub(1);
-
-        console.log(await protocol.yieldDistributor.getIntervals())
-
-
-
-        const tx = await protocol.yieldDistributor.connect(signers.random).harvest(signers.hyperdriver.address, 0, currentInterval);
-        const receipt = await tx.wait();
-        const { events } = receipt;
-        if (events) {
-            for (let i = 0; i < events.length; i++) {
-                if (events[i].event?.includes("RewardDistributed")) {
-                    console.log("RewardDistributed")
-                    console.log(events[i].args)
-                }
-            }
-        }
-
         console.log("vault eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.assetRouter.address)));
         console.log("vault rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.assetRouter.address)));
         console.log("operator distribution pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)));

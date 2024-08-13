@@ -111,7 +111,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.operatorDistributor;
     }
 
-    function getYieldDistributorAddress() public view returns (address payable) {
+    function getNodeSetOperatorRewardDistributorAddress() public view returns (address payable) {
         return _protocol.yieldDistributor;
     }
 
