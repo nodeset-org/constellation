@@ -3,7 +3,6 @@
 pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/utils/math/Math.sol';
-import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 
 import './Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
 
@@ -24,6 +23,8 @@ import 'hardhat/console.sol';
 /// protocol. This prevents the TVL from updating with a significant step which would allow for sandwich attacks.
 /// See this issue with Rocket Pool for a deeper description: https://consensys.io/diligence/audits/2021/04/rocketpool/#rockettokenreth---sandwiching-opportunity-on-price-updates
 contract MerkleClaimStreamer is UpgradeableBase {
+
+    using Math for uint256;
 
     struct MerkleRewardsData {
         bytes sig;
@@ -197,8 +198,6 @@ contract MerkleClaimStreamer is UpgradeableBase {
 
             (success, ) = getDirectory().getOperatorRewardAddress().call{value: nodeOperatorPortion}('');
             require(success, 'Transfer to operator fee distributor failed');
-
-            ethReward -= treasuryPortion - nodeOperatorPortion;
         }
         
         if(rplReward > 0) {
