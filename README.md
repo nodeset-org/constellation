@@ -46,7 +46,11 @@ This repository contains Solidity smart contracts for Constellation, a second la
 11. **RPLVault.sol**
     - An ERC4626 vault for RPL tokens, managing deposits, withdrawals, and rewards distribution.
 
+<<<<<<< HEAD
 12. **YieldDistributor.sol**
+=======
+13. **NodeSetOperatorRewardDistributor.sol**
+>>>>>>> main
     - Distributes rewards to node operators.
 
 13. **SuperNodeAccount.sol**
@@ -106,60 +110,20 @@ The protocol involves several actors, each with specific roles and incentives to
      - Data Provision Fees
      - Network Trust
 
-### Using the YieldDistributor
-The YieldDistributor is a crucial component of the system that handles the distribution of rewards (yield) to various participants, primarily the node operators. Here’s an in-depth look at how it works, who uses it, and how it is used.
+### Using the NodeSetOperatorRewardDistributor
+The NodeSetOperatorRewardDistributor is a crucial component of the system that handles the distribution of rewards (yield) to various participants, primarily the node operators. Here’s an in-depth look at how it works, who uses it, and how it is used.
 
-#### Who Uses the YieldDistributor?
+#### Who Uses the NodeSetOperatorRewardDistributor?
 - **Node Operators**: Claim their earned rewards based on their contributions to the network.
-- **Protocol Admins**: May optionally call certain functions to finalize intervals and manage rewards distribution.
-- **Smart Contracts**: Other contracts within the protocol might call YieldDistributor functions to manage rewards distribution in an automated manner.
+- **Smart Contracts**: Other contracts within the protocol will send ETH to the NodeSetOperatorRewardDistributor to manage rewards distribution in an automated manner.
 
-#### How the YieldDistributor is Used
-1. **Finalizing Reward Intervals**
-   - **Function**: `finalizeInterval()`
-   - **Purpose**: Finalize the current reward interval and start a new one.
-   - **Who Calls It**: Protocol admin or automated processes within the protocol.
-   - **Steps**:
-     - Claim Admin Fees
-     - Record Claims
-     - Start New Interval
-     - Rebalance Resources
-
-2. **Harvesting Rewards**
-   - **Function**: `harvest(address _rewardee, uint256 _startInterval, uint256 _endInterval)`
-   - **Purpose**: Allow node operators to claim their rewards for a specified range of intervals.
+#### How the NodeSetOperatorRewardDistributor is Used
+1. **Harvesting Rewards**
+   - **Function**: `harvest(address _rewardee, Claim claim)`
+   - **Purpose**: Allow node operators to claim their rewards.
    - **Who Calls It**: Node operators
    - **Steps**:
      - Verify Parameters
      - Calculate Rewards
      - Distribute Rewards
      - Mark as Claimed
-
-3. **Receiving Yield**
-   - **Function**: `wethReceived(uint256 weth)`
-   - **Purpose**: Handle the receipt of yield (in WETH) by the YieldDistributor.
-   - **Who Calls It**: Other contracts within the protocol
-
-#### Example Use Case: Claiming Rewards
-Let's go through an example scenario where a node operator claims their rewards using the YieldDistributor.
-
-**Scenario**
-
-- **Node Operator**: Alice
-- **Intervals to Claim**: 5 to 10
-
-**Steps Alice Would Take**
-1. **Check Eligibility**: Ensure she has not already claimed rewards for intervals 5 to 10 and that she has been an active node operator during these intervals.
-2. **Call Harvest Function**:
-   ```solidity
-   yieldDistributor.harvest(aliceAddress, 5, 10);
-   ```
-**Calculation and Distribution**: Calculate the total rewards based on her validator performance and contributions.
-Receive Rewards: Alice receives the rewards in her wallet.
-Admin Managing the YieldDistributor
-
-Admins play a crucial role in managing the YieldDistributor to ensure the fair and timely distribution of rewards.
-
-**Finalizing Intervals**: Regularly call finalizeInterval() to ensure rewards are distributed correctly.
-### Summary
-The YieldDistributor is used primarily by node operators to claim their earned rewards and by admins to manage the distribution process. It ensures that rewards are distributed fairly based on contributions, incentivizing node operators to maintain high performance and reliability. The system is designed to be automated and secure, minimizing the need for manual intervention while maintaining the integrity and efficiency of the reward distribution process.

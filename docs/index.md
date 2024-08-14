@@ -298,10 +298,10 @@ function getRocketStorageAddress() public view returns (address)
 function getOperatorDistributorAddress() public view returns (address payable)
 ```
 
-### getYieldDistributorAddress
+### getNodeSetOperatorRewardDistributorAddress
 
 ```solidity
-function getYieldDistributorAddress() public view returns (address payable)
+function getNodeSetOperatorRewardDistributorAddress() public view returns (address payable)
 ```
 
 ### getRocketNodeManagerAddress
@@ -779,7 +779,7 @@ struct Claim {
 }
 ```
 
-## YieldDistributor
+## NodeSetOperatorRewardDistributor
 
 distributes rewards in weth to node operators
 
@@ -2208,7 +2208,7 @@ function _removeOperator(address nodeOperator) internal
 Internal function to remove an operator from the whitelist.
 
 _This function is used internally to remove an operator from the whitelist, including updating permissions, clearing operator data,
-     and notifying the OperatorDistributor and YieldDistributor contracts._
+     and notifying the OperatorDistributor and NodeSetOperatorRewardDistributor contracts._
 
 #### Parameters
 

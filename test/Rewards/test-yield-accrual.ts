@@ -32,7 +32,7 @@ describe("Yield Accrual", function () {
                         const reward = ethers.utils.parseEther("1")
                         const avgTreasuryFee = ethers.utils.parseEther("0")
                         const avgOperatorsFee = ethers.utils.parseEther("1")
-                        await expect(protocol.operatorDistributor.connect(signers.protocolSigner).onEthRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee, true)).to.be.revertedWith("Transfer to yield distributor failed");
+                        await expect(protocol.operatorDistributor.connect(signers.protocolSigner).onEthRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee, true)).to.be.revertedWith("Transfer to operator fee address failed");
                     })
                 })
             })
