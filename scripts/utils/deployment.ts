@@ -227,7 +227,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
 
     const deployer = (await ethers.getSigners())[0];
 
-    const { whitelist, vCWETH, vCRPL, operatorDistributor, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury } = await fastDeployProtocol(
+    const { whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury } = await fastDeployProtocol(
         signers.treasurer,
         signers.deployer,
         signers.nodesetAdmin,
@@ -272,7 +272,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     tx = await directory.connect(signers.admin).setTreasury(deployer.address);
     await tx.wait();
 
-    const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, operatorDistributor, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
+    const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
 
     // send all rpl from admin to rplWhale
     const rplWhaleBalance = await rplContract.balanceOf(signers.deployer.address);

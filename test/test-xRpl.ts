@@ -157,6 +157,8 @@ describe("xRPL", function () {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
+    expect.fail(); // todo: fix this test
+
     const depositAmount = ethers.utils.parseEther("100000");
 
 
@@ -192,7 +194,7 @@ describe("xRPL", function () {
     const expectedTreasuryPortion = rplReward.mul(rplTreasuryFee).div(ethers.utils.parseEther("1")); 
     const expectedCommunityPortion = rplReward.sub(expectedTreasuryPortion)
 
-    await protocol.superNode.merkleClaim(rewardIndex, amountRpl, amountEth, proof, await createMerkleSig(
+    await protocol.merkleClaimStreamer.merkleClaim(rewardIndex, amountRpl, amountEth, proof, await createMerkleSig(
       setupData,
       ethTreasuryFee,
       ethOperatorFee,
