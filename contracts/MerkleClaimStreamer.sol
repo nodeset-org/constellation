@@ -2,12 +2,8 @@
 
 pragma solidity 0.8.17;
 
-import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
-
-import './Interfaces/Oracles/IConstellationOracle.sol';
-import './Interfaces/RocketPool/IRocketNetworkPrices.sol';
-import './Interfaces/RocketPool/IRocketNetworkPenalties.sol';
+import '@openzeppelin/contracts/utils/math/Math.sol';
+import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 
 import './Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
 
@@ -67,7 +63,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
     // the current streamingInterval to be completely finished, lower the streamingInterval, and re-enable claims.
     bool public merkleClaimsEnabled;
 
-    function setMerkleClaimsEnabled(uint256 isEnabled) external onlyAdmin {
+    function setMerkleClaimsEnabled(bool isEnabled) external onlyAdmin {
         merkleClaimsEnabled = isEnabled;
     }
     
@@ -108,46 +104,24 @@ contract MerkleClaimStreamer is UpgradeableBase {
     function sweepLockedTVL() public {
         require(block.timestamp - lastClaimTime > streamingInterval, "Current streaming interval is not finished");
         
-        OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
+        address payable odAddress = getDirectory().getOperatorDistributorAddress();
+        OperatorDistributor od = OperatorDistributor(odAddress);
+
         
         if(priorEthStreamAmount > 0){
-            (bool success, ) = od.call{value: priorEthStreamAmount};
+            (bool success, ) = odAddress.call{value: priorEthStreamAmount}("");
             require(success, "Failed to transfer ETH from MerkleClaimStreamer to OperatorDistributor");
             od.rebalanceWethVault();
         }
         
         if(priorRplStreamAmount > 0){
-            SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), getDirectory.getMerkleClaimStreamerAddress(), priorRplStreamAmount);
-            SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), getDirectory.getMerkleClaimStreamerAddress(), priorRplStreamAmount);
-            od.rebalanceRPLVault();
+            SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), getDirectory().getMerkleClaimStreamerAddress(), priorRplStreamAmount);
+            SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), getDirectory().getMerkleClaimStreamerAddress(), priorRplStreamAmount);
+            od.rebalanceRplVault();
         }
     }
 
-    /**
-     * @notice Claims rewards for a node based on a Merkle proof, distributing specified amounts of RPL and ETH.
-     * @dev This function interfaces with the RocketMerkleDistributorMainnet to allow nodes to claim their rewards.
-     *      The rewards are determined by a Merkle proof which validates the amounts to be claimed.
-     * @param rewardIndex Array of indices in the Merkle tree corresponding to reward entries.
-     * @param amountRPL Array of amounts of RPL tokens to claim.
-     * @param amountETH Array of amounts of ETH to claim.
-     * @param merkleProof Array of Merkle proofs for each reward entry.
-     */
-    function merkleClaim(
-        uint256[] calldata rewardIndex,
-        uint256[] calldata amountRPL,
-        uint256[] calldata amountETH,
-        bytes32[][] calldata merkleProof,
-        MerkleRewardsData calldata data
-    ) public {
-        require(merkleClaimsEnabled, "Merkle claims are disabled");
-
-        address odAddress = getDirectory().getOperatorDistributorAddress();
-        OperatorDistributor od = OperatorDistributor(odAddress);
-        IERC20 rpl = IERC20(getDirectory().getRPLAddress());
-
-        uint256 initialEthBalance = odAddress.balance;
-        uint256 initialRplBalance = rpl.balanceOf(odAddress);
-        
+    function processSignature(MerkleRewardsData calldata data) public onlyProtocol {
         // check signature
         bytes32 messageHash = keccak256(
             abi.encodePacked(
@@ -168,6 +142,34 @@ contract MerkleClaimStreamer is UpgradeableBase {
         );
         require(block.timestamp - data.sigGenesisTime < merkleClaimSigExpiry, 'merkle sig expired');
         merkleClaimNonce++;
+    }
+
+    /**
+     * @notice Claims rewards for a node based on a Merkle proof, distributing specified amounts of RPL and ETH.
+     * @dev This function interfaces with the RocketMerkleDistributorMainnet to allow nodes to claim their rewards.
+     *      The rewards are determined by a Merkle proof which validates the amounts to be claimed.
+     * @param rewardIndex Array of indices in the Merkle tree corresponding to reward entries.
+     * @param amountRPL Array of amounts of RPL tokens to claim.
+     * @param amountETH Array of amounts of ETH to claim.
+     * @param merkleProof Array of Merkle proofs for each reward entry.
+     */
+    function merkleClaim(
+        uint256[] calldata rewardIndex,
+        uint256[] calldata amountRPL,
+        uint256[] calldata amountETH,
+        bytes32[][] calldata merkleProof,
+        MerkleRewardsData calldata data
+    ) public {
+        require(merkleClaimsEnabled, "Merkle claims are disabled");
+
+        address payable odAddress = getDirectory().getOperatorDistributorAddress();
+        OperatorDistributor od = OperatorDistributor(odAddress);
+        //IERC20 rpl = IERC20(getDirectory().getRPLAddress());
+
+        uint256 initialEthBalance = odAddress.balance;
+        uint256 initialRplBalance = IERC20(getDirectory().getRPLAddress()).balanceOf(odAddress);
+        
+        this.processSignature(data);
         
         IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
             address(getDirectory().getSuperNodeAddress()),
@@ -177,11 +179,8 @@ contract MerkleClaimStreamer is UpgradeableBase {
             merkleProof
         );
 
-        uint256 finalEthBalance = odAddress.balance;
-        uint256 finalRplBalance = rpl.balanceOf(odAddress);
-
-        uint256 ethReward = finalEthBalance - initialEthBalance;
-        uint256 rplReward = finalRplBalance - initialRplBalance;
+        uint256 ethReward = odAddress.balance - initialEthBalance;
+        uint256 rplReward = IERC20(getDirectory().getRPLAddress()).balanceOf(odAddress) - initialRplBalance;
 
         require(ethReward != 0 || rplReward != 0, "ETH and RPL rewards were both zero");
 
@@ -189,25 +188,25 @@ contract MerkleClaimStreamer is UpgradeableBase {
         od.transferMerkleClaimToStreamer(ethReward, rplReward);
 
         if(ethReward > 0) {
-            uint256 treasuryPortion = ethReward.mulDiv(WETHVault(getDirectory().getWETHVaultAddress()).treasuryFee(), 1e18);
-            uint256 nodeOperatorPortion = ethReward.mulDiv(RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee(), 1e18);
+            uint256 treasuryPortion = ethReward.mulDiv(WETHVault(getDirectory().getWETHVaultAddress()).treasuryFee(), 1e18, Math.Rounding.Up);
+            uint256 nodeOperatorPortion = ethReward.mulDiv(RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee(), 1e18, Math.Rounding.Up);
 
             // send treasury and NO fees out immediately
             (bool success, ) = getDirectory().getTreasuryAddress().call{value: treasuryPortion}('');
             require(success, 'Transfer to treasury failed');
 
-            (success, ) = getDirectory().getYieldDistributorAddress().call{value: nodeOperatorPortion}('');
+            (success, ) = getDirectory().getOperatorRewardAddress().call{value: nodeOperatorPortion}('');
             require(success, 'Transfer to operator fee distributor failed');
 
             ethReward -= treasuryPortion - nodeOperatorPortion;
         }
         
         if(rplReward > 0) {
-            uint256 treasuryPortion = rplReward.mulDiv(RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee(), 1e18);
+            uint256 treasuryPortion = 0;//rplReward.mulDiv(RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee(), 1e18);
 
             // send treasury fee immediately
-            SafeERC20.safeApprove(IERC20(getDirectory().getTreasuryAddress()), odAddress, treasuryPortion);
-            SafeERC20.safeTransfer(IERC20(getDirectory().getTreasuryAddress()), odAddress, treasuryPortion);
+            SafeERC20.safeApprove(IERC20(getDirectory().getRPLAddress()), getDirectory().getTreasuryAddress(), treasuryPortion);
+            SafeERC20.safeTransfer(IERC20(getDirectory().getRPLAddress()), getDirectory().getTreasuryAddress(), treasuryPortion);
         }
 
         // sweep all the prior interval's TVL

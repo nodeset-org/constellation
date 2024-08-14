@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { WETHVault, RPLVault, OperatorDistributor, YieldDistributor, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetworkInterface, IConstellationOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, RocketDepositPool, RocketNodeDeposit, RocketDAONodeTrusted, RocketTokenRETH, RocketClaimDAO, RocketRewardsPool, RocketDAONodeTrustedActions, SuperNodeAccount, PoAConstellationOracle, RocketStorage, RocketMinipoolDelegate, RocketMinipoolInterface } from "../typechain-types";
+import { WETHVault, RPLVault, OperatorDistributor, NodeSetOperatorRewardDistributor, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetworkInterface, IConstellationOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, RocketDepositPool, RocketNodeDeposit, RocketDAONodeTrusted, RocketTokenRETH, RocketClaimDAO, RocketRewardsPool, RocketDAONodeTrustedActions, SuperNodeAccount, PoAConstellationOracle, RocketStorage, RocketMinipoolDelegate, RocketMinipoolInterface } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
 import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketNodeManager, RocketNodeManagerNew, RocketNodeStaking, RocketNodeStakingNew, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
@@ -43,7 +43,7 @@ export type Protocol = {
   vCWETH: WETHVault;
   vCRPL: RPLVault;
   operatorDistributor: OperatorDistributor;
-  yieldDistributor: YieldDistributor;
+  yieldDistributor: NodeSetOperatorRewardDistributor;
   oracle: PoAConstellationOracle;
   priceFetcher: Contract;
   superNode: SuperNodeAccount;
@@ -66,7 +66,9 @@ export type Signers = {
 	adminServer: SignerWithAddress,
 	timelock24hour: SignerWithAddress,
 	protocolSigner: SignerWithAddress,
-	treasurer: SignerWithAddress
+	treasurer: SignerWithAddress,
+  nodesetServerAdmin: SignerWithAddress,
+  nodesetAdmin: SignerWithAddress
 }
 
 export type RocketPool = {
@@ -192,7 +194,9 @@ export async function createSigners(): Promise<Signers> {
 		timelock24hour: signersArray[10],
 		protocolSigner: signersArray[11],
 		rplWhale: signersArray[12],
-		treasurer: signersArray[13]
+		treasurer: signersArray[13],
+    nodesetAdmin: signersArray[15],
+    nodesetServerAdmin: signersArray[16],
 	};
 }
 

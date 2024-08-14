@@ -23,6 +23,7 @@ import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
  * @dev Manages distribution and staking of ETH and RPL tokens for 
  * decentralized node operators to stake with a single Rocket Pool "supernode".
  * Serves as the withdrawal address for the SuperNode and has functions for rebalancing liquidity across the protocol.
+ * Serves as the withdrawal address for the SuperNode and has functions for rebalancing liquidity across the protocol.
  * Inherits from UpgradeableBase and Errors to use their functionalities for upgradeability and error handling.
  */
 contract OperatorDistributor is UpgradeableBase, Errors {
@@ -92,6 +93,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      */
 
     /**
+     * @notice Returns the total ETH and WETH managed by the contract, including both the ETH+WETH balances of this contract 
      * @notice Returns the total ETH and WETH managed by the contract, including both the ETH+WETH balances of this contract 
      * and the SuperNode's staked ETH.
      * @return uint256 Total amount of ETH under the management of the contract.
@@ -277,6 +279,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 rewards = 0;
         uint256 balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
 
+
         if(balanceAfterRefund >= depositBalance) { // it's an exit, and any extra nodeShare is rewards
             rewards = minipool.calculateNodeShare(balanceAfterRefund) > depositBalance ? minipool.calculateNodeShare(balanceAfterRefund) - depositBalance : 0;  
             // withdrawal address calls distributeBalance(false)
@@ -284,6 +287,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             // stop tracking
             sna.onMinipoolRemoved(address(minipool));
             this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
+            // account for rewards 
+            this.onEthRewardsReceived(rewards, treasuryFee, noFee, true);
             // account for rewards 
             this.onEthRewardsReceived(rewards, treasuryFee, noFee, true);
         } else if (balanceAfterRefund < depositBalance) { // it's still staking
@@ -395,8 +400,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         (bool success, ) = getDirectory().getTreasuryAddress().call{value: treasuryPortion}('');
         require(success, 'Transfer to treasury failed');
 
-        (bool success2, ) = getDirectory().getYieldDistributorAddress().call{value: nodeOperatorPortion}('');
-        require(success2, 'Transfer to yield distributor failed');
+        (bool success2, ) = getDirectory().getOperatorRewardAddress().call{value: nodeOperatorPortion}('');
+        require(success2, 'Transfer to operator fee address failed');
 
         uint256 xrETHPortion = rewardAmount - treasuryPortion - nodeOperatorPortion;
 
@@ -468,10 +473,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     function transferMerkleClaimToStreamer(uint256 ethAmount, uint256 rplAmount) external onlyProtocol {
-        (bool success, ) = getDirectory.getMerkleClaimStreamerAddress().call{value: ethAmount};
+        (bool success, ) = getDirectory().getMerkleClaimStreamerAddress().call{value: ethAmount}('');
         require(success, "ETH transfer to MerkleClaimStreamer failed");
 
-        SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), getDirectory.getMerkleClaimStreamerAddress(), rplAmount);
-        SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), getDirectory.getMerkleClaimStreamerAddress(), rplAmount);
+        SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), getDirectory().getMerkleClaimStreamerAddress(), rplAmount);
+        SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), getDirectory().getMerkleClaimStreamerAddress(), rplAmount);
     }
 }

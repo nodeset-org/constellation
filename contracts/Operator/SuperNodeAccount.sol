@@ -26,7 +26,6 @@ import '../Interfaces/IWETH.sol';
 import '../Tokens/WETHVault.sol';
 import '../Tokens/RPLVault.sol';
 
-import '../Utils/ProtocolMath.sol';
 import '../Utils/Constants.sol';
 import '../Utils/Errors.sol';
 
@@ -159,14 +158,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Returns the total number of Constellation minipools.
-     * @return uint256 The total number of Constellation minipools.
-     */
-    function minipoolCount() external view returns (uint256) {
-        return minipools.length;
-    }
-
-    /**
      * @notice This function is responsible for the creation and initialization of a minipool based on the validator's configuration.
      *         It requires that the calling node operator is whitelisted and that the signature provided for the minipool creation is valid (if signature checks are enabled).
      *         It also checks for sufficient liquidity (both RPL and ETH) before proceeding with the creation.
@@ -222,10 +213,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             require(block.timestamp - _config.sigGenesisTime < adminServerSigExpiry, 'as sig expired');
             
             _validateSigUsed(_config.sig);
-            console.log('_createMinipool: message hash');
-            console.logBytes32(
-                keccak256(abi.encodePacked(_config.expectedMinipoolAddress, salt, address(this), block.chainid))
-            );
+
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
                     keccak256(
@@ -242,7 +230,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             );
             require(
                 _directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress),
-                'signer must have permission from admin server role'
+                'bad signer role, params, or encoding'
             );
         }
 
