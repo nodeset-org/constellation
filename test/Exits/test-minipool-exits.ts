@@ -15,45 +15,45 @@ describe("Exiting Minipools", function () {
     let caller: SignerWithAddress;
     let setupData: SetupData
 
-    this.beforeEach(async () => {
+    let minipool: RocketMinipoolDelegate;
+    let subNodeOperator: SignerWithAddress;
+    let nodeRefundBalance: BigNumber;
+    let nodeDepositBalance: BigNumber;
+
+    beforeEach(async () => {
         setupData = await loadFixture(protocolFixture);
         protocol = setupData.protocol;
         signers = setupData.signers;
         rocketPool = setupData.rocketPool;
+
+        subNodeOperator = signers.random;
+
+        const initialDeposit = await prepareOperatorDistributionContract(setupData, 1);
+        const minipools = await registerNewValidator(setupData, [subNodeOperator]);
+
+        minipool = await ethers.getContractAt("RocketMinipoolDelegate", minipools[0]);
+
+        nodeRefundBalance = await minipool.getNodeRefundBalance();
+        nodeDepositBalance = await minipool.getNodeDepositBalance();
+
+        expect(await minipool.getStatus()).equals(2);
     })
 
     describe("When caller is admin", async () => {
 
-        this.beforeEach(async () => {
+        beforeEach(async () => {
             caller = signers.admin;
         })
 
-        describe.only("When minipool balance is greater than minipool Node Refund Balance", async () => {
+        describe("When minipool balance is greater than minipool Node Refund Balance", async () => {
 
-            let minipool: RocketMinipoolDelegate;
-            let nodeRefundBalance: BigNumber;
-            let nodeDepositBalance: BigNumber;
-
-            this.beforeEach(async () => {
-
-                const initialDeposit = await prepareOperatorDistributionContract(setupData, 1);
-                const minipools = await registerNewValidator(setupData, [signers.random]);
-
-                minipool = await ethers.getContractAt("RocketMinipoolDelegate", minipools[0]);
-
-                nodeRefundBalance = await minipool.getNodeRefundBalance();
-                nodeDepositBalance = await minipool.getNodeDepositBalance();
-
+            beforeEach(async () => {
                 const largerBalance = nodeRefundBalance.add(ethers.utils.parseEther("1"));
-
                 await signers.ethWhale.sendTransaction({
                     to: minipool.address,
                     value: largerBalance
                 })
-
                 expect(await ethers.provider.getBalance(minipool.address)).greaterThan(await minipool.getNodeRefundBalance());
-
-
             })
 
             describe("When Node Share of Balance After Refund is greater than Node Deposit Balance", async () => {
@@ -70,14 +70,19 @@ describe("Exiting Minipools", function () {
 
                     expect(nodeShare).greaterThan(nodeDepositBalance);
 
-                    // assert minipool balance is zero
-                    // do state checks on distributeBalance working as expected
 
-                    // assert onNodeMinipoolDestroy is called by doing required state checks
-                    // assert onMinipoolRemoved is called correctly by doing requried state checks
-                    // assert onEthRewardsReceived is called correctly by doing required state checks
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(1)
+                    expect(await protocol.superNode.getNumMinipools()).equals(1);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(subNodeOperator.address);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
 
-                    
+                    await protocol.operatorDistributor.connect(caller).distributeExitedMinipool(minipool.address);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(0)
+                    expect(await ethers.provider.getBalance(minipool.address)).equals(0);
+                    expect(await protocol.superNode.getNumMinipools()).equals(0);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(ethers.constants.AddressZero);
+                    expect(await protocol.operatorDistributor.oracleError()).not.equals(0)
                 })
             })
 
@@ -94,6 +99,19 @@ describe("Exiting Minipools", function () {
                     const nodeShare = await minipool.calculateNodeShare(balanceAfterRefund);
 
                     expect(nodeShare).equals(nodeDepositBalance);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(1)
+                    expect(await protocol.superNode.getNumMinipools()).equals(1);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(subNodeOperator.address);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
+
+                    await protocol.operatorDistributor.connect(caller).distributeExitedMinipool(minipool.address);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(0)
+                    expect(await ethers.provider.getBalance(minipool.address)).equals(0);
+                    expect(await protocol.superNode.getNumMinipools()).equals(0);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(ethers.constants.AddressZero);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
                 })
             })
 
@@ -110,41 +128,127 @@ describe("Exiting Minipools", function () {
                     const nodeShare = await minipool.calculateNodeShare(balanceAfterRefund);
 
                     expect(nodeShare).lessThan(nodeDepositBalance);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(1)
+                    expect(await protocol.superNode.getNumMinipools()).equals(1);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(subNodeOperator.address);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
+
+                    await protocol.operatorDistributor.connect(caller).distributeExitedMinipool(minipool.address);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(0)
+                    expect(await ethers.provider.getBalance(minipool.address)).equals(0);
+                    expect(await protocol.superNode.getNumMinipools()).equals(0);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(ethers.constants.AddressZero);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
                 })
             })
         })
 
         describe("When minipool balance is equal to minipool Node Refund Balance", async () => {
+            beforeEach(async () => {
+                const equalBalance = nodeRefundBalance;
+                await signers.ethWhale.sendTransaction({
+                    to: minipool.address,
+                    value: equalBalance
+                })
+                expect(await ethers.provider.getBalance(minipool.address)).equals(await minipool.getNodeRefundBalance());
+            })
+
             describe("When Node Share of Balance After Refund is greater than Node Deposit Balance", async () => {
-                describe("When Node Share of Balance After Refund is equal to Node Deposit Balance", async () => {
-                    it("Shoudl pass", async () => {
-
+                it("Shoudl pass", async () => {
+                    await signers.ethWhale.sendTransaction({
+                        to: minipool.address,
+                        value: ethers.utils.parseEther("33")
                     })
+
+                    const minipoolBalance = await ethers.provider.getBalance(minipool.address);
+                    const balanceAfterRefund = minipoolBalance.sub(nodeRefundBalance);
+
+                    const nodeShare = await minipool.calculateNodeShare(balanceAfterRefund);
+
+                    expect(nodeShare).greaterThan(nodeDepositBalance);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(1)
+                    expect(await protocol.superNode.getNumMinipools()).equals(1);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(subNodeOperator.address);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
+
+                    await protocol.operatorDistributor.connect(caller).distributeExitedMinipool(minipool.address);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(0)
+                    expect(await ethers.provider.getBalance(minipool.address)).equals(0);
+                    expect(await protocol.superNode.getNumMinipools()).equals(0);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(ethers.constants.AddressZero);
+                    expect(await protocol.operatorDistributor.oracleError()).not.equals(0)
                 })
 
-                describe("When Node Share of Balance After Refund is less than Node Deposit Balance", async () => {
-                    it("Shoudl pass", async () => {
-
-                    })
-                })
             })
 
             describe("When Node Share of Balance After Refund is equal to Node Deposit Balance", async () => {
                 it("Shoudl pass", async () => {
+                    await signers.ethWhale.sendTransaction({
+                        to: minipool.address,
+                        value: ethers.utils.parseEther("32")
+                    })
 
+                    const minipoolBalance = await ethers.provider.getBalance(minipool.address);
+                    const balanceAfterRefund = minipoolBalance.sub(nodeRefundBalance);
+
+                    const nodeShare = await minipool.calculateNodeShare(balanceAfterRefund);
+
+                    expect(nodeShare).equals(nodeDepositBalance);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(1)
+                    expect(await protocol.superNode.getNumMinipools()).equals(1);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(subNodeOperator.address);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
+
+                    await protocol.operatorDistributor.connect(caller).distributeExitedMinipool(minipool.address);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(0)
+                    expect(await ethers.provider.getBalance(minipool.address)).equals(0);
+                    expect(await protocol.superNode.getNumMinipools()).equals(0);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(ethers.constants.AddressZero);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
                 })
             })
 
             describe("When Node Share of Balance After Refund is less than Node Deposit Balance", async () => {
                 it("Shoudl pass", async () => {
+                    await signers.ethWhale.sendTransaction({
+                        to: minipool.address,
+                        value: ethers.utils.parseEther("30")
+                    })
+
+                    const minipoolBalance = await ethers.provider.getBalance(minipool.address);
+                    const balanceAfterRefund = minipoolBalance.sub(nodeRefundBalance);
+
+                    const nodeShare = await minipool.calculateNodeShare(balanceAfterRefund);
+
+                    expect(nodeShare).lessThan(nodeDepositBalance);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(1)
+                    expect(await protocol.superNode.getNumMinipools()).equals(1);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(subNodeOperator.address);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
+
+                    await protocol.operatorDistributor.connect(caller).distributeExitedMinipool(minipool.address);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(0)
+                    expect(await ethers.provider.getBalance(minipool.address)).equals(0);
+                    expect(await protocol.superNode.getNumMinipools()).equals(0);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(ethers.constants.AddressZero);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
 
                 })
             })
         })
 
         describe("When minipool balance is less than minipool Node Refund Balance", async () => {
-            it("Shoudl revert", async () => {
-
+            it.skip("Shoudl revert", async () => {
+                expect(await ethers.provider.getBalance(minipool.address)).lessThan(await minipool.getNodeRefundBalance());
+                await expect(await protocol.operatorDistributor.connect(caller).distributeExitedMinipool(minipool.address)).to.be.revertedWith("")
             })
         })
     })
@@ -156,48 +260,207 @@ describe("Exiting Minipools", function () {
         })
 
         describe("When minipool balance is greater than minipool Node Refund Balance", async () => {
+
+            beforeEach(async () => {
+                const largerBalance = nodeRefundBalance.add(ethers.utils.parseEther("1"));
+                await signers.ethWhale.sendTransaction({
+                    to: minipool.address,
+                    value: largerBalance
+                })
+                expect(await ethers.provider.getBalance(minipool.address)).greaterThan(await minipool.getNodeRefundBalance());
+            })
+
             describe("When Node Share of Balance After Refund is greater than Node Deposit Balance", async () => {
                 it("Shoudl pass", async () => {
+                    await signers.ethWhale.sendTransaction({
+                        to: minipool.address,
+                        value: ethers.utils.parseEther("32")
+                    })
 
+                    const minipoolBalance = await ethers.provider.getBalance(minipool.address);
+                    const balanceAfterRefund = minipoolBalance.sub(nodeRefundBalance);
+
+                    const nodeShare = await minipool.calculateNodeShare(balanceAfterRefund);
+
+                    expect(nodeShare).greaterThan(nodeDepositBalance);
+
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(1)
+                    expect(await protocol.superNode.getNumMinipools()).equals(1);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(subNodeOperator.address);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
+
+                    await protocol.operatorDistributor.connect(caller).distributeExitedMinipool(minipool.address);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(0)
+                    expect(await ethers.provider.getBalance(minipool.address)).equals(0);
+                    expect(await protocol.superNode.getNumMinipools()).equals(0);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(ethers.constants.AddressZero);
+                    expect(await protocol.operatorDistributor.oracleError()).not.equals(0)
                 })
             })
 
             describe("When Node Share of Balance After Refund is equal to Node Deposit Balance", async () => {
                 it("Shoudl pass", async () => {
+                    await signers.ethWhale.sendTransaction({
+                        to: minipool.address,
+                        value: ethers.utils.parseEther("31")
+                    })
 
+                    const minipoolBalance = await ethers.provider.getBalance(minipool.address);
+                    const balanceAfterRefund = minipoolBalance.sub(nodeRefundBalance);
+
+                    const nodeShare = await minipool.calculateNodeShare(balanceAfterRefund);
+
+                    expect(nodeShare).equals(nodeDepositBalance);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(1)
+                    expect(await protocol.superNode.getNumMinipools()).equals(1);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(subNodeOperator.address);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
+
+                    await protocol.operatorDistributor.connect(caller).distributeExitedMinipool(minipool.address);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(0)
+                    expect(await ethers.provider.getBalance(minipool.address)).equals(0);
+                    expect(await protocol.superNode.getNumMinipools()).equals(0);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(ethers.constants.AddressZero);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
                 })
             })
 
             describe("When Node Share of Balance After Refund is less than Node Deposit Balance", async () => {
                 it("Shoudl pass", async () => {
+                    await signers.ethWhale.sendTransaction({
+                        to: minipool.address,
+                        value: ethers.utils.parseEther("30")
+                    })
 
+                    const minipoolBalance = await ethers.provider.getBalance(minipool.address);
+                    const balanceAfterRefund = minipoolBalance.sub(nodeRefundBalance);
+
+                    const nodeShare = await minipool.calculateNodeShare(balanceAfterRefund);
+
+                    expect(nodeShare).lessThan(nodeDepositBalance);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(1)
+                    expect(await protocol.superNode.getNumMinipools()).equals(1);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(subNodeOperator.address);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
+
+                    await protocol.operatorDistributor.connect(caller).distributeExitedMinipool(minipool.address);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(0)
+                    expect(await ethers.provider.getBalance(minipool.address)).equals(0);
+                    expect(await protocol.superNode.getNumMinipools()).equals(0);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(ethers.constants.AddressZero);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
                 })
             })
         })
 
         describe("When minipool balance is equal to minipool Node Refund Balance", async () => {
+            beforeEach(async () => {
+                const equalBalance = nodeRefundBalance;
+                await signers.ethWhale.sendTransaction({
+                    to: minipool.address,
+                    value: equalBalance
+                })
+                expect(await ethers.provider.getBalance(minipool.address)).equals(await minipool.getNodeRefundBalance());
+            })
+
             describe("When Node Share of Balance After Refund is greater than Node Deposit Balance", async () => {
                 it("Shoudl pass", async () => {
+                    await signers.ethWhale.sendTransaction({
+                        to: minipool.address,
+                        value: ethers.utils.parseEther("33")
+                    })
 
+                    const minipoolBalance = await ethers.provider.getBalance(minipool.address);
+                    const balanceAfterRefund = minipoolBalance.sub(nodeRefundBalance);
+
+                    const nodeShare = await minipool.calculateNodeShare(balanceAfterRefund);
+
+                    expect(nodeShare).greaterThan(nodeDepositBalance);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(1)
+                    expect(await protocol.superNode.getNumMinipools()).equals(1);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(subNodeOperator.address);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
+
+                    await protocol.operatorDistributor.connect(caller).distributeExitedMinipool(minipool.address);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(0)
+                    expect(await ethers.provider.getBalance(minipool.address)).equals(0);
+                    expect(await protocol.superNode.getNumMinipools()).equals(0);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(ethers.constants.AddressZero);
+                    expect(await protocol.operatorDistributor.oracleError()).not.equals(0)
                 })
             })
 
             describe("When Node Share of Balance After Refund is equal to Node Deposit Balance", async () => {
                 it("Shoudl pass", async () => {
+                    await signers.ethWhale.sendTransaction({
+                        to: minipool.address,
+                        value: ethers.utils.parseEther("32")
+                    })
 
+                    const minipoolBalance = await ethers.provider.getBalance(minipool.address);
+                    const balanceAfterRefund = minipoolBalance.sub(nodeRefundBalance);
+
+                    const nodeShare = await minipool.calculateNodeShare(balanceAfterRefund);
+
+                    expect(nodeShare).equals(nodeDepositBalance);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(1)
+                    expect(await protocol.superNode.getNumMinipools()).equals(1);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(subNodeOperator.address);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
+
+                    await protocol.operatorDistributor.connect(caller).distributeExitedMinipool(minipool.address);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(0)
+                    expect(await ethers.provider.getBalance(minipool.address)).equals(0);
+                    expect(await protocol.superNode.getNumMinipools()).equals(0);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(ethers.constants.AddressZero);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
                 })
             })
 
             describe("When Node Share of Balance After Refund is less than Node Deposit Balance", async () => {
                 it("Shoudl pass", async () => {
+                    await signers.ethWhale.sendTransaction({
+                        to: minipool.address,
+                        value: ethers.utils.parseEther("30")
+                    })
 
+                    const minipoolBalance = await ethers.provider.getBalance(minipool.address);
+                    const balanceAfterRefund = minipoolBalance.sub(nodeRefundBalance);
+
+                    const nodeShare = await minipool.calculateNodeShare(balanceAfterRefund);
+
+                    expect(nodeShare).lessThan(nodeDepositBalance);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(1)
+                    expect(await protocol.superNode.getNumMinipools()).equals(1);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(subNodeOperator.address);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
+
+                    await protocol.operatorDistributor.connect(caller).distributeExitedMinipool(minipool.address);
+
+                    expect(await protocol.whitelist.getActiveValidatorCountForOperator(subNodeOperator.address)).equals(0)
+                    expect(await ethers.provider.getBalance(minipool.address)).equals(0);
+                    expect(await protocol.superNode.getNumMinipools()).equals(0);
+                    expect((await protocol.superNode.minipoolData(minipool.address)).subNodeOperator).equals(ethers.constants.AddressZero);
+                    expect(await protocol.operatorDistributor.oracleError()).equals(0)
                 })
             })
         })
 
         describe("When minipool balance is less than minipool Node Refund Balance", async () => {
-            it("Shoudl revert", async () => {
-
+            it.skip("Shoudl revert", async () => {
+                expect(await ethers.provider.getBalance(minipool.address)).lessThan(await minipool.getNodeRefundBalance());
+                await expect(await protocol.operatorDistributor.connect(caller).distributeExitedMinipool(minipool.address)).to.be.revertedWith("")
             })
         })
     })
@@ -209,7 +472,7 @@ describe("Exiting Minipools", function () {
         })
 
         it("Shoudl revert", async () => {
-
+            await expect(protocol.operatorDistributor.connect(caller).distributeExitedMinipool(minipool.address)).to.be.revertedWith("Can only be called by Protocol or Admin!")
         })
     })
 })
