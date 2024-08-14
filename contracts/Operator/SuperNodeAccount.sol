@@ -343,6 +343,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @param _minipool Address of the minipool to close.
      */
     function close(address _subNodeOperator, address _minipool) external onlyRecognizedMinipool(_minipool) {
+        require(minipoolData[_minipool].subNodeOperator == _subNodeOperator, "operator does not own the specified minipool");
         IMinipool minipool = IMinipool(_minipool);
         OperatorDistributor operatorDistributorContract = OperatorDistributor(_directory.getOperatorDistributorAddress());
         operatorDistributorContract.onNodeMinipoolDestroy(_subNodeOperator);
