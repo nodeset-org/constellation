@@ -96,7 +96,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     // admin settings
     /// @notice Bond amount for newly created minipools
-    /// @dev ONLY use this for creating minipools. Do not use this for calculating rewards! 
+    /// @dev ONLY use this for creating minipools. Do not use this for calculating rewards!
     uint256 public bond;
     uint256 public minimumNodeFee;
     uint256 public maxValidators; // max number of validators each NO is allowed
@@ -119,9 +119,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     /// @notice Modifier to ensure a function can only be called by a sub-node operator or admin of a specific minipool
     modifier onlyAdminOrAllowedSNO(address _minipool) {
-        if(allowSubOpDelegateChanges) { 
+        if(allowSubOpDelegateChanges) {
             require(
-                _directory.hasRole(Constants.ADMIN_ROLE, msg.sender) || 
+                _directory.hasRole(Constants.ADMIN_ROLE, msg.sender) ||
                     minipoolData[_minipool].subNodeOperator == msg.sender,
                 'Can only be called by admin or sub node operator'
             );
@@ -148,7 +148,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      */
     function initialize(address _directory) public override initializer {
         super.initialize(_directory);
-        
+
         adminServerCheck = true;
         adminServerSigExpiry = 1 days;
         minimumNodeFee = 14e16;
@@ -219,13 +219,13 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
 
         uint256 salt = uint256(keccak256(abi.encodePacked(_config.salt, subNodeOperator)));
-        // move the necessary ETH to this contract for use 
+        // move the necessary ETH to this contract for use
         OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(bond);
-        
+
         // verify admin server signature if required
         if (adminServerCheck) {
             require(block.timestamp - _config.sigGenesisTime < adminServerSigExpiry, 'as sig expired');
-            
+
             _validateSigUsed(_config.sig);
 
             address recoveredAddress = ECDSA.recover(
@@ -256,7 +256,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         od.onMinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator);
-        
+
         subNodeOperatorMinipools[subNodeOperator].push(_config.expectedMinipoolAddress);
         WETHVault wethVault = WETHVault(getDirectory().getWETHVaultAddress());
         minipoolData[_config.expectedMinipoolAddress] = Minipool(
@@ -345,7 +345,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function close(address _subNodeOperator, address _minipool) external onlyRecognizedMinipool(_minipool) {
         require(minipoolData[_minipool].subNodeOperator == _subNodeOperator, "operator does not own the specified minipool");
         IMinipool minipool = IMinipool(_minipool);
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).onNodeMinipoolDestroy(_subNodeOperator);
+        OperatorDistributor operatorDistributorContract = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        operatorDistributorContract.onNodeMinipoolDestroy(_subNodeOperator);
         this.onMinipoolRemoved(_minipool);
 
         minipool.close();
@@ -409,7 +410,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         );
         require(block.timestamp - _config.sigGenesisTime < merkleClaimSigExpiry, 'merkle sig expired');
         merkleClaimNonce++;
-        
+
         OperatorDistributor od = OperatorDistributor(payable(odAddress));
         od.onEthRewardsReceived(ethReward, _config.avgEthTreasuryFee, _config.avgEthOperatorFee, false);
         od.onRplRewardsRecieved(rplReward, _config.avgRplTreasuryFee);
@@ -514,7 +515,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     /**
      * @notice Checks if there is sufficient liquidity in the protocol to cover a specified bond amount.
-     * @dev This function helps ensure that there are enough resources (both RPL and ETH) available 
+     * @dev This function helps ensure that there are enough resources (both RPL and ETH) available
      * in the system to cover the bonds required for creating or operating a minipool.
      * It is crucial for maintaining financial stability and operational continuity.
      * @param _bond The bond amount in wei for which liquidity needs to be checked.
