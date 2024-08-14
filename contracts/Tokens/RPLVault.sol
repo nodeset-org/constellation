@@ -11,6 +11,8 @@ import '../Operator/SuperNodeAccount.sol';
 import '../UpgradeableBase.sol';
 import '../Operator/OperatorDistributor.sol';
 
+import '../PriceFetcher.sol';
+
 import 'hardhat/console.sol';
 
 /**
@@ -154,6 +156,38 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function getRequiredCollateral() public view returns (uint256) {
         return getRequiredCollateralAfterDeposit(0);
+    }
+
+    /**
+     * @notice Convenience function for determining if a particular deposit amount will be allowed or rejected
+     */
+    function getIsDepositAllowed(uint256 amount) public view returns (bool) {
+        return WETHVault(_directory.getWETHVaultAddress()).tvlRatioEthRpl(amount, false) >= minWethRplRatio;
+    }
+
+    /**
+     * @notice Convenience function for determining if a particular withdraw amount will be allowed or rejected
+     */
+    function getIsWithdrawAllowed(uint256 amount) public view returns (bool) {
+        return IERC20(asset()).balanceOf(address(this)) >= amount;
+    }
+
+    /**
+     * @notice Convenience function for viewing the maximum withdrawal allowed
+     */
+    function getMaximumWithdrawAmount() public view returns (uint256) {
+        return IERC20(asset()).balanceOf(address(this));
+    }
+
+    /**
+     * @notice Convenience function for viewing the maximum depoosit allowed
+     */
+    function getMaximumDeposit() public view returns (uint256) {
+        uint256 tvlRpl = totalAssets();
+        uint256 tvlEth = WETHVault(getDirectory().getWETHVaultAddress()).totalAssets();
+        uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+
+        return ((tvlEth * rplPerEth) / minWethRplRatio) - tvlRpl;
     }
 
     /**ADMIN FUNCTIONS */

@@ -185,6 +185,38 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
+     * @notice Convenience function for determining if a particular deposit amount will be allowed or rejected
+     */
+    function getIsDepositAllowed(uint256 amount) public view returns (bool) {
+        return tvlRatioEthRpl(amount, true) <= maxWethRplRatio;
+    }
+
+    /**
+     * @notice Convenience function for determining if a particular withdraw amount will be allowed or rejected
+     */
+    function getIsWithdrawAllowed(uint256 amount) public view returns (bool) {
+        return IERC20(asset()).balanceOf(address(this)) >= amount;
+    }
+
+    /**
+     * @notice Convenience function for viewing the maximum withdrawal allowed
+     */
+    function getMaximumWithdrawAmount() public view returns (uint256) {
+        return IERC20(asset()).balanceOf(address(this));
+    }
+
+    /**
+     * @notice Convenience function for viewing the maximum depoosit allowed
+     */
+    function getMaximumDeposit() public view returns (uint256) {
+        uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress()).totalAssets();
+        uint256 tvlEth = totalAssets();
+        uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+
+        return ((maxWethRplRatio * tvlRpl) / rplPerEth) - tvlEth ;
+    }
+
+    /**
      * @notice Calculates the missing liquidity needed to meet the liquidity reserve after a specified deposit.
      * @dev his function calculates the amount of assets needed to hit the liquidity reserve 
      * after a specified deposit amount. It compares the current balance with the required liquidity based on
