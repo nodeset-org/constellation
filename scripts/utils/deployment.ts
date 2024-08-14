@@ -4,7 +4,7 @@ import path from 'path';
 import { getNextContractAddress } from "../../test/utils/utils";
 import { getInitializerData } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import readline from 'readline';
-import { Treasury, Directory, IRocketStorage, IConstellationOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, NodeSetOperatorRewardDistributor, PoAConstellationOracle } from "../../typechain-types";
+import { Treasury, Directory, IRocketStorage, IConstellationOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, NodeSetOperatorRewardDistributor, PoAConstellationOracle, MerkleClaimStreamer } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Protocol, Signers } from "../../test/test";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
@@ -99,6 +99,12 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
         return od
     })
 
+    const merkleClaimStreamerProxy = await retryOperation(async function () {
+        const od = await upgrades.deployProxy(await ethers.getContractFactory("MerkleClaimStreamer", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        if (log) console.log("operator distributor deployed to", od.address)
+        return od
+    })
+
     const yieldDistributorProxy = await retryOperation(async function () {
         const yd = await upgrades.deployProxy(await ethers.getContractFactory("NodeSetOperatorRewardDistributor", deployer), [nodesetAdmin.address, nodesetServerAdmin.address], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         if (log) console.log("yield distributor deployed to", yd.address)
@@ -129,6 +135,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
         console.log("vCWETHProxy.address", vCWETHProxy.address)
         console.log("vCRPLProxy.address", vCRPLProxy.address)
         console.log("operatorDistributorProxy.address", operatorDistributorProxy.address)
+        console.log("merkleClaimStreamerProxy.address", merkleClaimStreamerProxy.address)
         console.log("yieldDistributorProxy.address", yieldDistributorProxy.address)
         console.log("oracle", oracleProxy.address)
         console.log("priceFetcherProxy.address", priceFetcherProxy.address)
@@ -146,6 +153,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
                     vCWETHProxy.address,
                     vCRPLProxy.address,
                     operatorDistributorProxy.address,
+                    merkleClaimStreamerProxy.address,
                     yieldDistributorProxy.address,
                     oracleProxy.address,
                     priceFetcherProxy.address,
@@ -183,6 +191,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
         vCWETH: vCWETHProxy as WETHVault,
         vCRPL: vCRPLProxy as RPLVault,
         operatorDistributor: operatorDistributorProxy as OperatorDistributor,
+        merkleClaimStreamer: merkleClaimStreamerProxy as MerkleClaimStreamer,
         yieldDistributor: yieldDistributorProxy as NodeSetOperatorRewardDistributor,
         priceFetcher: priceFetcherProxy as PriceFetcher,
         oracle: oracleProxy as PoAConstellationOracle,
