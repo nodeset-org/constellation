@@ -84,6 +84,16 @@ contract Whitelist is UpgradeableBase {
         return nodeMap[a].activeValidatorCount;
     }
 
+    /// @notice Retrieves the index of an operator based on its address.
+    /// @dev This private function allows the contract to obtain the index of an operator using its address.
+    /// @param a The address of the operator to retrieve the index for.
+    /// @return The index of the operator associated with the specified address.
+    /// @dev Throws an error if the specified address is not found in the whitelist.
+    function getOperatorIndex(address a) private view returns (uint) {
+        require(reverseNodeIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
+        return reverseNodeIndexMap[a];
+    }
+
     //----
     // INTERNAL
     //----
@@ -118,7 +128,91 @@ contract Whitelist is UpgradeableBase {
     }
 
     //----
+    // PUBLIC
+    //----
+
+    /// @notice Allows an operator to remove themselves from the whitelist (e.g. so that a new node address may be used instead).
+    /// @dev May only be called by the operator when they have no more active minipools remaining.
+    ///      It emits the 'OperatorRemoved' event to notify when an operator has been successfully removed.
+    /// @param nodeOperator The address of the operator remove.
+    function removeOperatorSelf(address nodeOperator) public {
+        require(msg.sender == nodeOperator,"Sender must be the node operator to remove");
+        require(nodeMap[nodeOperator].activeValidatorCount == 0, "Cannot remove node without first exiting and processing all minipools");
+        _removeOperator(nodeOperator);
+        emit OperatorRemoved(nodeOperator);
+    }
+
+    /// @notice Adds a new operator to the whitelist.
+    /// @dev Ensures that the operator being added is not a duplicate.
+    ///      It emits the 'OperatorAdded' event to notify when an operator has been successfully added.
+    /// @param _operator The address of the operator to be added.
+    /// @dev Throws an error if the operator being added already exists in the whitelist.
+    function addOperator(address _operator, uint256 _sigGenesisTime, bytes calldata _sig) public {
+        require(!_permissions[_operator], Constants.OPERATOR_DUPLICATE_ERROR);
+        emit OperatorAdded(_addOperator(_operator, _sigGenesisTime, _sig));
+    }
+
+    //----
     // ADMIN
+    //----
+
+    function setWhitelistExpiry(uint256 _newExpiry) external onlyAdmin {
+        whitelistSigExpiry = _newExpiry;
+    }
+
+    /// @notice Internal function to remove an operator from the whitelist.
+    /// @dev This function is used internally to remove an operator from the whitelist, including updating permissions, clearing operator data,
+    ///      and notifying the OperatorDistributor and NodeSetOperatorRewardDistributor contracts.
+    /// @param nodeOperator The address of the operator to be removed.
+    function _removeOperator(address nodeOperator) internal {
+        _permissions[nodeOperator] = false;
+
+        delete nodeMap[nodeOperator];
+        uint index = reverseNodeIndexMap[nodeOperator] - 1;
+        delete nodeIndexMap[index];
+        delete reverseNodeIndexMap[nodeOperator];
+
+        numOperators--;
+    }
+
+    /// @notice Removes an operator from the whitelist.
+    /// @dev This function can only be called by a 24-hour timelock and is used to remove an operator from the whitelist.
+    ///      It emits the 'OperatorRemoved' event to notify when an operator has been successfully removed.
+    /// @param nodeOperator The address of the operator to be removed.
+    function removeOperator(address nodeOperator) public onlyShortTimelock {
+        _removeOperator(nodeOperator);
+        emit OperatorRemoved(nodeOperator);
+    }
+
+    /// @notice Batch addition of operators to the whitelist.
+    /// @dev This function can only be called by a 24-hour timelock and allows multiple operators to be added to the whitelist simultaneously.
+    ///      It checks for duplicates among the provided addresses, adds valid operators, and emits the 'OperatorsAdded' event.
+    /// @param operators An array of addresses representing the operators to be added.
+    /// @dev Throws an error if any of the operators being added already exist in the whitelist.
+    function addOperators(address[] memory operators, uint256[] memory _sigGenesisTimes, bytes[] memory _sig) public {
+        for (uint i = 0; i < operators.length; i++) {
+            require(!_permissions[operators[i]], Constants.OPERATOR_DUPLICATE_ERROR);
+        }
+        for (uint i = 0; i < operators.length; i++) {
+            _addOperator(operators[i], _sigGenesisTimes[i], _sig[i]);
+        }
+        emit OperatorsAdded(operators);
+    }
+
+    /// @notice Batch removal of operators from the whitelist.
+    /// @dev This function can only be called by a 24-hour timelock and allows multiple operators to be removed from the whitelist simultaneously.
+    ///      It removes valid operators and emits the 'OperatorsRemoved' event.
+    /// @param operators An array of addresses representing the operators to be removed.
+    /// @dev Throws no errors during execution.
+    function removeOperators(address[] memory operators) public onlyShortTimelock {
+        for (uint i = 0; i < operators.length; i++) {
+            _removeOperator(operators[i]);
+        }
+        emit OperatorsRemoved(operators);
+    }
+
+    //----
+    // INTERNAL
     //----
 
     /// @notice Internal function to add a new operator to the whitelist. Signs an address; optimized for server-side signatures with isolated scope on Ethereum.
@@ -155,95 +249,5 @@ contract Whitelist is UpgradeableBase {
         reverseNodeIndexMap[_operator] = numOperators + 1;
 
         return operator;
-    }
-
-    /// @notice Adds a new operator to the whitelist.
-    /// @dev Ensures that the operator being added is not a duplicate.
-    ///      It emits the 'OperatorAdded' event to notify when an operator has been successfully added.
-    /// @param _operator The address of the operator to be added.
-    /// @dev Throws an error if the operator being added already exists in the whitelist.
-    function addOperator(address _operator, uint256 _sigGenesisTime, bytes calldata _sig) public {
-        require(!_permissions[_operator], Constants.OPERATOR_DUPLICATE_ERROR);
-        emit OperatorAdded(_addOperator(_operator, _sigGenesisTime, _sig));
-    }
-
-    /// @notice Internal function to remove an operator from the whitelist.
-    /// @dev This function is used internally to remove an operator from the whitelist, including updating permissions, clearing operator data,
-    ///      and notifying the OperatorDistributor and NodeSetOperatorRewardDistributor contracts.
-    /// @param nodeOperator The address of the operator to be removed.
-    function _removeOperator(address nodeOperator) internal {
-        _permissions[nodeOperator] = false;
-
-        delete nodeMap[nodeOperator];
-        uint index = reverseNodeIndexMap[nodeOperator] - 1;
-        delete nodeIndexMap[index];
-        delete reverseNodeIndexMap[nodeOperator];
-
-        numOperators--;
-    }
-
-    /// @notice Removes an operator from the whitelist.
-    /// @dev This function can only be called by a 24-hour timelock and is used to remove an operator from the whitelist.
-    ///      It emits the 'OperatorRemoved' event to notify when an operator has been successfully removed.
-    /// @param nodeOperator The address of the operator to be removed.
-    function removeOperator(address nodeOperator) public onlyShortTimelock {
-        _removeOperator(nodeOperator);
-        emit OperatorRemoved(nodeOperator);
-    }
-
-    /// @notice Allows an operator to remove themselves from the whitelist (e.g. so that a new node address may be used instead).
-    /// @dev May only be called by the operator when they have no more active minipools remaining.
-    ///      It emits the 'OperatorRemoved' event to notify when an operator has been successfully removed.
-    /// @param nodeOperator The address of the operator remove.
-    function removeOperatorSelf(address nodeOperator) public {
-        require(msg.sender == nodeOperator,"Sender must be the node operator to remove");
-        require(nodeMap[nodeOperator].activeValidatorCount == 0, "Cannot remove node without first exiting and processing all minipools");
-        _removeOperator(nodeOperator);
-        emit OperatorRemoved(nodeOperator);
-    }
-
-    /// @notice Batch addition of operators to the whitelist.
-    /// @dev This function can only be called by a 24-hour timelock and allows multiple operators to be added to the whitelist simultaneously.
-    ///      It checks for duplicates among the provided addresses, adds valid operators, and emits the 'OperatorsAdded' event.
-    /// @param operators An array of addresses representing the operators to be added.
-    /// @dev Throws an error if any of the operators being added already exist in the whitelist.
-    function addOperators(address[] memory operators, uint256[] memory _sigGenesisTimes, bytes[] memory _sig) public {
-        for (uint i = 0; i < operators.length; i++) {
-            require(!_permissions[operators[i]], Constants.OPERATOR_DUPLICATE_ERROR);
-        }
-        for (uint i = 0; i < operators.length; i++) {
-            _addOperator(operators[i], _sigGenesisTimes[i], _sig[i]);
-        }
-        emit OperatorsAdded(operators);
-    }
-
-    /// @notice Batch removal of operators from the whitelist.
-    /// @dev This function can only be called by a 24-hour timelock and allows multiple operators to be removed from the whitelist simultaneously.
-    ///      It removes valid operators and emits the 'OperatorsRemoved' event.
-    /// @param operators An array of addresses representing the operators to be removed.
-    /// @dev Throws no errors during execution.
-    function removeOperators(address[] memory operators) public onlyShortTimelock {
-        for (uint i = 0; i < operators.length; i++) {
-            _removeOperator(operators[i]);
-        }
-        emit OperatorsRemoved(operators);
-    }
-
-    //----
-    // INTERNAL
-    //----
-
-    /// @notice Retrieves the index of an operator based on its address.
-    /// @dev This private function allows the contract to obtain the index of an operator using its address.
-    /// @param a The address of the operator to retrieve the index for.
-    /// @return The index of the operator associated with the specified address.
-    /// @dev Throws an error if the specified address is not found in the whitelist.
-    function getOperatorIndex(address a) private view returns (uint) {
-        require(reverseNodeIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
-        return reverseNodeIndexMap[a];
-    }
-
-    function setWhitelistExpiry(uint256 _newExpiry) external onlyAdmin {
-        whitelistSigExpiry = _newExpiry;
     }
 }
