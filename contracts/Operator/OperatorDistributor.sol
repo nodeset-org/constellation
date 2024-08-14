@@ -431,9 +431,13 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         SuperNodeAccount sna = SuperNodeAccount(getDirectory().getSuperNodeAddress());
        
         uint256 balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
-        uint256 rewards = minipool.calculateNodeShare(balanceAfterRefund) >  minipool.getNodeDepositBalance() 
-            ? minipool.calculateNodeShare(balanceAfterRefund) -  minipool.getNodeDepositBalance()
-            : 0;
+
+        uint256 rewards;
+        unchecked {
+           rewards = minipool.calculateNodeShare(balanceAfterRefund) > minipool.getNodeDepositBalance() 
+                ? minipool.calculateNodeShare(balanceAfterRefund) -  minipool.getNodeDepositBalance()
+                : 0;
+        }
 
         minipool.distributeBalance(false);
         // stop tracking
