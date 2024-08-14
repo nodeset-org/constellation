@@ -161,8 +161,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         (bool success, ) = getDirectory().getTreasuryAddress().call{value: treasuryPortion}('');
         require(success, 'Transfer to treasury failed');
 
-        (bool success2, ) = getDirectory().getYieldDistributorAddress().call{value: nodeOperatorPortion}('');
-        require(success2, 'Transfer to yield distributor failed');
+        (bool success2, ) = getDirectory().getOperatorRewardAddress().call{value: nodeOperatorPortion}('');
+        require(success2, 'Transfer to operator fee address failed');
 
         uint256 xrETHPortion = rewardAmount - treasuryPortion - nodeOperatorPortion;
 

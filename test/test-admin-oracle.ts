@@ -3,6 +3,7 @@ import { ethers, upgrades, hardhatArguments } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from "./test";
 import { prepareOperatorDistributionContract, registerNewValidator } from "./utils/utils";
+import { prepareOperatorDistributionContract, registerNewValidator } from "./utils/utils";
 
 describe("XRETHOracle", function () {
 
