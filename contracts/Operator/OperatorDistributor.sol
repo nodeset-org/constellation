@@ -437,10 +437,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         minipool.distributeBalance(false);
         // stop tracking
+        (, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));   
         sna.onMinipoolRemoved(address(minipool));
         this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
         // account for rewards 
-        (, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));   
         this.onEthRewardsReceived(rewards, treasuryFee, noFee, true);
     }
 
