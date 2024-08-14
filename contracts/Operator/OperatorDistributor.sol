@@ -16,6 +16,7 @@ import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/RocketPool/IRocketNodeManager.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
+import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
 
 /**
  * @title OperatorDistributor
@@ -30,6 +31,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
     event MinipoolDestroyed(address indexed _minipoolAddress);
     event WarningNoMiniPoolsToHarvest();
+    event SuspectedPenalizedMinipoolExit(address minipool);
 
     event WarningMinipoolNotStaking(
         address indexed _minipoolAddress,
@@ -262,7 +264,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
         require(sna.getIsMinipoolRecognized(address(minipool)), "Must be a minipool managed by Constellation"); 
 
-        rebalanceRplStake(sna.getTotalEthStaked());
+        this.rebalanceRplStake(sna.getTotalEthStaked());
 
         MinipoolStatus status = minipool.getStatus();
 
@@ -277,20 +279,25 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 depositBalance = minipool.getNodeDepositBalance();
         // if nodeshare - original deposit is <= 0 then it's an exit but there are no rewards (it's been penalized)
         uint256 rewards = 0;
+
+        // In Constellation, the node refund balance is assumed to be 100% rewards, but this isn't always true in RP 
+        // there are three cases which should not be possible in Constellation:
+        // - LEB bond reductions
+        // - depositType == MinipoolDeposit.Full
+        // - prepareVacancy() -- used for solo node migrations to RP
         uint256 balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
 
+        if(balanceAfterRefund >= depositBalance) { // it's an exit
+            // In case there is a penalty, just return so it can be handled manually.
+            // This prevents the case where someone sends 8 ETH to the minipool and it's automatically closed, 
+            // causing RP to think it's been slashed for 24 ETH even though the validator is still operating
+            if(address(minipool).balance < IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getLaunchBalance()) {
+                emit SuspectedPenalizedMinipoolExit(address(minipool));
+                return;
+            }
 
-        if(balanceAfterRefund >= depositBalance) { // it's an exit, and any extra nodeShare is rewards
-            rewards = minipool.calculateNodeShare(balanceAfterRefund) > depositBalance ? minipool.calculateNodeShare(balanceAfterRefund) - depositBalance : 0;  
-            // withdrawal address calls distributeBalance(false)
-            minipool.distributeBalance(false);
-            // stop tracking
-            sna.onMinipoolRemoved(address(minipool));
-            this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
-            // account for rewards 
-            this.onEthRewardsReceived(rewards, treasuryFee, noFee, true);
-            // account for rewards 
-            this.onEthRewardsReceived(rewards, treasuryFee, noFee, true);
+            this.distributeExitedMinipool(minipool);
+            
         } else if (balanceAfterRefund < depositBalance) { // it's still staking
             uint256 priorBalance = address(this).balance;
             // withdrawal address calls distributeBalance(true)
@@ -419,6 +426,27 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 treasuryPortion = _amount.mulDiv(avgTreasuryFee, 1e18);
         IERC20 rpl = IERC20(_directory.getRPLAddress());
         SafeERC20.safeTransfer(rpl, _directory.getTreasuryAddress(), treasuryPortion);
+    }
+
+    /// @notice Finalizes and distributes the balance of an exited minipool.
+    /// @dev Callable by the admin in case there is a need for manual finalization of an exited minipool.
+    /// This should only happen if the minipool was slashed or otherwise penalized so the balance is below 32 ETH upon exit.
+    /// Otherwise, the processNextMinipool() function would finalize the minipool normally with this function.
+    function distributeExitedMinipool(IMinipool minipool) public onlyProtocolOrAdmin {
+        SuperNodeAccount sna = SuperNodeAccount(getDirectory().getSuperNodeAddress());
+       
+        uint256 balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
+        uint256 rewards = minipool.calculateNodeShare(balanceAfterRefund) >  minipool.getNodeDepositBalance() 
+            ? minipool.calculateNodeShare(balanceAfterRefund) -  minipool.getNodeDepositBalance()
+            : 0;
+
+        minipool.distributeBalance(false);
+        // stop tracking
+        (, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));   
+        sna.onMinipoolRemoved(address(minipool));
+        this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
+        // account for rewards 
+        this.onEthRewardsReceived(rewards, treasuryFee, noFee, true);
     }
 
     /**
