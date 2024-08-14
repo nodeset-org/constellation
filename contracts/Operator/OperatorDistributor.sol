@@ -304,7 +304,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             minipool.distributeBalance(true);
             // calculate rewards
             rewards = address(this).balance > priorBalance ? address(this).balance - priorBalance : 0;
-            this.onEthRewardsReceived(rewards, treasuryFee, noFee, true);
+            this.onEthBeaconRewardsReceived(rewards, treasuryFee, noFee);
         }
  
         this.rebalanceWethVault();
@@ -395,9 +395,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /// @param rewardAmount amount of ETH rewards expected
     /// @param avgTreasuryFee Average treasury fee for the rewards received across all the minipools the rewards came from
     /// @param avgOperatorsFee Average operator fee for the rewards received across all the minipools the rewards came from
-    /// @param updateOracleError Should the oracle error be updated? Should be true if the ETH is coming from a minipool distribution,
-    /// otherwise (for merkle claims) it should be false
-    function onEthRewardsReceived(uint256 rewardAmount, uint256 avgTreasuryFee, uint256 avgOperatorsFee, bool updateOracleError) public onlyProtocol {
+    function onEthBeaconRewardsReceived(uint256 rewardAmount, uint256 avgTreasuryFee, uint256 avgOperatorsFee) public onlyProtocol {
         if(rewardAmount == 0)
             return;
 
@@ -412,20 +410,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         uint256 xrETHPortion = rewardAmount - treasuryPortion - nodeOperatorPortion;
 
-        if(updateOracleError){
-            OperatorDistributor(getDirectory().getOperatorDistributorAddress()).onIncreaseOracleError(xrETHPortion);
-        }
-    }
-
-    /// @notice Called by the protocol when RPL rewards are distributed to this contract, which acts as the SuperNode 
-    /// withdrawal address for both ETH and RPL rewards from Rocket Pool.
-    /// Splits incoming assets up among the Treasury, YieldDistributor, and the WETHVault/OperatorDistributor.
-    /// @param _amount amount of RPL rewards expected
-    /// @param avgTreasuryFee Average treasury fee for the rewards received across all the minipools the rewards came from
-    function onRplRewardsRecieved(uint256 _amount, uint256 avgTreasuryFee) external onlyProtocol {
-        uint256 treasuryPortion = _amount.mulDiv(avgTreasuryFee, 1e18);
-        IERC20 rpl = IERC20(_directory.getRPLAddress());
-        SafeERC20.safeTransfer(rpl, _directory.getTreasuryAddress(), treasuryPortion);
+        OperatorDistributor(getDirectory().getOperatorDistributorAddress()).onIncreaseOracleError(xrETHPortion);
     }
 
     /// @notice Finalizes and distributes the balance of an exited minipool.
@@ -446,7 +431,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         sna.onMinipoolRemoved(address(minipool));
         this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
         // account for rewards 
-        this.onEthRewardsReceived(rewards, treasuryFee, noFee, true);
+        this.onEthBeaconRewardsReceived(rewards, treasuryFee, noFee);
     }
 
     /**
