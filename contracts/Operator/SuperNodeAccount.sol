@@ -8,7 +8,6 @@ import './OperatorDistributor.sol';
 
 import '../Whitelist/Whitelist.sol';
 import '../UpgradeableBase.sol';
-import '../AssetRouter.sol';
 
 import '../Interfaces/RocketPool/RocketTypes.sol';
 import '../Interfaces/RocketPool/IRocketNodeDeposit.sol';
@@ -21,10 +20,11 @@ import '../Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
 import '../Interfaces/RocketPool/IRocketStorage.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
-import '../Interfaces/Oracles/IBeaconOracle.sol';
+import '../Interfaces/Oracles/IConstellationOracle.sol';
 import '../Interfaces/IWETH.sol';
 
 import '../Tokens/WETHVault.sol';
+import '../Tokens/RPLVault.sol';
 
 import '../Utils/ProtocolMath.sol';
 import '../Utils/Constants.sol';
@@ -163,20 +163,12 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function lazyInitialize() external lazyInitializer {
         Directory directory = Directory(_directory);
         _registerNode('Australia/Brisbane');
-        address ar = directory.getAssetRouterAddress();
-        IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), ar, true);
+        address od = directory.getOperatorDistributorAddress();
+        IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), od, true);
         lazyInit = true;
         merkleClaimSigExpiry = 1 days;
         lockThreshold = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getPreLaunchValue();
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(true);
-    }
-
-    /**
-     * @notice Returns the total number of Constellation minipools.
-     * @return uint256 The total number of Constellation minipools.
-     */
-    function minipoolCount() external view returns (uint256) {
-        return minipools.length;
     }
 
     /**
@@ -235,10 +227,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             require(block.timestamp - _config.sigGenesisTime < adminServerSigExpiry, 'as sig expired');
             
             _validateSigUsed(_config.sig);
-            console.log('_createMinipool: message hash');
-            console.logBytes32(
-                keccak256(abi.encodePacked(_config.expectedMinipoolAddress, salt, address(this), block.chainid))
-            );
+
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
                     keccak256(
@@ -255,7 +244,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             );
             require(
                 _directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress),
-                'signer must have permission from admin server role'
+                'bad signer role, params, or encoding'
             );
         }
 
@@ -378,13 +367,12 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         bytes32[][] calldata _merkleProof,
         MerkleRewardsConfig calldata _config
     ) public {
-        address ar = _directory.getAssetRouterAddress();
+        address odAddress = _directory.getOperatorDistributorAddress();
         IERC20 rpl = IERC20(_directory.getRPLAddress());
 
-        uint256 initialEthBalance = ar.balance;
-        uint256 initialRplBalance = rpl.balanceOf(ar);
+        uint256 initialEthBalance = odAddress.balance;
+        uint256 initialRplBalance = rpl.balanceOf(odAddress);
 
-        AssetRouter(payable(ar)).openGate();
         IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
             address(this),
             _rewardIndex,
@@ -392,10 +380,10 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             _amountETH,
             _merkleProof
         );
-        AssetRouter(payable(ar)).closeGate();
 
-        uint256 finalEthBalance = ar.balance;
-        uint256 finalRplBalance = rpl.balanceOf(ar);
+
+        uint256 finalEthBalance = odAddress.balance;
+        uint256 finalRplBalance = rpl.balanceOf(odAddress);
 
         uint256 ethReward = finalEthBalance - initialEthBalance;
         uint256 rplReward = finalRplBalance - initialRplBalance;
@@ -420,9 +408,12 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         );
         require(block.timestamp - _config.sigGenesisTime < merkleClaimSigExpiry, 'merkle sig expired');
         merkleClaimNonce++;
-
-        AssetRouter(payable(ar)).onEthRewardsReceived(ethReward, _config.avgEthTreasuryFee, _config.avgEthOperatorFee, false);
-        AssetRouter(payable(ar)).onRplRewardsRecieved(rplReward, _config.avgRplTreasuryFee);
+        
+        OperatorDistributor od = OperatorDistributor(payable(odAddress));
+        od.onEthRewardsReceived(ethReward, _config.avgEthTreasuryFee, _config.avgEthOperatorFee, false);
+        od.onRplRewardsRecieved(rplReward, _config.avgRplTreasuryFee);
+        od.rebalanceRplVault();
+        od.rebalanceWethVault();
     }
 
     /**

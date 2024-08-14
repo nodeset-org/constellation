@@ -96,12 +96,12 @@ describe("Node Operator Onboarding", function () {
 
     it("eth whale supplies Constellation vaults with eth and rpl", async function () {
         // ethWhale gets shares of xrETH
-        const initialBalance = await weth.balanceOf(protocol.assetRouter.address);
+        const initialBalance = await weth.balanceOf(protocol.operatorDistributor.address);
         await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
         await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
         await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
         const expectedAmountInDP = ethers.utils.parseEther("0"); // should be zero bc funds always get swept and rebalanced during deposit
-        const actualAmountInDP = (await weth.balanceOf(protocol.assetRouter.address)).sub(initialBalance);
+        const actualAmountInDP = (await weth.balanceOf(protocol.operatorDistributor.address)).sub(initialBalance);
         expectNumberE18ToBeApproximately(actualAmountInDP, expectedAmountInDP, 0.05);
         const intialBalanceRpl = await protocol.vCRPL.totalAssets();
         await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
@@ -132,13 +132,12 @@ describe("Node Operator Onboarding", function () {
         const network = await ethers.provider.getNetwork();
         const chainId = network.chainId;
         const newTotalYield = ethers.utils.parseEther("3");
-        const incorrectMessageHash = ethers.utils.solidityKeccak256(
-            ["int256", "uint256", "address", "uint256"], 
-            [newTotalYield, timestamp, protocol.oracle.address, chainId]
-        );
-        const signature = await signers.admin.signMessage(ethers.utils.arrayify(incorrectMessageHash));
+        const currentOracleError = await protocol.operatorDistributor.oracleError();
+        const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: currentOracleError, timeStamp: timestamp };
+        const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, protocol.oracle.address, chainId]);
+        const signature = await signers.admin.signMessage(ethers.utils.arrayify(messageHash));
         // accrue yield via oracle
-        await protocol.oracle.connect(signers.admin).setTotalYieldAccrued(signature, newTotalYield, timestamp)
+        await protocol.oracle.connect(signers.admin).setTotalYieldAccrued(signature, sigData)
 
         console.log("total supply of shares")
         console.log(await protocol.vCWETH.totalSupply())
@@ -149,7 +148,7 @@ describe("Node Operator Onboarding", function () {
         console.log('ETHER balance of WETHVault', await ethers.provider.getBalance(protocol.vCWETH.address));
         console.log('xrETH/ETH value',await ethers.utils.formatEther(await protocol.vCWETH.convertToAssets(ethers.utils.parseEther("1"))));
         console.log("balance of deposit pool / opd")
-        console.log(await protocol.wETH.balanceOf(protocol.assetRouter.address));
+        console.log(await protocol.wETH.balanceOf(protocol.operatorDistributor.address));
         console.log(await protocol.wETH.balanceOf(protocol.operatorDistributor.address));
 
         console.log('liquidity reserve percent for WETHVault', await protocol.vCWETH.liquidityReservePercent());
@@ -184,33 +183,6 @@ describe("Node Operator Onboarding", function () {
         }
 
         registerNewValidator(setupData, [signers.hyperdriver]);
-
-        //await ethers.connect(setupData.signers.ethWhale).transfer(, ethers.utils.parseEther("1"))l
-
-        await protocol.yieldDistributor.connect(signers.admin).finalizeInterval();
-
-        const currentInterval = (await protocol.yieldDistributor.currentInterval()).sub(1);
-
-        console.log(await protocol.yieldDistributor.getIntervals())
-
-
-
-        const tx = await protocol.yieldDistributor.connect(signers.random).harvest(signers.hyperdriver.address, 0, currentInterval);
-        const receipt = await tx.wait();
-        const { events } = receipt;
-        if (events) {
-            for (let i = 0; i < events.length; i++) {
-                if (events[i].event?.includes("RewardDistributed")) {
-                    console.log("RewardDistributed")
-                    console.log(events[i].args)
-                }
-            }
-        }
-
-        console.log("vault eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.assetRouter.address)));
-        console.log("vault rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.assetRouter.address)));
-        console.log("operator distribution pool eth balance: ", ethers.utils.formatEther(await ethers.provider.getBalance(protocol.operatorDistributor.address)));
-        console.log("operator distribution pool rpl balance: ", ethers.utils.formatEther(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)));
 
         const xrETHBalancesAfter = [];
         const xRPLBalancesAfter = [];

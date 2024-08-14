@@ -454,14 +454,18 @@ export const whitelistUserServerSig = async (setupData: SetupData, nodeOperator:
 
 export const assertAddOperator = async (setupData: SetupData, nodeOperator: SignerWithAddress) => {
   const { sig, timestamp } = await whitelistUserServerSig(setupData, nodeOperator);
-  console.log("expect address is NOT in whitelist");
   expect(await setupData.protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address)).equals(false);
   await setupData.protocol.whitelist
     .connect(setupData.signers.adminServer)
     .addOperator(nodeOperator.address, timestamp, sig);
-  console.log("expect address IS in whitelist");
   expect(await setupData.protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address)).equals(true);
 };
+
+export const deployMockToken = async (amount: BigNumber) => {
+  const Token = await ethers.getContractFactory("MockERC20");
+  const token = await Token.deploy("Mock Token", "MT", amount)
+  return token;
+}
 
 export const badAutWhitelistUserServerSig = async (setupData: SetupData, nodeOperator: SignerWithAddress) => {
   const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp;
@@ -488,7 +492,7 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   const vweth = setupData.protocol.vCWETH;
   let depositAmount = ethers.utils.parseEther('8').mul(BigNumber.from(numOperators));
   depositAmount = depositAmount.sub(await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address));
-  const vaultMinimum = await vweth.getRequiredCollateralAfterDeposit(depositAmount);
+  const vaultMinimum = await vweth.getMissingLiquidityAfterDeposit(depositAmount);
 
   console.log('REQUIRE COLLAT', vaultMinimum);
   const requiredEth = depositAmount
@@ -545,12 +549,11 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   console.log('rplRequired', rplRequired);
   const protocolSigner = setupData.signers.protocolSigner;
   await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequired);
-  await setupData.protocol.operatorDistributor.connect(protocolSigner).onRplBalanceIncrease(rplRequired)
 
   return requiredEth;
 }
 
-export async function createMerkleSig (setupData: SetupData, avgEthTreasuryFee: BigNumber, avgEthOperatorFee: BigNumber, avgRplTreasuryFee: BigNumber) {
+export async function createMerkleSig(setupData: SetupData, avgEthTreasuryFee: BigNumber, avgEthOperatorFee: BigNumber, avgRplTreasuryFee: BigNumber) {
   const network = await ethers.provider.getNetwork();
   const chainId = network.chainId;
 
@@ -566,13 +569,138 @@ export async function createMerkleSig (setupData: SetupData, avgEthTreasuryFee: 
 
   const messageHashBytes = ethers.utils.arrayify(messageHash);
   const adminHasOracleRole = await setupData.protocol.directory.hasRole(
-    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('ADMIN_ORACLE_ROLE'))), 
+    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('ADMIN_ORACLE_ROLE'))),
     setupData.signers.admin.address
   );
   expect(adminHasOracleRole).equals(true);
   const sig = await setupData.signers.admin.signMessage(messageHashBytes);
 
-  return { sig, sigGenesisTime, avgEthTreasuryFee, avgEthOperatorFee, avgRplTreasuryFee};
+  return { sig, sigGenesisTime, avgEthTreasuryFee, avgEthOperatorFee, avgRplTreasuryFee };
+}
+
+export function createMockDid(rewardee: string) {
+  return ethers.utils.solidityKeccak256(["address"], [rewardee]);
+}
+
+// sig schema keccak256(abi.encodePacked(_amount, _rewardee, nonces[_rewardee], address(this), block.chainid))
+export async function createClaimRewardSig(setupData: SetupData, token: string, did: string, rewardee: string, amount: BigNumber) {
+  return createClaimRewardSigWithNonce(setupData, token, did, rewardee, amount, await setupData.protocol.yieldDistributor.nonces(did));
+}
+
+export async function createClaimRewardSigWithNonce(setupData: SetupData, token: string, did: string, rewardee: string, amount: BigNumber, nonce: BigNumber) {
+  const network = await ethers.provider.getNetwork();
+  const chainId = network.chainId;
+
+  /**
+   * Optionally   const packedData = ethers.utils.solidityKeccak256(
+    ['address', 'address', 'uint256', 'uint256', 'address', 'uint256'],
+    [token, rewardee, amount, nonce, setupData.protocol.yieldDistributor.address, chainId]
+  );
+   * does a pack and hash in one call
+   */
+
+  const packedData = ethers.utils.solidityPack(
+    ['address', 'bytes32', 'address', 'uint256', 'uint256', 'address', 'uint256'],
+    [token, did, rewardee, amount, nonce, setupData.protocol.yieldDistributor.address, chainId]
+  );
+
+  const messageHash = ethers.utils.keccak256(packedData);
+
+  const messageHashBytes = ethers.utils.arrayify(messageHash);
+  const adminServerHasAdminServerRole = await setupData.protocol.yieldDistributor.hasRole(
+    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('NODESET_ADMIN_SERVER_ROLE'))),
+    setupData.signers.nodesetServerAdmin.address
+  );
+  expect(adminServerHasAdminServerRole).equals(true);
+  const sig = await setupData.signers.nodesetServerAdmin.signMessage(messageHashBytes);
+
+  return sig;
+}
+
+export async function createClaimRewardBadTargetSigWithNonce(setupData: SetupData, token: string, did: string, rewardee: string, amount: BigNumber, nonce: BigNumber) {
+  const network = await ethers.provider.getNetwork();
+  const chainId = network.chainId;
+
+  const packedData = ethers.utils.solidityPack(
+    ['address', 'bytes32', 'address', 'uint256', 'uint256', 'address', 'uint256'],
+    [token, did, rewardee, amount, nonce, setupData.protocol.superNode.address, chainId] // we are signing super node which is an intended bug
+  );
+
+  const messageHash = ethers.utils.keccak256(packedData);
+
+  const messageHashBytes = ethers.utils.arrayify(messageHash);
+  const adminServerHasAdminServerRole = await setupData.protocol.yieldDistributor.hasRole(
+    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('NODESET_ADMIN_SERVER_ROLE'))),
+    setupData.signers.nodesetServerAdmin.address
+  );
+  expect(adminServerHasAdminServerRole).equals(true);
+  const sig = await setupData.signers.nodesetServerAdmin.signMessage(messageHashBytes);
+
+  return sig;
+}
+
+export async function createClaimRewardBadChainIdSigWithNonce(setupData: SetupData, token: string, did: string, rewardee: string, amount: BigNumber, nonce: BigNumber) {
+  const network = await ethers.provider.getNetwork();
+  const chainId = network.chainId + 1; // this bug is intended
+
+  const packedData = ethers.utils.solidityPack(
+    ['address', 'bytes32', 'address', 'uint256', 'uint256', 'address', 'uint256'],
+    [token, did, rewardee, amount, nonce, setupData.protocol.yieldDistributor.address, chainId]
+  );
+
+  const messageHash = ethers.utils.keccak256(packedData);
+
+  const messageHashBytes = ethers.utils.arrayify(messageHash);
+  const adminServerHasAdminServerRole = await setupData.protocol.yieldDistributor.hasRole(
+    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('NODESET_ADMIN_SERVER_ROLE'))),
+    setupData.signers.nodesetServerAdmin.address
+  );
+  expect(adminServerHasAdminServerRole).equals(true);
+  const sig = await setupData.signers.nodesetServerAdmin.signMessage(messageHashBytes);
+
+  return sig;
+}
+export async function createClaimRewardBadSignerSigWithNonce(setupData: SetupData, badSigner: SignerWithAddress, token: string, did: string, rewardee: string, amount: BigNumber, nonce: BigNumber) {
+  const network = await ethers.provider.getNetwork();
+  const chainId = network.chainId;
+
+  const packedData = ethers.utils.solidityPack(
+    ['address', 'bytes32', 'address', 'uint256', 'uint256', 'address', 'uint256'],
+    [token, did, rewardee, amount, nonce, setupData.protocol.yieldDistributor.address, chainId]
+  );
+
+  const messageHash = ethers.utils.keccak256(packedData);
+
+  const messageHashBytes = ethers.utils.arrayify(messageHash);
+  const adminServerHasAdminServerRole = await setupData.protocol.yieldDistributor.hasRole(
+    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('NODESET_ADMIN_SERVER_ROLE'))),
+    badSigner.address
+  );
+  expect(adminServerHasAdminServerRole).equals(false);
+  const sig = await badSigner.signMessage(messageHashBytes);
+
+  return sig;
+}
+
+export async function createClaimRewardBadEncodedSigWithNonce(setupData: SetupData, token: string, did: string, rewardee: string, amount: BigNumber, nonce: BigNumber) {
+  const network = await ethers.provider.getNetwork();
+  const chainId = network.chainId;
+
+  const packedData = ethers.utils.defaultAbiCoder.encode(
+    ['address', 'bytes32', 'address', 'uint256', 'uint256', 'address', 'uint256'],
+    [token, did, rewardee, amount, nonce, setupData.protocol.yieldDistributor.address, chainId]
+  );
+  const messageHash = ethers.utils.keccak256(packedData);
+
+  const messageHashBytes = ethers.utils.arrayify(messageHash);
+  const adminServerHasAdminServerRole = await setupData.protocol.yieldDistributor.hasRole(
+    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('NODESET_ADMIN_SERVER_ROLE'))),
+    setupData.signers.nodesetServerAdmin.address
+  );
+  expect(adminServerHasAdminServerRole).equals(true);
+  const sig = await setupData.signers.nodesetServerAdmin.signMessage(messageHashBytes);
+
+  return sig;
 }
 
 export async function getNextContractAddress(signer: SignerWithAddress, offset = 0) {

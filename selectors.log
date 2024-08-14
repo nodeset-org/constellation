@@ -275,7 +275,7 @@
  ··········································|································|·································
  |  WhitelistV2                            ·                 8.308 (0.000)  ·                 8.695 (0.000)  │
  ··········································|································|·································
- |  YieldDistributor                       ·                12.395 (0.000)  ·                12.782 (0.000)  │
+ |  NodeSetOperatorRewardDistributor                       ·                12.395 (0.000)  ·                12.782 (0.000)  │
  ·-----------------------------------------|--------------------------------|--------------------------------·
 Contract: Treasury
 Function: claimEth(address) - Selector: 0x228f3845
@@ -333,7 +333,7 @@ Function: getNodeAccountFactoryAddress() - Selector: 0xee39af46
 Function: getWETHAddress() - Selector: 0xaffa8817
 Function: getWETHVaultAddress() - Selector: 0x2c350b1c
 Function: getWhitelistAddress() - Selector: 0x915eb973
-Function: getYieldDistributorAddress() - Selector: 0x80ae0fc8
+Function: getNodeSetOperatorRewardDistributorAddress() - Selector: 0x80ae0fc8
 Function: grantRole(bytes32,address) - Selector: 0x2f2ff15d
 Function: hasRole(bytes32,address) - Selector: 0x91d14854
 Function: initialize((address,address,address,address,address,address,address,address,address,address,address,address,address,address,address,address,address),address,address) - Selector: 0x9316d621
@@ -522,7 +522,7 @@ Function: upgradeTo(address) - Selector: 0x3659cfe6
 Function: upgradeToAndCall(address,bytes) - Selector: 0x4f1ef286
 Function: upgradeNodeAccountProxy(address,address) - Selector: 0x09cb0a5c
 
-Contract: YieldDistributor
+Contract: NodeSetOperatorRewardDistributor
 Function: adminSweep(address) - Selector: 0xb7bf46af
 Function: claims(uint256) - Selector: 0xa888c2cd
 Function: currentInterval() - Selector: 0x363487bc

@@ -6,11 +6,10 @@ import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgrad
 import './RPLVault.sol';
 import '../PriceFetcher.sol';
 import '../UpgradeableBase.sol';
-import '../AssetRouter.sol';
-import '../Operator/YieldDistributor.sol';
+import '../Operator/NodeSetOperatorRewardDistributor.sol';
 import '../Utils/Constants.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
-import '../Interfaces/Oracles/IBeaconOracle.sol';
+import '../Interfaces/Oracles/IConstellationOracle.sol';
 import '../Interfaces/IWETH.sol';
 
 import 'hardhat/console.sol';
@@ -32,8 +31,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     uint256 public treasuryFee; // Treasury fee in basis points
     uint256 public nodeOperatorFee; // NO fee in basis points
-
-    uint256 public balanceWeth;
 
     uint256 public totalCounts;
     uint256 public totalPenaltyBond;
@@ -80,21 +77,18 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        od.processNextMinipool();
         require(tvlRatioEthRpl(assets, true) <= maxWethRplRatio, 'insufficient RPL coverage');
         super._deposit(caller, receiver, assets, shares);
 
-        AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
-
-        ar.onWethBalanceIncrease(assets);
-        SafeERC20.safeTransfer(IERC20(asset()), address(ar), assets);
-
-        ar.sendEthToDistributors();
+        SafeERC20.safeTransfer(IERC20(asset()), address(od), assets);
+        od.rebalanceWethVault();
     }
 
     /**
      * @notice Handles withdrawals from the vault, updating the position and distributing fees to operators and the treasury.
-     * @dev This function distributes the assets to the receiver and also transfers the assets from the AssetRouter as necessary.
+     * @dev This function distributes the assets to the receiver and also transfers the assets from the OperatorDistributor as necessary.
      * May revert if the liquidity reserves are too low.
      * @param caller The address initiating the withdrawal.
      * @param receiver The address designated to receive the withdrawn assets.
@@ -113,16 +107,15 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
-        console.log('balanceWeth on withdraw xrETH',balanceWeth);
-        require(balanceWeth >= assets, 'Not enough liquidity to withdraw');
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).processNextMinipool();
+        require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        // first process a minipool to give the best chance at actually withdrawing
+        od.processNextMinipool();
 
-
-        balanceWeth -= assets;
-
-        AssetRouter(_directory.getAssetRouterAddress()).sendEthToDistributors();
-
+        // required violation of CHECKS/EFFECTS/INTERACTIONS: need to change WETH balance here before rebalancing the rest of the protocol
         super._withdraw(caller, receiver, owner, assets, shares);
+
+        od.rebalanceWethVault();
     }
 
     /**
@@ -151,23 +144,22 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @dev This function gets the address of the Oracle contract from the Directory contract.
      * @return The address of the Oracle contract.
      */
-    function getOracle() public view returns (IBeaconOracle) {
-        return IBeaconOracle(getDirectory().getOracleAddress());
+    function getOracle() public view returns (IConstellationOracle) {
+        return IConstellationOracle(getDirectory().getOracleAddress());
     }
 
     /**
      * @notice Returns the total assets managed by this vault. That is, all the ETH backing xrETH.
      * @dev This function calculates the total assets by summing the vault's own assets, the distributable yield,
-     * and the assets held in the AssetRouter and OperatorDistributor. 
+     * and the assets held in OperatorDistributor. 
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
-        AssetRouter dp = AssetRouter(getDirectory().getAssetRouterAddress());
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         (uint256 distributableYield, bool signed) = getDistributableYield();
         return (
             uint256(
-                int(balanceWeth + dp.getTvlEth() + od.getTvlEth()) +
+                int(IERC20(asset()).balanceOf(address(this)) + od.getTvlEth()) +
                     (signed ? -int(distributableYield) : int(distributableYield))
             )
         );
@@ -193,26 +185,39 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Calculates the required collateral after a specified deposit.
-     * @dev This function calculates the required collateral to ensure the contract remains sufficiently collateralized
-     * after a specified deposit amount. It compares the current balance with the required collateral based on
+     * @notice Calculates the missing liquidity needed to meet the liquidity reserve after a specified deposit.
+     * @dev his function calculates the amount of assets needed to hit the liquidity reserve 
+     * after a specified deposit amount. It compares the current balance with the required liquidity based on
      * the total assets, including the deposit.
-     * @param deposit The amount of the deposit to consider in the collateral calculation.
-     * @return The amount of collateral required after the specified deposit.
+     * @param deposit The amount of the new deposit to consider in the liquidity calculation.
+     * @return The amount of liquidity required after the specified deposit.
      */
-    function getRequiredCollateralAfterDeposit(uint256 deposit) public view returns (uint256) {
+    function getMissingLiquidityAfterDeposit(uint256 deposit) public view returns (uint256) {
         uint256 fullBalance = totalAssets() + deposit;
+        uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
-        return requiredBalance > balanceWeth ? requiredBalance : 0;
+        console.log("ETH requiredCollateralAfterDeposit(",deposit,")");
+        console.log("requiredBalance:", requiredBalance, "currentBalance:", currentBalance);
+        return requiredBalance > currentBalance ? requiredBalance - currentBalance: 0;
     }
 
     /**
-     * @notice Calculates the required collateral to ensure the contract remains sufficiently collateralized.
+     * @notice Calculates the missing liquidity needed to meet the liquidity reserve.
+     * @dev This function calculates the current assets needed to hit the liquidity reserve 
+     * based the current total assets of the vault.
+     * @return The amount of liquidity required.
+     */
+    function getMissingLiquidity() public view returns (uint256) {
+        return getMissingLiquidityAfterDeposit(0);
+    }
+
+    /**
+     * @notice Calculates 
      * @dev This function calculates the required collateral based on the current total assets of the vault.
      * @return The amount of collateral required.
      */
-    function getRequiredCollateral() public view returns (uint256) {
-        return getRequiredCollateralAfterDeposit(0);
+    function getIncomeAfterFees(uint256 income) public view returns (uint256){
+        return income - income.mulDiv((treasuryFee + nodeOperatorFee), 1e18);
     }
 
     /**ADMIN FUNCTIONS */
@@ -282,18 +287,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         liquidityReservePercent = _liquidityReservePercent;
 
         // rebalance entire balance of the contract to ensure the new liquidity reserve is respected
-        AssetRouter ar = AssetRouter(_directory.getAssetRouterAddress());
-        ar.onWethBalanceIncrease(balanceWeth);
-        SafeERC20.safeTransfer(IERC20(asset()), address(ar), balanceWeth);
-        balanceWeth = 0;
-        ar.sendEthToDistributors();
-    }
-
-    function onWethBalanceIncrease(uint256 _amount) external onlyProtocol {
-        balanceWeth += _amount;
-    }
-
-    function onWethBalanceDecrease(uint256 _amount) external onlyProtocol {
-        balanceWeth -= _amount;
+        OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
+        SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));
+        od.rebalanceWethVault();
     }
 }
