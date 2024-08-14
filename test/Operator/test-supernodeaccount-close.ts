@@ -19,7 +19,6 @@ describe("SuperNodeAccount close", function () {
                     await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
                     await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(0);
 
-
                     // Deposit 8 ETH for 1 minipool
                     const ethMintAmount = ethers.utils.parseEther("8");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
@@ -28,7 +27,7 @@ describe("SuperNodeAccount close", function () {
                     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
                     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
 
-                    // Deposit 160 RPL
+                    // Deposit 720 RPL
                     const rplMintAmount = ethers.utils.parseEther("720");
                     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
                     await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
@@ -72,8 +71,27 @@ describe("SuperNodeAccount close", function () {
                         }, { value: ethers.utils.parseEther('1') }))
                     .to.not.be.reverted;
 
+                    const minipoolContract = (await ethers.getContractAt(
+                        'IMinipool',
+                        config.expectedMinipoolAddress
+                    ));
 
-                    await protocol.superNode.close(nodeOperator.address, config.expectedMinipoolAddress);
+                    // Deposit minipool to set to prelaunch state
+                    // TODO: How many ETH to deposit??
+                    await expect(minipoolContract.connect(nodeOperator).deposit({
+                         value: ethers.utils.parseEther('8')
+                    })).to.not.be.reverted;
+
+                    // Increase the time by 10 days
+                    await ethers.provider.send("evm_increaseTime", [10*24*3600]);
+                    await ethers.provider.send("evm_mine", []);
+                    console.log("!!!", nodeOperator.address, config.expectedMinipoolAddress);
+                    // Dissolve minipool
+
+                    // 24 rETH needs to be sent back
+                    await expect(minipoolContract.connect(nodeOperator).dissolve()).to.not.be.reverted;
+
+                    await protocol.superNode.connect(nodeOperator).close(nodeOperator.address, config.expectedMinipoolAddress);
                     // Assert that validator is no longer has any activeValidatorCount
 
                     // Assert that minipool got removed from SuperNodeAccount

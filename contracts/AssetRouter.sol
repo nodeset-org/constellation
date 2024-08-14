@@ -16,7 +16,7 @@ import './Interfaces/Oracles/IBeaconOracle.sol';
 import './Utils/Constants.sol';
 
 /// @notice Router to keep the protocol asset distributions balanced. Ensures a minimum source of liquidity for depositors.
-/// Acts as a withdrawal address for the SuperNodeAccount. Takes in ETH & RPL from token mints and minipool yields, 
+/// Acts as a withdrawal address for the SuperNodeAccount. Takes in ETH & RPL from token mints and minipool yields,
 /// then sends to respective ERC4246 vaults or OperatorDistributor.
 /// ANY WETH OR RPL SENT TO THIS CONTRACT FROM OUTSIDE THIS PROTOCOL WILL NOT BE ACCOUNTED FOR AND WILL BE LOST PERMANENTLY!
 contract AssetRouter is UpgradeableBase {
@@ -64,7 +64,7 @@ contract AssetRouter is UpgradeableBase {
     /// @notice Unstakes a specified amount of RPL tokens.
     /// @dev This function unstakes a specified amount of RPL tokens from the Rocket Node Staking contract.
     /// @param _amount The amount of RPL tokens to unstake.
-    /// @dev The tokens will be withdrawn from the Rocket Node Staking contract into this contract. 
+    /// @dev The tokens will be withdrawn from the Rocket Node Staking contract into this contract.
     /// Outside callers MUST call onRplBalanceIncrease or onRplBalanceDecrease to appropriately account for this.
     function unstakeRpl(uint256 _amount) external onlyProtocol {
         IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).withdrawRPL(getDirectory().getSuperNodeAddress(), _amount);
@@ -74,7 +74,7 @@ contract AssetRouter is UpgradeableBase {
     /// @dev This function allows the protocol to stake a specified amount of RPL tokens on the SuperNode
     ///      using the Rocket Node Staking contract.
     /// @param _amount The amount of RPL tokens to stake.
-    /// @dev This function ensures that the specified amount of RPL tokens is approved and then staked 
+    /// @dev This function ensures that the specified amount of RPL tokens is approved and then staked
     /// for the SuperNode.
     function stakeRpl(uint256 _amount) external onlyProtocol {
         SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), 0);
@@ -83,7 +83,7 @@ contract AssetRouter is UpgradeableBase {
     }
 
     /// @notice Distributes ETH to the vault and operator distributor.
-    /// @dev This function converts the WETH balance to ETH, sends the required capital to the vault, 
+    /// @dev This function converts the WETH balance to ETH, sends the required capital to the vault,
     /// and the surplus ETH to the OperatorDistributor.
     function sendEthToDistributors() public onlyProtocol nonReentrant {
         IWETH weth = IWETH(_directory.getWETHAddress());
@@ -171,9 +171,9 @@ contract AssetRouter is UpgradeableBase {
         console.log("AssetRouter balance after distribute", address(this).balance);
     }
 
-    /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode 
+    /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode
     /// withdrawal address for both ETH and RPL from Rocket Pool.
-    /// Splits incoming assets up among the Treasury, YieldDistributor, and the WETHVault/OperatorDistributor based on the 
+    /// Splits incoming assets up among the Treasury, YieldDistributor, and the WETHVault/OperatorDistributor based on the
     /// rewardsAmount expected.
     /// @param rewardAmount amount of ETH rewards expected
     /// @param avgTreasuryFee Average treasury fee for the rewards received across all the minipools the rewards came from
@@ -204,9 +204,9 @@ contract AssetRouter is UpgradeableBase {
         }
     }
 
-    /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode 
+    /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode
     /// withdrawal address for both ETH and RPL from Rocket Pool.
-    /// Only takes in ETH and sends to WETHVault/OperatorDistributor depending on liquidity conditions based on the 
+    /// Only takes in ETH and sends to WETHVault/OperatorDistributor depending on liquidity conditions based on the
     /// bondAmount expected. Does NOT take fees.
     function onEthBondReceived(uint256 bondAmount) public onlyProtocol {
         if(bondAmount == 0)
@@ -217,7 +217,7 @@ contract AssetRouter is UpgradeableBase {
         balanceEthAndWeth += bondAmount;
     }
 
-    /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode 
+    /// @notice Called by the protocol when a minipool is distributed to this contract, which acts as the SuperNode
     /// withdrawal address for both ETH and RPL from Rocket Pool.
     /// Splits incoming assets up among the Treasury, YieldDistributor, and the WETHVault/OperatorDistributor based on
     /// the rewardsAmount and bondAmount specified.
@@ -231,7 +231,7 @@ contract AssetRouter is UpgradeableBase {
     }
 
 
-    /// @notice Called by the protocol when RPL rewards are distributed to this contract, which acts as the SuperNode 
+    /// @notice Called by the protocol when RPL rewards are distributed to this contract, which acts as the SuperNode
     /// withdrawal address for both ETH and RPL rewards from Rocket Pool.
     /// Splits incoming assets up among the Treasury, YieldDistributor, and the WETHVault/OperatorDistributor.
     /// @param _amount amount of RPL rewards expected
@@ -257,10 +257,10 @@ contract AssetRouter is UpgradeableBase {
 
     /// @dev We can't use a named or address-locked payable function because Rocket Pool needs to send ETH to this contract
     receive() external payable {
-        require(_gateOpen);
+        // require(_gateOpen);
     }
 
     fallback() external payable {
-        require(_gateOpen);
+        // require(_gateOpen);
     }
 }
