@@ -431,9 +431,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         SuperNodeAccount sna = SuperNodeAccount(getDirectory().getSuperNodeAddress());
        
         uint256 balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
-
         uint256 rewards;
-        unchecked {
+        // This is unchecked because we are already effectively checking for underflow given the following business logic
+        unchecked { 
            rewards = minipool.calculateNodeShare(balanceAfterRefund) > minipool.getNodeDepositBalance() 
                 ? minipool.calculateNodeShare(balanceAfterRefund) -  minipool.getNodeDepositBalance()
                 : 0;

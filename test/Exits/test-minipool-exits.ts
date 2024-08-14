@@ -28,7 +28,7 @@ describe("Exiting Minipools", function () {
             caller = signers.admin;
         })
 
-        describe("When minipool balance is greater than minipool Node Refund Balance", async () => {
+        describe.only("When minipool balance is greater than minipool Node Refund Balance", async () => {
 
             let minipool: RocketMinipoolDelegate;
             let nodeRefundBalance: BigNumber;
@@ -57,65 +57,65 @@ describe("Exiting Minipools", function () {
             })
 
             describe("When Node Share of Balance After Refund is greater than Node Deposit Balance", async () => {
-
-                let balanceAfterRefund: BigNumber;
-
-                this.beforeEach(async () => {
+                it("Should pass", async () => {
                     await signers.ethWhale.sendTransaction({
                         to: minipool.address,
                         value: ethers.utils.parseEther("32")
                     })
 
                     const minipoolBalance = await ethers.provider.getBalance(minipool.address);
-                    balanceAfterRefund = minipoolBalance.sub(nodeRefundBalance);
+                    const balanceAfterRefund = minipoolBalance.sub(nodeRefundBalance);
 
                     const nodeShare = await minipool.calculateNodeShare(balanceAfterRefund);
 
                     expect(nodeShare).greaterThan(nodeDepositBalance);
-                })
 
-                describe.skip("UNREACHABLE CODE", async () => {
-                    describe("When Node Share of Balance After Refund is greater than Node Deposit Balance", async () => {
-                        it("Shoudl pass", async () => {
-    
-                        })
-                    })
-    
-                    describe("When Node Share of Balance After Refund is equal to Node Deposit Balance", async () => {
-                        it("Shoudl pass", async () => {
-    
-                        })
-                    })
-    
-                    describe("When Node Share of Balance After Refund is less than Node Deposit Balance", async () => {
-                        it("Shoudl pass", async () => {
-    
-                        })
-                    })
+                    // assert minipool balance is zero
+                    // do state checks on distributeBalance working as expected
+
+                    // assert onNodeMinipoolDestroy is called by doing required state checks
+                    // assert onMinipoolRemoved is called correctly by doing requried state checks
+                    // assert onEthRewardsReceived is called correctly by doing required state checks
+
+                    
                 })
             })
 
             describe("When Node Share of Balance After Refund is equal to Node Deposit Balance", async () => {
                 it("Shoudl pass", async () => {
+                    await signers.ethWhale.sendTransaction({
+                        to: minipool.address,
+                        value: ethers.utils.parseEther("31")
+                    })
 
+                    const minipoolBalance = await ethers.provider.getBalance(minipool.address);
+                    const balanceAfterRefund = minipoolBalance.sub(nodeRefundBalance);
+
+                    const nodeShare = await minipool.calculateNodeShare(balanceAfterRefund);
+
+                    expect(nodeShare).equals(nodeDepositBalance);
                 })
             })
 
             describe("When Node Share of Balance After Refund is less than Node Deposit Balance", async () => {
                 it("Shoudl pass", async () => {
+                    await signers.ethWhale.sendTransaction({
+                        to: minipool.address,
+                        value: ethers.utils.parseEther("30")
+                    })
 
+                    const minipoolBalance = await ethers.provider.getBalance(minipool.address);
+                    const balanceAfterRefund = minipoolBalance.sub(nodeRefundBalance);
+
+                    const nodeShare = await minipool.calculateNodeShare(balanceAfterRefund);
+
+                    expect(nodeShare).lessThan(nodeDepositBalance);
                 })
             })
         })
 
         describe("When minipool balance is equal to minipool Node Refund Balance", async () => {
             describe("When Node Share of Balance After Refund is greater than Node Deposit Balance", async () => {
-                describe("When Node Share of Balance After Refund is greater than Node Deposit Balance", async () => {
-                    it("Shoudl pass", async () => {
-
-                    })
-                })
-
                 describe("When Node Share of Balance After Refund is equal to Node Deposit Balance", async () => {
                     it("Shoudl pass", async () => {
 
@@ -157,22 +157,8 @@ describe("Exiting Minipools", function () {
 
         describe("When minipool balance is greater than minipool Node Refund Balance", async () => {
             describe("When Node Share of Balance After Refund is greater than Node Deposit Balance", async () => {
-                describe("When Node Share of Balance After Refund is greater than Node Deposit Balance", async () => {
-                    it("Shoudl pass", async () => {
+                it("Shoudl pass", async () => {
 
-                    })
-                })
-
-                describe("When Node Share of Balance After Refund is equal to Node Deposit Balance", async () => {
-                    it("Shoudl pass", async () => {
-
-                    })
-                })
-
-                describe("When Node Share of Balance After Refund is less than Node Deposit Balance", async () => {
-                    it("Shoudl pass", async () => {
-
-                    })
                 })
             })
 
@@ -191,22 +177,8 @@ describe("Exiting Minipools", function () {
 
         describe("When minipool balance is equal to minipool Node Refund Balance", async () => {
             describe("When Node Share of Balance After Refund is greater than Node Deposit Balance", async () => {
-                describe("When Node Share of Balance After Refund is greater than Node Deposit Balance", async () => {
-                    it("Shoudl pass", async () => {
+                it("Shoudl pass", async () => {
 
-                    })
-                })
-
-                describe("When Node Share of Balance After Refund is equal to Node Deposit Balance", async () => {
-                    it("Shoudl pass", async () => {
-
-                    })
-                })
-
-                describe("When Node Share of Balance After Refund is less than Node Deposit Balance", async () => {
-                    it("Shoudl pass", async () => {
-
-                    })
                 })
             })
 
