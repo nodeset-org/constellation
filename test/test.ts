@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
-import { AssetRouter, WETHVault, RPLVault, OperatorDistributor, NodeSetOperatorRewardDistributor, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetworkInterface, IBeaconOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, RocketDepositPool, RocketNodeDeposit, RocketDAONodeTrusted, RocketTokenRETH, RocketClaimDAO, RocketRewardsPool, RocketDAONodeTrustedActions, SuperNodeAccount, PoABeaconOracle, RocketStorage, RocketMinipoolDelegate, RocketMinipoolInterface } from "../typechain-types";
+import { WETHVault, RPLVault, OperatorDistributor, NodeSetOperatorRewardDistributor, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetworkInterface, IConstellationOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, RocketDepositPool, RocketNodeDeposit, RocketDAONodeTrusted, RocketTokenRETH, RocketClaimDAO, RocketRewardsPool, RocketDAONodeTrustedActions, SuperNodeAccount, PoAConstellationOracle, RocketStorage, RocketMinipoolDelegate, RocketMinipoolInterface } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
 import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketNodeManager, RocketNodeManagerNew, RocketNodeStaking, RocketNodeStakingNew, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
@@ -18,8 +18,6 @@ import { IERC20 } from "../typechain-types/oz-contracts-3-4-0/token/ERC20";
 import { deployProtocol, fastDeployProtocol } from "../scripts/utils/deployment";
 import { BigNumber } from 'ethers';
 import { DepositData } from "@chainsafe/lodestar-types";
-
-export const protocolParams = { trustBuildPeriod: ethers.utils.parseUnits('1.5768', 7) }; // ~6 months in seconds
 
 export type SetupData = {
   protocol: Protocol;
@@ -46,7 +44,7 @@ export type Protocol = {
   vCRPL: RPLVault;
   operatorDistributor: OperatorDistributor;
   yieldDistributor: NodeSetOperatorRewardDistributor;
-  oracle: PoABeaconOracle;
+  oracle: PoAConstellationOracle;
   priceFetcher: Contract;
   superNode: SuperNodeAccount;
   wETH: IWETH;

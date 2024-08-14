@@ -272,284 +272,6 @@ export const addressSetStorageInterfaceAbi = [
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// AssetRouter
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export const assetRouterAbi = [
-  { type: 'constructor', inputs: [], stateMutability: 'nonpayable' },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'previousAdmin',
-        internalType: 'address',
-        type: 'address',
-        indexed: false,
-      },
-      {
-        name: 'newAdmin',
-        internalType: 'address',
-        type: 'address',
-        indexed: false,
-      },
-    ],
-    name: 'AdminChanged',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'beacon',
-        internalType: 'address',
-        type: 'address',
-        indexed: true,
-      },
-    ],
-    name: 'BeaconUpgraded',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: 'version', internalType: 'uint8', type: 'uint8', indexed: false },
-    ],
-    name: 'Initialized',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'implementation',
-        internalType: 'address',
-        type: 'address',
-        indexed: true,
-      },
-    ],
-    name: 'Upgraded',
-  },
-  { type: 'fallback', stateMutability: 'payable' },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'balanceEthAndWeth',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'balanceRpl',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'closeGate',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getDirectory',
-    outputs: [
-      { name: '', internalType: 'contract Directory', type: 'address' },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getImplementation',
-    outputs: [{ name: '', internalType: 'address', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getTvlEth',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getTvlRpl',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: 'directoryAddress', internalType: 'address', type: 'address' },
-    ],
-    name: 'initialize',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      {
-        name: '_minipool',
-        internalType: 'contract IMinipool',
-        type: 'address',
-      },
-    ],
-    name: 'onClaimSkimmedRewards',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'bondAmount', internalType: 'uint256', type: 'uint256' }],
-    name: 'onEthBondReceived',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: 'rewardAmount', internalType: 'uint256', type: 'uint256' },
-      { name: 'bondAmount', internalType: 'uint256', type: 'uint256' },
-      { name: 'avgTreasuryFee', internalType: 'uint256', type: 'uint256' },
-      { name: 'avgOperatorsFee', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'onEthRewardsAndBondReceived',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: 'rewardAmount', internalType: 'uint256', type: 'uint256' },
-      { name: 'avgTreasuryFee', internalType: 'uint256', type: 'uint256' },
-      { name: 'avgOperatorsFee', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'onEthRewardsReceived',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      {
-        name: '_minipool',
-        internalType: 'contract IMinipool',
-        type: 'address',
-      },
-    ],
-    name: 'onExitedMinipool',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
-    name: 'onRplBalanceDecrease',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
-    name: 'onRplBalanceIncrease',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_amount', internalType: 'uint256', type: 'uint256' },
-      { name: 'avgTreasuryFee', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'onRplRewardsRecieved',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
-    name: 'onWethBalanceDecrease',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
-    name: 'onWethBalanceIncrease',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'openGate',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'proxiableUUID',
-    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'sendEthToDistributors',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'sendRplToDistributors',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
-    name: 'stakeRpl',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
-    name: 'unstakeRpl',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: 'newImplementation', internalType: 'address', type: 'address' },
-    ],
-    name: 'upgradeTo',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: 'newImplementation', internalType: 'address', type: 'address' },
-      { name: 'data', internalType: 'bytes', type: 'bytes' },
-    ],
-    name: 'upgradeToAndCall',
-    outputs: [],
-    stateMutability: 'payable',
-  },
-  { type: 'receive', stateMutability: 'payable' },
-] as const
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Constants
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -856,13 +578,6 @@ export const directoryAbi = [
   {
     type: 'function',
     inputs: [],
-    name: 'getAssetRouterAddress',
-    outputs: [{ name: '', internalType: 'address payable', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
     name: 'getImplementation',
     outputs: [{ name: '', internalType: 'address', type: 'address' }],
     stateMutability: 'view',
@@ -1097,11 +812,6 @@ export const directoryAbi = [
           },
           { name: 'rplVault', internalType: 'address', type: 'address' },
           {
-            name: 'assetRouter',
-            internalType: 'address payable',
-            type: 'address',
-          },
-          {
             name: 'operatorDistributor',
             internalType: 'address payable',
             type: 'address',
@@ -1199,11 +909,6 @@ export const directoryAbi = [
             type: 'address',
           },
           { name: 'rplVault', internalType: 'address', type: 'address' },
-          {
-            name: 'assetRouter',
-            internalType: 'address payable',
-            type: 'address',
-          },
           {
             name: 'operatorDistributor',
             internalType: 'address payable',
@@ -1653,10 +1358,10 @@ export const errorsAbi = [
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// IBeaconOracle
+// IConstellationOracle
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export const iBeaconOracleAbi = [
+export const iConstellationOracleAbi = [
   {
     type: 'function',
     inputs: [],
@@ -3643,22 +3348,8 @@ export const mockNodeAccountV2Abi = [
   },
   {
     type: 'function',
-    inputs: [{ name: '', internalType: 'address', type: 'address' }],
-    name: 'lockStarted',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
     inputs: [],
     name: 'lockThreshold',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'lockUpTime',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
@@ -3779,6 +3470,13 @@ export const mockNodeAccountV2Abi = [
   },
   {
     type: 'function',
+    inputs: [{ name: 'minipool', internalType: 'address', type: 'address' }],
+    name: 'onMinipoolRemoved',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     inputs: [],
     name: 'proxiableUUID',
     outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
@@ -3824,15 +3522,6 @@ export const mockNodeAccountV2Abi = [
   {
     type: 'function',
     inputs: [
-      { name: '_newLockUpTime', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'setLockUpTime',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
       { name: '_maxValidators', internalType: 'uint256', type: 'uint256' },
     ],
     name: 'setMaxValidators',
@@ -3845,6 +3534,13 @@ export const mockNodeAccountV2Abi = [
       { name: '_newMinimumNodeFee', internalType: 'uint256', type: 'uint256' },
     ],
     name: 'setMinimumNodeFee',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_useSmoothingPool', internalType: 'bool', type: 'bool' }],
+    name: 'setSmoothingPoolParticipation',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -3879,22 +3575,6 @@ export const mockNodeAccountV2Abi = [
   {
     type: 'function',
     inputs: [
-      { name: '_subNodeOperator', internalType: 'address', type: 'address' },
-    ],
-    name: 'stopTrackingOperatorMinipools',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
-    name: 'subNodeOperatorHasMinipool',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
       { name: '', internalType: 'address', type: 'address' },
       { name: '', internalType: 'uint256', type: 'uint256' },
     ],
@@ -3915,13 +3595,6 @@ export const mockNodeAccountV2Abi = [
     name: 'totalEthLocked',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_minipool', internalType: 'address', type: 'address' }],
-    name: 'unlockEth',
-    outputs: [],
-    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
@@ -4741,22 +4414,8 @@ export const mockSuperNodeV2Abi = [
   },
   {
     type: 'function',
-    inputs: [{ name: '', internalType: 'address', type: 'address' }],
-    name: 'lockStarted',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
     inputs: [],
     name: 'lockThreshold',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'lockUpTime',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
@@ -4877,6 +4536,13 @@ export const mockSuperNodeV2Abi = [
   },
   {
     type: 'function',
+    inputs: [{ name: 'minipool', internalType: 'address', type: 'address' }],
+    name: 'onMinipoolRemoved',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     inputs: [],
     name: 'proxiableUUID',
     outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
@@ -4922,15 +4588,6 @@ export const mockSuperNodeV2Abi = [
   {
     type: 'function',
     inputs: [
-      { name: '_newLockUpTime', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'setLockUpTime',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
       { name: '_maxValidators', internalType: 'uint256', type: 'uint256' },
     ],
     name: 'setMaxValidators',
@@ -4943,6 +4600,13 @@ export const mockSuperNodeV2Abi = [
       { name: '_newMinimumNodeFee', internalType: 'uint256', type: 'uint256' },
     ],
     name: 'setMinimumNodeFee',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_useSmoothingPool', internalType: 'bool', type: 'bool' }],
+    name: 'setSmoothingPoolParticipation',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -4977,22 +4641,6 @@ export const mockSuperNodeV2Abi = [
   {
     type: 'function',
     inputs: [
-      { name: '_subNodeOperator', internalType: 'address', type: 'address' },
-    ],
-    name: 'stopTrackingOperatorMinipools',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
-    name: 'subNodeOperatorHasMinipool',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
       { name: '', internalType: 'address', type: 'address' },
       { name: '', internalType: 'uint256', type: 'uint256' },
     ],
@@ -5013,13 +4661,6 @@ export const mockSuperNodeV2Abi = [
     name: 'totalEthLocked',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_minipool', internalType: 'address', type: 'address' }],
-    name: 'unlockEth',
-    outputs: [],
-    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
@@ -5523,20 +5164,6 @@ export const operatorDistributorAbi = [
   },
   {
     type: 'function',
-    inputs: [],
-    name: 'balanceEth',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'balanceRpl',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
     inputs: [
       { name: '_existingRplStake', internalType: 'uint256', type: 'uint256' },
       { name: '_ethStaked', internalType: 'uint256', type: 'uint256' },
@@ -5625,17 +5252,15 @@ export const operatorDistributorAbi = [
   },
   {
     type: 'function',
-    inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
-    name: 'onEthBalanceDecrease',
+    inputs: [
+      { name: 'rewardAmount', internalType: 'uint256', type: 'uint256' },
+      { name: 'avgTreasuryFee', internalType: 'uint256', type: 'uint256' },
+      { name: 'avgOperatorsFee', internalType: 'uint256', type: 'uint256' },
+      { name: 'updateOracleError', internalType: 'bool', type: 'bool' },
+    ],
+    name: 'onEthRewardsReceived',
     outputs: [],
     stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
-    name: 'onEthBalanceIncrease',
-    outputs: [],
-    stateMutability: 'payable',
   },
   {
     type: 'function',
@@ -5665,15 +5290,11 @@ export const operatorDistributorAbi = [
   },
   {
     type: 'function',
-    inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
-    name: 'onRplBalanceDecrease',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
-    name: 'onRplBalanceIncrease',
+    inputs: [
+      { name: '_amount', internalType: 'uint256', type: 'uint256' },
+      { name: 'avgTreasuryFee', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'onRplRewardsRecieved',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -5724,6 +5345,20 @@ export const operatorDistributorAbi = [
   {
     type: 'function',
     inputs: [],
+    name: 'rebalanceRplVault',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rebalanceWethVault',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [],
     name: 'resetOracleError',
     outputs: [],
     stateMutability: 'nonpayable',
@@ -5748,10 +5383,24 @@ export const operatorDistributorAbi = [
   },
   {
     type: 'function',
+    inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
+    name: 'stakeRpl',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     inputs: [],
     name: 'targetStakeRatio',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
+    name: 'unstakeRpl',
+    outputs: [],
+    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
@@ -5772,6 +5421,7 @@ export const operatorDistributorAbi = [
     outputs: [],
     stateMutability: 'payable',
   },
+  { type: 'receive', stateMutability: 'payable' },
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -5810,10 +5460,10 @@ export const penaltyTestAbi = [
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// PoABeaconOracle
+// PoAConstellationOracle
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export const poABeaconOracleAbi = [
+export const poAConstellationOracleAbi = [
   { type: 'constructor', inputs: [], stateMutability: 'nonpayable' },
   {
     type: 'event',
@@ -5940,8 +5590,24 @@ export const poABeaconOracleAbi = [
     type: 'function',
     inputs: [
       { name: '_sig', internalType: 'bytes', type: 'bytes' },
-      { name: '_newTotalYieldAccrued', internalType: 'int256', type: 'int256' },
-      { name: '_sigTimeStamp', internalType: 'uint256', type: 'uint256' },
+      {
+        name: 'sigData',
+        internalType: 'struct PoAConstellationOracle.PoAOracleSignatureData',
+        type: 'tuple',
+        components: [
+          {
+            name: 'newTotalYieldAccrued',
+            internalType: 'int256',
+            type: 'int256',
+          },
+          {
+            name: 'expectedOracleError',
+            internalType: 'uint256',
+            type: 'uint256',
+          },
+          { name: 'timeStamp', internalType: 'uint256', type: 'uint256' },
+        ],
+      },
     ],
     name: 'setTotalYieldAccrued',
     outputs: [],
@@ -6332,13 +5998,6 @@ export const rplVaultAbi = [
   },
   {
     type: 'function',
-    inputs: [],
-    name: 'balanceRpl',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
     inputs: [{ name: 'shares', internalType: 'uint256', type: 'uint256' }],
     name: 'convertToAssets',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
@@ -6502,20 +6161,6 @@ export const rplVaultAbi = [
     name: 'name',
     outputs: [{ name: '', internalType: 'string', type: 'string' }],
     stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
-    name: 'onRplBalanceDecrease',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
-    name: 'onRplBalanceIncrease',
-    outputs: [],
-    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
@@ -29380,22 +29025,8 @@ export const superNodeAccountAbi = [
   },
   {
     type: 'function',
-    inputs: [{ name: '', internalType: 'address', type: 'address' }],
-    name: 'lockStarted',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
     inputs: [],
     name: 'lockThreshold',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'lockUpTime',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
@@ -29516,6 +29147,13 @@ export const superNodeAccountAbi = [
   },
   {
     type: 'function',
+    inputs: [{ name: 'minipool', internalType: 'address', type: 'address' }],
+    name: 'onMinipoolRemoved',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     inputs: [],
     name: 'proxiableUUID',
     outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
@@ -29561,15 +29199,6 @@ export const superNodeAccountAbi = [
   {
     type: 'function',
     inputs: [
-      { name: '_newLockUpTime', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'setLockUpTime',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
       { name: '_maxValidators', internalType: 'uint256', type: 'uint256' },
     ],
     name: 'setMaxValidators',
@@ -29582,6 +29211,13 @@ export const superNodeAccountAbi = [
       { name: '_newMinimumNodeFee', internalType: 'uint256', type: 'uint256' },
     ],
     name: 'setMinimumNodeFee',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_useSmoothingPool', internalType: 'bool', type: 'bool' }],
+    name: 'setSmoothingPoolParticipation',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -29616,22 +29252,6 @@ export const superNodeAccountAbi = [
   {
     type: 'function',
     inputs: [
-      { name: '_subNodeOperator', internalType: 'address', type: 'address' },
-    ],
-    name: 'stopTrackingOperatorMinipools',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
-    name: 'subNodeOperatorHasMinipool',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
       { name: '', internalType: 'address', type: 'address' },
       { name: '', internalType: 'uint256', type: 'uint256' },
     ],
@@ -29645,13 +29265,6 @@ export const superNodeAccountAbi = [
     name: 'totalEthLocked',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_minipool', internalType: 'address', type: 'address' }],
-    name: 'unlockEth',
-    outputs: [],
-    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
@@ -30376,13 +29989,6 @@ export const wethVaultAbi = [
   },
   {
     type: 'function',
-    inputs: [],
-    name: 'balanceWeth',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
     inputs: [{ name: 'shares', internalType: 'uint256', type: 'uint256' }],
     name: 'convertToAssets',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
@@ -30450,25 +30056,36 @@ export const wethVaultAbi = [
   },
   {
     type: 'function',
-    inputs: [],
-    name: 'getOracle',
-    outputs: [
-      { name: '', internalType: 'contract IBeaconOracle', type: 'address' },
-    ],
+    inputs: [{ name: 'income', internalType: 'uint256', type: 'uint256' }],
+    name: 'getIncomeAfterFees',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
   {
     type: 'function',
     inputs: [],
-    name: 'getRequiredCollateral',
+    name: 'getMissingLiquidity',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
   {
     type: 'function',
     inputs: [{ name: 'deposit', internalType: 'uint256', type: 'uint256' }],
-    name: 'getRequiredCollateralAfterDeposit',
+    name: 'getMissingLiquidityAfterDeposit',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getOracle',
+    outputs: [
+      {
+        name: '',
+        internalType: 'contract IConstellationOracle',
+        type: 'address',
+      },
+    ],
     stateMutability: 'view',
   },
   {
@@ -30565,20 +30182,6 @@ export const wethVaultAbi = [
     name: 'nodeOperatorFee',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
-    name: 'onWethBalanceDecrease',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
-    name: 'onWethBalanceIncrease',
-    outputs: [],
-    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
@@ -31725,6 +31328,7 @@ export const yieldDistributorAbi = [
         components: [
           { name: 'amount', internalType: 'uint256', type: 'uint256' },
           { name: 'numOperators', internalType: 'uint256', type: 'uint256' },
+          { name: 'maxValidators', internalType: 'uint256', type: 'uint256' },
         ],
       },
     ],
@@ -31772,6 +31376,7 @@ export const yieldDistributorAbi = [
     outputs: [
       { name: 'amount', internalType: 'uint256', type: 'uint256' },
       { name: 'numOperators', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxValidators', internalType: 'uint256', type: 'uint256' },
     ],
     stateMutability: 'view',
   },
@@ -31867,10 +31472,10 @@ export const yieldDistributorAbi = [
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// ZKBeaconOracle
+// ZKConstellationOracle
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export const zkBeaconOracleAbi = [
+export const zkConstellationOracleAbi = [
   { type: 'constructor', inputs: [], stateMutability: 'nonpayable' },
   {
     type: 'event',

@@ -20,7 +20,7 @@ import '../Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
 import '../Interfaces/RocketPool/IRocketStorage.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
-import '../Interfaces/Oracles/IBeaconOracle.sol';
+import '../Interfaces/Oracles/IConstellationOracle.sol';
 import '../Interfaces/IWETH.sol';
 
 import '../Tokens/WETHVault.sol';

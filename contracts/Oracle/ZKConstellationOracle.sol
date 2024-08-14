@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import '../Interfaces/Oracles/IBeaconOracle.sol';
+import '../Interfaces/Oracles/IConstellationOracle.sol';
 import '../UpgradeableBase.sol';
 
 pragma solidity 0.8.17;
 
-contract ZKBeaconOracle is IBeaconOracle, UpgradeableBase {
+contract ZKConstellationOracle is IConstellationOracle, UpgradeableBase {
     address public oracleService;
     constructor() initializer {}
 

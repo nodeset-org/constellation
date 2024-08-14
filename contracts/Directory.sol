@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
-import './Interfaces/Oracles/IBeaconOracle.sol';
+import './Interfaces/Oracles/IConstellationOracle.sol';
 import './Interfaces/RocketPool/IRocketStorage.sol';
 import './Interfaces/ISanctions.sol';
 import './Interfaces/RocketPool/IRocketNetworkPrices.sol';
@@ -21,7 +21,7 @@ struct Protocol {
     address payable wethVault;
     address rplVault;
     address payable operatorDistributor;
-    address payable yieldDistributor;
+    address payable operatorReward;
     address oracle;
     address priceFetcher;
     address payable superNode;
@@ -106,8 +106,8 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.operatorDistributor;
     }
 
-    function getNodeSetOperatorRewardDistributorAddress() public view returns (address payable) {
-        return _protocol.yieldDistributor;
+    function getOperatorRewardAddress() public view returns (address payable) {
+        return _protocol.operatorReward;
     }
 
     function getRocketNodeManagerAddress() public view returns (address) {
@@ -209,7 +209,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
             Constants.INITIALIZATION_ERROR
         );
         require(
-            _protocol.yieldDistributor == address(0) && newProtocol.yieldDistributor != address(0),
+            _protocol.operatorReward == address(0) && newProtocol.operatorReward != address(0),
             Constants.INITIALIZATION_ERROR
         );
         require(_protocol.oracle == address(0) && newProtocol.oracle != address(0), Constants.INITIALIZATION_ERROR);
@@ -244,7 +244,6 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.wethVault);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.rplVault);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.operatorDistributor);
-        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.yieldDistributor);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.oracle);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.priceFetcher);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.superNode);

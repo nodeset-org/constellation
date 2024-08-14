@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
-import '../Interfaces/Oracles/IBeaconOracle.sol';
+import '../Interfaces/Oracles/IConstellationOracle.sol';
 import '../UpgradeableBase.sol';
 import '../Operator/SuperNodeAccount.sol';
 import '../Tokens/WETHVault.sol';
@@ -9,17 +9,18 @@ import '../Tokens/WETHVault.sol';
 pragma solidity 0.8.17;
 
 /**
- * @title PoABeaconOracle
- * @notice Protocol interface for a proof-of-authority oracle that provides total yield accrued by xrETH from the beacon chain.
- * The reported yield is the sum of the rewards or penalties for all validators and minipool contract balances (i.e. it does NOT include bonds)
- * with the treasury and NO fees already subtracted. 
+ * @title PoAConstellationOracle
+ * @notice Protocol interface for a proof-of-authority oracle that provides total yield accrued by xrETH from the beacon chain
+ * and current reward intervals for Rocket Pool.
+ * The reported yield is the sum of the rewards or penalties for all validators and minipool contract balances
+ * with the treasury and NO fees already subtracted. It does NOT include bonds, which are already tracked upon minipool creation.
  * @dev When the protocol receives rewards, it will remove these fees and keep track of an 
  * the amount received so that it is not double counted against the last reported oracle value. See also: OperatorDistributor.onEthRewardsReceived()
  */
-contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
+contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
     struct PoAOracleSignatureData {
         int256 newTotalYieldAccrued; // The new total yield accrued.
-        uint256 currentOracleError; // The expected current oracle error of the protocol
+        uint256 expectedOracleError; // The expected current oracle error of the protocol
         uint256 timeStamp; //The timestamp of the signature.
     }
 
@@ -61,7 +62,7 @@ contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
             ECDSA.toEthSignedMessageHash(
                 keccak256(abi.encodePacked(
                     sigData.newTotalYieldAccrued, 
-                    sigData.currentOracleError, 
+                    sigData.expectedOracleError, 
                     sigData.timeStamp, 
                     address(this), 
                     block.chainid))
@@ -74,19 +75,36 @@ contract PoABeaconOracle is IBeaconOracle, UpgradeableBase {
         );
         require(sigData.timeStamp > _lastUpdatedTotalYieldAccrued, 'cannot update oracle using old data');
 
-        // Prevent a front-running attack/accident where a valid sig is generated, then a minipool is processed before this function is called,
-        // causing a double-count of rewards. Technically, this introduces an DoS where someone could stop the oracle from updating by 
-        // processing minipools constantly, but there is no need for an oracle update in that scenario anyway since rewards are being skimmed continuously.
-        require(
-            sigData.currentOracleError == OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleError(),
-            "oracle error is out of date"
-        );
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
 
-        _totalYieldAccrued = sigData.newTotalYieldAccrued;
+        // Prevent a front-running attack/accident where a valid sig is generated, then a minipool is processed before 
+        // this function is called, causing a double-count of rewards. 
+        if(sigData.expectedOracleError < od.oracleError()) { 
+            if(sigData.newTotalYieldAccrued > 0) {
+                console.log("new yield is positive");
+                _totalYieldAccrued = sigData.newTotalYieldAccrued - int(od.oracleError() - sigData.expectedOracleError);
+            }
+            else if(sigData.newTotalYieldAccrued < 0) {
+                console.log("new yield is negative");
+                _totalYieldAccrued = sigData.newTotalYieldAccrued + int(od.oracleError() - sigData.expectedOracleError);
+            }
+            else {
+                 console.log("new yield is zero");
+                _totalYieldAccrued = 0;
+            }
+        } else if(sigData.expectedOracleError == od.oracleError()) {
+            console.log("errors are equal");
+            _totalYieldAccrued = sigData.newTotalYieldAccrued;
+        } else {
+            // Note that actual oracle error will only ever increase or be reset to 0,
+            // so if expectedOracleError is not <= actual oracleError, there is something wrong with the oracle.
+            revert("actual oracleError was less than expectedOracleError");
+        }
+        
         _lastUpdatedTotalYieldAccrued = block.timestamp;
         emit TotalYieldAccruedUpdated(_totalYieldAccrued);
 
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).resetOracleError();
+        od.resetOracleError();
     }
 
     function getLastUpdatedTotalYieldAccrued() external view override returns (uint256) {
