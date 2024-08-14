@@ -1,58 +1,88 @@
 import { expect } from "chai";
 import { ethers, upgrades, hardhatArguments } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { protocolFixture } from "../test";
+import { Protocol, protocolFixture, RocketPool, SetupData, Signers } from "../test";
 import { generateDepositData } from ".././rocketpool/_helpers/minipool";
 import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator } from ".././utils/utils";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { BigNumber } from "ethers";
+import { Contract } from "@openzeppelin/upgrades";
+import { IMinipool } from "../../typechain-types";
+
+const ethMintAmount = ethers.utils.parseEther("8");
+const rplMintAmount = ethers.utils.parseEther("720");
+const salt = 3;
 
 describe("SuperNodeAccount close", function () {
+    let setupData: SetupData;
+    let protocol: Protocol;
+    let signers: Signers;
+    let rocketPool: RocketPool;
+    let nodeOperator: SignerWithAddress;
+    let salts: any;
+    let rawSalt: BigNumber;
+    let pepperedSalt: BigNumber;
+    let config: any;
+    let sig: string;
+    let timestamp: number;
+    let minipoolContract: IMinipool;
+
+    beforeEach(async function () {
+        setupData = await loadFixture(protocolFixture);
+        protocol = setupData.protocol;
+        signers = setupData.signers;
+        rocketPool = setupData.rocketPool;
+        // Set liquidity reserve to 0%
+        await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
+        await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(0);
+
+        // Deposit 8 ETH for 1 minipool
+        const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
+        await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
+        await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
+        await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
+
+        // Deposit 720 RPL
+        await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
+        await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
+        await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address);
+
+        nodeOperator = signers.hyperdriver;
+        await assertAddOperator(setupData, nodeOperator);
+        salts  = await approvedSalt(salt, nodeOperator.address);
+        rawSalt = salts.rawSalt;
+        pepperedSalt = salts.pepperedSalt;
+        const depositData = await generateDepositData(protocol.superNode.address, pepperedSalt)
+        const bond = await setupData.protocol.superNode.bond();
+
+        config = {
+            timezoneLocation: 'Australia/Brisbane',
+            bondAmount: bond,
+            minimumNodeFee: 0,
+            validatorPubkey: depositData.depositData.pubkey,
+            validatorSignature: depositData.depositData.signature,
+            depositDataRoot: depositData.depositDataRoot,
+            salt: pepperedSalt,
+            expectedMinipoolAddress: depositData.minipoolAddress,
+        };
+
+        const message = await approveHasSignedExitMessageSig(
+            setupData,
+            '0x' + config.expectedMinipoolAddress,
+            config.salt,
+        );
+
+        sig = message.sig;
+        timestamp = message.timestamp;
+
+        minipoolContract = (await ethers.getContractAt(
+            'IMinipool',
+            config.expectedMinipoolAddress
+        ));
+    });
+
     describe("when minipool is not dissolved", function () {
         it("should revert", async function () {
-            const setupData = await loadFixture(protocolFixture);
-            const { protocol, signers, rocketPool } = setupData;
-
-            // Set liquidity reserve to 0%
-            await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
-            await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(0);
-
-            // Deposit 8 ETH for 1 minipool
-            const ethMintAmount = ethers.utils.parseEther("8");
-            const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
-
-            await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
-            await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
-            await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
-
-            // Deposit 720 RPL
-            const rplMintAmount = ethers.utils.parseEther("720");
-            await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
-            await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
-            await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address);
-
-            const nodeOperator = signers.hyperdriver;
-            await assertAddOperator(setupData, nodeOperator);
-            const salt = 3;
-            const { rawSalt, pepperedSalt } = await approvedSalt(salt, nodeOperator.address);
-            const depositData = await generateDepositData(protocol.superNode.address, pepperedSalt)
-            const bond = await setupData.protocol.superNode.bond();
-
-            const config = {
-                timezoneLocation: 'Australia/Brisbane',
-                bondAmount: bond,
-                minimumNodeFee: 0,
-                validatorPubkey: depositData.depositData.pubkey,
-                validatorSignature: depositData.depositData.signature,
-                depositDataRoot: depositData.depositDataRoot,
-                salt: pepperedSalt,
-                expectedMinipoolAddress: depositData.minipoolAddress,
-                };
-
-                const { sig, timestamp } = await approveHasSignedExitMessageSig(
-                setupData,
-                '0x' + config.expectedMinipoolAddress,
-                config.salt,
-                );
-
             await expect(
                 protocol.superNode
             .connect(nodeOperator)
@@ -66,11 +96,6 @@ describe("SuperNodeAccount close", function () {
                 sig: sig
                 }, { value: ethers.utils.parseEther('1') }))
             .to.not.be.reverted;
-
-            const minipoolContract = (await ethers.getContractAt(
-                'IMinipool',
-                config.expectedMinipoolAddress
-            ));
 
             // Deposit minipool to set to prelaunch state
             await expect(minipoolContract.connect(nodeOperator).deposit({
@@ -93,51 +118,6 @@ describe("SuperNodeAccount close", function () {
         describe("when subNodeOperator address is valid", function () {
             describe("when minipool address is valid", function () {
                 it("removes the validator", async function () {
-                    const setupData = await loadFixture(protocolFixture);
-                    const { protocol, signers, rocketPool } = setupData;
-
-                    // Set liquidity reserve to 0%
-                    await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
-                    await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(0);
-
-                    // Deposit 8 ETH for 1 minipool
-                    const ethMintAmount = ethers.utils.parseEther("8");
-                    const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
-
-                    await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
-                    await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
-                    await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
-
-                    // Deposit 720 RPL
-                    const rplMintAmount = ethers.utils.parseEther("720");
-                    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
-                    await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
-                    await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address);
-
-                    const nodeOperator = signers.hyperdriver;
-                    await assertAddOperator(setupData, nodeOperator);
-                    const salt = 3;
-                    const { rawSalt, pepperedSalt } = await approvedSalt(salt, nodeOperator.address);
-                    const depositData = await generateDepositData(protocol.superNode.address, pepperedSalt)
-                    const bond = await setupData.protocol.superNode.bond();
-
-                    const config = {
-                        timezoneLocation: 'Australia/Brisbane',
-                        bondAmount: bond,
-                        minimumNodeFee: 0,
-                        validatorPubkey: depositData.depositData.pubkey,
-                        validatorSignature: depositData.depositData.signature,
-                        depositDataRoot: depositData.depositDataRoot,
-                        salt: pepperedSalt,
-                        expectedMinipoolAddress: depositData.minipoolAddress,
-                        };
-
-                        const { sig, timestamp } = await approveHasSignedExitMessageSig(
-                        setupData,
-                        '0x' + config.expectedMinipoolAddress,
-                        config.salt,
-                        );
-
                     await expect(
                         protocol.superNode
                     .connect(nodeOperator)
@@ -151,11 +131,6 @@ describe("SuperNodeAccount close", function () {
                         sig: sig
                         }, { value: ethers.utils.parseEther('1') }))
                     .to.not.be.reverted;
-
-                    const minipoolContract = (await ethers.getContractAt(
-                        'IMinipool',
-                        config.expectedMinipoolAddress
-                    ));
 
                     // Deposit minipool to set to prelaunch state
                     await expect(minipoolContract.connect(nodeOperator).deposit({
@@ -181,51 +156,6 @@ describe("SuperNodeAccount close", function () {
             });
             describe("when minipool address is invalid", function () {
                 it("should revert", async function () {
-                    const setupData = await loadFixture(protocolFixture);
-                    const { protocol, signers, rocketPool } = setupData;
-
-                    // Set liquidity reserve to 0%
-                    await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
-                    await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(0);
-
-                    // Deposit 8 ETH for 1 minipool
-                    const ethMintAmount = ethers.utils.parseEther("8");
-                    const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
-
-                    await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
-                    await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
-                    await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
-
-                    // Deposit 720 RPL
-                    const rplMintAmount = ethers.utils.parseEther("720");
-                    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
-                    await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
-                    await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address);
-
-                    const nodeOperator = signers.hyperdriver;
-                    await assertAddOperator(setupData, nodeOperator);
-                    const salt = 3;
-                    const { rawSalt, pepperedSalt } = await approvedSalt(salt, nodeOperator.address);
-                    const depositData = await generateDepositData(protocol.superNode.address, pepperedSalt)
-                    const bond = await setupData.protocol.superNode.bond();
-
-                    const config = {
-                        timezoneLocation: 'Australia/Brisbane',
-                        bondAmount: bond,
-                        minimumNodeFee: 0,
-                        validatorPubkey: depositData.depositData.pubkey,
-                        validatorSignature: depositData.depositData.signature,
-                        depositDataRoot: depositData.depositDataRoot,
-                        salt: pepperedSalt,
-                        expectedMinipoolAddress: depositData.minipoolAddress,
-                        };
-
-                        const { sig, timestamp } = await approveHasSignedExitMessageSig(
-                        setupData,
-                        '0x' + config.expectedMinipoolAddress,
-                        config.salt,
-                        );
-
                     await expect(
                         protocol.superNode
                     .connect(nodeOperator)
@@ -239,11 +169,6 @@ describe("SuperNodeAccount close", function () {
                         sig: sig
                         }, { value: ethers.utils.parseEther('1') }))
                     .to.not.be.reverted;
-
-                    const minipoolContract = (await ethers.getContractAt(
-                        'IMinipool',
-                        config.expectedMinipoolAddress
-                    ));
 
                     // Deposit minipool to set to prelaunch state
                     await expect(minipoolContract.connect(nodeOperator).deposit({
@@ -268,51 +193,6 @@ describe("SuperNodeAccount close", function () {
         });
         describe("when subNodeOperator address is invalid", function () {
             it("should revert", async function () {
-                const setupData = await loadFixture(protocolFixture);
-                const { protocol, signers, rocketPool } = setupData;
-
-                // Set liquidity reserve to 0%
-                await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
-                await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(0);
-
-                // Deposit 8 ETH for 1 minipool
-                const ethMintAmount = ethers.utils.parseEther("8");
-                const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
-
-                await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
-                await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
-                await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
-
-                // Deposit 720 RPL
-                const rplMintAmount = ethers.utils.parseEther("720");
-                await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
-                await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
-                await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address);
-
-                const nodeOperator = signers.hyperdriver;
-                await assertAddOperator(setupData, nodeOperator);
-                const salt = 3;
-                const { rawSalt, pepperedSalt } = await approvedSalt(salt, nodeOperator.address);
-                const depositData = await generateDepositData(protocol.superNode.address, pepperedSalt)
-                const bond = await setupData.protocol.superNode.bond();
-
-                const config = {
-                    timezoneLocation: 'Australia/Brisbane',
-                    bondAmount: bond,
-                    minimumNodeFee: 0,
-                    validatorPubkey: depositData.depositData.pubkey,
-                    validatorSignature: depositData.depositData.signature,
-                    depositDataRoot: depositData.depositDataRoot,
-                    salt: pepperedSalt,
-                    expectedMinipoolAddress: depositData.minipoolAddress,
-                    };
-
-                    const { sig, timestamp } = await approveHasSignedExitMessageSig(
-                    setupData,
-                    '0x' + config.expectedMinipoolAddress,
-                    config.salt,
-                    );
-
                 await expect(
                     protocol.superNode
                 .connect(nodeOperator)
@@ -326,11 +206,6 @@ describe("SuperNodeAccount close", function () {
                     sig: sig
                     }, { value: ethers.utils.parseEther('1') }))
                 .to.not.be.reverted;
-
-                const minipoolContract = (await ethers.getContractAt(
-                    'IMinipool',
-                    config.expectedMinipoolAddress
-                ));
 
                 // Deposit minipool to set to prelaunch state
                 await expect(minipoolContract.connect(nodeOperator).deposit({
@@ -356,6 +231,4 @@ describe("SuperNodeAccount close", function () {
             });
         });
     });
-
-
 });
