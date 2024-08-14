@@ -223,11 +223,7 @@ describe("SuperNodeAccount close", function () {
                 // Dissolve and close minipool
                 await expect(minipoolContract.connect(nodeOperator).dissolve()).to.not.be.reverted;
                 // Close with invalid address
-                await protocol.superNode.connect(nodeOperator).close(config.expectedMinipoolAddress, config.expectedMinipoolAddress);
-
-                // Assert validator count prior to closing minipool
-                expect(await protocol.whitelist.getActiveValidatorCountForOperator(nodeOperator.address)).to.be.equal(0);
-                expect(await protocol.superNode.connect(nodeOperator).getNumMinipools()).to.be.equal(0);
+                await expect(protocol.superNode.connect(nodeOperator).close(config.expectedMinipoolAddress, config.expectedMinipoolAddress)).to.be.revertedWith("operator does not own the specified minipool");
             });
         });
     });
