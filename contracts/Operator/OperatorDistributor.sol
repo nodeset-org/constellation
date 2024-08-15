@@ -31,6 +31,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     event MinipoolDestroyed(address indexed _minipoolAddress);
     event WarningNoMiniPoolsToHarvest();
     event SuspectedPenalizedMinipoolExit(address minipool);
+    event WarningEthBalanceSmallerThanRefundBalance(address _minipool);
 
     event WarningMinipoolNotStaking(
         address indexed _minipoolAddress,
@@ -429,12 +430,18 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /// Otherwise, the processNextMinipool() function would finalize the minipool normally with this function.
     function distributeExitedMinipool(IMinipool minipool) public onlyProtocolOrAdmin {
         SuperNodeAccount sna = SuperNodeAccount(getDirectory().getSuperNodeAddress());
+
+        if(address(minipool).balance < minipool.getNodeRefundBalance()) {
+            emit WarningEthBalanceSmallerThanRefundBalance(address(minipool));
+            return;
+        }
        
-        uint256 balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
+        uint256 balanceAfterRefund;
         uint256 rewards;
         // This is unchecked because we are already effectively checking for underflow given the following business logic
         unchecked { 
-           rewards = minipool.calculateNodeShare(balanceAfterRefund) > minipool.getNodeDepositBalance() 
+            balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
+            rewards = minipool.calculateNodeShare(balanceAfterRefund) > minipool.getNodeDepositBalance() 
                 ? minipool.calculateNodeShare(balanceAfterRefund) -  minipool.getNodeDepositBalance()
                 : 0;
         }
