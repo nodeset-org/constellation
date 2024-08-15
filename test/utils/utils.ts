@@ -12,6 +12,7 @@ import { userDeposit } from '../rocketpool/_helpers/deposit';
 import { ContractTransaction } from '@ethersproject/contracts';
 import { Contract, EventFilter, utils } from 'ethers';
 import seedrandom from 'seedrandom';
+import { deposit } from '../rocketpool/deposit/scenario-deposit';
 
 // optionally include the names of the accounts
 export const printBalances = async (accounts: string[], opts: any = {}) => {
@@ -490,34 +491,37 @@ export const badAutWhitelistUserServerSig = async (setupData: SetupData, nodeOpe
 
 export async function prepareOperatorDistributionContract(setupData: SetupData, numOperators: Number) {
   const vweth = setupData.protocol.vCWETH;
-  let depositAmount = ethers.utils.parseEther('8').mul(BigNumber.from(numOperators));
-  depositAmount = depositAmount.sub(await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address));
-  const vaultMinimum = await vweth.getMissingLiquidityAfterDeposit(depositAmount);
+  let depositTarget = ethers.utils.parseEther('8').mul(BigNumber.from(numOperators));
+  depositTarget = depositTarget.sub(await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address));
+  const missingLiquidity = await vweth.getMissingLiquidityAfterDeposit(depositTarget.add(await vweth.getMintFeePortion(depositTarget)));
+  const requiredEth = (depositTarget.add(missingLiquidity)).div(ethers.utils.parseEther('1').sub(await vweth.mintFee())).mul(ethers.utils.parseEther('1'));
 
-  console.log('REQUIRE COLLAT', vaultMinimum);
-  const requiredEth = depositAmount
-    .add(vaultMinimum)
-    .mul((await setupData.protocol.vCWETH.liquidityReservePercent())
-      .div(ethers.utils.parseUnits('1', 17)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 2)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 3)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 4)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 5)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 6)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 7)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 8)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 9)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 10)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 11)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 12)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 13)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 14)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 15)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 16)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 17)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 18)))
-    .add(ethers.constants.One)
-  console.log('REQUIRE+ETH', requiredEth);
+  console.log('depositTarget', depositTarget);
+  console.log('missingLiquidity', missingLiquidity);
+  console.log('REQUIRE COLLAT', requiredEth);
+  // const requiredEth = depositAmount
+  //   .add(vaultMinimum)
+  //   .mul((await setupData.protocol.vCWETH.liquidityReservePercent())
+  //     .div(ethers.utils.parseUnits('1', 17)))
+  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 2)))
+  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 3)))
+  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 4)))
+  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 5)))
+  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 6)))
+  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 7)))
+  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 8)))
+  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 9)))
+  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 10)))
+  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 11)))
+  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 12)))
+  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 13)))
+  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 14)))
+  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 15)))
+  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 16)))
+  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 17)))
+  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 18)))
+  //   .add(ethers.constants.One)
+  // console.log('REQUIRE+ETH', requiredEth);
 
   await setupData.protocol.wETH.connect(setupData.signers.ethWhale).deposit({ value: requiredEth });
   await setupData.protocol.wETH.connect(setupData.signers.ethWhale).approve(setupData.protocol.vCWETH.address, requiredEth);
@@ -544,41 +548,13 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
 
   const rplRequired = (await setupData.protocol.operatorDistributor.calculateRplStakeShortfall(
     rplStaked,
-    ethMatched.add((ethers.utils.parseEther("32").mul(BigNumber.from(numOperators))).sub(depositAmount))
+    ethMatched.add((ethers.utils.parseEther("32").mul(BigNumber.from(numOperators))).sub(depositTarget))
   ));
   console.log('rplRequired', rplRequired);
   const protocolSigner = setupData.signers.protocolSigner;
   await setupData.rocketPool.rplContract.connect(setupData.signers.rplWhale).transfer(setupData.protocol.operatorDistributor.address, rplRequired);
 
   return requiredEth;
-}
-
-export async function createMerkleSig(setupData: SetupData, avgEthTreasuryFee: BigNumber, avgEthOperatorFee: BigNumber, avgRplTreasuryFee: BigNumber) {
-  const network = await ethers.provider.getNetwork();
-  const chainId = network.chainId;
-
-  const sigGenesisTime = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
-  const nonce = await setupData.protocol.merkleClaimStreamer.merkleClaimNonce();
-
-  const priorEthStreamAmount = setupData.protocol.merkleClaimStreamer.priorEthStreamAmount();
-  const priorRplStreamAmount = setupData.protocol.merkleClaimStreamer.priorRplStreamAmount();
-
-  const packedData = ethers.utils.solidityPack(
-    ['uint256', 'address', 'uint256', 'uint256'],
-    [sigGenesisTime, setupData.protocol.merkleClaimStreamer.address, nonce, chainId]
-  );
-
-  const messageHash = ethers.utils.keccak256(packedData);
-
-  const messageHashBytes = ethers.utils.arrayify(messageHash);
-  const adminHasOracleRole = await setupData.protocol.directory.hasRole(
-    ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes('ADMIN_SERVER_ROLE'))),
-    setupData.signers.admin.address
-  );
-  expect(adminHasOracleRole).equals(true);
-  const sig = await setupData.signers.admin.signMessage(messageHashBytes);
-
-  return { sig, sigGenesisTime, avgEthTreasuryFee, avgEthOperatorFee, avgRplTreasuryFee };
 }
 
 export function createMockDid(rewardee: string) {

@@ -4,7 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { assertAddOperator, assertMultipleTransfers, createMerkleSig } from "./utils/utils";
+import { assertAddOperator, assertMultipleTransfers } from "./utils/utils";
 
 describe("xRPL", function () {
 
@@ -192,12 +192,7 @@ describe("xRPL", function () {
     const expectedTreasuryPortion = rplReward.mul(rplTreasuryFee).div(ethers.utils.parseEther("1")); 
     const expectedCommunityPortion = rplReward.sub(expectedTreasuryPortion)
 
-    await protocol.merkleClaimStreamer.merkleClaim(rewardIndex, amountRpl, amountEth, proof, await createMerkleSig(
-      setupData,
-      ethTreasuryFee,
-      ethOperatorFee,
-      rplTreasuryFee
-    ));
+    await protocol.merkleClaimStreamer.submitMerkleClaim(rewardIndex, amountRpl, amountEth, proof);
 
     let expectedTotalAssets = depositAmount.add(expectedCommunityPortion);
     const expectedReserveInVault = expectedTotalAssets.mul(await setupData.protocol.vCRPL.liquidityReservePercent()).div(ethers.utils.parseEther("1"));

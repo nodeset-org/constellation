@@ -53,9 +53,7 @@ describe("Node Operator Onboarding", function () {
         //await assertAddOperator(setupData, signers.hyperdriver);
 
         // now we must create a minipool via super node
-        console.log("===FIRST HASSUFFICIENTLIQUIDITY===");
         expect(await protocol.superNode.hasSufficientLiquidity(bondValue)).equals(false);
-        console.log("===PREPARE OPERATOR DISTRIBUTOR===");
         await prepareOperatorDistributionContract(setupData, 1);
         console.log('ETH balance of OD', await ethers.provider.getBalance(protocol.operatorDistributor.address));
         console.log('RPL balance of OD', await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address));
