@@ -96,6 +96,13 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     function getNodeRefundBalance() external view override returns (uint256) {
         return nodeRefundBalance;
     }
+    function getNodeRefundBalanceSlot() external pure returns(bytes32) {
+        bytes32 slot;
+        assembly {
+            slot := nodeRefundBalance.slot
+        }
+        return slot;
+    }
     function getNodeDepositAssigned() external view override returns (bool) {
         return userDepositAssignedTime != 0;
     }

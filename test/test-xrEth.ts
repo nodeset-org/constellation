@@ -304,6 +304,7 @@ describe("xrETH", function () {
     const expectedCommunityPortion = 0;
     console.log("expectedCommunityPortion (executionLayerReward-fees)", expectedCommunityPortion);
     await protocol.operatorDistributor.connect(signers.random).processNextMinipool();
+    await protocol.operatorDistributor.connect(signers.admin).distributeExitedMinipool(minipools[0])
     const expectedRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
 
     console.log('OperatorDistributor POST-processing balance', await ethers.provider.getBalance(await protocol.directory.getWETHVaultAddress()));
@@ -407,6 +408,8 @@ describe("xrETH", function () {
     
     console.log('totalAssets()', await protocol.vCWETH.totalAssets());
     console.log('totalDeposit', totalDeposit);
+
+    console.log("expectedCommunityPortionexpectedCommunityPortionexpectedCommunityPortion", expectedCommunityPortion)
 
     expect(await protocol.vCWETH.totalAssets()).equals(totalDeposit.add(expectedCommunityPortion));
 
