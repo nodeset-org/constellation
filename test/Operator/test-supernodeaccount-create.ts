@@ -132,123 +132,351 @@ describe("SuperNodeAccount create", function () {
     });
 
     describe("when there is enough assets for many", async function () {
-        it("should create many minipools", async function () {
-            // Deposit ETH (for 3 minipools)
-            const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
-            await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
-            await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
-            await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("24"), signers.ethWhale.address);
+        describe("when there is a single node operator", async function () {
+            it("should create many minipools", async function () {
+                // Deposit ETH (for 3 minipools)
+                const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
+                await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
+                await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
+                await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("24"), signers.ethWhale.address);
 
-            // Deposit RPL (for 3 minipools)
-            await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("1080"));
-            await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("1080"));
-            await protocol.vCRPL.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1080"), signers.ethWhale.address);
+                // Deposit RPL (for 3 minipools)
+                await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("1080"));
+                await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("1080"));
+                await protocol.vCRPL.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1080"), signers.ethWhale.address);
 
-            const nodeOperator = signers.hyperdriver;
-            await assertAddOperator(setupData, nodeOperator);
-            const bond = await setupData.protocol.superNode.bond();
+                const nodeOperator = signers.hyperdriver;
+                await assertAddOperator(setupData, nodeOperator);
+                const bond = await setupData.protocol.superNode.bond();
 
-            // Create first minipool
-            let salts = await approvedSalt(salt, nodeOperator.address);
-            let depositData = await generateDepositData(protocol.superNode.address, salts.pepperedSalt)
-            let config = {
-                timezoneLocation: 'Australia/Brisbane',
-                bondAmount: bond,
-                minimumNodeFee: 0,
-                validatorPubkey: depositData.depositData.pubkey,
-                validatorSignature: depositData.depositData.signature,
-                depositDataRoot: depositData.depositDataRoot,
-                salt: salts.pepperedSalt,
-                expectedMinipoolAddress: depositData.minipoolAddress,
-            };
+                // Create first minipool
+                let salts = await approvedSalt(salt, nodeOperator.address);
+                let depositData = await generateDepositData(protocol.superNode.address, salts.pepperedSalt)
+                let config = {
+                    timezoneLocation: 'Australia/Brisbane',
+                    bondAmount: bond,
+                    minimumNodeFee: 0,
+                    validatorPubkey: depositData.depositData.pubkey,
+                    validatorSignature: depositData.depositData.signature,
+                    depositDataRoot: depositData.depositDataRoot,
+                    salt: salts.pepperedSalt,
+                    expectedMinipoolAddress: depositData.minipoolAddress,
+                };
 
-            let exitMessage = await approveHasSignedExitMessageSig(
-                setupData,
-                '0x' + config.expectedMinipoolAddress,
-                config.salt,
-            );
+                let exitMessage = await approveHasSignedExitMessageSig(
+                    setupData,
+                    '0x' + config.expectedMinipoolAddress,
+                    config.salt,
+                );
 
-            await expect(
-                protocol.superNode
-            .connect(nodeOperator)
-            .createMinipool({
-                validatorPubkey: config.validatorPubkey,
-                validatorSignature: config.validatorSignature,
-                depositDataRoot: config.depositDataRoot,
-                salt: salts.rawSalt,
-                expectedMinipoolAddress: config.expectedMinipoolAddress,
-                sigGenesisTime: exitMessage.timestamp,
-                sig: exitMessage.sig
-                }, { value: ethers.utils.parseEther('1') }))
-            .to.not.be.reverted;
+                await expect(
+                    protocol.superNode
+                .connect(nodeOperator)
+                .createMinipool({
+                    validatorPubkey: config.validatorPubkey,
+                    validatorSignature: config.validatorSignature,
+                    depositDataRoot: config.depositDataRoot,
+                    salt: salts.rawSalt,
+                    expectedMinipoolAddress: config.expectedMinipoolAddress,
+                    sigGenesisTime: exitMessage.timestamp,
+                    sig: exitMessage.sig
+                    }, { value: ethers.utils.parseEther('1') }))
+                .to.not.be.reverted;
 
-            // Create second minipool
-            salts = await approvedSalt(4, nodeOperator.address);
-            depositData = await generateDepositData(protocol.superNode.address, salts.pepperedSalt)
-            config = {
-                timezoneLocation: 'Australia/Brisbane',
-                bondAmount: bond,
-                minimumNodeFee: 0,
-                validatorPubkey: depositData.depositData.pubkey,
-                validatorSignature: depositData.depositData.signature,
-                depositDataRoot: depositData.depositDataRoot,
-                salt: salts.pepperedSalt,
-                expectedMinipoolAddress: depositData.minipoolAddress,
-            };
+                // Create second minipool
+                salts = await approvedSalt(4, nodeOperator.address);
+                depositData = await generateDepositData(protocol.superNode.address, salts.pepperedSalt)
+                config = {
+                    timezoneLocation: 'Australia/Brisbane',
+                    bondAmount: bond,
+                    minimumNodeFee: 0,
+                    validatorPubkey: depositData.depositData.pubkey,
+                    validatorSignature: depositData.depositData.signature,
+                    depositDataRoot: depositData.depositDataRoot,
+                    salt: salts.pepperedSalt,
+                    expectedMinipoolAddress: depositData.minipoolAddress,
+                };
 
-            exitMessage = await approveHasSignedExitMessageSig(
-                setupData,
-                '0x' + config.expectedMinipoolAddress,
-                config.salt,
-            );
+                exitMessage = await approveHasSignedExitMessageSig(
+                    setupData,
+                    '0x' + config.expectedMinipoolAddress,
+                    config.salt,
+                );
 
-            await expect(
-                protocol.superNode
-            .connect(nodeOperator)
-            .createMinipool({
-                validatorPubkey: config.validatorPubkey,
-                validatorSignature: config.validatorSignature,
-                depositDataRoot: config.depositDataRoot,
-                salt: salts.rawSalt,
-                expectedMinipoolAddress: config.expectedMinipoolAddress,
-                sigGenesisTime: exitMessage.timestamp,
-                sig: exitMessage.sig
-                }, { value: ethers.utils.parseEther('1') }))
-            .to.not.be.reverted;
+                await expect(
+                    protocol.superNode
+                .connect(nodeOperator)
+                .createMinipool({
+                    validatorPubkey: config.validatorPubkey,
+                    validatorSignature: config.validatorSignature,
+                    depositDataRoot: config.depositDataRoot,
+                    salt: salts.rawSalt,
+                    expectedMinipoolAddress: config.expectedMinipoolAddress,
+                    sigGenesisTime: exitMessage.timestamp,
+                    sig: exitMessage.sig
+                    }, { value: ethers.utils.parseEther('1') }))
+                .to.not.be.reverted;
 
-            // Create third minipool
-            salts = await approvedSalt(5, nodeOperator.address);
-            depositData = await generateDepositData(protocol.superNode.address, salts.pepperedSalt)
-            config = {
-                timezoneLocation: 'Australia/Brisbane',
-                bondAmount: bond,
-                minimumNodeFee: 0,
-                validatorPubkey: depositData.depositData.pubkey,
-                validatorSignature: depositData.depositData.signature,
-                depositDataRoot: depositData.depositDataRoot,
-                salt: salts.pepperedSalt,
-                expectedMinipoolAddress: depositData.minipoolAddress,
-            };
+                // Create third minipool
+                salts = await approvedSalt(5, nodeOperator.address);
+                depositData = await generateDepositData(protocol.superNode.address, salts.pepperedSalt)
+                config = {
+                    timezoneLocation: 'Australia/Brisbane',
+                    bondAmount: bond,
+                    minimumNodeFee: 0,
+                    validatorPubkey: depositData.depositData.pubkey,
+                    validatorSignature: depositData.depositData.signature,
+                    depositDataRoot: depositData.depositDataRoot,
+                    salt: salts.pepperedSalt,
+                    expectedMinipoolAddress: depositData.minipoolAddress,
+                };
 
-            exitMessage = await approveHasSignedExitMessageSig(
-                setupData,
-                '0x' + config.expectedMinipoolAddress,
-                config.salt,
-            );
+                exitMessage = await approveHasSignedExitMessageSig(
+                    setupData,
+                    '0x' + config.expectedMinipoolAddress,
+                    config.salt,
+                );
 
-            await expect(
-                protocol.superNode
-            .connect(nodeOperator)
-            .createMinipool({
-                validatorPubkey: config.validatorPubkey,
-                validatorSignature: config.validatorSignature,
-                depositDataRoot: config.depositDataRoot,
-                salt: salts.rawSalt,
-                expectedMinipoolAddress: config.expectedMinipoolAddress,
-                sigGenesisTime: exitMessage.timestamp,
-                sig: exitMessage.sig
-                }, { value: ethers.utils.parseEther('1') }))
-            .to.not.be.reverted;
+                await expect(
+                    protocol.superNode
+                .connect(nodeOperator)
+                .createMinipool({
+                    validatorPubkey: config.validatorPubkey,
+                    validatorSignature: config.validatorSignature,
+                    depositDataRoot: config.depositDataRoot,
+                    salt: salts.rawSalt,
+                    expectedMinipoolAddress: config.expectedMinipoolAddress,
+                    sigGenesisTime: exitMessage.timestamp,
+                    sig: exitMessage.sig
+                    }, { value: ethers.utils.parseEther('1') }))
+                .to.not.be.reverted;
+
+                // Create fourth minipool
+                salts = await approvedSalt(6, nodeOperator.address);
+                depositData = await generateDepositData(protocol.superNode.address, salts.pepperedSalt)
+                config = {
+                    timezoneLocation: 'Australia/Brisbane',
+                    bondAmount: bond,
+                    minimumNodeFee: 0,
+                    validatorPubkey: depositData.depositData.pubkey,
+                    validatorSignature: depositData.depositData.signature,
+                    depositDataRoot: depositData.depositDataRoot,
+                    salt: salts.pepperedSalt,
+                    expectedMinipoolAddress: depositData.minipoolAddress,
+                };
+
+                exitMessage = await approveHasSignedExitMessageSig(
+                    setupData,
+                    '0x' + config.expectedMinipoolAddress,
+                    config.salt,
+                );
+
+                await expect(
+                    protocol.superNode
+                .connect(nodeOperator)
+                .createMinipool({
+                    validatorPubkey: config.validatorPubkey,
+                    validatorSignature: config.validatorSignature,
+                    depositDataRoot: config.depositDataRoot,
+                    salt: salts.rawSalt,
+                    expectedMinipoolAddress: config.expectedMinipoolAddress,
+                    sigGenesisTime: exitMessage.timestamp,
+                    sig: exitMessage.sig
+                    }, { value: ethers.utils.parseEther('1') }))
+                .to.be.revertedWith('NodeAccount: protocol must have enough rpl and eth');
+
+                await protocol.superNode.connect(signers.admin).setMaxValidators(3);
+
+                await expect(
+                    protocol.superNode
+                .connect(nodeOperator)
+                .createMinipool({
+                    validatorPubkey: config.validatorPubkey,
+                    validatorSignature: config.validatorSignature,
+                    depositDataRoot: config.depositDataRoot,
+                    salt: salts.rawSalt,
+                    expectedMinipoolAddress: config.expectedMinipoolAddress,
+                    sigGenesisTime: exitMessage.timestamp,
+                    sig: exitMessage.sig
+                    }, { value: ethers.utils.parseEther('1') }))
+                .to.be.revertedWith('Sub node operator has created too many minipools already');
+
+            });
+        });
+        describe("when there are multiple node operators", async function () {
+            it("should create many minipools", async function () {
+                await protocol.superNode.connect(signers.admin).setMaxValidators(1);
+
+                // Deposit ETH (for 3 minipools)
+                const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
+                await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
+                await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
+                await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("24"), signers.ethWhale.address);
+
+                // Deposit RPL (for 3 minipools)
+                await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("1080"));
+                await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("1080"));
+                await protocol.vCRPL.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1080"), signers.ethWhale.address);
+
+                const nodeOperator1 = signers.hyperdriver;
+                await assertAddOperator(setupData, nodeOperator1);
+
+                const nodeOperator2 = signers.random;
+                await assertAddOperator(setupData, nodeOperator2);
+
+                // create minipool for nodeOperator1
+                let salts = await approvedSalt(salt, nodeOperator1.address);
+                let depositData = await generateDepositData(protocol.superNode.address, salts.pepperedSalt)
+                let config = {
+                    timezoneLocation: 'Australia/Brisbane',
+                    bondAmount: await protocol.superNode.bond(),
+                    minimumNodeFee: 0,
+                    validatorPubkey: depositData.depositData.pubkey,
+                    validatorSignature: depositData.depositData.signature,
+                    depositDataRoot: depositData.depositDataRoot,
+                    salt: salts.pepperedSalt,
+                    expectedMinipoolAddress: depositData.minipoolAddress,
+                };
+
+                let exitMessage = await approveHasSignedExitMessageSig(
+                    setupData,
+                    '0x' + config.expectedMinipoolAddress,
+                    config.salt,
+                );
+
+                await expect(
+                    protocol.superNode
+                .connect(nodeOperator1)
+                .createMinipool({
+                    validatorPubkey: config.validatorPubkey,
+                    validatorSignature: config.validatorSignature,
+                    depositDataRoot: config.depositDataRoot,
+                    salt: salts.rawSalt,
+                    expectedMinipoolAddress: config.expectedMinipoolAddress,
+                    sigGenesisTime: exitMessage.timestamp,
+                    sig: exitMessage.sig
+                    }, { value: ethers.utils.parseEther('1') }))
+                .to.not.be.reverted;
+
+                // create minipool for nodeOperator2
+                salts = await approvedSalt(4, nodeOperator2.address);
+                depositData = await generateDepositData(protocol.superNode.address, salts.pepperedSalt)
+                config = {
+                    timezoneLocation: 'Australia/Brisbane',
+                    bondAmount: await protocol.superNode.bond(),
+                    minimumNodeFee: 0,
+                    validatorPubkey: depositData.depositData.pubkey,
+                    validatorSignature: depositData.depositData.signature,
+                    depositDataRoot: depositData.depositDataRoot,
+                    salt: salts.pepperedSalt,
+                    expectedMinipoolAddress: depositData.minipoolAddress,
+                };
+
+                exitMessage = await approveHasSignedExitMessageSig(
+                    setupData,
+                    '0x' + config.expectedMinipoolAddress,
+                    config.salt,
+                );
+
+                await expect(
+                    protocol.superNode
+                .connect(nodeOperator2)
+                .createMinipool({
+                    validatorPubkey: config.validatorPubkey,
+                    validatorSignature: config.validatorSignature,
+                    depositDataRoot: config.depositDataRoot,
+                    salt: salts.rawSalt,
+                    expectedMinipoolAddress: config.expectedMinipoolAddress,
+                    sigGenesisTime: exitMessage.timestamp,
+                    sig: exitMessage.sig
+                    }, { value: ethers.utils.parseEther('1') }))
+                .to.not.be.reverted;
+
+                // create minipool for nodeOperator1
+                salts = await approvedSalt(5, nodeOperator1.address);
+                depositData = await generateDepositData(protocol.superNode.address, salts.pepperedSalt)
+                config = {
+                    timezoneLocation: 'Australia/Brisbane',
+                    bondAmount: await protocol.superNode.bond(),
+                    minimumNodeFee: 0,
+                    validatorPubkey: depositData.depositData.pubkey,
+                    validatorSignature: depositData.depositData.signature,
+                    depositDataRoot: depositData.depositDataRoot,
+                    salt: salts.pepperedSalt,
+                    expectedMinipoolAddress: depositData.minipoolAddress,
+                };
+
+                exitMessage = await approveHasSignedExitMessageSig(
+                    setupData,
+                    '0x' + config.expectedMinipoolAddress,
+                    config.salt,
+                );
+
+                await expect(
+                    protocol.superNode
+                .connect(nodeOperator1)
+                .createMinipool({
+                    validatorPubkey: config.validatorPubkey,
+                    validatorSignature: config.validatorSignature,
+                    depositDataRoot: config.depositDataRoot,
+                    salt: salts.rawSalt,
+                    expectedMinipoolAddress: config.expectedMinipoolAddress,
+                    sigGenesisTime: exitMessage.timestamp,
+                    sig: exitMessage.sig
+                    }, { value: ethers.utils.parseEther('1') }))
+                .to.be.revertedWith('Sub node operator has created too many minipools already');
+
+                await protocol.superNode.connect(signers.admin).setMaxValidators(2);
+
+                await expect(
+                    protocol.superNode
+                .connect(nodeOperator1)
+                .createMinipool({
+                    validatorPubkey: config.validatorPubkey,
+                    validatorSignature: config.validatorSignature,
+                    depositDataRoot: config.depositDataRoot,
+                    salt: salts.rawSalt,
+                    expectedMinipoolAddress: config.expectedMinipoolAddress,
+                    sigGenesisTime: exitMessage.timestamp,
+                    sig: exitMessage.sig
+                    }, { value: ethers.utils.parseEther('1') }))
+                .to.not.be.reverted;
+
+                // create minipool for nodeOperator2
+                salts = await approvedSalt(6, nodeOperator2.address);
+                depositData = await generateDepositData(protocol.superNode.address, salts.pepperedSalt)
+
+                config = {
+                    timezoneLocation: 'Australia/Brisbane',
+                    bondAmount: await protocol.superNode.bond(),
+                    minimumNodeFee: 0,
+                    validatorPubkey: depositData.depositData.pubkey,
+                    validatorSignature: depositData.depositData.signature,
+                    depositDataRoot: depositData.depositDataRoot,
+                    salt: salts.pepperedSalt,
+                    expectedMinipoolAddress: depositData.minipoolAddress,
+                };
+
+                exitMessage = await approveHasSignedExitMessageSig(
+                    setupData,
+                    '0x' + config.expectedMinipoolAddress,
+                    config.salt,
+                );
+
+                await expect(
+                    protocol.superNode
+                .connect(nodeOperator2)
+                .createMinipool({
+                    validatorPubkey: config.validatorPubkey,
+                    validatorSignature: config.validatorSignature,
+                    depositDataRoot: config.depositDataRoot,
+                    salt: salts.rawSalt,
+                    expectedMinipoolAddress: config.expectedMinipoolAddress,
+                    sigGenesisTime: exitMessage.timestamp,
+                    sig: exitMessage.sig
+                    }, { value: ethers.utils.parseEther('1') }))
+                .to.be.revertedWith('NodeAccount: protocol must have enough rpl and eth');
+            });
         });
     });
 });
