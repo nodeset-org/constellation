@@ -26,24 +26,14 @@ contract MerkleClaimStreamer is UpgradeableBase {
 
     using Math for uint256;
 
-    struct MerkleRewardsData {
-        bytes sig;
-        uint256 sigGenesisTime;
-
-        // fees to apply to the merkle rewards
-        uint256 ethTreasuryFee;
-        uint256 ethOperatorFee;
-        uint256 rplTreasuryFee;
-
-        // the expected values to stream out
-        uint256 priorEthStreamAmount; 
-        uint256 priorRplStreamAmount;
-    }
-
-    // Merkle claim signature data
-    uint256 public merkleClaimNonce;
-    mapping(bytes32 => bool) public merkleClaimSigUsed;
-    uint256 public merkleClaimSigExpiry;
+    event MerkleClaimSubmitted(
+        uint256 indexed timestamp, 
+        uint256 newEthRewards, 
+        uint256 newRplRewards,
+        uint256 ethTreasuryPortion, 
+        uint256 ethOperatorPortion, 
+        uint256 rplTreasuryPortion
+        );
 
     // the prior interval's rewards which are "streamed" to the TVL 
     uint256 public priorEthStreamAmount;
@@ -72,9 +62,6 @@ contract MerkleClaimStreamer is UpgradeableBase {
     
     function initialize(address _directory) public override initializer {
         super.initialize(_directory);
-
-        merkleClaimSigExpiry = 1 days;
-
         streamingInterval = 28 days; // default RP rewards interval
     }
 
@@ -90,25 +77,18 @@ contract MerkleClaimStreamer is UpgradeableBase {
         return timeSinceLastClaim < streamingInterval ? priorRplStreamAmount * timeSinceLastClaim / streamingInterval : priorRplStreamAmount;
     }
 
-
-
-   // TODO
-        //
-        // consider this function more:
-        // - add sweep to tick before rebalance which reduces storage values
-
     /// @notice Sweeps the full amount of streamed TVL into the rest of the protocol. Only callable if the full streaming interval has passed.
     /// @dev Typically not necessary to call, as it's automatically called during each successive merkle claim.
     /// The only reason to call this otherwise is:
     /// - if there's something wrong with the RP rewards intervals and they are not completed as expected
     /// - if RP rewards interval length changes, this can be called to sweep rewards from prior intervals before changing streamingInterval
-    function sweepLockedTVL() public {
+    function sweepLockedTVL() public onlyProtocolOrAdmin {
         require(block.timestamp - lastClaimTime > streamingInterval, "Current streaming interval is not finished");
+        require(priorEthStreamAmount > 0 || priorRplStreamAmount > 0, "both ethAmount and rplAmount are 0 -- nothing to do");
         
         address payable odAddress = getDirectory().getOperatorDistributorAddress();
         OperatorDistributor od = OperatorDistributor(odAddress);
 
-        
         if(priorEthStreamAmount > 0){
             (bool success, ) = odAddress.call{value: priorEthStreamAmount}("");
             require(success, "Failed to transfer ETH from MerkleClaimStreamer to OperatorDistributor");
@@ -122,29 +102,6 @@ contract MerkleClaimStreamer is UpgradeableBase {
         }
     }
 
-    function processSignature(MerkleRewardsData calldata data) public onlyProtocol {
-        // check signature
-        bytes32 messageHash = keccak256(
-            abi.encodePacked(
-                data.priorEthStreamAmount,
-                data.priorRplStreamAmount,
-                data.sigGenesisTime,
-                address(this),
-                merkleClaimNonce,
-                block.chainid
-            )
-        );
-        require(!merkleClaimSigUsed[messageHash], 'merkle sig already used');
-        merkleClaimSigUsed[messageHash] = true;
-        address recoveredAddress = ECDSA.recover(ECDSA.toEthSignedMessageHash(messageHash), data.sig);
-        require(
-            _directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress),
-            'merkleClaim: signer must have permission from admin server role'
-        );
-        require(block.timestamp - data.sigGenesisTime < merkleClaimSigExpiry, 'merkle sig expired');
-        merkleClaimNonce++;
-    }
-
     /**
      * @notice Claims rewards for a node based on a Merkle proof, distributing specified amounts of RPL and ETH.
      * @dev This function interfaces with the RocketMerkleDistributorMainnet to allow nodes to claim their rewards.
@@ -154,23 +111,19 @@ contract MerkleClaimStreamer is UpgradeableBase {
      * @param amountETH Array of amounts of ETH to claim.
      * @param merkleProof Array of Merkle proofs for each reward entry.
      */
-    function merkleClaim(
+    function submitMerkleClaim(
         uint256[] calldata rewardIndex,
         uint256[] calldata amountRPL,
         uint256[] calldata amountETH,
-        bytes32[][] calldata merkleProof,
-        MerkleRewardsData calldata data
+        bytes32[][] calldata merkleProof
     ) public {
         require(merkleClaimsEnabled, "Merkle claims are disabled");
 
         address payable odAddress = getDirectory().getOperatorDistributorAddress();
         OperatorDistributor od = OperatorDistributor(odAddress);
-        //IERC20 rpl = IERC20(getDirectory().getRPLAddress());
 
         uint256 initialEthBalance = odAddress.balance;
         uint256 initialRplBalance = IERC20(getDirectory().getRPLAddress()).balanceOf(odAddress);
-        
-        this.processSignature(data);
         
         IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
             address(getDirectory().getSuperNodeAddress()),
@@ -188,25 +141,33 @@ contract MerkleClaimStreamer is UpgradeableBase {
         // lock all rewards in this contract to be streamed
         od.transferMerkleClaimToStreamer(ethReward, rplReward);
 
+        uint256 ethTreasuryPortion = 0;
+        uint256 ethOperatorPortion = 0;
+        uint256 rplTreasuryPortion = 0;
+
+        // process ETH fees
         if(ethReward > 0) {
-            uint256 treasuryPortion = ethReward.mulDiv(WETHVault(getDirectory().getWETHVaultAddress()).treasuryFee(), 1e18, Math.Rounding.Up);
-            uint256 nodeOperatorPortion = ethReward.mulDiv(RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee(), 1e18, Math.Rounding.Up);
+            ethTreasuryPortion = ethReward.mulDiv(WETHVault(getDirectory().getWETHVaultAddress()).treasuryFee(), 1e18, Math.Rounding.Up);
+            ethOperatorPortion = ethReward.mulDiv(RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee(), 1e18, Math.Rounding.Up);
 
             // send treasury and NO fees out immediately
-            (bool success, ) = getDirectory().getTreasuryAddress().call{value: treasuryPortion}('');
+            (bool success, ) = getDirectory().getTreasuryAddress().call{value: ethTreasuryPortion}('');
             require(success, 'Transfer to treasury failed');
 
-            (success, ) = getDirectory().getOperatorRewardAddress().call{value: nodeOperatorPortion}('');
+            (success, ) = getDirectory().getOperatorRewardAddress().call{value: ethOperatorPortion}('');
             require(success, 'Transfer to operator fee distributor failed');
         }
         
+        // process RPL fees
         if(rplReward > 0) {
-            uint256 treasuryPortion = 0;//rplReward.mulDiv(RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee(), 1e18);
+            rplTreasuryPortion = 0;//rplReward.mulDiv(RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee(), 1e18);
 
             // send treasury fee immediately
-            SafeERC20.safeApprove(IERC20(getDirectory().getRPLAddress()), getDirectory().getTreasuryAddress(), treasuryPortion);
-            SafeERC20.safeTransfer(IERC20(getDirectory().getRPLAddress()), getDirectory().getTreasuryAddress(), treasuryPortion);
+            SafeERC20.safeApprove(IERC20(getDirectory().getRPLAddress()), getDirectory().getTreasuryAddress(), rplTreasuryPortion);
+            SafeERC20.safeTransfer(IERC20(getDirectory().getRPLAddress()), getDirectory().getTreasuryAddress(), rplTreasuryPortion);
         }
+
+        emit MerkleClaimSubmitted(block.timestamp, ethReward, rplReward, ethTreasuryPortion, ethOperatorPortion, rplTreasuryPortion);
 
         // sweep all the prior interval's TVL
         this.sweepLockedTVL();

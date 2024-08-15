@@ -157,8 +157,6 @@ describe("xRPL", function () {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
-    expect.fail(); // todo: fix this test
-
     const depositAmount = ethers.utils.parseEther("100000");
 
 
