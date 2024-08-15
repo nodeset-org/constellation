@@ -4,6 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
+import { Whitelist } from "../typechain-types/contracts/Whitelist";
 import { WETHVault, RPLVault, OperatorDistributor, NodeSetOperatorRewardDistributor, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetworkInterface, IConstellationOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, RocketDepositPool, RocketNodeDeposit, RocketDAONodeTrusted, RocketTokenRETH, RocketClaimDAO, RocketRewardsPool, RocketDAONodeTrustedActions, SuperNodeAccount, PoAConstellationOracle, RocketStorage, RocketMinipoolDelegate, RocketMinipoolInterface } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
@@ -39,7 +40,7 @@ export type NewOperator = {
 
 export type Protocol = {
   directory: Directory;
-  whitelist: Contract;
+  whitelist: Whitelist;
   vCWETH: WETHVault;
   vCRPL: RPLVault;
   operatorDistributor: OperatorDistributor;
@@ -204,11 +205,11 @@ export async function protocolFixture(): Promise<SetupData> {
   try {
     await loadFixture(deployRocketPool);
     await loadFixture(setDefaultParameters);
-  
+
     const signers = await createSigners();
     const deployedProtocol = await deployProtocol(signers);
     const rocketPool = await getRocketPool(deployedProtocol.directory);
-  
+
     return { protocol: deployedProtocol, signers, rocketPool };
   } catch (e) {
     console.log("Error", e)
