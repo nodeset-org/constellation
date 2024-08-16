@@ -46,7 +46,11 @@ This repository contains Solidity smart contracts for Constellation, a second la
 11. **RPLVault.sol**
     - An ERC4626 vault for RPL tokens, managing deposits, withdrawals, and rewards distribution.
 
+<<<<<<< HEAD
+12. **YieldDistributor.sol**
+=======
 13. **NodeSetOperatorRewardDistributor.sol**
+>>>>>>> main
     - Distributes rewards to node operators.
 
 13. **SuperNodeAccount.sol**

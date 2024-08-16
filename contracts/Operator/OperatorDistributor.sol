@@ -30,6 +30,7 @@ import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
 contract OperatorDistributor is UpgradeableBase, Errors {
     event WarningNoMiniPoolsToHarvest();
     event SuspectedPenalizedMinipoolExit(address minipool);
+    event WarningEthBalanceSmallerThanRefundBalance(address _minipool);
 
     event WarningMinipoolNotStaking(
         address indexed _minipoolAddress,
@@ -290,8 +291,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         // if nodeshare - original deposit is <= 0 then it's an exit but there are no rewards (it's been penalized)
         uint256 rewards = 0;
 
-        // In Constellation, the node refund balance is assumed to be 100% rewards, but this isn't always true in RP 
-        // there are three cases, none of which should be possible in Constellation:
+        // In Constellation, the node refund balance is assumed to be 100% rewards, even though this isn't always true in RP. 
+        // There are three cases where this can happen, but none of these should be possible in Constellation:
         // - LEB bond reductions
         // - depositType == MinipoolDeposit.Full
         // - prepareVacancy() -- used for solo node migrations to RP
@@ -447,18 +448,26 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /// Otherwise, the processNextMinipool() function would finalize the minipool normally with this function.
     function distributeExitedMinipool(IMinipool minipool) public onlyProtocolOrAdmin {
         SuperNodeAccount sna = SuperNodeAccount(getDirectory().getSuperNodeAddress());
+
+        if(address(minipool).balance < minipool.getNodeRefundBalance()) {
+            emit WarningEthBalanceSmallerThanRefundBalance(address(minipool));
+            return;
+        }
        
-        uint256 balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
-        uint256 rewards = minipool.calculateNodeShare(balanceAfterRefund) >  minipool.getNodeDepositBalance() 
-            ? minipool.calculateNodeShare(balanceAfterRefund) -  minipool.getNodeDepositBalance()
-            : 0;
+        uint256 balanceAfterRefund;
+        uint256 rewards;
+        // This is unchecked because we are already effectively checking for underflow given the following business logic
+        unchecked { 
+            balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
+            rewards = minipool.calculateNodeShare(balanceAfterRefund) > minipool.getNodeDepositBalance() 
+                ? minipool.calculateNodeShare(balanceAfterRefund) -  minipool.getNodeDepositBalance()
+                : 0;
+        }
 
         minipool.distributeBalance(false);
-        // decrement validator count for operator
-        
-        // stop tracking minipool
-        (address subNodeOperator, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));   
-        Whitelist(getDirectory().getWhitelistAddress()).removeValidator(subNodeOperator);
+        // stop tracking
+        (address operatorAddress, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));   
+        Whitelist(getDirectory().getWhitelistAddress()).registerNewValidator(operatorAddress);
         sna.removeMinipool(address(minipool));
         // account for rewards 
         this.onEthBeaconRewardsReceived(rewards, treasuryFee, noFee);
