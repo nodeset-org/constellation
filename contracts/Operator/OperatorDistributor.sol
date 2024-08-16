@@ -165,7 +165,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         if (sna.getNumMinipools() == 0) {
             return IMinipool(address(0));
         }
-        return IMinipool(sna.minipools(currentMinipool % sna.getNumMinipools()));
+        return IMinipool(sna.minipools(currentMinipool+1));
     }
 
 
@@ -482,10 +482,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     function transferMerkleClaimToStreamer(uint256 ethAmount, uint256 rplAmount) external onlyProtocol {
-        (bool success, ) = getDirectory().getMerkleClaimStreamerAddress().call{value: ethAmount}('');
-        require(success, "ETH transfer to MerkleClaimStreamer failed");
+        if(ethAmount > 0) {
+            (bool success, ) = getDirectory().getMerkleClaimStreamerAddress().call{value: ethAmount}('');
+            require(success, "ETH transfer to MerkleClaimStreamer failed");
+        }
 
-        SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), getDirectory().getMerkleClaimStreamerAddress(), rplAmount);
-        SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), getDirectory().getMerkleClaimStreamerAddress(), rplAmount);
+        if(rplAmount > 0) {
+            SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), getDirectory().getMerkleClaimStreamerAddress(), rplAmount);
+            SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), getDirectory().getMerkleClaimStreamerAddress(), rplAmount);
+        }
     }
 }

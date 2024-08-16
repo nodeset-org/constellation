@@ -171,4 +171,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
         priorRplStreamAmount = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
         priorEthStreamAmount = address(this).balance;
     }
+
+    // must be payable so OD can send ETH here to be locked up during streaming period
+    receive() external payable {}
 }
