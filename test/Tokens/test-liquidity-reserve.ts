@@ -110,6 +110,8 @@ describe("Liquidity Reserve", async function () {
             await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(ethers.utils.parseEther("0.1"));
             await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(ethers.utils.parseEther("0.1"));
 
+            await protocol.vCWETH.connect(signers.admin).setMintFee(0);
+
             // Mint 100 xWETH
             const ethMintAmount = ethers.utils.parseEther("100");
             const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
