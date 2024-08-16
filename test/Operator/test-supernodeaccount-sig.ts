@@ -11,7 +11,7 @@ import { Contract } from "@openzeppelin/upgrades";
 import { IMinipool } from "../../typechain-types";
 
 
-describe.only("SuperNodeAccount creation sig", function () {
+describe("SuperNodeAccount creation sig", function () {
 
 
     describe("When Admin Server Check enabled", async () => {
