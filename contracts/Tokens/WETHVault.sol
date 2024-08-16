@@ -27,6 +27,11 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * put to work with the OperatorDistributor.
      */
     uint256 public liquidityReservePercent;
+
+    /**
+     * @notice the maximum percentage of ETH/RPL TVL allowed 
+     * @dev this is a simple percentage, because the RPL TVL is calculated using its price in ETH
+     */
     uint256 public maxWethRplRatio;
 
     uint256 public treasuryFee; // Treasury fee in basis points

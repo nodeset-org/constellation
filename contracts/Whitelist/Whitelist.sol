@@ -26,11 +26,8 @@ contract Whitelist is UpgradeableBase {
     event OperatorRemoved(address);
     event OperatorsRemoved(address[] operators);
 
-    event OperatorControllerUpdated(address indexed oldController, address indexed newController);
-
     mapping(address => bool) internal _permissions;
 
-    mapping(address => address) public operatorControllerToNodeMap;
     mapping(address => Operator) public nodeMap;
     mapping(uint256 => address) public nodeIndexMap;
     mapping(address => uint256) public reverseNodeIndexMap;

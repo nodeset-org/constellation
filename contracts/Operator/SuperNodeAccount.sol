@@ -60,7 +60,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         address subNodeOperator;
         uint256 ethTreasuryFee;
         uint256 noFee;
-        uint256 rplTreasuryFee;
+        uint256 index; // index in the minipool list
     }
 
     struct CreateMinipoolConfig {
@@ -73,10 +73,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         bytes sig;
     }
 
-    // Mapping of minipool address to its index in the minipools array
-    mapping(address => uint256) public minipoolIndex;
-    // Mapping of sub-node operator address to their list of minipools
-    mapping(address => address[]) public subNodeOperatorMinipools;
     // Mapping of address to minipool structs
     mapping(address => Minipool) public minipoolData;
 
@@ -237,20 +233,18 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         lockedEth[_config.expectedMinipoolAddress] = msg.value;
         totalEthLocked += msg.value;
 
-        minipoolIndex[_config.expectedMinipoolAddress] = minipools.length;
         minipools.push(_config.expectedMinipoolAddress);
 
-        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        od.onMinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator);
-
-        subNodeOperatorMinipools[subNodeOperator].push(_config.expectedMinipoolAddress);
         WETHVault wethVault = WETHVault(getDirectory().getWETHVaultAddress());
         minipoolData[_config.expectedMinipoolAddress] = Minipool(
             subNodeOperator,
             wethVault.treasuryFee(),
             wethVault.nodeOperatorFee(),
-            RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee()
+            minipools.length
         );
+
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        od.onMinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator);
 
         // stake additional RPL to cover the new minipool
         od.rebalanceRplStake(getTotalEthStaked() + bond);
@@ -274,15 +268,14 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @param minipool The address of the minipool to be removed from tracking.
      */
     function onMinipoolRemoved(address minipool) external onlyProtocol() onlyRecognizedMinipool(address(minipool)) {
-        uint256 index = minipoolIndex[minipool];
+        uint256 index = minipoolData[minipool].index;
         uint256 lastIndex = minipools.length - 1;
         address lastMinipool = minipools[lastIndex];
 
         minipools[index] = lastMinipool;
-        minipoolIndex[lastMinipool] = index;
+        minipoolData[lastMinipool].index = index;
 
         minipools.pop();
-        delete minipoolIndex[minipool];
         delete minipoolData[minipool];
     }
 

@@ -243,7 +243,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             return;
         }
         processMinipool(nextMinipool);
-        currentMinipool++;
+        currentMinipool = currentMinipool + 1 < SuperNodeAccount(getDirectory().getSuperNodeAddress()).getNumMinipools() ? currentMinipool + 1 : 0;
     }
     
     /**

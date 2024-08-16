@@ -35,7 +35,11 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     uint256 public liquidityReservePercent;
 
-    uint256 public minWethRplRatio; // weth coverage ratio
+    /**
+     * @notice the minimum percentage of ETH/RPL TVL allowed 
+     * @dev this is a simple percentage, because the RPL TVL is calculated using its price in ETH
+     */
+    uint256 public minWethRplRatio;
 
     constructor() initializer {}
 

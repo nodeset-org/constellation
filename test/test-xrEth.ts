@@ -76,7 +76,7 @@ describe("xrETH", function () {
 
     const depositAmount = ethers.utils.parseEther("100");
     const depositAfterFee = depositAmount.sub(await protocol.vCWETH.getMintFeePortion(depositAmount));
-    const expectedReserveInVault = (await protocol.vCWETH.getMissingLiquidityAfterDepositNoFee(depositAmount));
+    const expectedReserveInVault = (await protocol.vCWETH.getMissingLiquidityAfterDeposit(depositAmount));
     const surplusSentToOD = depositAfterFee.sub(expectedReserveInVault);
 
     await protocol.wETH.connect(signers.random).deposit({ value: depositAmount });
@@ -169,7 +169,7 @@ describe("xrETH", function () {
 
   })
 
-  it.only("success - tries to deposit and redeem from weth vault multiple times with minipool reward claims", async () => {
+  it("success - tries to deposit and redeem from weth vault multiple times with minipool reward claims", async () => {
     
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
