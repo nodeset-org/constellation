@@ -8,7 +8,7 @@ const ethMintAmount = ethers.utils.parseEther("8");
 const rplMintAmount = ethers.utils.parseEther("360");
 const salt = 3;
 
-describe("SuperNodeAccount create", function () {
+describe("SuperNodeAccount creation under validator limits", function () {
     let setupData: SetupData;
     let protocol: Protocol;
     let signers: Signers;
