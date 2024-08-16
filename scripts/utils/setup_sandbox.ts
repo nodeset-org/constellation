@@ -38,6 +38,8 @@ export const setupSandbox = async () => {
     admin,
     deployer,
     admin,
+    deployer,
+    admin,
     rocketStorage.address,
     wETH.address,
     sanctions.address,
