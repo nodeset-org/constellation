@@ -37,6 +37,9 @@ import 'hardhat/console.sol';
  * @dev Abstracts all created minipools under a single node
  */
 contract SuperNodeAccount is UpgradeableBase, Errors {
+    event MinipoolCreated(address indexed minipoolAddress, address indexed operatorAddress);
+    event MinipoolDestroyed(address indexed minipoolAddress, address indexed operatorAddress);
+    
     // Mapping of minipool address to the amount of ETH locked
     mapping(address => uint256) public lockedEth;
 
@@ -240,11 +243,12 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             subNodeOperator,
             wethVault.treasuryFee(),
             wethVault.nodeOperatorFee(),
-            minipools.length
+            minipools.length-1
         );
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        od.onMinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator);
+        // register minipool with node operator
+        Whitelist(getDirectory().getWhitelistAddress()).registerNewValidator(subNodeOperator);
 
         // stake additional RPL to cover the new minipool
         od.rebalanceRplStake(getTotalEthStaked() + bond);
@@ -259,6 +263,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             salt,
             _config.expectedMinipoolAddress
         );
+
+        emit MinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator);
     }
 
     /**
@@ -267,16 +273,23 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      *      This is used when a minipool is destroyed or decommissioned.
      * @param minipool The address of the minipool to be removed from tracking.
      */
-    function onMinipoolRemoved(address minipool) external onlyProtocol() onlyRecognizedMinipool(address(minipool)) {
+    function removeMinipool(address minipool) external onlyProtocol() onlyRecognizedMinipool(address(minipool)) {
         uint256 index = minipoolData[minipool].index;
+        address operatorAddress = minipoolData[minipool].subNodeOperator;
         uint256 lastIndex = minipools.length - 1;
         address lastMinipool = minipools[lastIndex];
-
+        console.log("close: made it A");
+        console.log("lastIndex", lastIndex);
+        console.log("index", index);
         minipools[index] = lastMinipool;
+        console.log("close: made it B");
         minipoolData[lastMinipool].index = index;
-
+        console.log("close: made it C");
         minipools.pop();
+        console.log("close: made it D");
         delete minipoolData[minipool];
+
+        emit MinipoolDestroyed(minipool, operatorAddress);
     }
 
     /**
@@ -318,21 +331,19 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * into the system.
      * In future versions, it may be brought into minipool processing to automate the process, but there are a lot of base layer
      * implications to consider before closing, and it would increase gas for the tick.
-     * @param _subNodeOperator Address of the sub-node operator associated with the minipool.
-     * @param _minipool Address of the minipool to close.
+     * @param subNodeOperatorAddress Address of the sub-node operator associated with the minipool.
+     * @param minipoolAddress Address of the minipool to close.
      */
-    function close(address _subNodeOperator, address _minipool) external onlyRecognizedMinipool(_minipool) {
-        require(minipoolData[_minipool].subNodeOperator == _subNodeOperator, "operator does not own the specified minipool");
-        IMinipool minipool = IMinipool(_minipool);
-        OperatorDistributor operatorDistributorContract = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        operatorDistributorContract.onNodeMinipoolDestroy(_subNodeOperator);
-        this.onMinipoolRemoved(_minipool);
-
+    function close(address subNodeOperatorAddress, address minipoolAddress) external onlyRecognizedMinipool(minipoolAddress) {
+        require(minipoolData[minipoolAddress].subNodeOperator == subNodeOperatorAddress, "operator does not own the specified minipool");
+        IMinipool minipool = IMinipool(minipoolAddress);
+        console.log("close: made it 1");
+        Whitelist(getDirectory().getWhitelistAddress()).removeValidator(minipoolData[minipoolAddress].subNodeOperator);
+        console.log("close: made it 2");
+        this.removeMinipool(minipoolAddress);
+        console.log("close: made it 3");
         minipool.close();
-    }
-
-
-    
+    }   
 
     /**
      * @notice Allows dmins to delegate an upgrade to the minipool's contract.
@@ -409,10 +420,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      */
     function setLockAmount(uint256 _newLockThreshold) external onlyShortTimelock {
         lockThreshold = _newLockThreshold;
-    }
-
-    function getSubNodeOpFromMinipool(address minipoolAddress) public view returns (address) {
-        return minipoolData[minipoolAddress].subNodeOperator;
     }
 
     /**

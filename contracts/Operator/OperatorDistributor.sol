@@ -28,8 +28,6 @@ import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
  * Inherits from UpgradeableBase and Errors to use their functionalities for upgradeability and error handling.
  */
 contract OperatorDistributor is UpgradeableBase, Errors {
-    event MinipoolCreated(address indexed _minipoolAddress, address indexed _nodeAddress);
-    event MinipoolDestroyed(address indexed _minipoolAddress);
     event WarningNoMiniPoolsToHarvest();
     event SuspectedPenalizedMinipoolExit(address minipool);
 
@@ -281,7 +279,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 rewards = 0;
 
         // In Constellation, the node refund balance is assumed to be 100% rewards, but this isn't always true in RP 
-        // there are three cases which should not be possible in Constellation:
+        // there are three cases, none of which should be possible in Constellation:
         // - LEB bond reductions
         // - depositType == MinipoolDeposit.Full
         // - prepareVacancy() -- used for solo node migrations to RP
@@ -428,10 +426,12 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             : 0;
 
         minipool.distributeBalance(false);
-        // stop tracking
-        (, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));   
-        sna.onMinipoolRemoved(address(minipool));
-        this.onNodeMinipoolDestroy(sna.getSubNodeOpFromMinipool(address(minipool)));
+        // decrement validator count for operator
+        
+        // stop tracking minipool
+        (address subNodeOperator, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));   
+        Whitelist(getDirectory().getWhitelistAddress()).removeValidator(subNodeOperator);
+        sna.removeMinipool(address(minipool));
         // account for rewards 
         this.onEthBeaconRewardsReceived(rewards, treasuryFee, noFee);
     }
@@ -453,28 +453,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             revert LowLevelEthTransfer(success, data);
         }
     } 
-
-    /**
-     * @notice Handles the creation of a minipool and emits the event.
-     * @param newMinipoolAddress Address of the newly created minipool.
-     * @param nodeAddress Address of the node operator.
-     */
-    function onMinipoolCreated(address newMinipoolAddress, address nodeAddress) external onlyProtocol {
-        // register minipool with node operator
-        Whitelist whitelist = Whitelist(getDirectory().getWhitelistAddress());
-        whitelist.registerNewValidator(nodeAddress);
-
-        emit MinipoolCreated(newMinipoolAddress, nodeAddress);
-    }
-
-    /**
-     * @notice Handles the destruction of a minipool.
-     * @param _nodeOperator Address of the sub node operator that created the minipool.
-     */
-    function onNodeMinipoolDestroy(address _nodeOperator) external onlyProtocol {
-        Whitelist(getDirectory().getWhitelistAddress()).removeValidator(_nodeOperator);
-        emit MinipoolDestroyed(_nodeOperator);
-    }
 
     /**
      * @notice Resets the oracle error.

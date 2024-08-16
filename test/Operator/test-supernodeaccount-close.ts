@@ -35,6 +35,9 @@ describe("SuperNodeAccount close", function () {
         // Set liquidity reserve to 0%
         await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
         await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(0);
+        
+        // set fee to 0%
+        await protocol.vCWETH.connect(signers.admin).setMintFee(0);
 
         // Deposit 8 ETH for 1 minipool
         const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
