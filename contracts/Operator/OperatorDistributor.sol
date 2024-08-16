@@ -165,7 +165,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         if (sna.getNumMinipools() == 0) {
             return IMinipool(address(0));
         }
-        return IMinipool(sna.minipools(currentMinipool+1));
+        return IMinipool(sna.minipools(currentMinipool + 1 < SuperNodeAccount(getDirectory().getSuperNodeAddress()).getNumMinipools() ? currentMinipool + 1 : 0));
     }
 
 
