@@ -80,7 +80,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     // Index for the current minipool being processed
-    uint256 public currentMinipool;
+    uint256 public lastProcessedMinipoolIndex;
 
     // The amount the oracle has already included in its summation
     // This is important to track because when a minipool is skimmed, its balance will have 
@@ -165,7 +165,19 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         if (sna.getNumMinipools() == 0) {
             return IMinipool(address(0));
         }
-        return IMinipool(sna.minipools(currentMinipool + 1 < SuperNodeAccount(getDirectory().getSuperNodeAddress()).getNumMinipools() ? currentMinipool + 1 : 0));
+        return IMinipool(sna.minipools(this.getNextMinipoolIndex()));
+    }
+
+    /**
+     * @dev This function helps read state for the rotation and handling of different minipools within the system.
+     * @return Returns the next minipool index which will be processed or 0 if there are no minipools
+     */
+    function getNextMinipoolIndex() public view returns (uint256) {
+        SuperNodeAccount sna = SuperNodeAccount(getDirectory().getSuperNodeAddress());
+        if (sna.getNumMinipools() == 0) {
+            return 0;
+        }
+        return lastProcessedMinipoolIndex + 1 < SuperNodeAccount(getDirectory().getSuperNodeAddress()).getNumMinipools() ? lastProcessedMinipoolIndex + 1 : 0;
     }
 
 
@@ -228,7 +240,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Process the next minipool in line, then increments currentMinipool.
+     * @notice Process the next minipool in line, then increments lastProcessedMinipoolIndex.
      * Handles RPL rebalancing and minipool distribution based on minipool's current state.
      * Although this can be called manually, this typically happens automatically as part of other state changes
      * like claiming NO fees or depositing/withdrawing from the token vaults.
@@ -241,7 +253,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             return;
         }
         processMinipool(nextMinipool);
-        currentMinipool = currentMinipool + 1 < SuperNodeAccount(getDirectory().getSuperNodeAddress()).getNumMinipools() ? currentMinipool + 1 : 0;
+        lastProcessedMinipoolIndex = this.getNextMinipoolIndex();
     }
     
     /**
