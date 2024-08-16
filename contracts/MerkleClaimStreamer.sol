@@ -63,6 +63,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
     function initialize(address _directory) public override initializer {
         super.initialize(_directory);
         streamingInterval = 28 days; // default RP rewards interval
+        merkleClaimsEnabled = true;
     }
 
     /// @return The current amount of currently-locked TVL which is applicable to xrETH right now
@@ -125,13 +126,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
         uint256 initialEthBalance = odAddress.balance;
         uint256 initialRplBalance = IERC20(getDirectory().getRPLAddress()).balanceOf(odAddress);
         
-        IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
-            address(getDirectory().getSuperNodeAddress()),
-            rewardIndex,
-            amountRPL,
-            amountETH,
-            merkleProof
-        );
+        od.submitMerkleClaim(rewardIndex, amountRPL, amountETH, merkleProof);
 
         uint256 ethReward = odAddress.balance - initialEthBalance;
         uint256 rplReward = IERC20(getDirectory().getRPLAddress()).balanceOf(odAddress) - initialRplBalance;

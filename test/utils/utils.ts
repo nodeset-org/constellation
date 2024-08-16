@@ -518,7 +518,7 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
     .add(depositAmount.div(ethers.utils.parseUnits("1", 17)))
     .add(depositAmount.div(ethers.utils.parseUnits("1", 18)))
     .add(ethers.constants.One);
-  requiredEth = requiredEth.mul(ethers.utils.parseEther('1')).div(ethers.utils.parseEther('1').sub(await vweth.mintFee())).add(ethers.constants.One);
+  requiredEth = requiredEth.mul(ethers.utils.parseEther('1')).div(ethers.utils.parseEther('1').sub(await vweth.mintFee())).add((ethers.constants.One).mul(BigNumber.from(numOperators)));
   console.log('REQUIRE+ETH', requiredEth);
 
   await setupData.protocol.wETH.connect(setupData.signers.ethWhale).deposit({ value: requiredEth });

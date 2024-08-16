@@ -333,6 +333,22 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(getDirectory().getSuperNodeAddress(), _amount);
     }
 
+    /// @notice Submits a merkle claim to RP on behalf of the SuperNode
+    /// @dev Although all other merkle logic is in the MerkleClaimStreamer, a merkle claim must be done by the node or withdrawal address
+    function submitMerkleClaim(
+        uint256[] calldata rewardIndex,
+        uint256[] calldata amountRPL,
+        uint256[] calldata amountETH,
+        bytes32[][] calldata merkleProof) external onlyProtocol {
+        IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
+            address(getDirectory().getSuperNodeAddress()),
+            rewardIndex,
+            amountRPL,
+            amountETH,
+            merkleProof
+        );
+    }
+
     /// @notice Distributes ETH to the vault and operator distributor.
     /// @dev This function converts the WETH balance to ETH, sends the required capital to the vault, 
     /// and the surplus ETH to the OperatorDistributor.
