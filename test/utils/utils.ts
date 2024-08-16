@@ -427,6 +427,127 @@ export const approveHasSignedExitMessageSig = async (
   return { sig, timestamp };
 };
 
+export const approveHasSignedExitMessageSigBadTarget = async (
+  setupData: SetupData,
+  subNodeOperator: string,
+  expectedMinipoolAddress: string,
+  salt: BigNumber,
+) => {
+  const goodSigner = setupData.signers.adminServer;
+  const role = await setupData.protocol.directory.hasRole(
+    ethers.utils.keccak256(ethers.utils.toUtf8Bytes('ADMIN_SERVER_ROLE')),
+    goodSigner.address
+  );
+  expect(role).equals(true);
+
+  const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp;
+  const network = await ethers.provider.getNetwork();
+  const chainId = network.chainId;
+
+  const nonce = await setupData.protocol.superNode.nonces(subNodeOperator)
+
+  const packedData = ethers.utils.solidityPack(
+    ['address', 'uint256', 'uint256', 'address', 'uint256', 'uint256'],
+    [expectedMinipoolAddress, salt, timestamp, setupData.protocol.operatorDistributor.address, nonce, chainId]
+  );
+
+  const messageHash = ethers.utils.keccak256(packedData);
+  const messageHashBytes = ethers.utils.arrayify(messageHash);
+  const sig = await goodSigner.signMessage(messageHashBytes);
+  return { sig, timestamp };
+};
+
+export const approveHasSignedExitMessageSigBadNonce = async (
+  setupData: SetupData,
+  subNodeOperator: string,
+  expectedMinipoolAddress: string,
+  salt: BigNumber,
+) => {
+  const goodSigner = setupData.signers.adminServer;
+  const role = await setupData.protocol.directory.hasRole(
+    ethers.utils.keccak256(ethers.utils.toUtf8Bytes('ADMIN_SERVER_ROLE')),
+    goodSigner.address
+  );
+  expect(role).equals(true);
+
+  const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp;
+  const network = await ethers.provider.getNetwork();
+  const chainId = network.chainId;
+
+  const nonce = await setupData.protocol.superNode.nonces(subNodeOperator)
+
+  const packedData = ethers.utils.solidityPack(
+    ['address', 'uint256', 'uint256', 'address', 'uint256', 'uint256'],
+    [expectedMinipoolAddress, salt, timestamp, setupData.protocol.superNode.address, nonce.add(1), chainId]
+  );
+
+  const messageHash = ethers.utils.keccak256(packedData);
+  const messageHashBytes = ethers.utils.arrayify(messageHash);
+  const sig = await goodSigner.signMessage(messageHashBytes);
+  return { sig, timestamp };
+};
+
+export const approveHasSignedExitMessageSigBadChainId = async (
+  setupData: SetupData,
+  subNodeOperator: string,
+  expectedMinipoolAddress: string,
+  salt: BigNumber,
+) => {
+  const goodSigner = setupData.signers.adminServer;
+  const role = await setupData.protocol.directory.hasRole(
+    ethers.utils.keccak256(ethers.utils.toUtf8Bytes('ADMIN_SERVER_ROLE')),
+    goodSigner.address
+  );
+  expect(role).equals(true);
+
+  const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp;
+  const network = await ethers.provider.getNetwork();
+  const chainId = network.chainId;
+
+  const nonce = await setupData.protocol.superNode.nonces(subNodeOperator)
+
+  const packedData = ethers.utils.solidityPack(
+    ['address', 'uint256', 'uint256', 'address', 'uint256', 'uint256'],
+    [expectedMinipoolAddress, salt, timestamp, setupData.protocol.superNode.address, nonce, chainId + 1]
+  );
+
+  const messageHash = ethers.utils.keccak256(packedData);
+  const messageHashBytes = ethers.utils.arrayify(messageHash);
+  const sig = await goodSigner.signMessage(messageHashBytes);
+  return { sig, timestamp };
+};
+
+export const approveHasSignedExitMessageSigBadEncoding = async (
+  setupData: SetupData,
+  subNodeOperator: string,
+  expectedMinipoolAddress: string,
+  salt: BigNumber,
+) => {
+  const goodSigner = setupData.signers.adminServer;
+  const role = await setupData.protocol.directory.hasRole(
+    ethers.utils.keccak256(ethers.utils.toUtf8Bytes('ADMIN_SERVER_ROLE')),
+    goodSigner.address
+  );
+  expect(role).equals(true);
+
+  const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp;
+  const network = await ethers.provider.getNetwork();
+  const chainId = network.chainId;
+
+  const nonce = await setupData.protocol.superNode.nonces(subNodeOperator)
+
+  const packedData = ethers.utils.defaultAbiCoder.encode(
+    ['address', 'uint256', 'uint256', 'address', 'uint256', 'uint256'],
+    [expectedMinipoolAddress, salt, timestamp, setupData.protocol.superNode.address, nonce, chainId]
+  );
+
+  const messageHash = ethers.utils.keccak256(packedData);
+  const messageHashBytes = ethers.utils.arrayify(messageHash);
+  const sig = await goodSigner.signMessage(messageHashBytes);
+  return { sig, timestamp };
+};
+
+
 export const whitelistUserServerSig = async (setupData: SetupData, nodeOperator: SignerWithAddress) => {
   const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp;
   const network = await ethers.provider.getNetwork();
