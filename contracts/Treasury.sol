@@ -72,14 +72,6 @@ contract Treasury is UpgradeableBase {
         _claimEthInternal(_to, _amount);
     }
 
-    /// @notice Executes a call to another contract with provided data, with the possibility to send ETH.
-    /// @dev The `call` is a low-level interface for interacting with contracts.
-    /// @param _target The contract address to execute the call on.
-    /// @param _functionData The calldata to send for the call.
-    function execute(address payable _target, bytes calldata _functionData) external payable onlyTreasurer nonReentrant {
-        _executeInternal(_target, _functionData, msg.value);
-    }
-
     /// @notice Batch executes multiple calls to contracts with provided data and ETH.
     /// @dev Useful for performing multiple treasuerer tasks in one transaction.
     /// @param _targets An array of contract addresses to execute the calls on.

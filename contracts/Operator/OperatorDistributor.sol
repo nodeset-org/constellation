@@ -464,6 +464,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 : 0;
         }
 
+        console.log("rewards", rewards);
+
         minipool.distributeBalance(false);
         // stop tracking
         (address operatorAddress, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));   

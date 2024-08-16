@@ -269,9 +269,9 @@ describe("xrETH", function () {
     })
 
     await protocol.operatorDistributor.connect(signers.random).processNextMinipool();
-    let treasurerBalanceChange = await ethers.provider.getBalance(setupData.signers.treasurer.address);
+    let treasurerBalance = await ethers.provider.getBalance(setupData.signers.treasurer.address);
     await protocol.operatorDistributor.connect(signers.admin).distributeExitedMinipool(minipools[0])
-    treasurerBalanceChange = treasurerBalanceChange.sub(await ethers.provider.getBalance(setupData.signers.treasurer.address));
+    let treasurerBalanceChange = (await ethers.provider.getBalance(setupData.signers.treasurer.address)).sub(treasurerBalance);
     expect(treasurerBalanceChange).equals(0);
     const expectedRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
 

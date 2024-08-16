@@ -278,15 +278,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         address operatorAddress = minipoolData[minipool].subNodeOperator;
         uint256 lastIndex = minipools.length - 1;
         address lastMinipool = minipools[lastIndex];
-        console.log("close: made it A");
-        console.log("lastIndex", lastIndex);
-        console.log("index", index);
         minipools[index] = lastMinipool;
-        console.log("close: made it B");
         minipoolData[lastMinipool].index = index;
-        console.log("close: made it C");
         minipools.pop();
-        console.log("close: made it D");
         delete minipoolData[minipool];
 
         emit MinipoolDestroyed(minipool, operatorAddress);

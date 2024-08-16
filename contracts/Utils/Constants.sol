@@ -19,6 +19,7 @@ library Constants {
     // DIRECTORY
     string public constant CONTRACT_NOT_FOUND_ERROR = 'Directory: contract not found!';
     string public constant ADMIN_ONLY_ERROR = 'Directory: may only be called by admin address!';
+    string public constant TREASURER_ONLY_ERROR = 'Directory: may only be called by treasurer address!';
     string public constant INITIALIZATION_ERROR = 'Directory: bad initialization!';
 
     // WHITELIST

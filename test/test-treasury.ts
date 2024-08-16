@@ -9,8 +9,8 @@ import { IERC20 } from "../typechain-types/oz-contracts-3-4-0/token/ERC20";
 
 describe("treasury", function () {
   let treasury: Treasury;
-  let admin: SignerWithAddress;
-  let nonAdmin: SignerWithAddress;
+  let treasurer: SignerWithAddress;
+  let nonTreasurer: SignerWithAddress;
   let token: MockERC20;
   let directory: Directory;
   let setupData: SetupData;
@@ -18,8 +18,8 @@ describe("treasury", function () {
   beforeEach(async function () {
     setupData = await loadFixture(protocolFixture);
 
-    admin = setupData.signers.admin;
-    nonAdmin = setupData.signers.random;
+    treasurer = setupData.signers.treasurer;
+    nonTreasurer = setupData.signers.random;
 
     const MockERC20 = await ethers.getContractFactory("MockERC20");
     token = await MockERC20.deploy("Mock Token", "MTKN", ethers.utils.parseEther("1000"));
@@ -48,42 +48,42 @@ describe("treasury", function () {
   });
 
   describe("claimToken", function () {
-    it("success - should allow admin to claim all tokens", async function () {
-      const adminRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("ADMIN_ROLE"))), admin.address);
-      expect(adminRole).to.equal(true);
+    it("success - should allow treasurer to claim all tokens", async function () {
+      const treasuryRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("TREASURY_ROLE"))), setupData.signers.treasurer.address);
+      expect(treasuryRole).to.equal(true);
 
       const totalSupply = await token.totalSupply();
       await token.transfer(treasury.address, totalSupply);
-      await expect(treasury.connect(admin).claimToken(token.address, admin.address)).to.emit(treasury, "ClaimedToken").withArgs(token.address, admin.address, totalSupply);
-      const adminBalance = await token.balanceOf(admin.address);
-      expect(adminBalance).to.equal(totalSupply);
+      await expect(treasury.connect(setupData.signers.treasurer).claimToken(token.address, setupData.signers.treasurer.address)).to.emit(treasury, "ClaimedToken").withArgs(token.address, treasurer.address, totalSupply);
+      const treasuryBalance = await token.balanceOf(setupData.signers.treasurer.address);
+      expect(treasuryBalance).to.equal(totalSupply);
     });
 
-    it("success - admin can partially claim tokens in contract", async () => {
-      const adminRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("ADMIN_ROLE"))), admin.address);
-      expect(adminRole).to.equal(true);
+    it("success - treasurer can partially claim tokens in contract", async () => {
+      const treasuryRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("TREASURY_ROLE"))), setupData.signers.treasurer.address);
+      expect(treasuryRole).to.equal(true);
 
       const totalSupply = await token.totalSupply();
       const decimals = await token.decimals();
       await token.transfer(treasury.address, totalSupply);
-      await expect(treasury.connect(admin).claimTokenAmount(token.address, admin.address, ethers.utils.parseUnits("1000", decimals))).to.emit(treasury, "ClaimedToken").withArgs(token.address, admin.address, ethers.utils.parseUnits("1000", decimals));
-      const adminBalance = await token.balanceOf(admin.address);
-      expect(adminBalance).to.equal(ethers.utils.parseUnits("1000", decimals));
+      await expect(treasury.connect(setupData.signers.treasurer).claimTokenAmount(token.address, setupData.signers.treasurer.address, ethers.utils.parseUnits("1000", decimals))).to.emit(treasury, "ClaimedToken").withArgs(token.address, treasurer.address, ethers.utils.parseUnits("1000", decimals));
+      const treasuryBalance = await token.balanceOf(treasurer.address);
+      expect(treasuryBalance).to.equal(ethers.utils.parseUnits("1000", decimals));
       expect(await token.balanceOf(treasury.address)).to.equal(totalSupply.sub(ethers.utils.parseUnits("1000", decimals)));
     })
 
-    it("fail - non-admin claim tokens", async function () {
+    it("fail - non-treasurer claim tokens", async function () {
       await token.transfer(treasury.address, ethers.utils.parseEther("100"));
-      await expect(treasury.connect(nonAdmin).claimToken(token.address, nonAdmin.address)).to.be.revertedWith("Can only be called by treasurer address!");
+      await expect(treasury.connect(nonTreasurer).claimToken(token.address, nonTreasurer.address)).to.be.revertedWith("Can only be called by treasurer address!");
     });
 
   });
 
   describe("test claimEth", () => {
-    it('success - admin claims all eth', async () => {
+    it('success - treasurer claims all eth', async () => {
       const { protocol, signers } = setupData;
-      const adminRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("ADMIN_ROLE"))), admin.address);
-      expect(adminRole).to.equal(true);
+      const treasuryRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("TREASURY_ROLE"))), setupData.signers.treasurer.address);
+      expect(treasuryRole).to.equal(true);
 
 
       expect(await ethers.provider.getBalance(treasury.address)).equals(0)
@@ -92,14 +92,14 @@ describe("treasury", function () {
         value: ethers.utils.parseEther("1")
       })
       expect(await ethers.provider.getBalance(treasury.address)).equals(ethers.utils.parseEther("1"))
-      await expect(treasury.connect(admin).claimEth(signers.admin.address)).to.emit(treasury, "ClaimedEth").withArgs(signers.admin.address, ethers.utils.parseEther("1"));
+      await expect(treasury.connect(treasurer).claimEth(signers.treasurer.address)).to.emit(treasury, "ClaimedEth").withArgs(signers.treasurer.address, ethers.utils.parseEther("1"));
       expect(await ethers.provider.getBalance(treasury.address)).equals(ethers.utils.parseEther("0"))
     })
 
-    it('success - admin claims part of the eth', async () => {
+    it('success - treasury claims part of the eth', async () => {
       const { protocol, signers } = setupData;
-      const adminRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("ADMIN_ROLE"))), admin.address);
-      expect(adminRole).to.equal(true);
+      const treasuryRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("TREASURY_ROLE"))), setupData.signers.treasurer.address);
+      expect(treasuryRole).to.equal(true);
 
 
       expect(await ethers.provider.getBalance(treasury.address)).equals(0)
@@ -108,14 +108,14 @@ describe("treasury", function () {
         value: ethers.utils.parseEther("1")
       })
       expect(await ethers.provider.getBalance(treasury.address)).equals(ethers.utils.parseEther("1"))
-      await expect(treasury.connect(admin).claimEthAmount(signers.admin.address, ethers.utils.parseEther("0.1"))).to.emit(treasury, "ClaimedEth").withArgs(signers.admin.address, ethers.utils.parseEther("0.1"));
+      await expect(treasury.connect(treasurer).claimEthAmount(signers.treasurer.address, ethers.utils.parseEther("0.1"))).to.emit(treasury, "ClaimedEth").withArgs(signers.treasurer.address, ethers.utils.parseEther("0.1"));
       expect(await ethers.provider.getBalance(treasury.address)).equals(ethers.utils.parseEther(".9"))
     })
 
-    it('fail - non-admin claims all eth', async () => {
+    it('fail - non-treasury claims all eth', async () => {
       const { protocol, signers } = setupData;
-      const adminRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("ADMIN_ROLE"))), signers.random.address);
-      expect(adminRole).to.equal(false);
+      const treasuryRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("TREASURY_ROLE"))), signers.random.address);
+      expect(treasuryRole).to.equal(false);
 
       expect(await ethers.provider.getBalance(treasury.address)).equals(0)
       await signers.random.sendTransaction({
@@ -130,7 +130,7 @@ describe("treasury", function () {
 
   describe("arbitrary execution", async () => {
 
-    it("success - admin can execute single target", async () => {
+    it("success - treasurer can execute single target", async () => {
       const MockTargetAlpha = await ethers.getContractFactory("MockTargetAlpha");
       const mockTargetAlpha = await MockTargetAlpha.deploy();
       await mockTargetAlpha.deployed();
@@ -138,11 +138,11 @@ describe("treasury", function () {
       const encoding = mockTargetAlpha.interface.encodeFunctionData("doCall", [69]);
 
       expect(await mockTargetAlpha.called()).equals(0);
-      await expect(treasury.connect(admin).execute(mockTargetAlpha.address, encoding)).to.emit(treasury, "Executed").withArgs(mockTargetAlpha.address, encoding);
+      await expect(treasury.connect(treasurer).execute(mockTargetAlpha.address, encoding)).to.emit(treasury, "Executed").withArgs(mockTargetAlpha.address, encoding);
       expect(await mockTargetAlpha.called()).equals(69);
     })
 
-    it("success - admin can execute single payable target", async () => {
+    it("success - treasurer can execute single payable target", async () => {
       const MockTargetAlpha = await ethers.getContractFactory("MockTargetAlpha");
       const mockTargetAlpha = await MockTargetAlpha.deploy();
       await mockTargetAlpha.deployed();
@@ -151,24 +151,23 @@ describe("treasury", function () {
 
       expect(await ethers.provider.getBalance(mockTargetAlpha.address)).equals(ethers.utils.parseEther("0"))
 
-      await expect(treasury.connect(admin).execute(mockTargetAlpha.address, encoding, {
-        value: ethers.utils.parseEther("1")
-      })).to.emit(treasury, "Executed").withArgs(mockTargetAlpha.address, encoding);
+      await expect(treasury.connect(treasurer).executeAll([mockTargetAlpha.address], [encoding], [ethers.utils.parseEther("1")]))
+        .to.emit(treasury, "Executed").withArgs(mockTargetAlpha.address, encoding);
 
       expect(await ethers.provider.getBalance(mockTargetAlpha.address)).equals(ethers.utils.parseEther("1"))
     })
 
-    it("fail - non-admin can execute single target", async () => {
+    it("fail - non-treasurer cannot execute single target", async () => {
       const MockTargetAlpha = await ethers.getContractFactory("MockTargetAlpha");
       const mockTargetAlpha = await MockTargetAlpha.deploy();
       await mockTargetAlpha.deployed();
 
       const encoding = mockTargetAlpha.interface.encodeFunctionData("doCall", [69]);
 
-      await expect(treasury.execute(mockTargetAlpha.address, encoding)).to.be.revertedWith("Can only be called by treasurer address!")
+      await expect(treasury.executeAll([mockTargetAlpha.address], [encoding], [BigNumber.from(0)])).to.be.revertedWith("Can only be called by treasurer address!")
     })
 
-    it("success - admin can execute many targets", async () => {
+    it("success - treasurer can execute many targets", async () => {
       const MockTargetAlpha = await ethers.getContractFactory("MockTargetAlpha");
       const mockTargetAlpha = await MockTargetAlpha.deploy();
       await mockTargetAlpha.deployed();
@@ -187,18 +186,18 @@ describe("treasury", function () {
       expect(await mockTargetBravo.called()).equals(0);
       expect(await mockTargetCharlie.called()).equals(0);
 
-      await expect(treasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0, 0])).to.emit(treasury, "Executed").withArgs(mockTargetAlpha.address, encodingAlpha);
+      await expect(treasury.connect(treasurer).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0, 0])).to.emit(treasury, "Executed").withArgs(mockTargetAlpha.address, encodingAlpha);
       
       expect(await mockTargetAlpha.called()).equals(69);
       expect(await mockTargetBravo.called()).equals(420);
       expect(await mockTargetCharlie.called()).equals(314159268);
 
-      await expect(treasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0, 0])).to.emit(treasury, "Executed").withArgs(mockTargetBravo.address, encodingBravo);
-      await expect(treasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0, 0])).to.emit(treasury, "Executed").withArgs(mockTargetCharlie.address, encodingCharlie);
+      await expect(treasury.connect(treasurer).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0, 0])).to.emit(treasury, "Executed").withArgs(mockTargetBravo.address, encodingBravo);
+      await expect(treasury.connect(treasurer).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0, 0])).to.emit(treasury, "Executed").withArgs(mockTargetCharlie.address, encodingCharlie);
     
     })
 
-    it("success - admin can execute many payable targets", async () => {
+    it("success - treasurer can execute many payable targets", async () => {
       const MockTargetAlpha = await ethers.getContractFactory("MockTargetAlpha");
       const mockTargetAlpha = await MockTargetAlpha.deploy();
       await mockTargetAlpha.deployed();
@@ -217,13 +216,13 @@ describe("treasury", function () {
       expect(await ethers.provider.getBalance(mockTargetBravo.address)).equals(ethers.utils.parseEther("0"))
       expect(await ethers.provider.getBalance(mockTargetCharlie.address)).equals(ethers.utils.parseEther("0"))
 
-      await expect(treasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [ethers.utils.parseEther("1"), 0, 0], {
+      await expect(treasury.connect(treasurer).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [ethers.utils.parseEther("1"), 0, 0], {
         value: ethers.utils.parseEther("1")
       })).to.emit(treasury, "Executed").withArgs(mockTargetAlpha.address, encodingAlpha);
-      await expect(treasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, ethers.utils.parseEther("2"), 0], {
+      await expect(treasury.connect(treasurer).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, ethers.utils.parseEther("2"), 0], {
         value: ethers.utils.parseEther("2")
       })).to.emit(treasury, "Executed").withArgs(mockTargetBravo.address, encodingBravo);
-      await expect(treasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0, ethers.utils.parseEther("3")], {
+      await expect(treasury.connect(treasurer).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0, ethers.utils.parseEther("3")], {
         value: ethers.utils.parseEther("3")
       })).to.emit(treasury, "Executed").withArgs(mockTargetCharlie.address, encodingCharlie);
 
@@ -232,7 +231,7 @@ describe("treasury", function () {
       expect(await ethers.provider.getBalance(mockTargetCharlie.address)).equals(ethers.utils.parseEther("3"))
     })
 
-    it("fail - non-admin can execute many targets", async () => {
+    it("fail - non-treasurer can execute many targets", async () => {
       const MockTargetAlpha = await ethers.getContractFactory("MockTargetAlpha");
       const mockTargetAlpha = await MockTargetAlpha.deploy();
       await mockTargetAlpha.deployed();
@@ -250,7 +249,7 @@ describe("treasury", function () {
       await expect(treasury.executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0, 0])).to.be.revertedWith("Can only be called by treasurer address!")
     })
 
-    it("fail - admin calls executeAll with varying param lengths", async () => {
+    it("fail - treasurer calls executeAll with varying param lengths", async () => {
       const MockTargetAlpha = await ethers.getContractFactory("MockTargetAlpha");
       const mockTargetAlpha = await MockTargetAlpha.deploy();
       await mockTargetAlpha.deployed();
@@ -265,9 +264,9 @@ describe("treasury", function () {
       const encodingBravo = mockTargetAlpha.interface.encodeFunctionData("doCall", [420]);
       const encodingCharlie = mockTargetAlpha.interface.encodeFunctionData("doCall", [314159268]);
 
-      await expect(treasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0])).to.be.revertedWith("Treasury: array length mismatch.")
-      await expect(treasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo], [0, 0, 0])).to.be.revertedWith("Treasury: array length mismatch.")
-      await expect(treasury.connect(admin).executeAll([mockTargetAlpha.address, mockTargetBravo.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0, 0])).to.be.revertedWith("Treasury: array length mismatch.")
+      await expect(treasury.connect(treasurer).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0])).to.be.revertedWith("Treasury: array length mismatch.")
+      await expect(treasury.connect(treasurer).executeAll([mockTargetAlpha.address, mockTargetBravo.address, mockTargetCharlie.address], [encodingAlpha, encodingBravo], [0, 0, 0])).to.be.revertedWith("Treasury: array length mismatch.")
+      await expect(treasury.connect(treasurer).executeAll([mockTargetAlpha.address, mockTargetBravo.address], [encodingAlpha, encodingBravo, encodingCharlie], [0, 0, 0])).to.be.revertedWith("Treasury: array length mismatch.")
     })
   })
 
@@ -282,11 +281,11 @@ describe("treasury", function () {
       const v2 = await ethers.getContractAt("MockTreasuryV2", treasury.address);
 
       await expect(v2.test()).to.be.rejectedWith("CALL_EXCEPTION")
-      await treasury.connect(signers.admin).upgradeTo(mockTreasuryV2.address)
+      await treasury.connect(signers.treasurer).upgradeTo(mockTreasuryV2.address)
       expect(await v2.test()).equals(69)
     })
 
-    it("fail - non-admin can upgrade", async () => {
+    it("fail - non-treasurer cannot upgrade", async () => {
       const { protocol, signers } = setupData;
 
       const MockTreasuryV2 = await ethers.getContractFactory("MockTreasuryV2");
@@ -296,9 +295,8 @@ describe("treasury", function () {
       const v2 = await ethers.getContractAt("MockTreasuryV2", treasury.address);
 
       await expect(v2.test()).to.be.rejectedWith("CALL_EXCEPTION")
-      await expect(treasury.connect(signers.random).upgradeTo(mockTreasuryV2.address)).to.be.revertedWith("Can only be called by long timelock!")
+      await expect(treasury.connect(signers.admin).upgradeTo(mockTreasuryV2.address)).to.be.revertedWith("Can only be called by long timelock!")
       await expect(v2.test()).to.be.rejectedWith("CALL_EXCEPTION")
-
     })
   })
 });

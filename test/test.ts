@@ -196,7 +196,7 @@ export async function createSigners(): Promise<Signers> {
 		timelock24hour: signersArray[10],
 		protocolSigner: signersArray[11],
 		rplWhale: signersArray[12],
-		treasurer: signersArray[13],
+		treasurer: signersArray[14],
     nodesetAdmin: signersArray[15],
     nodesetServerAdmin: signersArray[16],
 	};

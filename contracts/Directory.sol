@@ -349,7 +349,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     /// @notice Sets the treasury address.
     /// @param newTreasury The new treasury address.
     function setTreasury(address newTreasury) public {
-        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
+        require(hasRole(Constants.TREASURY_ROLE, msg.sender), Constants.TREASURER_ONLY_ERROR);
         _treasury = newTreasury;
     }
 
