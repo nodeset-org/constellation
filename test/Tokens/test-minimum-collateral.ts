@@ -52,6 +52,7 @@ describe("Minimum Collateral", async function () {
 
               const { sig, timestamp } = await approveHasSignedExitMessageSig(
                 setupData,
+                nodeOperator.address,
                 '0x' + config.expectedMinipoolAddress,
                 config.salt,
               );
@@ -120,6 +121,7 @@ describe("Minimum Collateral", async function () {
 
                       const { sig, timestamp } = await approveHasSignedExitMessageSig(
                         setupData,
+                        nodeOperator.address,
                         '0x' + config.expectedMinipoolAddress,
                         config.salt,
                       );
@@ -207,6 +209,7 @@ describe("Minimum Collateral", async function () {
 
                       const { sig, timestamp } = await approveHasSignedExitMessageSig(
                         setupData,
+                        nodeOperator.address,
                         '0x' + config.expectedMinipoolAddress,
                         config.salt,
                       );
@@ -294,6 +297,7 @@ describe("Minimum Collateral", async function () {
 
                       const { sig, timestamp } = await approveHasSignedExitMessageSig(
                         setupData,
+                        nodeOperator.address,
                         '0x' + config.expectedMinipoolAddress,
                         config.salt,
                       );
@@ -384,6 +388,7 @@ describe("Minimum Collateral", async function () {
 
                   const { sig, timestamp } = await approveHasSignedExitMessageSig(
                     setupData,
+                    nodeOperator.address,
                     '0x' + config.expectedMinipoolAddress,
                     config.salt,
                   );
@@ -450,6 +455,7 @@ describe("Minimum Collateral", async function () {
 
                 const { sig, timestamp } = await approveHasSignedExitMessageSig(
                     setupData,
+                    nodeOperator.address,
                     '0x' + config.expectedMinipoolAddress,
                     config.salt,
                 );

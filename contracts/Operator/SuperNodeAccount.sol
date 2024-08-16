@@ -57,13 +57,14 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     // Variables for admin server message checks (if enabled for minipool creation)
     bool public adminServerCheck;
-    mapping(bytes => bool) public sigsUsed;
     uint256 public adminServerSigExpiry;
+    mapping(bytes => bool) public sigsUsed;
 
     // Merkle claim signature data
     uint256 public merkleClaimNonce;
-    mapping(bytes32 => bool) public merkleClaimSigUsed;
     uint256 public merkleClaimSigExpiry;
+    mapping(bytes32 => bool) public merkleClaimSigUsed;
+    mapping(address => uint256) public nonces;
 
     bool lazyInit;
 
@@ -236,6 +237,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
                             salt,
                             _config.sigGenesisTime,
                             address(this),
+                            nonces[subNodeOperator]++,
                             block.chainid
                         )
                     )
