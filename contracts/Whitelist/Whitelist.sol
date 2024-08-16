@@ -134,12 +134,10 @@ contract Whitelist is UpgradeableBase {
     /// @notice Allows an operator to remove themselves from the whitelist (e.g. so that a new node address may be used instead).
     /// @dev May only be called by the operator when they have no more active minipools remaining.
     ///      It emits the 'OperatorRemoved' event to notify when an operator has been successfully removed.
-    /// @param nodeOperator The address of the operator remove.
-    function removeOperatorSelf(address nodeOperator) public {
-        require(msg.sender == nodeOperator,"Sender must be the node operator to remove");
-        require(nodeMap[nodeOperator].activeValidatorCount == 0, "Cannot remove node without first exiting and processing all minipools");
-        _removeOperator(nodeOperator);
-        emit OperatorRemoved(nodeOperator);
+    function removeOperatorSelf() public {
+        require(nodeMap[msg.sender].activeValidatorCount == 0, "Cannot remove node without first exiting and processing all minipools");
+        _removeOperator(msg.sender);
+        emit OperatorRemoved(msg.sender);
     }
 
     /// @notice Adds a new operator to the whitelist.
