@@ -264,7 +264,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
     /// @notice Assign deposits to available minipools. Reverts if assigning deposits is disabled.
     function assignDeposits() external override onlyThisLatestContract {
-        console.log("RocketDepositPool.assignDeposit()");
         // Load contracts
         RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(
                 getContractAddress('rocketDAOProtocolSettingsDeposit')
@@ -275,7 +274,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
     /// @dev Assign deposits to available minipools. Does nothing if assigning deposits is disabled.
     function maybeAssignDeposits() external override onlyThisLatestContract returns (bool) {
-        console.log("RocketDepositPool: Using maybe assignment");
         // Load contracts
         RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(
                 getContractAddress('rocketDAOProtocolSettingsDeposit')
@@ -298,10 +296,8 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         );
         // Decide which queue processing implementation to use based on queue contents
         if (rocketMinipoolQueue.getContainsLegacy()) {
-            console.log("RocketDepositPool using Legacy");
             return _assignDepositsLegacy(rocketMinipoolQueue, _rocketDAOProtocolSettingsDeposit);
         } else {
-            console.log("RocketDepositPool using New");
             return _assignDepositsNew(rocketMinipoolQueue, _rocketDAOProtocolSettingsDeposit);
         }
     }
@@ -330,7 +326,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             assignments = maxAssignments;
         }
         address[] memory minipools = _rocketMinipoolQueue.dequeueMinipools(assignments);
-        console.log("RocketDepositPool minipool length:", minipools.length);
         if (minipools.length > 0) {
             // Withdraw ETH from vault
             uint256 totalEther = minipools.length.mul(variableDepositAmount);

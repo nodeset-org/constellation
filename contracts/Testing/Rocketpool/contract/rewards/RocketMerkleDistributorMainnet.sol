@@ -129,10 +129,7 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
             }
             // Distribute ETH
             if (totalAmountETH > 0) {
-                console.log("caller of withdraw etehr", address(this));
                 rocketVault.withdrawEther(totalAmountETH);
-                console.log("balance ether", address(this).balance);
-                console.log("totalAmountETH",totalAmountETH);
                 (bool result, ) = withdrawalAddress.call{value: totalAmountETH}('');
                 require(result, 'Failed to claim ETH');
             }
@@ -222,6 +219,5 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
 
     // Allow receiving ETH from RocketVault, no action required
     function receiveVaultWithdrawalETH() external payable override {
-        console.log("in receiveVaultWithdrawalETH");
     }
 }

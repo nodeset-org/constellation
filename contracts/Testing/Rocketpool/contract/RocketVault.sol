@@ -95,17 +95,13 @@ contract RocketVault is RocketBase, RocketVaultInterface {
             etherBalances[contractName] = etherBalances[contractName].sub(_amount);
         }
         // Withdraw
-        console.log('rocketVault _amount', _amount);
-        console.log('rocketVault balance', address(this).balance);
         RocketVaultWithdrawerInterface withdrawer = RocketVaultWithdrawerInterface(msg.sender);
-        console.log('calling withdraw ether', msg.sender);
         withdrawer.receiveVaultWithdrawalETH{value: _amount}();
         //(bool result, ) = payable(msg.sender).call{value: _amount}('');
         //require(result, "bad trasnfer in vualt");
 
         // Emit ether withdrawn event
         emit EtherWithdrawn(contractName, _amount, block.timestamp);
-        console.log('called rocketvault.withdrawEther()');
     }
 
     // Accept an token deposit and assign its balance to a network contract (saves a large amount of gas this way through not needing a double token transfer via a network contract first)
