@@ -170,7 +170,10 @@ describe("SuperNodeAccount", function () {
         expect(totalEthLocked).to.equal(ethers.utils.parseEther("1"));
 
         const minipoolData = await protocol.superNode.minipoolData('0x' + config.expectedMinipoolAddress);
-        expect(minipoolData).to.equal([signers.hyperdriver.address, await protocol.vCWETH.treasuryFee(), await protocol.vCWETH.nodeOperatorFee(), 0]);
+        expect(minipoolData.subNodeOperator).to.equal(signers.hyperdriver.address);
+        expect(minipoolData.ethTreasuryFee).to.equal(await protocol.vCWETH.treasuryFee());
+        expect(minipoolData.noFee).to.equal(await protocol.vCWETH.nodeOperatorFee());
+        expect(minipoolData.index).to.equal(ethers.BigNumber.from(0));
 
     });
 
