@@ -6,7 +6,7 @@ import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgrad
 import './RPLVault.sol';
 import '../PriceFetcher.sol';
 import '../UpgradeableBase.sol';
-import '../Operator/NodeSetOperatorRewardDistributor.sol';
+import '../MerkleClaimStreamer.sol';
 import '../Utils/Constants.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/Oracles/IConstellationOracle.sol';
@@ -147,6 +147,18 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         od.rebalanceWethVault();
     }
 
+    /// @dev Preview taking an entry fee on deposit. See {IERC4626-previewDeposit}.
+    function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
+        uint256 fee = this.getMintFeePortion(assets);
+        return super.previewDeposit(assets - fee);
+    }
+
+    /// @dev Preview adding an entry fee on mint. See {IERC4626-previewMint}.
+    function previewMint(uint256 shares) public view virtual override returns (uint256) {
+        uint256 assets = super.previewMint(shares);
+        return assets + this.getMintFeePortion(assets);
+    }
+
     /**
      * @notice Retrieves the total yield available for distribution.
      * @dev This function calculates the yield that can be distributed by subtracting the total yield already distributed 
@@ -180,9 +192,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function totalAssets() public view override returns (uint256) {
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         (uint256 distributableYield, bool signed) = this.getDistributableYield();
+        uint256 merkleRewards = MerkleClaimStreamer(getDirectory().getMerkleClaimStreamerAddress()).getStreamedTvlEth();
         return (
             uint256(
-                int(IERC20(asset()).balanceOf(address(this)) + od.getTvlEth()) +
+                int(IERC20(asset()).balanceOf(address(this)) + od.getTvlEth() +  merkleRewards)  +
                     (signed ? -int(distributableYield) : int(distributableYield))
             )
         );

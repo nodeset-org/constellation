@@ -280,9 +280,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     await tx.wait();
 
     let hasProtocolRole = await returnData.directory.hasRole(protocolRole, signers.protocolSigner.address);
-    console.log("wait for granting roll to confirm...", hasProtocolRole)
     while(!(hasProtocolRole)) {
-        console.log("wait for granting roll to confirm...", hasProtocolRole)
         hasProtocolRole = await returnData.directory.hasRole(protocolRole, signers.protocolSigner.address);
     }
 
