@@ -26,8 +26,6 @@ contract PriceFetcher is UpgradeableBase {
      * @return The price of RPL/ETH (number of RPL you'd receive for 1 ETH).
      */
     function getPrice() public view returns (uint256) {
-        console.log('getPriceFromODAO');
-        console.logAddress(address(_directory.getRocketNetworkPrices()));
         uint256 rplPrice = _directory.getRocketNetworkPrices().getRPLPrice();
 
         uint256 invertedPrice = (1 ether * 10 ** 18) / rplPrice;

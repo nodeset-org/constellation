@@ -56,6 +56,7 @@ describe("Node Operator Onboarding", function () {
         expect(await protocol.superNode.hasSufficientLiquidity(bondValue)).equals(false);
         await prepareOperatorDistributionContract(setupData, 1);
         console.log('ETH balance of OD', await ethers.provider.getBalance(protocol.operatorDistributor.address));
+        console.log('WETH balance of WETHVault', await weth.balanceOf(protocol.vCWETH.address));
         console.log('RPL balance of OD', await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address));
         console.log("===SECOND HASSUFFICIENTLIQUIDITY===");
         expect(await protocol.superNode.hasSufficientLiquidity(bondValue)).equals(true);

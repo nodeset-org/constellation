@@ -492,56 +492,16 @@ export const badAutWhitelistUserServerSig = async (setupData: SetupData, nodeOpe
 export async function prepareOperatorDistributionContract(setupData: SetupData, numOperators: Number) {
   const vweth = setupData.protocol.vCWETH;
   let depositTarget = ethers.utils.parseEther('8').mul(BigNumber.from(numOperators));
-  depositTarget = depositTarget.sub(await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address));
-  const missingLiquidity = await vweth.getMissingLiquidityAfterDeposit(depositTarget.add(await vweth.getMintFeePortion(depositTarget)));
-  const requiredEth = (depositTarget.add(missingLiquidity)).div(ethers.utils.parseEther('1').sub(await vweth.mintFee())).mul(ethers.utils.parseEther('1'));
-
-  console.log('depositTarget', depositTarget);
-  console.log('missingLiquidity', missingLiquidity);
+  const requiredEth = (await vweth.getDepositNeededForNumMinipools(BigNumber.from(numOperators))).add(1);
   console.log('REQUIRE COLLAT', requiredEth);
-  // const requiredEth = depositAmount
-  //   .add(vaultMinimum)
-  //   .mul((await setupData.protocol.vCWETH.liquidityReservePercent())
-  //     .div(ethers.utils.parseUnits('1', 17)))
-  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 2)))
-  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 3)))
-  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 4)))
-  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 5)))
-  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 6)))
-  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 7)))
-  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 8)))
-  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 9)))
-  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 10)))
-  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 11)))
-  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 12)))
-  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 13)))
-  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 14)))
-  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 15)))
-  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 16)))
-  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 17)))
-  //   .add(depositAmount.div(ethers.utils.parseUnits("1", 18)))
-  //   .add(ethers.constants.One)
-  // console.log('REQUIRE+ETH', requiredEth);
 
   await setupData.protocol.wETH.connect(setupData.signers.ethWhale).deposit({ value: requiredEth });
   await setupData.protocol.wETH.connect(setupData.signers.ethWhale).approve(setupData.protocol.vCWETH.address, requiredEth);
-  await setupData.protocol.vCWETH.connect(setupData.signers.ethWhale).deposit(requiredEth, setupData.signers.ethWhale.address);
 
-  /*
-  await setupData.protocol.depositPool.connect(protocolSigner).openGate();
-  await setupData.signers.admin.sendTransaction({
-    to: setupData.protocol.operatorDistributor.address,
-    value: requiredEth,
-  });
+  console.log('ETH balance of OD', await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address));
+  console.log('WETH balance of WETHVault', await setupData.protocol.wETH.balanceOf(setupData.protocol.vCWETH.address));
 
-  await setupData.protocol.depositPool.connect(protocolSigner).onEthRewardsReceived(requiredEth)
-
-  await setupData.protocol.depositPool.connect(protocolSigner).closeGate();
-  await setupData.protocol.depositPool.connect(protocolSigner).sendEthToDistributors();
-  await setupData.protocol.depositPool.connect(protocolSigner).sendRplToDistributors(); */
-
-
-  // send eth to the rocketpool deposit contract (mint rETH to signers[0])
+  expect(await setupData.protocol.vCWETH.connect(setupData.signers.ethWhale).deposit(requiredEth, setupData.signers.ethWhale.address)).to.not.be.reverted;
 
   const rplStaked = await setupData.rocketPool.rocketNodeStakingContract.getNodeRPLStake(setupData.protocol.superNode.address)
   const ethMatched = await setupData.rocketPool.rocketNodeStakingContract.getNodeETHMatched(setupData.protocol.superNode.address)
