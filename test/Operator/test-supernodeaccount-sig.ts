@@ -126,6 +126,78 @@ describe("SuperNodeAccount creation sig", function () {
         describe("When timestamp - sigGenesisTime is less than to adminServerSigExpiry", async () => {
             describe("When sig has been used", async () => {
                 it("Should revert", async () => {
+                    const setupData = await loadFixture(protocolFixture);
+                    const { protocol, signers, rocketPool } = setupData;
+                    const nodeOperator = signers.hyperdriver;
+                    const bond = await setupData.protocol.superNode.bond();
+
+                    expect(await protocol.superNode.hasSufficientLiquidity(bond)).to.equal(false);
+                    await prepareOperatorDistributionContract(setupData, 3);
+                    expect(await protocol.superNode.hasSufficientLiquidity(bond)).to.equal(true);
+
+                    await assertAddOperator(setupData, nodeOperator);
+                    const salt = 420;
+                    const { rawSalt, pepperedSalt } = await approvedSalt(salt, nodeOperator.address);
+                    const depositData = await generateDepositData(protocol.superNode.address, pepperedSalt)
+                    const config = {
+                        validatorPubkey: depositData.depositData.pubkey,
+                        validatorSignature: depositData.depositData.signature,
+                        depositDataRoot: depositData.depositDataRoot,
+                        salt: pepperedSalt,
+                        expectedMinipoolAddress: depositData.minipoolAddress,
+                    };
+
+                    await protocol.superNode.connect(signers.admin).setMaxValidators(10);
+
+                    const { sig, timestamp } = await approveHasSignedExitMessageSig(
+                        setupData,
+                        nodeOperator.address,
+                        '0x' + config.expectedMinipoolAddress,
+                        config.salt,
+                    );
+
+                    const { rawSalt: rawSalt2, pepperedSalt: pepperedSalt2 } = await approvedSalt(salt + 1, nodeOperator.address);
+                    const depositData2 = await generateDepositData(protocol.superNode.address, pepperedSalt2)
+                    const config2 = {
+                        validatorPubkey: depositData2.depositData.pubkey,
+                        validatorSignature: depositData2.depositData.signature,
+                        depositDataRoot: depositData2.depositDataRoot,
+                        salt: pepperedSalt2,
+                        expectedMinipoolAddress: depositData2.minipoolAddress,
+                    };
+
+                    const { sig: sig2, timestamp: timestamp2 } = await approveHasSignedExitMessageSig(
+                        setupData,
+                        nodeOperator.address,
+                        '0x' + config2.expectedMinipoolAddress,
+                        config2.salt,
+                    );
+
+
+                    await expect(protocol.superNode
+                        .connect(nodeOperator)
+                        .createMinipool({
+                            validatorPubkey: config.validatorPubkey,
+                            validatorSignature: config.validatorSignature,
+                            depositDataRoot: config.depositDataRoot,
+                            salt: rawSalt,
+                            expectedMinipoolAddress: config.expectedMinipoolAddress,
+                            sigGenesisTime: timestamp,
+                            sig: sig
+                        }, { value: ethers.utils.parseEther('1') })).to.not.be.reverted;
+
+
+                    await expect(protocol.superNode
+                        .connect(nodeOperator)
+                        .createMinipool({
+                            validatorPubkey: config2.validatorPubkey,
+                            validatorSignature: config2.validatorSignature,
+                            depositDataRoot: config2.depositDataRoot,
+                            salt: rawSalt2,
+                            expectedMinipoolAddress: config2.expectedMinipoolAddress,
+                            sigGenesisTime: timestamp2,
+                            sig: sig
+                        }, { value: ethers.utils.parseEther('1') })).to.be.revertedWith("sig already used");
 
                 })
             })
