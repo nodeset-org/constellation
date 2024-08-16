@@ -66,14 +66,14 @@ describe("Node Operator Onboarding", function () {
         console.log("operator flow minipoolAddress adf:,", minipoolAddress);
         expect(await protocol.superNode.getTotalEthStaked()).equals(BigInt(0));
         expect(await protocol.superNode.getTotalEthMatched()).equals(BigInt(0));
-        console.log('OD ETH balance: ', ethers.provider.getBalance(setupData.protocol.operatorDistributor.address));
-        console.log('OD RPL balance: ', setupData.rocketPool.rplContract.balanceOf(setupData.protocol.operatorDistributor.address));
+        console.log('OD ETH balance: ', await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address));
+        console.log('OD RPL balance: ', await setupData.rocketPool.rplContract.balanceOf(setupData.protocol.operatorDistributor.address));
         minipoolAddress = await deployMinipool(setupData, bondValue, signers.hyperdriver.address);
         console.log("operator flow minipoolAddress", minipoolAddress);
 
         // Assuming signers.hyperdriver.address and minipoolAddress are defined
-        const hyperdriverAddress = ethers.utils.getAddress(signers.hyperdriver.address);
-        const minipoolFormatAddress = ethers.utils.getAddress(minipoolAddress);
+        const hyperdriverAddress = await ethers.utils.getAddress(signers.hyperdriver.address);
+        const minipoolFormatAddress = await ethers.utils.getAddress(minipoolAddress);
 
         // Check if the subNodeOperator has the minipool
         expect((await protocol.superNode.minipoolData(minipoolFormatAddress)).subNodeOperator).to.equal(hyperdriverAddress);

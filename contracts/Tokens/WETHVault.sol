@@ -88,11 +88,21 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         uint256 mintFeePortion = this.getMintFeePortion(assets);
 
+        console.log("balance before deposit", IERC20(asset()).balanceOf(address(this)));
+        console.log("total assets before deposit", totalAssets());
+
         super._deposit(caller, receiver, assets, shares);
         
+        console.log("taking mint fee of", mintFeePortion);
+        console.log("balance before fee ", IERC20(asset()).balanceOf(address(this)));
+        console.log("total assets after deposit", totalAssets());
+
         address treasuryAddress = getDirectory().getTreasuryAddress();
         if(mintFeePortion > 0 && treasuryAddress != address(this))
             SafeERC20.safeTransfer(IERC20(asset()), treasuryAddress, mintFeePortion); // transfer the mint fee to the treasury
+
+        console.log("balance after fee ", IERC20(asset()).balanceOf(address(this)));
+        console.log("total assets after fee", totalAssets());
 
         // move everything to operator distributor in anticipation of rebalancing everything
         SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));
@@ -205,39 +215,12 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         return requiredBalance > currentBalance ? requiredBalance - currentBalance: 0;
     }
 
-    /**
-     * @dev For dev/testing only
-     */
-    function getMissingLiquidityAfterDepositNoFee(uint256 deposit) internal view returns (uint256) {
+    /// @dev for dev/testing
+    function getMissingLiquidityAfterDepositNoFee(uint256 deposit) public view returns (uint256) {
         uint256 fullBalance = totalAssets() + deposit;
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
         return requiredBalance > currentBalance ? requiredBalance - currentBalance: 0;
-    }
-
-    /**
-     * @dev For dev/testing
-     * @param numberOfMinipools The number of new minipools desired
-     * @return The amount of ETH necessary to deposit to create the number of minipools specified
-     */
-    function getDepositNeededForNumMinipools(uint256 numberOfMinipools) public view returns (uint256) {
-        uint256 targetODBalance = numberOfMinipools * SuperNodeAccount(getDirectory().getSuperNodeAddress()).bond();
-        uint256 actualODBalance = getDirectory().getOperatorDistributorAddress().balance;
-        //uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
-        //uint256 divisor = 1e18 - (mintFee*liquidityReservePercent*1e18 - liquidityReservePercent - mintFee) * 1e18;
-        //uint256 requiredDeposit = 1e18^2*(targetODBalance + liquidityReservePercent * totalAssets() - 2 * currentBalance + mintFee * liquidityReservePercent * totalAssets / divisor;
-        if(actualODBalance >= targetODBalance)
-            return 0;
-        uint256 odBalanceDiff = targetODBalance - actualODBalance;
-        uint256 requiredDeposit = (odBalanceDiff + getMissingLiquidityAfterDepositNoFee(odBalanceDiff));
-        console.log("intermediate requiredDeposit", requiredDeposit);
-        uint256 feeAmount = requiredDeposit.mulDiv(mintFee, 1e18, Math.Rounding.Up);
-        console.log("feeAmount", feeAmount);
-        requiredDeposit += requiredDeposit.mulDiv(mintFee, 1e18, Math.Rounding.Up);
-
-        //console.log("currentBalance", currentBalance);
-        console.log("requiredDeposit", requiredDeposit);
-        return requiredDeposit;
     }
 
     /**
@@ -247,7 +230,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @return The amount of liquidity required.
      */
     function getMissingLiquidity() public view returns (uint256) {
-        return getMissingLiquidityAfterDeposit(0);
+        return getMissingLiquidityAfterDepositNoFee(0);
     }
 
     /**

@@ -345,8 +345,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
 
         uint256 requiredWeth = vweth.getMissingLiquidity();
+        console.log("rebalancing by sending", requiredWeth, "from OD to WETHVault");
         uint256 wethBalance = IERC20(address(weth)).balanceOf(address(this));
         uint256 balanceEthAndWeth = IERC20(address(weth)).balanceOf(address(this)) + address(this).balance;
+        console.log("balanceEthAndWeth", balanceEthAndWeth);
         if (balanceEthAndWeth >= requiredWeth) { 
             // there's extra ETH that can be kept here for minipools, so only send required amount
             // figure out how much to wrap, then wrap it

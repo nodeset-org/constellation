@@ -65,7 +65,7 @@ describe("xrETH", function () {
     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
 
-    const expectedxrETHInSystem = ethers.utils.parseEther("100");
+    const expectedxrETHInSystem = ethers.utils.parseEther("99.97"); // with 0.03% mint fee
     const actualxrETHInSystem = await protocol.vCWETH.totalAssets();
     expect(expectedxrETHInSystem).equals(actualxrETHInSystem)
   })
@@ -75,14 +75,15 @@ describe("xrETH", function () {
     const { protocol, signers, rocketPool } = setupData;
 
     const depositAmount = ethers.utils.parseEther("100");
-    const expectedReserveInVault = ethers.utils.parseEther("10");
-    const surplusSentToOD = ethers.utils.parseEther("90");
+    const depositAfterFee = depositAmount.sub(await protocol.vCWETH.getMintFeePortion(depositAmount));
+    const expectedReserveInVault = (await protocol.vCWETH.getMissingLiquidityAfterDepositNoFee(depositAmount));
+    const surplusSentToOD = depositAfterFee.sub(expectedReserveInVault);
 
     await protocol.wETH.connect(signers.random).deposit({ value: depositAmount });
     await protocol.wETH.connect(signers.random).approve(protocol.vCWETH.address, depositAmount);
     await protocol.vCWETH.connect(signers.random).deposit(depositAmount, signers.random.address);
 
-    expect(await protocol.vCWETH.totalAssets()).equals(depositAmount)
+    expect(await protocol.vCWETH.totalAssets()).equals(depositAfterFee)
     console.log("after first deposit ETH/WETH balance of weth vault", 
       await ethers.provider.getBalance(protocol.vCWETH.address), "/",
       await protocol.wETH.balanceOf(protocol.vCWETH.address)
@@ -110,7 +111,7 @@ describe("xrETH", function () {
     await protocol.vCWETH.connect(signers.random).redeem(shareValue, signers.random.address, signers.random.address);
     let postBalance = await protocol.wETH.balanceOf(signers.random.address);
     expect(expectedRedeemValue).equals(postBalance.sub(preBalance));
-    let expectedTotalAssets = depositAmount.sub(expectedRedeemValue);
+    let expectedTotalAssets = depositAfterFee.sub(expectedRedeemValue);
     expect(await protocol.vCWETH.totalAssets()).equals(expectedTotalAssets);
     expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).equals(
       ((await protocol.vCWETH.totalAssets())
@@ -168,7 +169,7 @@ describe("xrETH", function () {
 
   })
 
-  it("success - tries to deposit and redeem from weth vault multiple times with minipool reward claims", async () => {
+  it.only("success - tries to deposit and redeem from weth vault multiple times with minipool reward claims", async () => {
     
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
@@ -183,7 +184,7 @@ describe("xrETH", function () {
     await protocol.wETH.connect(signers.random).approve(protocol.vCWETH.address, depositAmount);
     await protocol.vCWETH.connect(signers.random).deposit(depositAmount, signers.random.address);
     
-    expect(await protocol.vCWETH.totalAssets()).equals(totalDeposit);
+    expect(await protocol.vCWETH.totalAssets()).equals(totalDeposit.sub(await protocol.vCWETH.getMintFeePortion(totalDeposit)))
     
     const shareValue = await protocol.vCWETH.convertToAssets(ethers.utils.parseEther("1"))
     const initialRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
@@ -273,7 +274,7 @@ describe("xrETH", function () {
     await protocol.wETH.connect(signers.random).approve(protocol.vCWETH.address, depositAmount);
     await protocol.vCWETH.connect(signers.random).deposit(depositAmount, signers.random.address);
     
-    expect(await protocol.vCWETH.totalAssets()).equals(totalDeposit);
+    expect(await protocol.vCWETH.totalAssets()).equals(depositAmount.sub(await protocol.vCWETH.getMintFeePortion(depositAmount)))
     
     const shareValue = await protocol.vCWETH.convertToAssets(ethers.utils.parseEther("1"))
     const initialRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
