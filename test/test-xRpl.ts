@@ -189,7 +189,6 @@ describe("xRPL", function () {
     const rplTreasuryFee = await setupData.protocol.vCRPL.treasuryFee();
     const expectedTreasuryPortion = rplReward.mul(rplTreasuryFee).div(ethers.utils.parseEther("1")); 
     const expectedCommunityPortion = rplReward.sub(expectedTreasuryPortion)
-    console.log("expectedCommunityPortion",expectedCommunityPortion);
 
     expect(await protocol.vCRPL.totalAssets()).equals(depositAmount);
     //disable auto-mine of new blocks

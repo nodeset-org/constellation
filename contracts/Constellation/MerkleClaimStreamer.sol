@@ -126,12 +126,11 @@ contract MerkleClaimStreamer is UpgradeableBase {
         uint256 initialEthBalance = odAddress.balance;
         uint256 initialRplBalance = IERC20(getDirectory().getRPLAddress()).balanceOf(odAddress);
         
+        // note: will revert if both amountRPLR and amountETH are zero
         od.submitMerkleClaim(rewardIndex, amountRPL, amountETH, merkleProof);
 
         uint256 ethReward = odAddress.balance - initialEthBalance;
         uint256 rplReward = IERC20(getDirectory().getRPLAddress()).balanceOf(odAddress) - initialRplBalance;
-
-        require(ethReward != 0 || rplReward != 0, "ETH and RPL rewards were both zero");
 
         // lock all rewards in this contract to be streamed
         od.transferMerkleClaimToStreamer(ethReward, rplReward);
@@ -156,7 +155,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
         // process RPL fees
         if(rplReward > 0) {
             rplTreasuryPortion = RPLVault(getDirectory().getRPLVaultAddress()).getTreasuryPortion(rplReward);
-            
+
             // send treasury fee immediately
             SafeERC20.safeApprove(IERC20(getDirectory().getRPLAddress()), getDirectory().getTreasuryAddress(), rplTreasuryPortion);
             SafeERC20.safeTransfer(IERC20(getDirectory().getRPLAddress()), getDirectory().getTreasuryAddress(), rplTreasuryPortion);
