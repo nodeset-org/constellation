@@ -6,7 +6,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import '../../Interfaces/RocketPool/IRocketNodeStaking.sol';
 
-import '../../Utils/Constants.sol';
+import '../../Constellation/Utils/Constants.sol';
 
 contract MockRocketNodeStaking is IRocketNodeStaking {
     uint256 public rplStaked;

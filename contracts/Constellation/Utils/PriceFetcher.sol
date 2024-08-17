@@ -5,7 +5,7 @@ import '@openzeppelin/contracts/utils/math/Math.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 
 import './UpgradeableBase.sol';
-import './Utils/Constants.sol';
+import './Constants.sol';
 
 import 'hardhat/console.sol';
 

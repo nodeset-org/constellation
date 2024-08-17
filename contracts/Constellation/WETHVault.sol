@@ -9,7 +9,7 @@ import './Utils/UpgradeableBase.sol';
 import './MerkleClaimStreamer.sol';
 import './Utils/Constants.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
-import '../Interfaces/Oracles/IConstellationOracle.sol';
+import '../Interfaces/IConstellationOracle.sol';
 import '../Interfaces/IWETH.sol';
 
 import 'hardhat/console.sol';

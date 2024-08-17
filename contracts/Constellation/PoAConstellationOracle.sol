@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
-import '../Interfaces/Oracles/IConstellationOracle.sol';
-import '../UpgradeableBase.sol';
-import '../Operator/SuperNodeAccount.sol';
-import '../Tokens/WETHVault.sol';
+import '../Interfaces/IConstellationOracle.sol';
+import './Utils/UpgradeableBase.sol';
+import './SuperNodeAccount.sol';
+import './WETHVault.sol';
 
 pragma solidity 0.8.17;
 
