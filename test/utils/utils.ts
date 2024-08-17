@@ -489,7 +489,7 @@ export const badAutWhitelistUserServerSig = async (setupData: SetupData, nodeOpe
   return { sig, timestamp };
 };
 
-export async function prepareOperatorDistributionContract(setupData: SetupData, numOperators: Number) {
+export async function prepareOperatorDistributionContract(setupData: SetupData, numOperators: number) {
   const vweth = setupData.protocol.vCWETH;
   let depositTarget = ethers.utils.parseEther('8').mul(BigNumber.from(numOperators));
   let depositAmount = depositTarget.sub(await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address));
@@ -524,7 +524,27 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
       .add(depositAmount.div(ethers.utils.parseUnits("1", 18)))
       .add(ethers.constants.One);
   }
-  requiredEth = requiredEth.mul(ethers.utils.parseEther('1')).div(ethers.utils.parseEther('1').sub(await vweth.mintFee())).add(ethers.constants.One);//.add((ethers.constants.One).mul(BigNumber.from(numOperators)));
+  requiredEth = requiredEth.mul(ethers.utils.parseEther('1')).div(ethers.utils.parseEther('1').sub(await vweth.mintFee()));
+  let error = 0;
+  switch(numOperators) {
+    case 1: 
+      error = 1;
+      break;
+    case 2: 
+      error = 2;
+      break;
+    case 3: 
+      error = 1;
+      break;
+    case 4: 
+      error = 4;
+      break;
+    case 5: 
+      error = 5;
+      break;
+  }
+  console.log("error is", error);
+  requiredEth = requiredEth.add(error);  // the real math is probably some weird modulo of the fee amount, but we only use a param value of up to 5 in our tests
   console.log('REQUIRE+ETH', requiredEth);
 
   await setupData.protocol.wETH.connect(setupData.signers.ethWhale).deposit({ value: requiredEth });

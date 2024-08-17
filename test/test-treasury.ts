@@ -138,7 +138,7 @@ describe("treasury", function () {
       const encoding = mockTargetAlpha.interface.encodeFunctionData("doCall", [69]);
 
       expect(await mockTargetAlpha.called()).equals(0);
-      await expect(treasury.connect(treasurer).execute(mockTargetAlpha.address, encoding)).to.emit(treasury, "Executed").withArgs(mockTargetAlpha.address, encoding);
+      await expect(treasury.connect(treasurer).executeAll([mockTargetAlpha.address], [encoding], [69])).to.emit(treasury, "Executed").withArgs(mockTargetAlpha.address, encoding);
       expect(await mockTargetAlpha.called()).equals(69);
     })
 
@@ -147,7 +147,7 @@ describe("treasury", function () {
       const mockTargetAlpha = await MockTargetAlpha.deploy();
       await mockTargetAlpha.deployed();
 
-      const encoding = mockTargetAlpha.interface.encodeFunctionData("doCall", [69]);
+      const encoding = mockTargetAlpha.interface.encodeFunctionData("doCall", [ethers.utils.parseEther("1")]);
 
       expect(await ethers.provider.getBalance(mockTargetAlpha.address)).equals(ethers.utils.parseEther("0"))
 
