@@ -243,7 +243,9 @@ describe("xrETH", function () {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
     
+    expect(await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).equals(0);
     const initialDeposit = await prepareOperatorDistributionContract(setupData, 1);
+    expect(await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).equals(await protocol.vCWETH.getMintFeePortion(initialDeposit));
 		const minipools = await registerNewValidator(setupData, [signers.random]);
 
     const depositAmount = ethers.utils.parseEther("100");
@@ -252,8 +254,10 @@ describe("xrETH", function () {
     
     await protocol.wETH.connect(signers.random).deposit({ value: depositAmount });
     await protocol.wETH.connect(signers.random).approve(protocol.vCWETH.address, depositAmount);
+
     await protocol.vCWETH.connect(signers.random).deposit(depositAmount, signers.random.address);
-    
+    expect(await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit));
+
     expect(await protocol.vCWETH.totalAssets()).equals(totalDepositAfterMintFee)
     
     const shareValue = await protocol.vCWETH.convertToAssets(ethers.utils.parseEther("1"))
@@ -269,10 +273,9 @@ describe("xrETH", function () {
     })
 
     await protocol.operatorDistributor.connect(signers.random).processNextMinipool();
-    let treasurerBalance = await ethers.provider.getBalance(setupData.signers.treasurer.address);
+    expect(await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit));
     await protocol.operatorDistributor.connect(signers.admin).distributeExitedMinipool(minipools[0])
-    let treasurerBalanceChange = (await ethers.provider.getBalance(setupData.signers.treasurer.address)).sub(treasurerBalance);
-    expect(treasurerBalanceChange).equals(0);
+    expect(await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit));
     const expectedRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
 
     expect(await protocol.vCWETH.totalAssets()).equals(totalDepositAfterMintFee.sub(penalty));
@@ -296,10 +299,8 @@ describe("xrETH", function () {
     const fullPreviewRedeem = (await protocol.vCWETH.previewRedeem((await protocol.vCWETH.balanceOf(signers.random.address)).add(initialDeposit).sub(await protocol.vCWETH.getMintFeePortion(initialDeposit))));
     expectNumberE18ToBeApproximately(fullPreviewRedeem, (await protocol.vCWETH.totalAssets()), .00000001); 
 
-    treasurerBalanceChange = treasurerBalanceChange.sub(await ethers.provider.getBalance(setupData.signers.treasurer.address));
-    expect(treasurerBalanceChange).equals(0);
     expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).equals(0);
-    expect(await ethers.provider.getBalance(setupData.signers.treasurer.address)).equals(await protocol.vCWETH.getMintFeePortion(depositAmount));
+    expect(await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit));
   })
 
   it("success - tries to deposit and redeem from weth vault multiple times with a minipool reward claim, simulating an exit with rewards", async () => {
