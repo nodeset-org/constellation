@@ -24,7 +24,7 @@ const prepareStakeWithLockAmount = async (setupData: SetupData, lockAmount: BigN
         salt: pepperedSalt,
         expectedMinipoolAddress: depositData.minipoolAddress
     };
-    const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+    const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, signers.hyperdriver.address, '0x' + config.expectedMinipoolAddress, config.salt);
     await protocol.superNode.connect(signers.hyperdriver).createMinipool(
         {
             validatorPubkey: config.validatorPubkey,

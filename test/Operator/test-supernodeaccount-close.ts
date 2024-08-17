@@ -70,7 +70,8 @@ describe("SuperNodeAccount close", function () {
         };
 
         const message = await approveHasSignedExitMessageSig(
-            setupData,
+            setupData, 
+            nodeOperator.address,
             '0x' + config.expectedMinipoolAddress,
             config.salt,
         );

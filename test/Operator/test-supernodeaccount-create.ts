@@ -61,6 +61,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
 
             const { sig, timestamp } = await approveHasSignedExitMessageSig(
                 setupData,
+                nodeOperator.address,
                 '0x' + config.expectedMinipoolAddress,
                 config.salt,
             );
@@ -103,6 +104,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
 
             const { sig, timestamp } = await approveHasSignedExitMessageSig(
                 setupData,
+                nodeOperator.address,
                 '0x' + config.expectedMinipoolAddress,
                 config.salt,
             );
@@ -149,6 +151,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
 
                 let exitMessage = await approveHasSignedExitMessageSig(
                     setupData,
+                    nodeOperator.address,
                     '0x' + config.expectedMinipoolAddress,
                     config.salt,
                 );
@@ -183,6 +186,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
 
                 exitMessage = await approveHasSignedExitMessageSig(
                     setupData,
+                    nodeOperator.address,
                     '0x' + config.expectedMinipoolAddress,
                     config.salt,
                 );
@@ -217,6 +221,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
 
                 exitMessage = await approveHasSignedExitMessageSig(
                     setupData,
+                    nodeOperator.address,
                     '0x' + config.expectedMinipoolAddress,
                     config.salt,
                 );
@@ -251,6 +256,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
 
                 exitMessage = await approveHasSignedExitMessageSig(
                     setupData,
+                    nodeOperator.address,
                     '0x' + config.expectedMinipoolAddress,
                     config.salt,
                 );
@@ -316,6 +322,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
 
                 let exitMessage = await approveHasSignedExitMessageSig(
                     setupData,
+                    nodeOperator1.address,
                     '0x' + config.expectedMinipoolAddress,
                     config.salt,
                 );
@@ -350,6 +357,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
 
                 exitMessage = await approveHasSignedExitMessageSig(
                     setupData,
+                    nodeOperator2.address,
                     '0x' + config.expectedMinipoolAddress,
                     config.salt,
                 );
@@ -384,6 +392,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
 
                 exitMessage = await approveHasSignedExitMessageSig(
                     setupData,
+                    nodeOperator1.address,
                     '0x' + config.expectedMinipoolAddress,
                     config.salt,
                 );
@@ -435,6 +444,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
 
                 exitMessage = await approveHasSignedExitMessageSig(
                     setupData,
+                    nodeOperator2.address,
                     '0x' + config.expectedMinipoolAddress,
                     config.salt,
                 );
