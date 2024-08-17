@@ -142,7 +142,6 @@ contract MerkleClaimStreamer is UpgradeableBase {
         // lock all rewards in this contract to be streamed
         od.transferMerkleClaimToStreamer(ethReward, rplReward);
 
-        lastClaimTime = block.timestamp;
         uint256 ethTreasuryPortion = 0;
         uint256 ethOperatorPortion = 0;
         uint256 rplTreasuryPortion = 0;
@@ -176,6 +175,8 @@ contract MerkleClaimStreamer is UpgradeableBase {
 
         // sweep all the prior interval's TVL
         this.sweepLockedTVL();
+
+        lastClaimTime = block.timestamp;
 
         // anything remaining at this point is counted as rewards for the next streaming interval 
         priorRplStreamAmount = IERC20(_directory.getRPLAddress()).balanceOf(address(this));

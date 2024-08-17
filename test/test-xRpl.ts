@@ -216,7 +216,9 @@ describe("xRPL", function () {
     let lastClaimTime = await protocol.merkleClaimStreamer.lastClaimTime();
     console.log("lastClaimTime", lastClaimTime);
     expect(lastClaimTime).equals((await ethers.provider.getBlock('latest')).timestamp - 86400);
-    let expectedTotalAssets = depositAmount.add(expectedCommunityPortion.div(streamingInterval));
+    let expectedStreamedTVL = expectedCommunityPortion.div(streamingInterval);
+    let expectedTotalAssets = depositAmount.add(expectedStreamedTVL);
+    expect(await protocol.merkleClaimStreamer.getStreamedTvlRpl()).equals(expectedStreamedTVL);
     expect(await protocol.vCRPL.totalAssets()).equals(expectedTotalAssets);
 
     // increase time to 3 days since claim
