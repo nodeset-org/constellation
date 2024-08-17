@@ -147,14 +147,14 @@ describe("treasury", function () {
       const mockTargetAlpha = await MockTargetAlpha.deploy();
       await mockTargetAlpha.deployed();
 
-      const encoding = mockTargetAlpha.interface.encodeFunctionData("doCall", [ethers.utils.parseEther("1")]);
+      const encoding = mockTargetAlpha.interface.encodeFunctionData("doCall", [6969]);
 
       expect(await ethers.provider.getBalance(mockTargetAlpha.address)).equals(ethers.utils.parseEther("0"))
 
-      await expect(treasury.connect(treasurer).executeAll([mockTargetAlpha.address], [encoding], [ethers.utils.parseEther("1")]))
+      await expect(treasury.connect(treasurer).executeAll([mockTargetAlpha.address], [encoding], [6969]))
         .to.emit(treasury, "Executed").withArgs(mockTargetAlpha.address, encoding);
 
-      expect(await ethers.provider.getBalance(mockTargetAlpha.address)).equals(ethers.utils.parseEther("1"))
+      expect(await ethers.provider.getBalance(mockTargetAlpha.address)).equals(6969)
     })
 
     it("fail - non-treasurer cannot execute single target", async () => {
