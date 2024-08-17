@@ -138,7 +138,7 @@ describe("treasury", function () {
       const encoding = mockTargetAlpha.interface.encodeFunctionData("doCall", [69]);
 
       expect(await mockTargetAlpha.called()).equals(0);
-      await expect(treasury.connect(treasurer).executeAll([mockTargetAlpha.address], [encoding], [69])).to.emit(treasury, "Executed").withArgs(mockTargetAlpha.address, encoding);
+      await expect(treasury.connect(treasurer).executeAll([mockTargetAlpha.address], [encoding], [0])).to.emit(treasury, "Executed").withArgs(mockTargetAlpha.address, encoding);
       expect(await mockTargetAlpha.called()).equals(69);
     })
 
@@ -151,10 +151,11 @@ describe("treasury", function () {
 
       expect(await ethers.provider.getBalance(mockTargetAlpha.address)).equals(ethers.utils.parseEther("0"))
 
-      await expect(treasury.connect(treasurer).executeAll([mockTargetAlpha.address], [encoding], [6969]))
-        .to.emit(treasury, "Executed").withArgs(mockTargetAlpha.address, encoding);
+      await expect(treasury.connect(treasurer).executeAll([mockTargetAlpha.address], [encoding], [ethers.utils.parseEther("1")], {
+        value: ethers.utils.parseEther("1")
+      })).to.emit(treasury, "Executed").withArgs(mockTargetAlpha.address, encoding);
 
-      expect(await ethers.provider.getBalance(mockTargetAlpha.address)).equals(6969)
+      expect(await ethers.provider.getBalance(mockTargetAlpha.address)).equals(ethers.utils.parseEther("1"))
     })
 
     it("fail - non-treasurer cannot execute single target", async () => {
@@ -164,7 +165,7 @@ describe("treasury", function () {
 
       const encoding = mockTargetAlpha.interface.encodeFunctionData("doCall", [69]);
 
-      await expect(treasury.executeAll([mockTargetAlpha.address], [encoding], [BigNumber.from(0)])).to.be.revertedWith("Can only be called by treasurer address!")
+      await expect(treasury.executeAll([mockTargetAlpha.address], [encoding], [0])).to.be.revertedWith("Can only be called by treasurer address!")
     })
 
     it("success - treasurer can execute many targets", async () => {
