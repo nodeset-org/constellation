@@ -12,7 +12,6 @@ describe("treasury", function () {
   let treasurer: SignerWithAddress;
   let nonTreasurer: SignerWithAddress;
   let token: MockERC20;
-  let directory: Directory;
   let setupData: SetupData;
 
   beforeEach(async function () {
