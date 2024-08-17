@@ -44,7 +44,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
     uint256 public streamingInterval;
 
     function setStreamingInterval(uint256 newStreamingInterval) external onlyAdmin {
-        require(newStreamingInterval > 0 seconds && newStreamingInterval <= 365 days, "New streaming interval must be >= 0 seconds and <= 365 days");
+        require(newStreamingInterval > 0 seconds && newStreamingInterval <= 365 days, "New streaming interval must be > 0 seconds and <= 365 days");
         require(newStreamingInterval != streamingInterval, "New streaming interval must be different");
         
         streamingInterval = newStreamingInterval;
