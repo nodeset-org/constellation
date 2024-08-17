@@ -457,19 +457,19 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 balanceAfterRefund;
         uint256 rewards;
         // This is unchecked because we are already effectively checking for underflow given the following business logic
-        unchecked { 
-            balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
-            rewards = minipool.calculateNodeShare(balanceAfterRefund) > minipool.getNodeDepositBalance() 
-                ? minipool.calculateNodeShare(balanceAfterRefund) -  minipool.getNodeDepositBalance()
-                : 0;
-        }
+        //unchecked { 
+        balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
+        rewards = minipool.calculateNodeShare(balanceAfterRefund) > minipool.getNodeDepositBalance() 
+            ? minipool.calculateNodeShare(balanceAfterRefund) -  minipool.getNodeDepositBalance()
+            : 0;
+        //}
 
         console.log("rewards", rewards);
 
         minipool.distributeBalance(false);
         // stop tracking
         (address operatorAddress, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));   
-        Whitelist(getDirectory().getWhitelistAddress()).registerNewValidator(operatorAddress);
+        Whitelist(getDirectory().getWhitelistAddress()).removeValidator(operatorAddress);
         sna.removeMinipool(address(minipool));
         // account for rewards 
         this.onEthBeaconRewardsReceived(rewards, treasuryFee, noFee);
