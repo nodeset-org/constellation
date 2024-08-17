@@ -27,30 +27,18 @@ describe("treasury", function () {
 
     const Treasury = await ethers.getContractFactory("Treasury");
 
-    const directoryAddress = setupData.protocol.directory.address;
-    directory = setupData.protocol.directory;
-
     treasury = await upgrades.deployProxy(
       Treasury,
-      [directoryAddress],
+      [treasurer.address],
       { kind: 'uups', unsafeAllow: ["constructor"], initializer: "initialize" }
     ) as Treasury;
 
-
     await treasury.deployed();
-  });
-
-  describe("initialize", function () {
-    it("should initialize with the correct directory address", async function () {
-      const setDirectoryAddress = await treasury.getDirectory();
-      expect(setDirectoryAddress).to.equal(directory.address);
-    });
+    expect(await treasury.hasRole(treasury.TREASURER_ROLE(), treasurer.address)).equals(true);
   });
 
   describe("claimToken", function () {
     it("success - should allow treasurer to claim all tokens", async function () {
-      const treasuryRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("TREASURY_ROLE"))), setupData.signers.treasurer.address);
-      expect(treasuryRole).to.equal(true);
 
       const totalSupply = await token.totalSupply();
       await token.transfer(treasury.address, totalSupply);
@@ -60,9 +48,6 @@ describe("treasury", function () {
     });
 
     it("success - treasurer can partially claim tokens in contract", async () => {
-      const treasuryRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("TREASURY_ROLE"))), setupData.signers.treasurer.address);
-      expect(treasuryRole).to.equal(true);
-
       const totalSupply = await token.totalSupply();
       const decimals = await token.decimals();
       await token.transfer(treasury.address, totalSupply);
@@ -81,49 +66,35 @@ describe("treasury", function () {
 
   describe("test claimEth", () => {
     it('success - treasurer claims all eth', async () => {
-      const { protocol, signers } = setupData;
-      const treasuryRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("TREASURY_ROLE"))), setupData.signers.treasurer.address);
-      expect(treasuryRole).to.equal(true);
-
-
       expect(await ethers.provider.getBalance(treasury.address)).equals(0)
-      await signers.random.sendTransaction({
+      await nonTreasurer.sendTransaction({
         to: treasury.address,
         value: ethers.utils.parseEther("1")
       })
       expect(await ethers.provider.getBalance(treasury.address)).equals(ethers.utils.parseEther("1"))
-      await expect(treasury.connect(treasurer).claimEth(signers.treasurer.address)).to.emit(treasury, "ClaimedEth").withArgs(signers.treasurer.address, ethers.utils.parseEther("1"));
+      await expect(treasury.connect(treasurer).claimEth(treasurer.address)).to.emit(treasury, "ClaimedEth").withArgs(treasurer.address, ethers.utils.parseEther("1"));
       expect(await ethers.provider.getBalance(treasury.address)).equals(ethers.utils.parseEther("0"))
     })
 
     it('success - treasury claims part of the eth', async () => {
-      const { protocol, signers } = setupData;
-      const treasuryRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("TREASURY_ROLE"))), setupData.signers.treasurer.address);
-      expect(treasuryRole).to.equal(true);
-
-
       expect(await ethers.provider.getBalance(treasury.address)).equals(0)
-      await signers.random.sendTransaction({
+      await nonTreasurer.sendTransaction({
         to: treasury.address,
         value: ethers.utils.parseEther("1")
       })
       expect(await ethers.provider.getBalance(treasury.address)).equals(ethers.utils.parseEther("1"))
-      await expect(treasury.connect(treasurer).claimEthAmount(signers.treasurer.address, ethers.utils.parseEther("0.1"))).to.emit(treasury, "ClaimedEth").withArgs(signers.treasurer.address, ethers.utils.parseEther("0.1"));
+      await expect(treasury.connect(treasurer).claimEthAmount(treasurer.address, ethers.utils.parseEther("0.1"))).to.emit(treasury, "ClaimedEth").withArgs(treasurer.address, ethers.utils.parseEther("0.1"));
       expect(await ethers.provider.getBalance(treasury.address)).equals(ethers.utils.parseEther(".9"))
     })
 
     it('fail - non-treasury claims all eth', async () => {
-      const { protocol, signers } = setupData;
-      const treasuryRole = await directory.hasRole(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes("TREASURY_ROLE"))), signers.random.address);
-      expect(treasuryRole).to.equal(false);
-
       expect(await ethers.provider.getBalance(treasury.address)).equals(0)
-      await signers.random.sendTransaction({
+      await nonTreasurer.sendTransaction({
         to: treasury.address,
         value: ethers.utils.parseEther("1")
       })
       expect(await ethers.provider.getBalance(treasury.address)).equals(ethers.utils.parseEther("1"))
-      await expect(treasury.connect(signers.random).claimEth(signers.random.address)).to.be.rejectedWith("Can only be called by treasurer address!");
+      await expect(treasury.connect(nonTreasurer).claimEth(nonTreasurer.address)).to.be.rejectedWith("Can only be called by treasurer address!");
       expect(await ethers.provider.getBalance(treasury.address)).equals(ethers.utils.parseEther("1"))
     })
   })

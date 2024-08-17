@@ -16,7 +16,7 @@ contract Treasury is
     AccessControlUpgradeable,
     ReentrancyGuard
 {
-    bytes32 internal constant TREASURER_ROLE = keccak256('TREASURER_ROLE');
+    bytes32 public constant TREASURER_ROLE = keccak256('TREASURER_ROLE');
 
     string public constant BAD_TREASURY_EXECUTION_ERROR = 'Treasury: execution reverted.';
     string public constant BAD_TREASURY_BATCH_CALL = 'Treasury: array length mismatch.';
