@@ -4,15 +4,15 @@ pragma solidity 0.8.17;
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
-import './Interfaces/Oracles/IConstellationOracle.sol';
-import './Interfaces/RocketPool/IRocketStorage.sol';
-import './Interfaces/ISanctions.sol';
-import './Interfaces/RocketPool/IRocketNetworkPrices.sol';
-import './Interfaces/RocketPool/IRocketNetworkPenalties.sol';
+import '../../Interfaces/IConstellationOracle.sol';
+import '../../Interfaces/RocketPool/IRocketStorage.sol';
+import '../../Interfaces/ISanctions.sol';
+import '../../Interfaces/RocketPool/IRocketNetworkPrices.sol';
+import '../../Interfaces/RocketPool/IRocketNetworkPenalties.sol';
 
 import './UpgradeableBase.sol';
-import './Utils/RocketPoolEncoder.sol';
-import './Utils/Constants.sol';
+import '../Utils/RocketPoolEncoder.sol';
+import '../Utils/Constants.sol';
 
 import 'hardhat/console.sol';
 

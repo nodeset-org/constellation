@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL v3
 pragma solidity 0.8.17;
 
-import '../UpgradeableBase.sol';
-import '../Whitelist/Whitelist.sol';
-import '../PriceFetcher.sol';
-import '../Tokens/WETHVault.sol';
+import './Utils/UpgradeableBase.sol';
+import './Whitelist.sol';
+import './Utils/PriceFetcher.sol';
+import './WETHVault.sol';
 import './SuperNodeAccount.sol';
 
-import '../Utils/Constants.sol';
-import '../Utils/Errors.sol';
+import './Utils/Constants.sol';
+import './Utils/Errors.sol';
 
 import '../Interfaces/IWETH.sol';
 import '../Interfaces/RocketPool/IRocketStorage.sol';

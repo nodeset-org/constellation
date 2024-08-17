@@ -3,10 +3,9 @@ pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
-import '../UpgradeableBase.sol';
-import '../Operator/NodeSetOperatorRewardDistributor.sol';
-import '../Operator/SuperNodeAccount.sol';
-import '../Utils/Constants.sol';
+import './Utils/UpgradeableBase.sol';
+import './SuperNodeAccount.sol';
+import './Utils/Constants.sol';
 
 /// @notice An operator which provides services to the network.
 struct Operator {

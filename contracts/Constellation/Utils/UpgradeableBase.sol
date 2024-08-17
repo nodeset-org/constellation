@@ -5,7 +5,7 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
 import './Directory.sol';
-import './Utils/Constants.sol';
+import './Constants.sol';
 
 abstract contract UpgradeableBase is UUPSUpgradeable, ReentrancyGuard {
     Directory internal _directory;

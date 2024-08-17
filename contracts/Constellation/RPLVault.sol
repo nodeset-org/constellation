@@ -6,11 +6,11 @@ import '@openzeppelin/contracts/utils/math/Math.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 import './WETHVault.sol';
-import '../Operator/SuperNodeAccount.sol';
-import '../MerkleClaimStreamer.sol';
+import './SuperNodeAccount.sol';
+import './MerkleClaimStreamer.sol';
 
-import '../UpgradeableBase.sol';
-import '../Operator/OperatorDistributor.sol';
+import './Utils/UpgradeableBase.sol';
+import './OperatorDistributor.sol';
 
 import 'hardhat/console.sol';
 

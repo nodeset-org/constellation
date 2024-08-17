@@ -4,10 +4,10 @@ pragma solidity 0.8.17;
 import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol';
 
 import './RPLVault.sol';
-import '../PriceFetcher.sol';
-import '../UpgradeableBase.sol';
-import '../MerkleClaimStreamer.sol';
-import '../Utils/Constants.sol';
+import './Utils/PriceFetcher.sol';
+import './Utils/UpgradeableBase.sol';
+import './MerkleClaimStreamer.sol';
+import './Utils/Constants.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/Oracles/IConstellationOracle.sol';
 import '../Interfaces/IWETH.sol';

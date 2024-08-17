@@ -4,16 +4,16 @@ pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/utils/math/Math.sol';
 
-import './Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
+import '../Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
 
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
-import './UpgradeableBase.sol';
+import './Utils/UpgradeableBase.sol';
 import './Utils/Constants.sol';
-import './Operator/OperatorDistributor.sol';
-import './Tokens/WETHVault.sol';
-import './Tokens/RPLVault.sol';
+import './OperatorDistributor.sol';
+import './WETHVault.sol';
+import './RPLVault.sol';
 
 import 'hardhat/console.sol';
 

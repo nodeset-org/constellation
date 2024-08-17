@@ -6,8 +6,8 @@ import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 import './OperatorDistributor.sol';
 
-import '../Whitelist/Whitelist.sol';
-import '../UpgradeableBase.sol';
+import './Whitelist.sol';
+import './Utils/UpgradeableBase.sol';
 
 import '../Interfaces/RocketPool/RocketTypes.sol';
 import '../Interfaces/RocketPool/IRocketNodeDeposit.sol';
@@ -23,11 +23,11 @@ import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/Oracles/IConstellationOracle.sol';
 import '../Interfaces/IWETH.sol';
 
-import '../Tokens/WETHVault.sol';
-import '../Tokens/RPLVault.sol';
+import './WETHVault.sol';
+import './RPLVault.sol';
 
-import '../Utils/Constants.sol';
-import '../Utils/Errors.sol';
+import './Utils/Constants.sol';
+import './Utils/Errors.sol';
 
 import 'hardhat/console.sol';
 
