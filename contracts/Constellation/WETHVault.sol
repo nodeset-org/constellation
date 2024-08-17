@@ -93,21 +93,11 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         uint256 mintFeePortion = this.getMintFeePortion(assets);
 
-        console.log("balance before deposit", IERC20(asset()).balanceOf(address(this)));
-        console.log("total assets before deposit", totalAssets());
-
         super._deposit(caller, receiver, assets, shares);
         
-        console.log("taking mint fee of", mintFeePortion);
-        console.log("balance before fee ", IERC20(asset()).balanceOf(address(this)));
-        console.log("total assets after deposit", totalAssets());
-
         address treasuryAddress = getDirectory().getTreasuryAddress();
         if(mintFeePortion > 0 && treasuryAddress != address(this))
             SafeERC20.safeTransfer(IERC20(asset()), treasuryAddress, mintFeePortion); // transfer the mint fee to the treasury
-
-        console.log("balance after fee ", IERC20(asset()).balanceOf(address(this)));
-        console.log("total assets after fee", totalAssets());
 
         // move everything to operator distributor in anticipation of rebalancing everything
         SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));

@@ -372,10 +372,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
 
         uint256 requiredWeth = vweth.getMissingLiquidity();
-        console.log("rebalancing by sending", requiredWeth, "from OD to WETHVault");
         uint256 wethBalance = IERC20(address(weth)).balanceOf(address(this));
         uint256 balanceEthAndWeth = IERC20(address(weth)).balanceOf(address(this)) + address(this).balance;
-        console.log("balanceEthAndWeth", balanceEthAndWeth);
         if (balanceEthAndWeth >= requiredWeth) { 
             // there's extra ETH that can be kept here for minipools, so only send required amount
             // figure out how much to wrap, then wrap it
@@ -456,15 +454,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
        
         uint256 balanceAfterRefund;
         uint256 rewards;
-        // This is unchecked because we are already effectively checking for underflow given the following business logic
-        //unchecked { 
+        
+        // This is unchecked because we are already checking for underflow given the business logic above and below
+        unchecked { 
         balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
         rewards = minipool.calculateNodeShare(balanceAfterRefund) > minipool.getNodeDepositBalance() 
             ? minipool.calculateNodeShare(balanceAfterRefund) -  minipool.getNodeDepositBalance()
             : 0;
-        //}
-
-        console.log("rewards", rewards);
+        }
 
         minipool.distributeBalance(false);
         // stop tracking

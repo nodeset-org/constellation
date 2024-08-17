@@ -126,9 +126,6 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
-        console.log("rpl in vault", IERC20(asset()).balanceOf(address(this)));
-        console.log("rpltvl in OD", OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl());
-        console.log("rpl streamed tvl available", MerkleClaimStreamer(getDirectory().getMerkleClaimStreamerAddress()).getStreamedTvlRpl());
         return (IERC20(asset()).balanceOf(address(this)) +
             OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl()) +
             MerkleClaimStreamer(getDirectory().getMerkleClaimStreamerAddress()).getStreamedTvlRpl();

@@ -296,7 +296,7 @@ describe("treasury", function () {
       const v2 = await ethers.getContractAt("MockTreasuryV2", treasury.address);
 
       await expect(v2.test()).to.be.rejectedWith("CALL_EXCEPTION")
-      await expect(treasury.connect(signers.admin).upgradeTo(mockTreasuryV2.address)).to.be.revertedWith("Can only be called by long timelock!")
+      await expect(treasury.connect(signers.admin).upgradeTo(mockTreasuryV2.address)).to.be.revertedWith("Upgrading only allowed by treasurer!")
       await expect(v2.test()).to.be.rejectedWith("CALL_EXCEPTION")
     })
   })

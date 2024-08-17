@@ -333,11 +333,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function close(address subNodeOperatorAddress, address minipoolAddress) external onlyRecognizedMinipool(minipoolAddress) {
         require(minipoolData[minipoolAddress].subNodeOperator == subNodeOperatorAddress, "operator does not own the specified minipool");
         IMinipool minipool = IMinipool(minipoolAddress);
-        console.log("close: made it 1");
         Whitelist(getDirectory().getWhitelistAddress()).removeValidator(minipoolData[minipoolAddress].subNodeOperator);
-        console.log("close: made it 2");
         this.removeMinipool(minipoolAddress);
-        console.log("close: made it 3");
         minipool.close();
     }   
 
@@ -445,7 +442,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
         uint256 rplStaking = rocketNodeStaking.getNodeRPLStake(address(this));
         uint256 newEthBorrowed = IRocketDAOProtocolSettingsMinipool(_directory.getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() - _bond;
-        console.log('newEthBorrowed', newEthBorrowed);
         uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(
             rplStaking,
             getTotalEthMatched() + newEthBorrowed

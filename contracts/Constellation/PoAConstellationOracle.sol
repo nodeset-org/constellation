@@ -81,19 +81,15 @@ contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
         // this function is called, causing a double-count of rewards. 
         if(sigData.expectedOracleError < od.oracleError()) { 
             if(sigData.newTotalYieldAccrued > 0) {
-                console.log("new yield is positive");
                 _totalYieldAccrued = sigData.newTotalYieldAccrued - int(od.oracleError() - sigData.expectedOracleError);
             }
             else if(sigData.newTotalYieldAccrued < 0) {
-                console.log("new yield is negative");
                 _totalYieldAccrued = sigData.newTotalYieldAccrued + int(od.oracleError() - sigData.expectedOracleError);
             }
             else {
-                 console.log("new yield is zero");
                 _totalYieldAccrued = 0;
             }
         } else if(sigData.expectedOracleError == od.oracleError()) {
-            console.log("errors are equal");
             _totalYieldAccrued = sigData.newTotalYieldAccrued;
         } else {
             // Note that actual oracle error will only ever increase or be reset to 0,
