@@ -11,6 +11,12 @@ library Constants {
     bytes32 internal constant TREASURY_ROLE = keccak256('TREASURY_ROLE');
     bytes32 internal constant ADMIN_ORACLE_ROLE = keccak256('ADMIN_ORACLE_ROLE');
     bytes32 internal constant ADMIN_SERVER_ROLE = keccak256('ADMIN_SERVER_ROLE');
+
+    // Note that the protocol role should ONLY be given to protocol contracts
+    // This is a dangerous role that MUST be kept internal
+    // It should never be given to a non-core-protocol contract (e.g. don't give it to the treasury or operator rewards address)
+    // and it should also never be given to an EOA (e.g. don't give this to the ADMIN or TREASURER)
+    // See Directory.sol for a list of contracts which are allowed to have this role
     bytes32 internal constant CORE_PROTOCOL_ROLE = keccak256('CORE_PROTOCOL_ROLE');
     bytes32 internal constant TIMELOCK_SHORT = keccak256('TIMELOCK_SHORT');
     bytes32 internal constant TIMELOCK_MED = keccak256('TIMELOCK_MED');

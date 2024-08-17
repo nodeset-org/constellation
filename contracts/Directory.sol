@@ -245,6 +245,11 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _grantRole(Constants.ADMIN_ROLE, admin);
         _grantRole(Constants.TREASURY_ROLE, treasurer);
 
+        // Note that the protocol role should ONLY be given to protocol contracts
+        // This is a dangerous role that MUST be kept internal
+        // It should never be given to a non-core-protocol contract (e.g. don't give it to the treasury or operator rewards address)
+        // and it should also never be given to an EOA (e.g. don't give this to the ADMIN or TREASURER)
+        // This is the only list of contracts which should ever have this role:
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.whitelist);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.wethVault);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.rplVault);

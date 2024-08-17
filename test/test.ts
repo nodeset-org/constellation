@@ -5,7 +5,7 @@ import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../typechain-types/contracts/Directory";
 import { Whitelist } from "../typechain-types/contracts/Whitelist";
-import { WETHVault, RPLVault, OperatorDistributor, NodeSetOperatorRewardDistributor, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetworkInterface, IConstellationOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, RocketDepositPool, RocketNodeDeposit, RocketDAONodeTrusted, RocketTokenRETH, RocketClaimDAO, RocketRewardsPool, RocketDAONodeTrustedActions, SuperNodeAccount, PoAConstellationOracle, RocketStorage, RocketMinipoolDelegate, RocketMinipoolInterface, MerkleClaimStreamer } from "../typechain-types";
+import { WETHVault, RPLVault, OperatorDistributor, NodeSetOperatorRewardDistributor, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetworkInterface, IConstellationOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, RocketDepositPool, RocketNodeDeposit, RocketDAONodeTrusted, RocketTokenRETH, RocketClaimDAO, RocketRewardsPool, RocketDAONodeTrustedActions, SuperNodeAccount, PoAConstellationOracle, RocketStorage, RocketMinipoolDelegate, RocketMinipoolInterface, MerkleClaimStreamer, Treasury } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
 import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketNodeManager, RocketNodeManagerNew, RocketNodeStaking, RocketNodeStakingNew, RocketTokenRPL } from "./rocketpool/_utils/artifacts";
@@ -51,6 +51,7 @@ export type Protocol = {
   superNode: SuperNodeAccount;
   wETH: IWETH;
   sanctions: MockSanctions;
+  treasury: Treasury;
 };
 
 export type Signers = {
