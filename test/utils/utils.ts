@@ -496,29 +496,35 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   const vaultMinimum = await vweth.getMissingLiquidityAfterDepositNoFee(depositAmount);
 
   console.log('REQUIRE COLLAT', vaultMinimum);
-  let requiredEth = depositAmount
-    .add(vaultMinimum)
-    .mul((await setupData.protocol.vCWETH.liquidityReservePercent())
-      .div(ethers.utils.parseUnits('1', 17)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 2)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 3)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 4)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 5)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 6)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 7)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 8)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 9)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 10)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 11)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 12)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 13)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 14)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 15)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 16)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 17)))
-    .add(depositAmount.div(ethers.utils.parseUnits("1", 18)))
-    .add(ethers.constants.One);
-  requiredEth = requiredEth.mul(ethers.utils.parseEther('1')).div(ethers.utils.parseEther('1').sub(await vweth.mintFee())).add((ethers.constants.One).mul(BigNumber.from(numOperators)));
+  let requiredEth;
+  let liquidityReservePercent = await setupData.protocol.vCWETH.liquidityReservePercent();
+  if(liquidityReservePercent.eq(BigNumber.from(0))) {
+    requiredEth = depositTarget;
+  } else {
+    requiredEth = depositAmount
+      .add(vaultMinimum)
+      .mul((await setupData.protocol.vCWETH.liquidityReservePercent())
+        .div(ethers.utils.parseUnits('1', 17)))
+      .add(depositAmount.div(ethers.utils.parseUnits("1", 2)))
+      .add(depositAmount.div(ethers.utils.parseUnits("1", 3)))
+      .add(depositAmount.div(ethers.utils.parseUnits("1", 4)))
+      .add(depositAmount.div(ethers.utils.parseUnits("1", 5)))
+      .add(depositAmount.div(ethers.utils.parseUnits("1", 6)))
+      .add(depositAmount.div(ethers.utils.parseUnits("1", 7)))
+      .add(depositAmount.div(ethers.utils.parseUnits("1", 8)))
+      .add(depositAmount.div(ethers.utils.parseUnits("1", 9)))
+      .add(depositAmount.div(ethers.utils.parseUnits("1", 10)))
+      .add(depositAmount.div(ethers.utils.parseUnits("1", 11)))
+      .add(depositAmount.div(ethers.utils.parseUnits("1", 12)))
+      .add(depositAmount.div(ethers.utils.parseUnits("1", 13)))
+      .add(depositAmount.div(ethers.utils.parseUnits("1", 14)))
+      .add(depositAmount.div(ethers.utils.parseUnits("1", 15)))
+      .add(depositAmount.div(ethers.utils.parseUnits("1", 16)))
+      .add(depositAmount.div(ethers.utils.parseUnits("1", 17)))
+      .add(depositAmount.div(ethers.utils.parseUnits("1", 18)))
+      .add(ethers.constants.One);
+  }
+  requiredEth = requiredEth.mul(ethers.utils.parseEther('1')).div(ethers.utils.parseEther('1').sub(await vweth.mintFee())).add(ethers.constants.One);//.add((ethers.constants.One).mul(BigNumber.from(numOperators)));
   console.log('REQUIRE+ETH', requiredEth);
 
   await setupData.protocol.wETH.connect(setupData.signers.ethWhale).deposit({ value: requiredEth });
