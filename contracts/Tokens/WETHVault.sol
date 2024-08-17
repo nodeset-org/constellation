@@ -264,6 +264,20 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         return _amount.mulDiv(mintFee, 1e18, Math.Rounding.Up);
     }
 
+
+    /// Calculates the treasury portion of a specific RPL reward amount.
+    /// @param _amount The RPL reward expected
+    function getTreasuryPortion(uint256 _amount) external view returns (uint256) {
+        return _amount.mulDiv(treasuryFee, 1e18);
+    }
+
+
+    /// Calculates the operator portion of a specific RPL reward amount.
+    /// @param _amount The RPL reward expected
+    function getOperatorPortion(uint256 _amount) external view returns (uint256) {
+        return _amount.mulDiv(nodeOperatorFee, 1e18);
+    }
+
     /**ADMIN FUNCTIONS */
 
     /**

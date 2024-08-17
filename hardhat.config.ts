@@ -90,20 +90,24 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       gasPrice: 25000000000, // This is in wei (25 gwei)
+      gas: "auto",
     },
 
     localhost: {
-      gasPrice: 25000000000
+      gasPrice: 25000000000,
+      gas: "auto",
     },
 
     goerli: {
       url: process.env.GOERLI_URL || "" as string,
       accounts: [process.env.DEPLOYER_PRIVATE_KEY || "" as string],
+      gas: "auto",
     },
 
     holesky: {
       url: process.env.HOLESKY_RPC || "" as string,
       accounts: [process.env.HOLESKY_DEPLOYER || "" as string, process.env.HOLEKSY_ADMIN || "" as string],
+      gas: "auto",
     }
   },
   mocha: {

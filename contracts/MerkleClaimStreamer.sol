@@ -75,6 +75,10 @@ contract MerkleClaimStreamer is UpgradeableBase {
     /// @return The current amount of currently-locked TVL which is applicable to xRPL right now
     function getStreamedTvlRpl() public view returns (uint256){
         uint256 timeSinceLastClaim = block.timestamp - lastClaimTime;
+        console.log("timeSinceLastClaim",timeSinceLastClaim);
+        console.log("streamingInterval",streamingInterval);
+        console.log("priorRplStreamAmount",priorRplStreamAmount);
+        console.log("streamingInterval",streamingInterval);
         return timeSinceLastClaim < streamingInterval ? priorRplStreamAmount * timeSinceLastClaim / streamingInterval : priorRplStreamAmount;
     }
 
@@ -85,18 +89,20 @@ contract MerkleClaimStreamer is UpgradeableBase {
     /// - if RP rewards interval length changes, this can be called to sweep rewards from prior intervals before changing streamingInterval
     function sweepLockedTVL() public onlyProtocolOrAdmin {
         require(block.timestamp - lastClaimTime > streamingInterval, "Current streaming interval is not finished");
-        require(priorEthStreamAmount > 0 || priorRplStreamAmount > 0, "both ethAmount and rplAmount are 0 -- nothing to do");
+        if(priorEthStreamAmount == 0 && priorRplStreamAmount == 0) return; // if both ethAmount and rplAmount are 0 there is nothing to do
         
         address payable odAddress = getDirectory().getOperatorDistributorAddress();
         OperatorDistributor od = OperatorDistributor(odAddress);
 
         if(priorEthStreamAmount > 0){
+            console.log('sweeping priorETH:', priorEthStreamAmount);
             (bool success, ) = odAddress.call{value: priorEthStreamAmount}("");
             require(success, "Failed to transfer ETH from MerkleClaimStreamer to OperatorDistributor");
             od.rebalanceWethVault();
         }
         
         if(priorRplStreamAmount > 0){
+            console.log('sweeping priorRPL:', priorRplStreamAmount);
             SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), getDirectory().getMerkleClaimStreamerAddress(), priorRplStreamAmount);
             SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), getDirectory().getMerkleClaimStreamerAddress(), priorRplStreamAmount);
             od.rebalanceRplVault();
@@ -136,27 +142,31 @@ contract MerkleClaimStreamer is UpgradeableBase {
         // lock all rewards in this contract to be streamed
         od.transferMerkleClaimToStreamer(ethReward, rplReward);
 
+        lastClaimTime = block.timestamp;
         uint256 ethTreasuryPortion = 0;
         uint256 ethOperatorPortion = 0;
         uint256 rplTreasuryPortion = 0;
 
         // process ETH fees
         if(ethReward > 0) {
-            ethTreasuryPortion = ethReward.mulDiv(WETHVault(getDirectory().getWETHVaultAddress()).treasuryFee(), 1e18, Math.Rounding.Up);
-            ethOperatorPortion = ethReward.mulDiv(RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee(), 1e18, Math.Rounding.Up);
+            ethTreasuryPortion = WETHVault(getDirectory().getWETHVaultAddress()).getTreasuryPortion(ethReward);
+            ethOperatorPortion = WETHVault(getDirectory().getWETHVaultAddress()).getOperatorPortion(ethReward);
 
+            console.log('sending ethTreasuryPortion:', ethTreasuryPortion);
+            console.log('sending ethOperatorPortion:', ethOperatorPortion);
             // send treasury and NO fees out immediately
             (bool success, ) = getDirectory().getTreasuryAddress().call{value: ethTreasuryPortion}('');
             require(success, 'Transfer to treasury failed');
 
             (success, ) = getDirectory().getOperatorRewardAddress().call{value: ethOperatorPortion}('');
-            require(success, 'Transfer to operator fee distributor failed');
+            require(success, 'Transfer to operator reward address failed');
         }
         
         // process RPL fees
         if(rplReward > 0) {
-            rplTreasuryPortion = 0;//rplReward.mulDiv(RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee(), 1e18);
+            rplTreasuryPortion = RPLVault(getDirectory().getRPLVaultAddress()).getTreasuryPortion(rplReward);
 
+            console.log('sending rplTreasuryPortion:', rplTreasuryPortion);
             // send treasury fee immediately
             SafeERC20.safeApprove(IERC20(getDirectory().getRPLAddress()), getDirectory().getTreasuryAddress(), rplTreasuryPortion);
             SafeERC20.safeTransfer(IERC20(getDirectory().getRPLAddress()), getDirectory().getTreasuryAddress(), rplTreasuryPortion);
