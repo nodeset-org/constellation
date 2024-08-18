@@ -6,9 +6,11 @@ import { protocolFixture, SetupData, Protocol, RocketPool } from "./test";
 
 describe("Directory", function () {
 
-  it("Returns correct default treasury address", async function () {
+  it("Treasurer is not admin, deployer, or treasury", async function () {
     const { protocol, signers } = await loadFixture(protocolFixture);
-    expect(await protocol.directory.getTreasuryAddress()).equal(signers.deployer.address);
+    expect(signers.treasurer.address).does.not.equal(signers.deployer.address);
+    expect(signers.treasurer.address).does.not.equal(signers.admin.address);
+    expect(signers.treasurer.address).does.not.equal(protocol.directory.getTreasuryAddress());
   });
 
 });

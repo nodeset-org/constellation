@@ -4,7 +4,8 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { assertAddOperator, assertMultipleTransfers, createMerkleSig } from "./utils/utils";
+import { assertAddOperator, assertMultipleTransfers } from "./utils/utils";
+import { deposit } from "./rocketpool/deposit/scenario-deposit";
 
 describe("xRPL", function () {
 
@@ -153,12 +154,11 @@ describe("xRPL", function () {
     );
   })
 
-  it("success - tries to deposit and redeem from weth vault multiple times after getting merkle rewards", async () => {
+  it("success - tries to deposit and redeem from rpl vault multiple times after getting merkle rewards", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
     const depositAmount = ethers.utils.parseEther("100000");
-
 
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, depositAmount)
 
@@ -186,26 +186,63 @@ describe("xRPL", function () {
     const amountEth = [ethReward];
     const proof = [[ethers.utils.hexZeroPad("0x0", 32)], [ethers.utils.hexZeroPad("0x0", 32)]]
 
-    const ethTreasuryFee = await setupData.protocol.vCWETH.treasuryFee();
-    const ethOperatorFee = await setupData.protocol.vCWETH.nodeOperatorFee();
     const rplTreasuryFee = await setupData.protocol.vCRPL.treasuryFee();
     const expectedTreasuryPortion = rplReward.mul(rplTreasuryFee).div(ethers.utils.parseEther("1")); 
     const expectedCommunityPortion = rplReward.sub(expectedTreasuryPortion)
 
-    await protocol.superNode.merkleClaim(rewardIndex, amountRpl, amountEth, proof, await createMerkleSig(
-      setupData,
-      ethTreasuryFee,
-      ethOperatorFee,
-      rplTreasuryFee
-    ));
+    expect(await protocol.vCRPL.totalAssets()).equals(depositAmount);
+    //disable auto-mine of new blocks
+    await ethers.provider.send("evm_setAutomine", [false]);
 
-    let expectedTotalAssets = depositAmount.add(expectedCommunityPortion);
-    const expectedReserveInVault = expectedTotalAssets.mul(await setupData.protocol.vCRPL.liquidityReservePercent()).div(ethers.utils.parseEther("1"));
-    const surplusSentToOD = expectedTotalAssets.sub(expectedReserveInVault);
+    await protocol.merkleClaimStreamer.submitMerkleClaim(rewardIndex, amountRpl, amountEth, proof);
+    expect(await protocol.vCRPL.totalAssets()).equals(depositAmount); // no time has passed, so no tvl has been streamed
+  
+    const streamingInterval = await protocol.merkleClaimStreamer.streamingInterval()
+    
+    // mine a block with above transactions
+    let timestamp = (await ethers.provider.getBlock("latest")).timestamp;
+    await ethers.provider.send("evm_mine", [timestamp+1]);
+    timestamp = timestamp+1;
+   
+    expect(streamingInterval).equals(2419200); // 28 days in seconds
+    const expectedReserveInVault = depositAmount.mul(await setupData.protocol.vCRPL.liquidityReservePercent()).div(ethers.utils.parseEther("1"));
+    const surplusSentToOD = depositAmount.sub(expectedReserveInVault);
 
-    expect(await protocol.vCRPL.totalAssets()).equals(expectedTotalAssets);
     expect(await rocketPool.rplContract.balanceOf(protocol.vCRPL.address)).equals(expectedReserveInVault);
     expect(await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address)).equals(surplusSentToOD);
+
+    // increase time by 1 day since claim
+    await ethers.provider.send("evm_mine", [timestamp+86400]); // 1 day in seconds
+    let lastClaimTime = await protocol.merkleClaimStreamer.lastClaimTime();
+    console.log("lastClaimTime", lastClaimTime);
+    expect(lastClaimTime).equals((await ethers.provider.getBlock('latest')).timestamp - 86400);
+    let expectedStreamedTVL = expectedCommunityPortion.div(28);
+    let expectedTotalAssets = depositAmount.add(expectedStreamedTVL);
+    expect(await protocol.merkleClaimStreamer.priorRplStreamAmount()).equals(expectedCommunityPortion);
+    expect(await protocol.merkleClaimStreamer.getStreamedTvlRpl()).equals(expectedStreamedTVL);
+    expect(await protocol.vCRPL.totalAssets()).equals(expectedTotalAssets);
+
+    // increase time to 3 days since claim
+    await ethers.provider.send("evm_mine", [timestamp+259200]); // 3 days in seconds
+    expect(await protocol.merkleClaimStreamer.lastClaimTime()).equals((await ethers.provider.getBlock('latest')).timestamp - 259200); 
+    expectedStreamedTVL = expectedCommunityPortion.mul(3).div(28); // we should be 3/28ths streamed at this point
+    expectedTotalAssets = depositAmount.add(expectedStreamedTVL);
+    expect(await protocol.merkleClaimStreamer.priorRplStreamAmount()).equals(expectedCommunityPortion);
+    expect(await protocol.merkleClaimStreamer.getStreamedTvlRpl()).equals(expectedStreamedTVL);
+    expect(await protocol.vCRPL.totalAssets()).equals(expectedTotalAssets);
+
+
+    // increase time by 25 days, total is 28 days since claim
+    await ethers.provider.send("evm_mine", [timestamp+2419200]); // 28 days in seconds
+    expect(await protocol.merkleClaimStreamer.lastClaimTime()).equals((await ethers.provider.getBlock('latest')).timestamp - 2419200); 
+    expectedStreamedTVL = expectedCommunityPortion; // we should be fully streamed at this point
+    expectedTotalAssets = depositAmount.add(expectedStreamedTVL);
+    expect(await protocol.merkleClaimStreamer.priorRplStreamAmount()).equals(expectedCommunityPortion);
+    expect(await protocol.merkleClaimStreamer.getStreamedTvlRpl()).equals(expectedStreamedTVL);
+    expect(await protocol.vCRPL.totalAssets()).equals(expectedTotalAssets);
+
+    // re-enable automine
+    await ethers.provider.send("evm_setAutomine", [true]);
 
     const shareValue = await protocol.vCRPL.convertToAssets(ethers.utils.parseEther("1"))
     const expectedRedeemValue = await protocol.vCRPL.previewRedeem(shareValue);

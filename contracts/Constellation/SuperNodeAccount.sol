@@ -6,8 +6,8 @@ import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 import './OperatorDistributor.sol';
 
-import '../Whitelist/Whitelist.sol';
-import '../UpgradeableBase.sol';
+import './Whitelist.sol';
+import './Utils/UpgradeableBase.sol';
 
 import '../Interfaces/RocketPool/RocketTypes.sol';
 import '../Interfaces/RocketPool/IRocketNodeDeposit.sol';
@@ -20,25 +20,16 @@ import '../Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
 import '../Interfaces/RocketPool/IRocketStorage.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
-import '../Interfaces/Oracles/IConstellationOracle.sol';
+import '../Interfaces/IConstellationOracle.sol';
 import '../Interfaces/IWETH.sol';
 
-import '../Tokens/WETHVault.sol';
-import '../Tokens/RPLVault.sol';
+import './WETHVault.sol';
+import './RPLVault.sol';
 
-import '../Utils/ProtocolMath.sol';
-import '../Utils/Constants.sol';
-import '../Utils/Errors.sol';
+import './Utils/Constants.sol';
+import './Utils/Errors.sol';
 
 import 'hardhat/console.sol';
-
-struct MerkleRewardsConfig {
-    bytes sig;
-    uint256 sigGenesisTime;
-    uint256 avgEthTreasuryFee;
-    uint256 avgEthOperatorFee;
-    uint256 avgRplTreasuryFee;
-}
 
 /**
  * @title SuperNodeAccount
@@ -46,6 +37,9 @@ struct MerkleRewardsConfig {
  * @dev Abstracts all created minipools under a single node
  */
 contract SuperNodeAccount is UpgradeableBase, Errors {
+    event MinipoolCreated(address indexed minipoolAddress, address indexed operatorAddress);
+    event MinipoolDestroyed(address indexed minipoolAddress, address indexed operatorAddress);
+    
     // Mapping of minipool address to the amount of ETH locked
     mapping(address => uint256) public lockedEth;
 
@@ -59,11 +53,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     bool public adminServerCheck;
     uint256 public adminServerSigExpiry;
     mapping(bytes => bool) public sigsUsed;
-
-    // Merkle claim signature data
-    uint256 public merkleClaimNonce;
-    uint256 public merkleClaimSigExpiry;
-    mapping(bytes32 => bool) public merkleClaimSigUsed;
     mapping(address => uint256) public nonces;
 
     bool lazyInit;
@@ -75,7 +64,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         address subNodeOperator;
         uint256 ethTreasuryFee;
         uint256 noFee;
-        uint256 rplTreasuryFee;
+        uint256 index; // index in the minipool list
     }
 
     struct CreateMinipoolConfig {
@@ -88,10 +77,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         bytes sig;
     }
 
-    // Mapping of minipool address to its index in the minipools array
-    mapping(address => uint256) public minipoolIndex;
-    // Mapping of sub-node operator address to their list of minipools
-    mapping(address => address[]) public subNodeOperatorMinipools;
     // Mapping of address to minipool structs
     mapping(address => Minipool) public minipoolData;
 
@@ -167,7 +152,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         address od = directory.getOperatorDistributorAddress();
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), od, true);
         lazyInit = true;
-        merkleClaimSigExpiry = 1 days;
+        
         lockThreshold = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getPreLaunchValue();
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(true);
     }
@@ -253,20 +238,19 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         lockedEth[_config.expectedMinipoolAddress] = msg.value;
         totalEthLocked += msg.value;
 
-        minipoolIndex[_config.expectedMinipoolAddress] = minipools.length;
         minipools.push(_config.expectedMinipoolAddress);
 
-        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        od.onMinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator);
-
-        subNodeOperatorMinipools[subNodeOperator].push(_config.expectedMinipoolAddress);
         WETHVault wethVault = WETHVault(getDirectory().getWETHVaultAddress());
         minipoolData[_config.expectedMinipoolAddress] = Minipool(
             subNodeOperator,
             wethVault.treasuryFee(),
             wethVault.nodeOperatorFee(),
-            RPLVault(getDirectory().getRPLVaultAddress()).treasuryFee()
+            minipools.length-1
         );
+
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        // register minipool with node operator
+        Whitelist(getDirectory().getWhitelistAddress()).registerNewValidator(subNodeOperator);
 
         // stake additional RPL to cover the new minipool
         od.rebalanceRplStake(getTotalEthStaked() + bond);
@@ -281,6 +265,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             salt,
             _config.expectedMinipoolAddress
         );
+
+        emit MinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator);
     }
 
     /**
@@ -289,17 +275,17 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      *      This is used when a minipool is destroyed or decommissioned.
      * @param minipool The address of the minipool to be removed from tracking.
      */
-    function onMinipoolRemoved(address minipool) external onlyProtocol() onlyRecognizedMinipool(address(minipool)) {
-        uint256 index = minipoolIndex[minipool];
+    function removeMinipool(address minipool) external onlyProtocol() onlyRecognizedMinipool(address(minipool)) {
+        uint256 index = minipoolData[minipool].index;
+        address operatorAddress = minipoolData[minipool].subNodeOperator;
         uint256 lastIndex = minipools.length - 1;
         address lastMinipool = minipools[lastIndex];
-
         minipools[index] = lastMinipool;
-        minipoolIndex[lastMinipool] = index;
-
+        minipoolData[lastMinipool].index = index;
         minipools.pop();
-        delete minipoolIndex[minipool];
         delete minipoolData[minipool];
+
+        emit MinipoolDestroyed(minipool, operatorAddress);
     }
 
     /**
@@ -341,84 +327,16 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * into the system.
      * In future versions, it may be brought into minipool processing to automate the process, but there are a lot of base layer
      * implications to consider before closing, and it would increase gas for the tick.
-     * @param _subNodeOperator Address of the sub-node operator associated with the minipool.
-     * @param _minipool Address of the minipool to close.
+     * @param subNodeOperatorAddress Address of the sub-node operator associated with the minipool.
+     * @param minipoolAddress Address of the minipool to close.
      */
-    function close(address _subNodeOperator, address _minipool) external onlyRecognizedMinipool(_minipool) {
-        require(minipoolData[_minipool].subNodeOperator == _subNodeOperator, "operator does not own the specified minipool");
-        IMinipool minipool = IMinipool(_minipool);
-        OperatorDistributor operatorDistributorContract = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        operatorDistributorContract.onNodeMinipoolDestroy(_subNodeOperator);
-        this.onMinipoolRemoved(_minipool);
-
+    function close(address subNodeOperatorAddress, address minipoolAddress) external onlyRecognizedMinipool(minipoolAddress) {
+        require(minipoolData[minipoolAddress].subNodeOperator == subNodeOperatorAddress, "operator does not own the specified minipool");
+        IMinipool minipool = IMinipool(minipoolAddress);
+        Whitelist(getDirectory().getWhitelistAddress()).removeValidator(minipoolData[minipoolAddress].subNodeOperator);
+        this.removeMinipool(minipoolAddress);
         minipool.close();
-    }
-
-
-    /**
-     * @notice Claims rewards for a node based on a Merkle proof, distributing specified amounts of RPL and ETH.
-     * @dev This function interfaces with the RocketMerkleDistributorMainnet to allow nodes to claim their rewards.
-     *      The rewards are determined by a Merkle proof which validates the amounts to be claimed.
-     * @param _rewardIndex Array of indices in the Merkle tree corresponding to reward entries.
-     * @param _amountRPL Array of amounts of RPL tokens to claim.
-     * @param _amountETH Array of amounts of ETH to claim.
-     * @param _merkleProof Array of Merkle proofs for each reward entry.
-     */
-    function merkleClaim(
-        uint256[] calldata _rewardIndex,
-        uint256[] calldata _amountRPL,
-        uint256[] calldata _amountETH,
-        bytes32[][] calldata _merkleProof,
-        MerkleRewardsConfig calldata _config
-    ) public {
-        address odAddress = _directory.getOperatorDistributorAddress();
-        IERC20 rpl = IERC20(_directory.getRPLAddress());
-
-        uint256 initialEthBalance = odAddress.balance;
-        uint256 initialRplBalance = rpl.balanceOf(odAddress);
-
-        IRocketMerkleDistributorMainnet(_directory.getRocketMerkleDistributorMainnetAddress()).claim(
-            address(this),
-            _rewardIndex,
-            _amountRPL,
-            _amountETH,
-            _merkleProof
-        );
-
-
-        uint256 finalEthBalance = odAddress.balance;
-        uint256 finalRplBalance = rpl.balanceOf(odAddress);
-
-        uint256 ethReward = finalEthBalance - initialEthBalance;
-        uint256 rplReward = finalRplBalance - initialRplBalance;
-
-        bytes32 messageHash = keccak256(
-            abi.encodePacked(
-                _config.avgEthTreasuryFee,
-                _config.avgEthOperatorFee,
-                _config.avgRplTreasuryFee,
-                _config.sigGenesisTime,
-                address(this),
-                merkleClaimNonce,
-                block.chainid
-            )
-        );
-        require(!merkleClaimSigUsed[messageHash], 'merkle sig already used');
-        merkleClaimSigUsed[messageHash] = true;
-        address recoveredAddress = ECDSA.recover(ECDSA.toEthSignedMessageHash(messageHash), _config.sig);
-        require(
-            _directory.hasRole(Constants.ADMIN_ORACLE_ROLE, recoveredAddress),
-            'merkleClaim: signer must have permission from admin oracle role'
-        );
-        require(block.timestamp - _config.sigGenesisTime < merkleClaimSigExpiry, 'merkle sig expired');
-        merkleClaimNonce++;
-
-        OperatorDistributor od = OperatorDistributor(payable(odAddress));
-        od.onEthRewardsReceived(ethReward, _config.avgEthTreasuryFee, _config.avgEthOperatorFee, false);
-        od.onRplRewardsRecieved(rplReward, _config.avgRplTreasuryFee);
-        od.rebalanceRplVault();
-        od.rebalanceWethVault();
-    }
+    }   
 
     /**
      * @notice Allows dmins to delegate an upgrade to the minipool's contract.
@@ -497,10 +415,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         lockThreshold = _newLockThreshold;
     }
 
-    function getSubNodeOpFromMinipool(address minipoolAddress) public view returns (address) {
-        return minipoolData[minipoolAddress].subNodeOperator;
-    }
-
     /**
      * @return uint256 The amount of ETH bonded with this node from WETHVault deposits.
      */
@@ -528,7 +442,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
         uint256 rplStaking = rocketNodeStaking.getNodeRPLStake(address(this));
         uint256 newEthBorrowed = IRocketDAOProtocolSettingsMinipool(_directory.getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() - _bond;
-        console.log('newEthBorrowed', newEthBorrowed);
         uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(
             rplStaking,
             getTotalEthMatched() + newEthBorrowed

@@ -48,33 +48,21 @@ describe("Node Operator Onboarding", function () {
     });
 
     it("node operator creates minipool via creating validator account", async function () {
-        console.log("operator flow minipoolAddress fda:,", minipoolAddress);
-
         //await assertAddOperator(setupData, signers.hyperdriver);
 
         // now we must create a minipool via super node
-        console.log("===FIRST HASSUFFICIENTLIQUIDITY===");
         expect(await protocol.superNode.hasSufficientLiquidity(bondValue)).equals(false);
-        console.log("===PREPARE OPERATOR DISTRIBUTOR===");
         await prepareOperatorDistributionContract(setupData, 1);
-        console.log('ETH balance of OD', await ethers.provider.getBalance(protocol.operatorDistributor.address));
-        console.log('RPL balance of OD', await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address));
-        console.log("===SECOND HASSUFFICIENTLIQUIDITY===");
         expect(await protocol.superNode.hasSufficientLiquidity(bondValue)).equals(true);
 
-        console.log("is this f-ing thing null?", signers.hyperdriver.address)
-        //expect(await protocol.superNode.subNodeOperatorHasMinipool(signers.hyperdriver.address)).equals(false);
-        console.log("operator flow minipoolAddress adf:,", minipoolAddress);
         expect(await protocol.superNode.getTotalEthStaked()).equals(BigInt(0));
         expect(await protocol.superNode.getTotalEthMatched()).equals(BigInt(0));
-        console.log('OD ETH balance: ', ethers.provider.getBalance(setupData.protocol.operatorDistributor.address));
-        console.log('OD RPL balance: ', setupData.rocketPool.rplContract.balanceOf(setupData.protocol.operatorDistributor.address));
+
         minipoolAddress = await deployMinipool(setupData, bondValue, signers.hyperdriver.address);
-        console.log("operator flow minipoolAddress", minipoolAddress);
 
         // Assuming signers.hyperdriver.address and minipoolAddress are defined
-        const hyperdriverAddress = ethers.utils.getAddress(signers.hyperdriver.address);
-        const minipoolFormatAddress = ethers.utils.getAddress(minipoolAddress);
+        const hyperdriverAddress = await ethers.utils.getAddress(signers.hyperdriver.address);
+        const minipoolFormatAddress = await ethers.utils.getAddress(minipoolAddress);
 
         // Check if the subNodeOperator has the minipool
         expect((await protocol.superNode.minipoolData(minipoolFormatAddress)).subNodeOperator).to.equal(hyperdriverAddress);
@@ -119,14 +107,9 @@ describe("Node Operator Onboarding", function () {
         await protocol.vCRPL.connect(signers.hyperdriver).deposit(ethers.utils.parseEther("200"), signers.hyperdriver.address);
         
         // deposit into protocol
-        console.log("trying to deposit...");
         await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
         await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
-        console.log("trying to deposit...");
-        console.log("maxWethRplRatio", await protocol.vCWETH.maxWethRplRatio())
-        console.log("tvlRatioEthRpl(assets, true)", await protocol.vCWETH.tvlRatioEthRpl(ethers.utils.parseEther("100"), true))
         await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
-        console.log("done trying to deposit...");
         
         const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
         const network = await ethers.provider.getNetwork();
@@ -138,20 +121,6 @@ describe("Node Operator Onboarding", function () {
         const signature = await signers.admin.signMessage(ethers.utils.arrayify(messageHash));
         // accrue yield via oracle
         await protocol.oracle.connect(signers.admin).setTotalYieldAccrued(signature, sigData)
-
-        console.log("total supply of shares")
-        console.log(await protocol.vCWETH.totalSupply())
-        console.log('max redeem', await protocol.vCWETH.maxRedeem(signers.ethWhale.address));
-        console.log('WETHVault total assets',await protocol.vCWETH.totalAssets())
-        console.log('xrETH balance of depositor',await protocol.vCWETH.balanceOf(signers.ethWhale.address));
-        console.log('WETH balance of WETHVault', await protocol.wETH.balanceOf(protocol.vCWETH.address));
-        console.log('ETHER balance of WETHVault', await ethers.provider.getBalance(protocol.vCWETH.address));
-        console.log('xrETH/ETH value',await ethers.utils.formatEther(await protocol.vCWETH.convertToAssets(ethers.utils.parseEther("1"))));
-        console.log("balance of deposit pool / opd")
-        console.log(await protocol.wETH.balanceOf(protocol.operatorDistributor.address));
-        console.log(await protocol.wETH.balanceOf(protocol.operatorDistributor.address));
-
-        console.log('liquidity reserve percent for WETHVault', await protocol.vCWETH.liquidityReservePercent());
 
         const tx = await protocol.vCWETH.connect(signers.ethWhale).redeem(ethers.utils.parseEther("1"), signers.ethWhale.address, signers.ethWhale.address);
         const receipt = await tx.wait();

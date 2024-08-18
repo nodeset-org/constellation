@@ -36,8 +36,6 @@ abstract contract RocketDAOProtocolSettings is RocketBase, RocketDAOProtocolSett
 
     // A general method to return any setting given the setting path is correct, only accepts uints
     function getSettingUint(string memory _settingPath) public view override returns (uint256) {
-        console.log("gettingUtintValue...");
-        console.logBytes32(keccak256(abi.encodePacked(settingNameSpace, _settingPath)));
         return getUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)));
     }
 

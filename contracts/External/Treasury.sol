@@ -1,14 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.17;
 
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import './UpgradeableBase.sol';
-import './Utils/Constants.sol';
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
 /// @title Treasury
-/// @notice A contract that allows the Constellation Treasuerer to manage and execute transfers of ETH and ERC20 tokens.
+/// @notice A contract that allows a Treasuerer to manage and execute transfers of ETH and ERC20 tokens.
 /// @dev Inherits from UpgradeableBase to allow for future upgrades.
-contract Treasury is UpgradeableBase {
+contract Treasury is     
+    UUPSUpgradeable,
+    AccessControlUpgradeable,
+    ReentrancyGuard
+{
+    bytes32 public constant TREASURER_ROLE = keccak256('TREASURER_ROLE');
+
+    string public constant BAD_TREASURY_EXECUTION_ERROR = 'Treasury: execution reverted.';
+    string public constant BAD_TREASURY_BATCH_CALL = 'Treasury: array length mismatch.';
+
     event ClaimedToken(address indexed _token, address indexed _to, uint256 indexed _amount);
     event ClaimedEth(address indexed _to, uint256 indexed _amount);
     event Executed(address indexed _target, bytes indexed _functionData);
@@ -18,9 +30,18 @@ contract Treasury is UpgradeableBase {
 
     /// @notice Initializes the contract by setting the directory address.
     /// @dev Overrides the initialize function of the UpgradeableBase.
-    /// @param _directoryAddress The address of the directory contract to set.
-    function initialize(address _directoryAddress) public virtual override initializer {
-        super.initialize(_directoryAddress);
+    /// @param treasurer The address of the treasurer (controller)
+    function initialize(address treasurer) public virtual initializer {
+        __UUPSUpgradeable_init();
+        _grantRole(TREASURER_ROLE, treasurer);
+        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    }
+
+    /// @notice Internal function to authorize contract upgrades.
+    /// @dev This function is used internally to ensure that only administrators can authorize contract upgrades.
+    ///      It checks whether the sender has the required TREASURER_ROLE before allowing the upgrade.
+    function _authorizeUpgrade(address) internal view override {
+        require(hasRole(TREASURER_ROLE, msg.sender), 'Upgrading only allowed by treasurer!');
     }
 
     function _claimTokenInternal(address _tokenAddress, address _to, uint256 _amount) internal {
@@ -42,6 +63,11 @@ contract Treasury is UpgradeableBase {
             }
         }
         emit Executed(_target, _functionData);
+    }
+
+    modifier onlyTreasurer() {
+        require(this.hasRole(TREASURER_ROLE, msg.sender), 'Can only be called by treasurer address!');
+        _;
     }
 
     /// @notice Allows the treasuerer to claim all ERC20 tokens of a particular type and send them to a specified address.
@@ -72,14 +98,6 @@ contract Treasury is UpgradeableBase {
         _claimEthInternal(_to, _amount);
     }
 
-    /// @notice Executes a call to another contract with provided data, with the possibility to send ETH.
-    /// @dev The `call` is a low-level interface for interacting with contracts.
-    /// @param _target The contract address to execute the call on.
-    /// @param _functionData The calldata to send for the call.
-    function execute(address payable _target, bytes calldata _functionData) external payable onlyTreasurer nonReentrant {
-        _executeInternal(_target, _functionData, msg.value);
-    }
-
     /// @notice Batch executes multiple calls to contracts with provided data and ETH.
     /// @dev Useful for performing multiple treasuerer tasks in one transaction.
     /// @param _targets An array of contract addresses to execute the calls on.
@@ -90,8 +108,8 @@ contract Treasury is UpgradeableBase {
         bytes[] calldata _functionData,
         uint256[] calldata _values
     ) external payable onlyTreasurer nonReentrant {
-        require(_targets.length == _functionData.length, Constants.BAD_TREASURY_BATCH_CALL);
-        require(_values.length == _functionData.length, Constants.BAD_TREASURY_BATCH_CALL);
+        require(_targets.length == _functionData.length, BAD_TREASURY_BATCH_CALL);
+        require(_values.length == _functionData.length, BAD_TREASURY_BATCH_CALL);
         for (uint256 i = 0; i < _targets.length; i++) {
             _executeInternal(_targets[i], _functionData[i], _values[i]);
         }

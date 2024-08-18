@@ -6,10 +6,11 @@ import '@openzeppelin/contracts/utils/math/Math.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 import './WETHVault.sol';
-import '../Operator/SuperNodeAccount.sol';
+import './SuperNodeAccount.sol';
+import './MerkleClaimStreamer.sol';
 
-import '../UpgradeableBase.sol';
-import '../Operator/OperatorDistributor.sol';
+import './Utils/UpgradeableBase.sol';
+import './OperatorDistributor.sol';
 
 import 'hardhat/console.sol';
 
@@ -35,7 +36,11 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     uint256 public liquidityReservePercent;
 
-    uint256 public minWethRplRatio; // weth coverage ratio
+    /**
+     * @notice the minimum percentage of ETH/RPL TVL allowed 
+     * @dev this is a simple percentage, because the RPL TVL is calculated using its price in ETH
+     */
+    uint256 public minWethRplRatio;
 
     constructor() initializer {}
 
@@ -107,12 +112,10 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         }
         require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
         
-        
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         // first process a minipool to give the best chance at actually withdrawing
         od.processNextMinipool();
 
-        // required violation of CHECKS/EFFECTS/INTERACTIONS: need to change RPL balance here before rebalancing the rest of the protocol
         super._withdraw(caller, receiver, owner, assets, shares);
         
         od.rebalanceRplVault();
@@ -124,7 +127,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function totalAssets() public view override returns (uint256) {
         return (IERC20(asset()).balanceOf(address(this)) +
-            OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl());
+            OperatorDistributor(_directory.getOperatorDistributorAddress()).getTvlRpl()) +
+            MerkleClaimStreamer(getDirectory().getMerkleClaimStreamerAddress()).getStreamedTvlRpl();
     }
 
     /**
@@ -139,8 +143,6 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 fullBalance = totalAssets() + deposit;
         uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
-        console.log("RPL requiredCollateralAfterDeposit(",deposit,")");
-        console.log("requiredBalance:", requiredBalance, "currentBalance:", currentBalance);
         return requiredBalance > currentBalance ? requiredBalance - currentBalance: 0;
     }
 

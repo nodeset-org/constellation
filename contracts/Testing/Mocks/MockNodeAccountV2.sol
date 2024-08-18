@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.17;
 
-import '../../Operator/SuperNodeAccount.sol';
+import '../../Constellation/SuperNodeAccount.sol';
 
 contract MockNodeAccountV2 is SuperNodeAccount {
 
