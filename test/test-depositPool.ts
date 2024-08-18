@@ -50,8 +50,6 @@ describe(`RPL staking`, () => {
             expect(finalStake.sub(initialStake)).equals(amountStaked);
 
             await increaseEVMTime(60 * 60 * 24 * 7 * 32);
-            console.log("acoutal stake", await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address))
-            console.log("udner collat thresh old", await rp.rocketNodeStakingContract.getNodeMaximumRPLStake(protocol.superNode.address))
 
             const amountUnstaked = ethers.utils.parseUnits("70", await rp.rplContract.decimals());
             const initialStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
