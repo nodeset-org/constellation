@@ -40,35 +40,41 @@ This repository contains Solidity smart contracts and assocated tests for Conste
    - Holds references to all protocol contracts and manages role mechanisms
 
 **WETHVault.sol**
-    - An ERC4626 vault for WETH tokens, managing deposits, withdrawals, and rewards distribution
+   - An ERC4626 vault for WETH tokens, managing deposits, withdrawals, and rewards distribution
 
 **RPLVault.sol**
-    - An ERC4626 vault for RPL tokens, managing deposits, withdrawals, and rewards distribution
+   - An ERC4626 vault for RPL tokens, managing deposits, withdrawals, and rewards distribution
 
 **SuperNodeAccount.sol**
-    - Manages node operators and their minipools
+   - Manages node operators and their minipools
 
 **OperatorDistributor.sol**
-    - Manages distribution and staking of ETH and RPL tokens for node operators
+   - Manages distribution and staking of ETH and RPL tokens for node operators
+
+**MerkleClaimStreamer.sol**
+   - Allows for Rocket Pool merkle claim submission on behalf of Constellation and
+   - "Streams" the rewards from these claims to the rest of the protocol upon receipt
 
 # External Contracts
 
 These contracts are not part of the Constellation protocol but still serve important purposes of their own
 
 **Treasury.sol**
-    - An example contract that a Treasurer might use to manage the earned income
+   - An example contract that a Treasurer might use to manage the earned income
+   - Constellation's contracts do not assume a particular treasury contract -- they only require a payable contract such as this
 
 **NodeSetOperatorRewardDistributor.sol**
-    - Distributes rewards to a decentralized swarm of operators. Can take in income from any source, not just Constellation
+   - Distributes rewards to a decentralized swarm of operators. Can take in income from any source, not just Constellation
+   - Constellation's contracts do not assume a particular operator reward distribution contract -- they only require a payable contract such as this
 
 # Actors
 The protocol involves several actors, each with specific roles and incentives to ensure the smooth operation and security of the system.
 
 **Node Operators** or alternitivaly refered to as **Sub-Node Operators**
    - May add themselves to the operator whitelist with the Admin's approval
-   - May remove themselves from the operator whitelist (if they no longer have any associated minipools)
+   - May remove themselves from the operator whitelist (if they have no active minipools)
    - Create and manage minipools
-   - Must ensure uptime and performance of their individual node
+   - Responsible for uptime and performance of their individual node
    - Collects fees from staking
 
 **Admin**
@@ -78,11 +84,20 @@ The protocol involves several actors, each with specific roles and incentives to
    - Develop and update smart contracts
    - Ensure security and efficiency of the code
    - Implement new features and upgrades
+   - May set a new Admin
+   - May set a new Oracle provider
+   - Assumed to be a service provider for the Treasurer
 
 **Liquid Stakers (Depositors)**
    - Exchange their ETH and RPL for liquid staking tokens
    - These LSTs earn staking rewards from ETH and RPL
 
 **Oracle Providers**
-     - Provide accurate and reliable external data to the protocol
-     - Ensure timely updates of the data feeds
+   - Provide accurate and reliable external data to the protocol
+   - Ensure timely updates of the data feeds
+
+**Treasurer**
+   - Receives protocol-wide fees
+   - May set a new Treasurer
+   - Responsible for using the protocol-wide income to grow the protocol and its ecosystem
+   - The "protocol owner"
