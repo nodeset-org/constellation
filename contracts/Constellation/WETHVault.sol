@@ -4,12 +4,12 @@ pragma solidity 0.8.17;
 import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol';
 
 import './RPLVault.sol';
-import '../PriceFetcher.sol';
-import '../UpgradeableBase.sol';
-import '../Operator/NodeSetOperatorRewardDistributor.sol';
-import '../Utils/Constants.sol';
+import './Utils/PriceFetcher.sol';
+import './Utils/UpgradeableBase.sol';
+import './MerkleClaimStreamer.sol';
+import './Utils/Constants.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
-import '../Interfaces/Oracles/IConstellationOracle.sol';
+import '../Interfaces/IConstellationOracle.sol';
 import '../Interfaces/IWETH.sol';
 
 import 'hardhat/console.sol';
@@ -27,10 +27,19 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * put to work with the OperatorDistributor.
      */
     uint256 public liquidityReservePercent;
+
+    /**
+     * @notice the maximum percentage of ETH/RPL TVL allowed 
+     * @dev this is a simple percentage, because the RPL TVL is calculated using its price in ETH
+     */
     uint256 public maxWethRplRatio;
 
     uint256 public treasuryFee; // Treasury fee in basis points
     uint256 public nodeOperatorFee; // NO fee in basis points
+    
+    // To prevent oracle sandwich attacks, there is a small fee charged on mint
+    // see the original issue for RP for more details: https://consensys.io/diligence/audits/2021/04/rocketpool/#rockettokenreth---sandwiching-opportunity-on-price-updates
+    uint256 public mintFee;
 
     uint256 public totalCounts;
     uint256 public totalPenaltyBond;
@@ -56,6 +65,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         // default fees with 14% rETH commission mean WETHVault share returns are equal to base ETH staking rewards
         treasuryFee = 0.14788e18; 
         nodeOperatorFee = 0.14788e18;
+        mintFee = 0.0003e18; // .03% by default
     }
 
     /**
@@ -78,12 +88,21 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
             return;
         }
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        od.processNextMinipool();
+        
         require(tvlRatioEthRpl(assets, true) <= maxWethRplRatio, 'insufficient RPL coverage');
-        super._deposit(caller, receiver, assets, shares);
 
-        SafeERC20.safeTransfer(IERC20(asset()), address(od), assets);
-        od.rebalanceWethVault();
+        uint256 mintFeePortion = this.getMintFeePortion(assets);
+
+        super._deposit(caller, receiver, assets, shares);
+        
+        address treasuryAddress = getDirectory().getTreasuryAddress();
+        if(mintFeePortion > 0 && treasuryAddress != address(this))
+            SafeERC20.safeTransfer(IERC20(asset()), treasuryAddress, mintFeePortion); // transfer the mint fee to the treasury
+
+        // move everything to operator distributor in anticipation of rebalancing everything
+        SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));
+        od.processNextMinipool();
+        od.rebalanceWethVault(); // just in case there is no minipool balances to process, rebalance anyway
     }
 
     /**
@@ -118,6 +137,18 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         od.rebalanceWethVault();
     }
 
+    /// @dev Preview taking an entry fee on deposit. See {IERC4626-previewDeposit}.
+    function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
+        uint256 fee = this.getMintFeePortion(assets);
+        return super.previewDeposit(assets - fee);
+    }
+
+    /// @dev Preview adding an entry fee on mint. See {IERC4626-previewMint}.
+    function previewMint(uint256 shares) public view virtual override returns (uint256) {
+        uint256 assets = super.previewMint(shares);
+        return assets + this.getMintFeePortion(assets);
+    }
+
     /**
      * @notice Retrieves the total yield available for distribution.
      * @dev This function calculates the yield that can be distributed by subtracting the total yield already distributed 
@@ -125,9 +156,12 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @return distributableYield The total yield available for distribution.
      */
     function getDistributableYield() public view returns (uint256 distributableYield, bool signed) {
-        uint256 lastUpdate = getOracle().getLastUpdatedTotalYieldAccrued();
         int256 oracleError = int256(OperatorDistributor(_directory.getOperatorDistributorAddress()).oracleError());
-        int256 totalUnrealizedAccrual = getOracle().getTotalYieldAccrued() - (lastUpdate == 0 ? int256(0) : oracleError);
+        int256 outstandingYield = (IConstellationOracle(getDirectory().getOracleAddress())).getTotalYieldAccrued();
+        if(outstandingYield == 0)
+            return (0, false);
+        // if the most recent reported yield is less than the oracleError, there's no unrealized yield remaining
+        int256 totalUnrealizedAccrual = outstandingYield >= 0 ? outstandingYield - oracleError : outstandingYield + oracleError;
 
         int256 diff = totalUnrealizedAccrual;
         if (diff >= 0) {
@@ -140,15 +174,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Retrieves the address of the Oracle contract.
-     * @dev This function gets the address of the Oracle contract from the Directory contract.
-     * @return The address of the Oracle contract.
-     */
-    function getOracle() public view returns (IConstellationOracle) {
-        return IConstellationOracle(getDirectory().getOracleAddress());
-    }
-
-    /**
      * @notice Returns the total assets managed by this vault. That is, all the ETH backing xrETH.
      * @dev This function calculates the total assets by summing the vault's own assets, the distributable yield,
      * and the assets held in OperatorDistributor. 
@@ -156,10 +181,11 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function totalAssets() public view override returns (uint256) {
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
-        (uint256 distributableYield, bool signed) = getDistributableYield();
+        (uint256 distributableYield, bool signed) = this.getDistributableYield();
+        uint256 merkleRewards = MerkleClaimStreamer(getDirectory().getMerkleClaimStreamerAddress()).getStreamedTvlEth();
         return (
             uint256(
-                int(IERC20(asset()).balanceOf(address(this)) + od.getTvlEth()) +
+                int(IERC20(asset()).balanceOf(address(this)) + od.getTvlEth() +  merkleRewards)  +
                     (signed ? -int(distributableYield) : int(distributableYield))
             )
         );
@@ -186,18 +212,22 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Calculates the missing liquidity needed to meet the liquidity reserve after a specified deposit.
-     * @dev his function calculates the amount of assets needed to hit the liquidity reserve 
-     * after a specified deposit amount. It compares the current balance with the required liquidity based on
-     * the total assets, including the deposit.
+     * @dev Compares the current balance with the required liquidity based on the total assets including the deposit and mint fee.
      * @param deposit The amount of the new deposit to consider in the liquidity calculation.
      * @return The amount of liquidity required after the specified deposit.
      */
     function getMissingLiquidityAfterDeposit(uint256 deposit) public view returns (uint256) {
+        uint256 fullBalance = totalAssets() + deposit - this.getMintFeePortion(deposit);
+        uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
+        uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
+        return requiredBalance > currentBalance ? requiredBalance - currentBalance: 0;
+    }
+
+    /// @dev for dev/testing
+    function getMissingLiquidityAfterDepositNoFee(uint256 deposit) public view returns (uint256) {
         uint256 fullBalance = totalAssets() + deposit;
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
-        console.log("ETH requiredCollateralAfterDeposit(",deposit,")");
-        console.log("requiredBalance:", requiredBalance, "currentBalance:", currentBalance);
         return requiredBalance > currentBalance ? requiredBalance - currentBalance: 0;
     }
 
@@ -208,16 +238,34 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @return The amount of liquidity required.
      */
     function getMissingLiquidity() public view returns (uint256) {
-        return getMissingLiquidityAfterDeposit(0);
+        return getMissingLiquidityAfterDepositNoFee(0);
     }
 
     /**
-     * @notice Calculates 
-     * @dev This function calculates the required collateral based on the current total assets of the vault.
-     * @return The amount of collateral required.
+     * @notice Calculates the xrETH portion of rewards for a specified amount of income
      */
     function getIncomeAfterFees(uint256 income) public view returns (uint256){
         return income - income.mulDiv((treasuryFee + nodeOperatorFee), 1e18);
+    }
+
+    /// @notice Calculates the mint fee portion of a specific deposit amount.
+    /// @param _amount The deposit expected
+    function getMintFeePortion(uint256 _amount) external view returns (uint256) {
+        return _amount.mulDiv(mintFee, 1e18, Math.Rounding.Up);
+    }
+
+
+    /// Calculates the treasury portion of a specific RPL reward amount.
+    /// @param _amount The RPL reward expected
+    function getTreasuryPortion(uint256 _amount) external view returns (uint256) {
+        return _amount.mulDiv(treasuryFee, 1e18);
+    }
+
+
+    /// Calculates the operator portion of a specific RPL reward amount.
+    /// @param _amount The RPL reward expected
+    function getOperatorPortion(uint256 _amount) external view returns (uint256) {
+        return _amount.mulDiv(nodeOperatorFee, 1e18);
     }
 
     /**ADMIN FUNCTIONS */
@@ -290,5 +338,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
         SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));
         od.rebalanceWethVault();
+    }
+
+    function setMintFee(uint256 newMintFee) external onlyMediumTimelock() {
+        require(newMintFee >= 0 && newMintFee <= 1e18, "new mint fee must be between 0 and 100%");
+        mintFee = newMintFee;
     }
 }

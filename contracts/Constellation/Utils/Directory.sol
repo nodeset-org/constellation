@@ -4,15 +4,15 @@ pragma solidity 0.8.17;
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
-import './Interfaces/Oracles/IConstellationOracle.sol';
-import './Interfaces/RocketPool/IRocketStorage.sol';
-import './Interfaces/ISanctions.sol';
-import './Interfaces/RocketPool/IRocketNetworkPrices.sol';
-import './Interfaces/RocketPool/IRocketNetworkPenalties.sol';
+import '../../Interfaces/IConstellationOracle.sol';
+import '../../Interfaces/RocketPool/IRocketStorage.sol';
+import '../../Interfaces/ISanctions.sol';
+import '../../Interfaces/RocketPool/IRocketNetworkPrices.sol';
+import '../../Interfaces/RocketPool/IRocketNetworkPenalties.sol';
 
 import './UpgradeableBase.sol';
-import './Utils/RocketPoolEncoder.sol';
-import './Utils/Constants.sol';
+import '../Utils/RocketPoolEncoder.sol';
+import '../Utils/Constants.sol';
 
 import 'hardhat/console.sol';
 
@@ -21,6 +21,7 @@ struct Protocol {
     address payable wethVault;
     address rplVault;
     address payable operatorDistributor;
+    address payable merkleClaimStreamer;
     address payable operatorReward;
     address oracle;
     address priceFetcher;
@@ -104,6 +105,10 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     function getOperatorDistributorAddress() public view returns (address payable) {
         return _protocol.operatorDistributor;
+    }
+
+    function getMerkleClaimStreamerAddress() public view returns (address payable) {
+        return _protocol.merkleClaimStreamer;
     }
 
     function getOperatorRewardAddress() public view returns (address payable) {
@@ -240,10 +245,16 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _grantRole(Constants.ADMIN_ROLE, admin);
         _grantRole(Constants.TREASURY_ROLE, treasurer);
 
+        // Note that the protocol role should ONLY be given to protocol contracts
+        // This is a dangerous role that MUST be kept internal
+        // It should never be given to a non-core-protocol contract (e.g. don't give it to the treasury or operator rewards address)
+        // and it should also never be given to an EOA (e.g. don't give this to the ADMIN or TREASURER)
+        // This is the only list of contracts which should ever have this role:
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.whitelist);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.wethVault);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.rplVault);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.operatorDistributor);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.merkleClaimStreamer);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.oracle);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.priceFetcher);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.superNode);
@@ -343,7 +354,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     /// @notice Sets the treasury address.
     /// @param newTreasury The new treasury address.
     function setTreasury(address newTreasury) public {
-        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
+        require(hasRole(Constants.TREASURY_ROLE, msg.sender), Constants.TREASURER_ONLY_ERROR);
         _treasury = newTreasury;
     }
 

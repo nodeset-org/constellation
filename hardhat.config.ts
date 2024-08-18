@@ -93,7 +93,7 @@ const config: HardhatUserConfig = {
     },
 
     localhost: {
-      gasPrice: 25000000000
+      gasPrice: 25000000000,
     },
 
     goerli: {

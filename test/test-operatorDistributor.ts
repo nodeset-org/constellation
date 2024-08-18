@@ -35,17 +35,6 @@ describe("Operator Distributor", function () {
 
 		// protocol sweeps in rewards
 		await protocol.operatorDistributor.connect(signers.random).processMinipool(minipools[0]);
-		console.log("priorAssets", priorAssets);
-		console.log("xrETHPortion", xrETHPortion);
-		console.log("OD balance ETH/WETH", 
-			await ethers.provider.getBalance(protocol.operatorDistributor.address), "/",
-			await protocol.wETH.balanceOf(protocol.operatorDistributor.address)
-		  );
-		console.log("TVL OD", await protocol.operatorDistributor.getTvlEth());
-		console.log("WETHVault balance ETH/WETH", 
-			await ethers.provider.getBalance(protocol.vCWETH.address), "/",
-			await protocol.wETH.balanceOf(protocol.vCWETH.address)
-		  );
 
 		expect(await protocol.vCWETH.totalAssets()).to.equal(priorAssets.add(xrETHPortion));
 	});
@@ -65,7 +54,6 @@ describe("Operator Distributor", function () {
 		// add minimum assets for 2 minipools
 		await prepareOperatorDistributionContract(setupData, 2);
 
-		console.log('amount staked after prep', await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address));
 		// create 2 minipools
 		await registerNewValidator(setupData, [signers.random, signers.random2]);
 
@@ -74,16 +62,13 @@ describe("Operator Distributor", function () {
 		await rocketPool.rplContract.connect(signers.rplWhale).transfer(operatorDistributor.address, rplAmount);
 
 		const lastPrice = await upgradePriceFetcherToMock(signers, protocol, ethers.utils.parseEther("55"));
-		console.log("last price", lastPrice);
 
 		const initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
-		console.log("od.test.initial stake", initialRplStake)
 		const tx = await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
 		const finalRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
-		console.log("od.test.finalRplStake stake", finalRplStake)
 
 		expect(finalRplStake.sub(initialRplStake)).eq(ethers.BigNumber.from(0));
 
@@ -116,9 +101,6 @@ describe("Operator Distributor", function () {
 		await registerNewValidator(setupData, [signers.random]);
 
 		const price = await protocol.priceFetcher.getPrice();
-		const expectedStake = ethers.utils.parseEther("8").mul(price);
-		console.log("exepcted stake", expectedStake)
-
 	});
 
 	it("success - target stake ratio may be set equal 100%", async function () {
@@ -140,11 +122,6 @@ describe("Operator Distributor", function () {
 		expect(initialRplStake).equals(0)
 		await prepareOperatorDistributionContract(setupData, 1);
 		await registerNewValidator(setupData, [signers.random]);
-		console.log("p=rpl stake after depo", await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address));
-
-		let price = await protocol.priceFetcher.getPrice();
-		let expectedStake = ethers.utils.parseEther("8").mul(price);
-		console.log("p=exepcted stake", expectedStake)
 	});
 
 	it("success - target stake ratio may be set less than 100%", async function () {
@@ -166,10 +143,5 @@ describe("Operator Distributor", function () {
 		expect(initialRplStake).equals(0)
 		await prepareOperatorDistributionContract(setupData, 2);
 		await registerNewValidator(setupData, [signers.random]);
-		console.log("p=rpl stake after depo", await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address));
-
-		let price = await protocol.priceFetcher.getPrice();
-		let expectedStake = ethers.utils.parseEther("8").mul(price);
-		console.log("p=exepcted stake", expectedStake)
 	});
 });

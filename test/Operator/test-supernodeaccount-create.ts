@@ -3,6 +3,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { Protocol, protocolFixture, RocketPool, SetupData, Signers } from "../test";
 import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator } from ".././utils/utils";
 import { generateDepositData } from ".././rocketpool/_helpers/minipool";
+import { prepareOperatorDistributionContract } from "../utils/utils";
 
 const ethMintAmount = ethers.utils.parseEther("8");
 const rplMintAmount = ethers.utils.parseEther("360");
@@ -83,16 +84,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
 
     describe("when there is just enough assets deposited for one", async function () {
         it("should create a minipool", async function () {
-            // Deposit ETH
-            const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
-            await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
-            await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
-            await protocol.vCWETH.connect(signers.ethWhale).deposit(ethMintAmount, signers.ethWhale.address);
-
-            // Deposit RPL
-            await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
-            await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
-            await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address);
+            await prepareOperatorDistributionContract(setupData, 1);
 
             const nodeOperator = signers.hyperdriver;
             await assertAddOperator(setupData, nodeOperator);
@@ -137,15 +129,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
         describe("when there is a single node operator", async function () {
             it("should create many minipools", async function () {
                 // Deposit ETH (for 3 minipools)
-                const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
-                await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
-                await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
-                await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("24"), signers.ethWhale.address);
-
-                // Deposit RPL (for 3 minipools)
-                await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("1080"));
-                await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("1080"));
-                await protocol.vCRPL.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1080"), signers.ethWhale.address);
+                await prepareOperatorDistributionContract(setupData, 3);
 
                 const nodeOperator = signers.hyperdriver;
                 await assertAddOperator(setupData, nodeOperator);
@@ -314,15 +298,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
                 await protocol.superNode.connect(signers.admin).setMaxValidators(1);
 
                 // Deposit ETH (for 3 minipools)
-                const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
-                await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("1000") });
-                await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethBalance);
-                await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("24"), signers.ethWhale.address);
-
-                // Deposit RPL (for 3 minipools)
-                await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("1080"));
-                await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("1080"));
-                await protocol.vCRPL.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1080"), signers.ethWhale.address);
+                await prepareOperatorDistributionContract(setupData, 3);
 
                 const nodeOperator1 = signers.hyperdriver;
                 await assertAddOperator(setupData, nodeOperator1);

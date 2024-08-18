@@ -4,7 +4,7 @@ import path from 'path';
 import { getNextContractAddress } from "../../test/utils/utils";
 import { getInitializerData } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import readline from 'readline';
-import { Treasury, Directory, AssetRouter, IRocketStorage, IConstellationOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, NodeSetOperatorRewardDistributor, PoAConstellationOracle } from "../../typechain-types";
+import { Treasury, Directory, IRocketStorage, IConstellationOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, NodeSetOperatorRewardDistributor, PoAConstellationOracle, MerkleClaimStreamer } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Protocol, Signers } from "../../test/test";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
@@ -59,7 +59,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
     const directoryAddress = await getNextContractAddress(directoryDeployer, defaultOffset)
 
     const whitelistProxy = await retryOperation(async () => {
-        const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Whitelist/Whitelist.sol:Whitelist", deployer), [directoryAddress], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+        const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Constellation/Whitelist.sol:Whitelist", deployer), [directoryAddress], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
         if (log) console.log("whitelist deployed to", whitelist.address)
         return whitelist;
     });
@@ -99,6 +99,12 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
         return od
     })
 
+    const merkleClaimStreamerProxy = await retryOperation(async function () {
+        const od = await upgrades.deployProxy(await ethers.getContractFactory("MerkleClaimStreamer", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        if (log) console.log("operator distributor deployed to", od.address)
+        return od
+    })
+
     const yieldDistributorProxy = await retryOperation(async function () {
         const yd = await upgrades.deployProxy(await ethers.getContractFactory("NodeSetOperatorRewardDistributor", deployer), [nodesetAdmin.address, nodesetServerAdmin.address], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         if (log) console.log("yield distributor deployed to", yd.address)
@@ -129,6 +135,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
         console.log("vCWETHProxy.address", vCWETHProxy.address)
         console.log("vCRPLProxy.address", vCRPLProxy.address)
         console.log("operatorDistributorProxy.address", operatorDistributorProxy.address)
+        console.log("merkleClaimStreamerProxy.address", merkleClaimStreamerProxy.address)
         console.log("yieldDistributorProxy.address", yieldDistributorProxy.address)
         console.log("oracle", oracleProxy.address)
         console.log("priceFetcherProxy.address", priceFetcherProxy.address)
@@ -146,6 +153,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
                     vCWETHProxy.address,
                     vCRPLProxy.address,
                     operatorDistributorProxy.address,
+                    merkleClaimStreamerProxy.address,
                     yieldDistributorProxy.address,
                     oracleProxy.address,
                     priceFetcherProxy.address,
@@ -183,6 +191,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
         vCWETH: vCWETHProxy as WETHVault,
         vCRPL: vCRPLProxy as RPLVault,
         operatorDistributor: operatorDistributorProxy as OperatorDistributor,
+        merkleClaimStreamer: merkleClaimStreamerProxy as MerkleClaimStreamer,
         yieldDistributor: yieldDistributorProxy as NodeSetOperatorRewardDistributor,
         priceFetcher: priceFetcherProxy as PriceFetcher,
         oracle: oracleProxy as PoAConstellationOracle,
@@ -218,7 +227,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
 
     const deployer = (await ethers.getSigners())[0];
 
-    const { whitelist, vCWETH, vCRPL, operatorDistributor, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury } = await fastDeployProtocol(
+    const { whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury } = await fastDeployProtocol(
         signers.treasurer,
         signers.deployer,
         signers.nodesetAdmin,
@@ -258,12 +267,9 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
     await tx.wait();
 
-    // set directory treasury to deployer to prevent tests from failing
     expect(await directory.getTreasuryAddress()).to.equal(treasury.address);
-    tx = await directory.connect(signers.admin).setTreasury(deployer.address);
-    await tx.wait();
 
-    const returnData: Protocol = { directory, whitelist, vCWETH, vCRPL, operatorDistributor, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
+    const returnData: Protocol = { treasury, directory, whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
 
     // send all rpl from admin to rplWhale
     const rplWhaleBalance = await rplContract.balanceOf(signers.deployer.address);
@@ -271,9 +277,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     await tx.wait();
 
     let hasProtocolRole = await returnData.directory.hasRole(protocolRole, signers.protocolSigner.address);
-    console.log("wait for granting roll to confirm...", hasProtocolRole)
     while(!(hasProtocolRole)) {
-        console.log("wait for granting roll to confirm...", hasProtocolRole)
         hasProtocolRole = await returnData.directory.hasRole(protocolRole, signers.protocolSigner.address);
     }
 

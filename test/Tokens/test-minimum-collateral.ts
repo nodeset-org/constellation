@@ -170,6 +170,9 @@ describe("Minimum Collateral", async function () {
                     // Set liquidity reserve to 0%
                     await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
                     await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(0);
+                    
+                    // set mint fee to 0
+                    await protocol.vCWETH.connect(signers.admin).setMintFee(0);
 
                     // Set minimum RPL collateral on operator distributor to 30%
                     await protocol.operatorDistributor.connect(signers.admin).setMinimumStakeRatio(ethers.utils.parseEther("0.3"))
@@ -259,6 +262,9 @@ describe("Minimum Collateral", async function () {
                     await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
                     await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(0);
 
+                    // set mint fee to 0
+                    await protocol.vCWETH.connect(signers.admin).setMintFee(0);
+                    
                     // Set minimum RPL collateral on operator distributor to 30%
                     await protocol.operatorDistributor.connect(signers.admin).setMinimumStakeRatio(ethers.utils.parseEther("0.3"))
 
@@ -350,6 +356,9 @@ describe("Minimum Collateral", async function () {
                 await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
                 await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(0);
 
+                // set mint fee to 0
+                await protocol.vCWETH.connect(signers.admin).setMintFee(0);
+                
                 // Set minimum RPL collateral on operator distributor to 30%
                 await protocol.operatorDistributor.connect(signers.admin).setMinimumStakeRatio(ethers.utils.parseEther("0.3"))
 
@@ -416,6 +425,9 @@ describe("Minimum Collateral", async function () {
                 // Set liquidity reserve to 0%
                 await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
                 await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(0);
+
+                // set mint fee to 0
+                await protocol.vCWETH.connect(signers.admin).setMintFee(0);
 
                 // Set minimum RPL collateral on operator distributor to 30%
                 await protocol.operatorDistributor.connect(signers.admin).setMinimumStakeRatio(ethers.utils.parseEther("0.3"))

@@ -226,7 +226,6 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(
             getContractAddress('rocketDAONodeTrusted')
         );
-        console.log("ROCKET REWARDS POOL.getMemberCount()", rocketDAONodeTrusted.getMemberCount());
         if (
             (calcBase * submissionCount) / rocketDAONodeTrusted.getMemberCount() >=
             rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()

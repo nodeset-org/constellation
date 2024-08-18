@@ -580,6 +580,9 @@ describe("CoverageRatio", async function () {
                     await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
                     await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
+                    // set mint fee to 0
+                    await protocol.vCWETH.connect(signers.admin).setMintFee(0);
+
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
                     const ethBalance = await ethers.provider.getBalance(signers.ethWhale.address)
@@ -688,6 +691,9 @@ describe("CoverageRatio", async function () {
                    
                     await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
                     await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
+
+                    // set mint fee to 0
+                    await protocol.vCWETH.connect(signers.admin).setMintFee(0);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");
@@ -870,6 +876,9 @@ describe("CoverageRatio", async function () {
                    
                     await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
                     await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
+
+                    // set mint fee to 0
+                    await protocol.vCWETH.connect(signers.admin).setMintFee(0);
 
                     // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
                     const ethMintAmount = ethers.utils.parseEther("100");

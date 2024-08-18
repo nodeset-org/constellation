@@ -43,8 +43,6 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(
             getContractAddress('rocketNetworkSnapshots')
         );
-        console.log("Is rocketSnapshots null?");
-        console.logAddress(address(rocketNetworkSnapshots));
         uint256 price = uint256(rocketNetworkSnapshots.latestValue(priceKey));
         if (price == 0) {
             price = getUint(priceKey);
