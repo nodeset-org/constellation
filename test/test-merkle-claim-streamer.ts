@@ -113,6 +113,7 @@ describe("Merkle Claim Streamer", async () => {
 
     describe("when eth and rpl amount are both 0", async () => {
       it("cannot submit claim", async () => {
+        rocketMDM.disableMock();
         const proof = [[ethers.utils.hexZeroPad("0x0", 32)], [ethers.utils.hexZeroPad("0x0", 32)]]
         await expect(protocol.merkleClaimStreamer.submitMerkleClaim([0], [0], [0], proof)).to.be.revertedWith("Invalid amount")
       })
