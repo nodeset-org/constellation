@@ -651,7 +651,7 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
       error = 2;
       break;
     case 3: 
-      error = 1;
+      error = (await setupData.protocol.vCWETH.liquidityReservePercent()).eq(0) ? 1 : 3;
       break;
     case 4: 
       error = 4;
@@ -660,8 +660,9 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
       error = 5;
       break;
   }
-  console.log("error is", error);
-  requiredEth = requiredEth.add(error);  // the real math is probably some weird modulo of the fee amount, but we only use a param value of up to 5 in our tests
+  // the real math is probably some weird function of the fee amount and liquidity reserve, 
+  // but we only use a param value of up to 5 in our tests and 3 is the only weird case
+  requiredEth = requiredEth.add(error); 
   console.log('REQUIRE+ETH', requiredEth);
 
   await setupData.protocol.wETH.connect(setupData.signers.ethWhale).deposit({ value: requiredEth });
