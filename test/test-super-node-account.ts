@@ -147,7 +147,7 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         };
 
-        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, signers.hyperdriver.address, '0x' + config.expectedMinipoolAddress, config.salt);
 
         await protocol.superNode.connect(signers.hyperdriver).createMinipool(
             {
@@ -221,8 +221,8 @@ describe("SuperNodeAccount", function () {
 
         expect(config0.expectedMinipoolAddress).not.equal(config1.expectedMinipoolAddress);
 
-        const { sig: sig0, timestamp: timestamp0 } = await approveHasSignedExitMessageSig(setupData, '0x' + config0.expectedMinipoolAddress, config0.salt);
-        const { sig: sig1, timestamp: timestamp1 } = await approveHasSignedExitMessageSig(setupData, '0x' + config1.expectedMinipoolAddress, config1.salt);
+        const { sig: sig0, timestamp: timestamp0 } = await approveHasSignedExitMessageSig(setupData, signers.random.address, '0x' + config0.expectedMinipoolAddress, config0.salt);
+        const { sig: sig1, timestamp: timestamp1 } = await approveHasSignedExitMessageSig(setupData, signers.random2.address, '0x' + config1.expectedMinipoolAddress, config1.salt);
 
         await expect(protocol.superNode.connect(signers.random).createMinipool({
             validatorPubkey: config0.validatorPubkey,
@@ -272,7 +272,7 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         };
 
-        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, signers.hyperdriver.address, '0x' + config.expectedMinipoolAddress, config.salt);
 
         await protocol.superNode.connect(signers.hyperdriver).createMinipool({
             validatorPubkey: config.validatorPubkey,
@@ -320,7 +320,7 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         };
 
-        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, signers.hyperdriver.address, '0x' + config.expectedMinipoolAddress, config.salt);
 
         await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool({
             validatorPubkey: config.validatorPubkey,
@@ -370,7 +370,7 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: badDepositData.minipoolAddress
         };
 
-        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, signers.hyperdriver.address, '0x' + config.expectedMinipoolAddress, config.salt);
 
         // this is not an intuitive fail message, but it is correct as it we sign invalid param data so it fails for bad sig
         // because the predicted address is incorrect. This may make increase future cli debugging times
@@ -410,7 +410,7 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         };
 
-        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, signers.hyperdriver.address, '0x' + config.expectedMinipoolAddress, config.salt);
 
         await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool({
             validatorPubkey: config.validatorPubkey,
@@ -442,7 +442,7 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         };
 
-        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, signers.hyperdriver.address, '0x' + config.expectedMinipoolAddress, config.salt);
 
         const { sig: sig2, timestamp: timestamp2 } = await whitelistUserServerSig(setupData, signers.hyperdriver);
 
