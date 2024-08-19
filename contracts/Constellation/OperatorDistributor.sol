@@ -158,6 +158,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
+     * Note for the following functions: Ideally, minipools would be processed in order of the longest since last processing, 
+     * but there are some scenarios where minipools may be processed out of order for the sake of gas efficiency with other operations. 
+     * For example:
+     * - when minipools are removed (which swaps the last minipool with the removed one in the list)
+     * - when minipools are created (which adds them to the end of the list)
+     */
+
+    /**
      * @dev This function helps read state for the rotation and handling of different minipools within the system.
      * @return IMinipool Returns the next minipool to process. Returns a binding to the zero address if there are no minipools.
      */
