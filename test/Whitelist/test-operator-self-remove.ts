@@ -9,10 +9,14 @@ import { keccak256 } from "ethereumjs-util";
 describe("Operator Self Remove", function () {
 
     describe("When sender activeValidatorCount is equal to 0", async () => {
+        it("Should pass", async () => {
 
+        })
     })
 
     describe("When sender activeValidatorCount is greater than 0", async () => {
-        
+        it("Should pass", async () => {
+            
+        })
     })
 })
