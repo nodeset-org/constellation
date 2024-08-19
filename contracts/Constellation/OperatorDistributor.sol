@@ -452,13 +452,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             return;
         }
        
-        uint256 rewards;
         uint256 originalBalance = address(this).balance;  
         minipool.distributeBalance(false);
         // if the amount received is more than the original bond, it's rewards; otherwise no rewards
-        rewards = address(this).balance - originalBalance > minipool.getNodeDepositBalance() ? address(this).balance - originalBalance - minipool.getNodeDepositBalance() : 0; 
-
-        console.log("rewards", rewards);
+        uint256 rewards = address(this).balance - originalBalance > minipool.getNodeDepositBalance() ? address(this).balance - originalBalance - minipool.getNodeDepositBalance() : 0; 
 
         // stop tracking
         (address operatorAddress, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));   
