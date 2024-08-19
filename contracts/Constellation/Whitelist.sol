@@ -80,6 +80,16 @@ contract Whitelist is UpgradeableBase {
         return nodeMap[a].activeValidatorCount;
     }
 
+    /// @notice Retrieves the index of an operator based on its address.
+    /// @dev This private function allows the contract to obtain the index of an operator using its address.
+    /// @param a The address of the operator to retrieve the index for.
+    /// @return The index of the operator associated with the specified address.
+    /// @dev Throws an error if the specified address is not found in the whitelist.
+    function getOperatorIndex(address a) private view returns (uint) {
+        require(reverseNodeIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
+        return reverseNodeIndexMap[a];
+    }
+
     //----
     // INTERNAL
     //----
@@ -114,43 +124,16 @@ contract Whitelist is UpgradeableBase {
     }
 
     //----
-    // ADMIN
+    // PUBLIC
     //----
 
-    /// @notice Internal function to add a new operator to the whitelist. Signs an address; optimized for server-side signatures with isolated scope on Ethereum.
-    /// @dev This function is used internally to add a new operator to the whitelist, including updating permissions, initializing operator data,
-    /// and emitting the 'OperatorAdded' event. This method signs the address directly, which is typically discouraged due to potential risks
-    /// of address reuse across different protocols or chains. However, for this specific application where
-    /// the signer is only the server and its operational scope is limited to this Ethereum deployment,
-    /// it is considered safe and more optimal. Signatures are completely isolated to this scope.
-    /// @param _operator The address of the operator to be added.
-    /// @return An Operator struct containing details about the newly added operator.
-    function _addOperator(
-        address _operator,
-        uint256 _sigGenesisTime,
-        bytes memory _sig
-    ) internal returns (Operator memory) {
-        require(!sigsUsed[_sig], 'sig already used');
-        require(block.timestamp - _sigGenesisTime < whitelistSigExpiry, 'wl sig expired');
-        sigsUsed[_sig] = true;
-        bytes32 messageHash = keccak256(abi.encodePacked(_operator, _sigGenesisTime, address(this), block.chainid));
-
-        bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
-
-        address recoveredAddress = ECDSA.recover(ethSignedMessageHash, _sig);
-        require(_directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress), 'signer must be admin server role');
-
-        _permissions[_operator] = true;
-
-        numOperators++;
-
-        Operator memory operator = Operator(block.timestamp, 0);
-
-        nodeMap[_operator] = operator;
-        nodeIndexMap[numOperators] = _operator;
-        reverseNodeIndexMap[_operator] = numOperators + 1;
-
-        return operator;
+    /// @notice Allows an operator to remove themselves from the whitelist (e.g. so that a new node address may be used instead).
+    /// @dev May only be called by the operator when they have no more active minipools remaining.
+    ///      It emits the 'OperatorRemoved' event to notify when an operator has been successfully removed.
+    function removeOperatorSelf() public {
+        require(nodeMap[msg.sender].activeValidatorCount == 0, "Cannot remove node without first exiting and processing all minipools");
+        _removeOperator(msg.sender);
+        emit OperatorRemoved(msg.sender);
     }
 
     /// @notice Adds a new operator to the whitelist.
@@ -161,6 +144,14 @@ contract Whitelist is UpgradeableBase {
     function addOperator(address _operator, uint256 _sigGenesisTime, bytes calldata _sig) public {
         require(!_permissions[_operator], Constants.OPERATOR_DUPLICATE_ERROR);
         emit OperatorAdded(_addOperator(_operator, _sigGenesisTime, _sig));
+    }
+
+    //----
+    // ADMIN
+    //----
+
+    function setWhitelistExpiry(uint256 _newExpiry) external onlyAdmin {
+        whitelistSigExpiry = _newExpiry;
     }
 
     /// @notice Internal function to remove an operator from the whitelist.
@@ -182,7 +173,6 @@ contract Whitelist is UpgradeableBase {
     /// @dev This function can only be called by a 24-hour timelock and is used to remove an operator from the whitelist.
     ///      It emits the 'OperatorRemoved' event to notify when an operator has been successfully removed.
     /// @param nodeOperator The address of the operator to be removed.
-    /// @dev Throws no errors during execution.
     function removeOperator(address nodeOperator) public onlyShortTimelock {
         _removeOperator(nodeOperator);
         emit OperatorRemoved(nodeOperator);
@@ -219,17 +209,39 @@ contract Whitelist is UpgradeableBase {
     // INTERNAL
     //----
 
-    /// @notice Retrieves the index of an operator based on its address.
-    /// @dev This private function allows the contract to obtain the index of an operator using its address.
-    /// @param a The address of the operator to retrieve the index for.
-    /// @return The index of the operator associated with the specified address.
-    /// @dev Throws an error if the specified address is not found in the whitelist.
-    function getOperatorIndex(address a) private view returns (uint) {
-        require(reverseNodeIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
-        return reverseNodeIndexMap[a];
-    }
+    /// @notice Internal function to add a new operator to the whitelist. Signs an address; optimized for server-side signatures with isolated scope on Ethereum.
+    /// @dev This function is used internally to add a new operator to the whitelist, including updating permissions, initializing operator data,
+    /// and emitting the 'OperatorAdded' event. This method signs the address directly, which is typically discouraged due to potential risks
+    /// of address reuse across different protocols or chains. However, for this specific application where
+    /// the signer is only the server and its operational scope is limited to this Ethereum deployment,
+    /// it is considered safe and more optimal. Signatures are completely isolated to this scope.
+    /// @param _operator The address of the operator to be added.
+    /// @return An Operator struct containing details about the newly added operator.
+    function _addOperator(
+        address _operator,
+        uint256 _sigGenesisTime,
+        bytes memory _sig
+    ) internal returns (Operator memory) {
+        require(!sigsUsed[_sig], 'sig already used');
+        require(block.timestamp - _sigGenesisTime < whitelistSigExpiry, 'wl sig expired');
+        sigsUsed[_sig] = true;
+        bytes32 messageHash = keccak256(abi.encodePacked(_operator, _sigGenesisTime, address(this), block.chainid));
 
-    function setWhitelistExpiry(uint256 _newExpiry) external onlyAdmin {
-        whitelistSigExpiry = _newExpiry;
+        bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
+
+        address recoveredAddress = ECDSA.recover(ethSignedMessageHash, _sig);
+        require(_directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress), 'signer must be admin server role');
+
+        _permissions[_operator] = true;
+
+        numOperators++;
+
+        Operator memory operator = Operator(block.timestamp, 0);
+
+        nodeMap[_operator] = operator;
+        nodeIndexMap[numOperators] = _operator;
+        reverseNodeIndexMap[_operator] = numOperators + 1;
+
+        return operator;
     }
 }
