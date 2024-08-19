@@ -501,7 +501,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         }
 
         if(rplAmount > 0) {
-            SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), getDirectory().getMerkleClaimStreamerAddress(), rplAmount);
             SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), getDirectory().getMerkleClaimStreamerAddress(), rplAmount);
         }
     }

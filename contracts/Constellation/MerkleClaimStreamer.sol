@@ -97,7 +97,6 @@ contract MerkleClaimStreamer is UpgradeableBase {
         }
         
         if(priorRplStreamAmount > 0){
-            SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), getDirectory().getMerkleClaimStreamerAddress(), priorRplStreamAmount);
             SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), getDirectory().getMerkleClaimStreamerAddress(), priorRplStreamAmount);
             od.rebalanceRplVault();
         }
@@ -157,7 +156,6 @@ contract MerkleClaimStreamer is UpgradeableBase {
             rplTreasuryPortion = RPLVault(getDirectory().getRPLVaultAddress()).getTreasuryPortion(rplReward);
 
             // send treasury fee immediately
-            SafeERC20.safeApprove(IERC20(getDirectory().getRPLAddress()), getDirectory().getTreasuryAddress(), rplTreasuryPortion);
             SafeERC20.safeTransfer(IERC20(getDirectory().getRPLAddress()), getDirectory().getTreasuryAddress(), rplTreasuryPortion);
         }
 
