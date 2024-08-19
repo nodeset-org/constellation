@@ -31,6 +31,7 @@ contract Whitelist is UpgradeableBase {
     mapping(uint256 => address) public nodeIndexMap;
     mapping(address => uint256) public reverseNodeIndexMap;
     mapping(bytes => bool) public sigsUsed;
+    mapping(address => uint256) public nonces;
 
     uint256 public numOperators;
 
@@ -225,7 +226,7 @@ contract Whitelist is UpgradeableBase {
         require(!sigsUsed[_sig], 'sig already used');
         require(block.timestamp - _sigGenesisTime < whitelistSigExpiry, 'wl sig expired');
         sigsUsed[_sig] = true;
-        bytes32 messageHash = keccak256(abi.encodePacked(_operator, _sigGenesisTime, address(this), block.chainid));
+        bytes32 messageHash = keccak256(abi.encodePacked(_operator, _sigGenesisTime, address(this), nonces[_operator]++, block.chainid));
 
         bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
 
