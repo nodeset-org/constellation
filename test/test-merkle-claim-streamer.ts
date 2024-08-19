@@ -147,6 +147,12 @@ describe("Merkle Claim Streamer", async () => {
           await assertMerkleClaim(rocketVault, setupData, ethRewards, rplRewards, params.waitTime);
         })
     
+        it.skip(`can submit multiple claims in the same block with ethRewards=${ethRewards}, rplRewards=${rplRewards}, waitTime=${params.waitTime}`, async () => { 
+          await assertMerkleClaim(rocketVault, setupData, ethRewards, rplRewards, 0);
+          await assertMerkleClaim(rocketVault, setupData, ethRewards, rplRewards, 0);
+          await assertMerkleClaim(rocketVault, setupData, ethRewards, rplRewards, 0);
+        })
+
         it.skip(`can submit multiple claims with different wait times and ethRewards=${ethRewards}, rplRewards=${rplRewards}}`, async () => { 
           await assertMerkleClaim(rocketVault, setupData, ethRewards, rplRewards, 69);
           await assertMerkleClaim(rocketVault, setupData, ethRewards, rplRewards, 2419200);
@@ -158,71 +164,75 @@ describe("Merkle Claim Streamer", async () => {
 });
 
 async function assertMerkleClaim(rocketVault: RocketVault, setupData: SetupData, ethRewards: BigNumber, rplRewards: BigNumber, waitTime: number ) {
-  let protocol = setupData.protocol;
-  let rocketpool = setupData.rocketPool;
-  let mcs = protocol.merkleClaimStreamer;
-  
-  // send rewards to merkle distributor
-  await rocketpool.rplContract.connect(setupData.signers.rplWhale).transfer(rocketVault.address, rplRewards);
-  await setupData.signers.ethWhale.sendTransaction({
-    to: rocketVault.address,
-    value: ethRewards
-  })
-  const rewardIndex = [0];
-  const proof = [[ethers.utils.hexZeroPad("0x0", 32)], [ethers.utils.hexZeroPad("0x0", 32)]]
+  try {
+    let protocol = setupData.protocol;
+    let rocketpool = setupData.rocketPool;
+    let mcs = protocol.merkleClaimStreamer;
+    
+    // send rewards to merkle distributor
+    await rocketpool.rplContract.connect(setupData.signers.rplWhale).transfer(rocketVault.address, rplRewards);
+    await setupData.signers.ethWhale.sendTransaction({
+      to: rocketVault.address,
+      value: ethRewards
+    })
+    const rewardIndex = [0];
+    const proof = [[ethers.utils.hexZeroPad("0x0", 32)], [ethers.utils.hexZeroPad("0x0", 32)]]
 
-  let originalTotalAssetsEth = await protocol.vCWETH.totalAssets();
-  let originalTotalAssetsRpl = await protocol.vCRPL.totalAssets();
+    let originalTotalAssetsEth = await protocol.vCWETH.totalAssets();
+    let originalTotalAssetsRpl = await protocol.vCRPL.totalAssets();
 
-  const streamingInterval = await mcs.streamingInterval()
+    const streamingInterval = await mcs.streamingInterval()
 
-  const expectedTreasuryPortionEth = await protocol.vCWETH.getTreasuryPortion(ethRewards); 
-  const expectedTreasuryPortionRpl = await protocol.vCRPL.getTreasuryPortion(rplRewards); 
-  const expectedOperatorPortionEth = await protocol.vCWETH.getOperatorPortion(ethRewards); 
-  const expectedCommunityPortionEth = ethRewards.sub(expectedTreasuryPortionEth).sub(expectedOperatorPortionEth);
-  const expectedCommunityPortionRpl = rplRewards.sub(expectedTreasuryPortionRpl);
+    const expectedTreasuryPortionEth = await protocol.vCWETH.getTreasuryPortion(ethRewards); 
+    const expectedTreasuryPortionRpl = await protocol.vCRPL.getTreasuryPortion(rplRewards); 
+    const expectedOperatorPortionEth = await protocol.vCWETH.getOperatorPortion(ethRewards); 
+    const expectedCommunityPortionEth = ethRewards.sub(expectedTreasuryPortionEth).sub(expectedOperatorPortionEth);
+    const expectedCommunityPortionRpl = rplRewards.sub(expectedTreasuryPortionRpl);
 
-  //disable auto-mine of new blocks
-  await ethers.provider.send("evm_setAutomine", [false]);
+    //disable auto-mine of new blocks
+    await ethers.provider.send("evm_setAutomine", [false]);
 
-  let claimTimestamp = (await ethers.provider.getBlock("latest")).timestamp+1
-  let claimTx = await mcs.submitMerkleClaim(rewardIndex, [rplRewards], [ethRewards], proof)
-  // no time has passed, so no tvl has been streamed
-  expect(await protocol.vCRPL.totalAssets()).equals(originalTotalAssetsRpl);
-  expect(await protocol.vCWETH.totalAssets()).equals(originalTotalAssetsEth); 
-        
-  // mine a block with the merkle claim transaction above
-  await ethers.provider.send("evm_mine", [claimTimestamp]);
-  expect(await mcs.queryFilter(mcs.filters.MerkleClaimSubmitted(claimTimestamp))).not.equals([]);
-  expect(claimTx).to.not.be.reverted;
+    let claimTimestamp = (await ethers.provider.getBlock("latest")).timestamp+1
+    let claimTx = mcs.submitMerkleClaim(rewardIndex, [rplRewards], [ethRewards], proof)
+    // no time has passed, so no tvl has been streamed
+    expect(await protocol.vCRPL.totalAssets()).equals(originalTotalAssetsRpl);
+    expect(await protocol.vCWETH.totalAssets()).equals(originalTotalAssetsEth); 
+          
+    // mine a block with the merkle claim transaction above
+    await ethers.provider.send("evm_mine", [claimTimestamp]);
+    await expect(claimTx).to.not.be.revertedWith("");
+    const tx = await ((await claimTx).wait())
+    expect((await ethers.provider.getBlock(tx.blockHash)).timestamp).equals(claimTimestamp)
+    expect((await ethers.provider.getBlock("latest")).timestamp).equals(claimTimestamp);
+    expect(await mcs.queryFilter(mcs.filters.MerkleClaimSubmitted(claimTimestamp))).not.equals([]);
 
-  // todo: these don't work
-  //expect(claimTx).to.emit(mcs, "ASDF");
-  // expect(claimTx).to.emit(mcs, "MerkleClaimSubmitted")
-  //   .withArgs(claimTimestamp, ethRewards, rplRewards, expectedTreasuryPortionEth, expectedOperatorPortionEth, expectedTreasuryPortionRpl)
-  console.log("claimTimestamp", claimTimestamp)
-  console.log("lastclaimtime()", await mcs.lastClaimTime())
-  expect(await mcs.lastClaimTime()).equals(claimTimestamp);
+    // todo: these don't work
+    //expect(claimTx).to.emit(mcs, "ASDF");
+    // expect(claimTx).to.emit(mcs, "MerkleClaimSubmitted")
+    //   .withArgs(claimTimestamp, ethRewards, rplRewards, expectedTreasuryPortionEth, expectedOperatorPortionEth, expectedTreasuryPortionRpl)
+    console.log("claimTimestamp", claimTimestamp)
+    console.log("lastclaimtime()", await mcs.lastClaimTime())
+    expect(await mcs.lastClaimTime()).equals(claimTimestamp);
 
-  expect(await rocketpool.rplContract.balanceOf(protocol.vCRPL.address)).equals(0);
-  expect(await rocketpool.rplContract.balanceOf(protocol.operatorDistributor.address)).equals(0);
+    expect(await rocketpool.rplContract.balanceOf(protocol.vCRPL.address)).equals(0);
+    expect(await rocketpool.rplContract.balanceOf(protocol.operatorDistributor.address)).equals(0);
 
-  if(waitTime > 0) {
-    // mine another block to wait some time
-    await ethers.provider.send("evm_mine", [waitTime + claimTimestamp]);
+    if(waitTime > 0) {
+      // mine another block to wait some time
+      await ethers.provider.send("evm_mine", [waitTime + claimTimestamp]);
+    }
+    
+    let expectedStreamedTVLEth = streamingInterval.gt(waitTime) ? expectedCommunityPortionEth.mul(waitTime).div(streamingInterval) : expectedCommunityPortionEth;
+    let expectedStreamedTVLRpl = streamingInterval.gt(waitTime) ? expectedCommunityPortionRpl.mul(waitTime).div(streamingInterval) : expectedCommunityPortionRpl;
+    let expectedTotalAssetsEth = originalTotalAssetsEth.add(expectedStreamedTVLEth);
+    let expectedTotalAssetsRpl = originalTotalAssetsRpl.add(expectedStreamedTVLRpl);
+    expect(await mcs.priorEthStreamAmount()).equals(expectedCommunityPortionEth);
+    expect(await mcs.priorRplStreamAmount()).equals(expectedCommunityPortionRpl);
+    expect(await mcs.getStreamedTvlEth()).equals(expectedStreamedTVLEth);
+    expect(await mcs.getStreamedTvlRpl()).equals(expectedStreamedTVLRpl);
+    expect(await protocol.vCWETH.totalAssets()).equals(expectedTotalAssetsEth);
+    expect(await protocol.vCRPL.totalAssets()).equals(expectedTotalAssetsRpl);    
   }
-  
-  let expectedStreamedTVLEth = streamingInterval.gt(waitTime) ? expectedCommunityPortionEth.mul(waitTime).div(streamingInterval) : expectedCommunityPortionEth;
-  let expectedStreamedTVLRpl = streamingInterval.gt(waitTime) ? expectedCommunityPortionRpl.mul(waitTime).div(streamingInterval) : expectedCommunityPortionRpl;
-  let expectedTotalAssetsEth = originalTotalAssetsEth.add(expectedStreamedTVLEth);
-  let expectedTotalAssetsRpl = originalTotalAssetsRpl.add(expectedStreamedTVLRpl);
-  expect(await mcs.priorEthStreamAmount()).equals(expectedCommunityPortionEth);
-  expect(await mcs.priorRplStreamAmount()).equals(expectedCommunityPortionRpl);
-  expect(await mcs.getStreamedTvlEth()).equals(expectedStreamedTVLEth);
-  expect(await mcs.getStreamedTvlRpl()).equals(expectedStreamedTVLRpl);
-  expect(await protocol.vCWETH.totalAssets()).equals(expectedTotalAssetsEth);
-  expect(await protocol.vCRPL.totalAssets()).equals(expectedTotalAssetsRpl);
-
   // re-enable automine
-  await ethers.provider.send("evm_setAutomine", [true]);
+  finally { await ethers.provider.send("evm_setAutomine", [true]); }
 }
