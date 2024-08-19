@@ -240,10 +240,10 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _setRoleAdmin(Constants.TIMELOCK_LONG, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.ADMIN_ORACLE_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.ADMIN_ROLE);
-        _setRoleAdmin(Constants.TREASURY_ROLE, Constants.TREASURY_ROLE);
+        _setRoleAdmin(Constants.TREASURER_ROLE, Constants.TREASURER_ROLE);
 
         _grantRole(Constants.ADMIN_ROLE, admin);
-        _grantRole(Constants.TREASURY_ROLE, treasurer);
+        _grantRole(Constants.TREASURER_ROLE, treasurer);
 
         // Note that the protocol role should ONLY be given to protocol contracts
         // This is a dangerous role that MUST be kept internal
@@ -353,8 +353,8 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     /// @notice Sets the treasury address.
     /// @param newTreasury The new treasury address.
-    function setTreasury(address newTreasury) public {
-        require(hasRole(Constants.TREASURY_ROLE, msg.sender), Constants.TREASURER_ONLY_ERROR);
+    function setTreasurer(address newTreasury) public {
+        require(hasRole(Constants.TREASURER_ROLE, msg.sender), Constants.TREASURER_ONLY_ERROR);
         _treasury = newTreasury;
     }
 
