@@ -32,6 +32,7 @@ contract Whitelist is UpgradeableBase {
     mapping(address => uint256) public reverseNodeIndexMap;
     mapping(bytes => bool) public sigsUsed;
     mapping(address => uint256) public nonces;
+    uint256 public nonce;
 
     uint256 public numOperators;
 
@@ -128,23 +129,14 @@ contract Whitelist is UpgradeableBase {
     // PUBLIC
     //----
 
-    /// @notice Allows an operator to remove themselves from the whitelist (e.g. so that a new node address may be used instead).
-    /// @dev May only be called by the operator when they have no more active minipools remaining.
-    ///      It emits the 'OperatorRemoved' event to notify when an operator has been successfully removed.
-    function removeOperatorSelf() public {
-        require(nodeMap[msg.sender].activeValidatorCount == 0, "Cannot remove node without first exiting and processing all minipools");
-        _removeOperator(msg.sender);
-        emit OperatorRemoved(msg.sender);
-    }
-
     /// @notice Adds a new operator to the whitelist.
     /// @dev Ensures that the operator being added is not a duplicate.
     ///      It emits the 'OperatorAdded' event to notify when an operator has been successfully added.
     /// @param _operator The address of the operator to be added.
     /// @dev Throws an error if the operator being added already exists in the whitelist.
-    function addOperator(address _operator, uint256 _sigGenesisTime, bytes calldata _sig) public {
+    function addOperator(address _operator, bytes calldata _sig) public {
         require(!_permissions[_operator], Constants.OPERATOR_DUPLICATE_ERROR);
-        emit OperatorAdded(_addOperator(_operator, _sigGenesisTime, _sig));
+        emit OperatorAdded(_addOperator(_operator, _sig));
     }
 
     //----
@@ -184,12 +176,12 @@ contract Whitelist is UpgradeableBase {
     ///      It checks for duplicates among the provided addresses, adds valid operators, and emits the 'OperatorsAdded' event.
     /// @param operators An array of addresses representing the operators to be added.
     /// @dev Throws an error if any of the operators being added already exist in the whitelist.
-    function addOperators(address[] memory operators, uint256[] memory _sigGenesisTimes, bytes[] memory _sig) public {
+    function addOperators(address[] memory operators, bytes[] memory _sig) public {
         for (uint i = 0; i < operators.length; i++) {
             require(!_permissions[operators[i]], Constants.OPERATOR_DUPLICATE_ERROR);
         }
         for (uint i = 0; i < operators.length; i++) {
-            _addOperator(operators[i], _sigGenesisTimes[i], _sig[i]);
+            _addOperator(operators[i], _sig[i]);
         }
         emit OperatorsAdded(operators);
     }
@@ -220,13 +212,11 @@ contract Whitelist is UpgradeableBase {
     /// @return An Operator struct containing details about the newly added operator.
     function _addOperator(
         address _operator,
-        uint256 _sigGenesisTime,
         bytes memory _sig
     ) internal returns (Operator memory) {
         require(!sigsUsed[_sig], 'sig already used');
-        require(block.timestamp - _sigGenesisTime < whitelistSigExpiry, 'wl sig expired');
         sigsUsed[_sig] = true;
-        bytes32 messageHash = keccak256(abi.encodePacked(_operator, _sigGenesisTime, address(this), nonces[_operator]++, block.chainid));
+        bytes32 messageHash = keccak256(abi.encodePacked(_operator, address(this), nonces[_operator]++, nonce, block.chainid));
 
         bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
 
@@ -244,5 +234,13 @@ contract Whitelist is UpgradeableBase {
         reverseNodeIndexMap[_operator] = numOperators + 1;
 
         return operator;
+    }
+
+    function invalidateAllOutstandingSigs() external onlyAdmin {
+        nonce++;
+    }
+
+    function invalidateSingleOustandingSig(address _nodeOperator) external onlyAdmin {
+        nonces[_nodeOperator]++;
     }
 }

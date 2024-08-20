@@ -156,7 +156,6 @@ describe("SuperNodeAccount", function () {
                 depositDataRoot: config.depositDataRoot,
                 salt: rawSalt,
                 expectedMinipoolAddress: config.expectedMinipoolAddress,
-                sigGenesisTime: timestamp,
                 sig: sig,
             },
             {
@@ -233,7 +232,6 @@ describe("SuperNodeAccount", function () {
             depositDataRoot: config0.depositDataRoot,
             salt: rawSalt0,
             expectedMinipoolAddress: config0.expectedMinipoolAddress,
-            sigGenesisTime: timestamp0,
             sig: sig0
         }, {
             value: ethers.utils.parseEther("1")
@@ -245,7 +243,6 @@ describe("SuperNodeAccount", function () {
             depositDataRoot: config1.depositDataRoot,
             salt: rawSalt1,
             expectedMinipoolAddress: config1.expectedMinipoolAddress,
-            sigGenesisTime: timestamp1,
             sig: sig1
         }, {
             value: ethers.utils.parseEther("1")
@@ -283,7 +280,6 @@ describe("SuperNodeAccount", function () {
             depositDataRoot: config.depositDataRoot,
             salt: rawSalt,
             expectedMinipoolAddress: config.expectedMinipoolAddress,
-            sigGenesisTime: timestamp,
             sig: sig
         }, {
             value: ethers.utils.parseEther("1")
@@ -295,7 +291,6 @@ describe("SuperNodeAccount", function () {
             depositDataRoot: config.depositDataRoot,
             salt: rawSalt,
             expectedMinipoolAddress: config.expectedMinipoolAddress,
-            sigGenesisTime: timestamp,
             sig: sig
         }, {
             value: ethers.utils.parseEther("1")
@@ -331,7 +326,6 @@ describe("SuperNodeAccount", function () {
             depositDataRoot: config.depositDataRoot,
             salt: rawSalt,
             expectedMinipoolAddress: config.expectedMinipoolAddress,
-            sigGenesisTime: timestamp,
             sig: sig
         }, {
             value: ethers.utils.parseEther("1")
@@ -383,7 +377,6 @@ describe("SuperNodeAccount", function () {
             depositDataRoot: badConfig.depositDataRoot,
             salt: rawSalt,
             expectedMinipoolAddress: badConfig.expectedMinipoolAddress,
-            sigGenesisTime: timestamp,
             sig: sig
         }, {
             value: ethers.utils.parseEther("1")
@@ -421,7 +414,6 @@ describe("SuperNodeAccount", function () {
             depositDataRoot: config.depositDataRoot,
             salt: rawSalt,
             expectedMinipoolAddress: config.expectedMinipoolAddress,
-            sigGenesisTime: timestamp,
             sig: sig
         }, {
             value: ethers.utils.parseEther("0")
@@ -449,7 +441,7 @@ describe("SuperNodeAccount", function () {
 
         const { sig: sig2, timestamp: timestamp2 } = await whitelistUserServerSig(setupData, signers.hyperdriver);
 
-        await protocol.whitelist.connect(signers.admin).addOperator(signers.hyperdriver.address, timestamp2, sig2)
+        await protocol.whitelist.connect(signers.admin).addOperator(signers.hyperdriver.address, sig2)
 
         await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool({
             validatorPubkey: config.validatorPubkey,
@@ -457,7 +449,6 @@ describe("SuperNodeAccount", function () {
             depositDataRoot: config.depositDataRoot,
             salt: rawSalt,
             expectedMinipoolAddress: config.expectedMinipoolAddress,
-            sigGenesisTime: timestamp,
             sig: sig
         }, {
             value: ethers.utils.parseEther("1")

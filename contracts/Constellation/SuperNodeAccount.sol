@@ -54,6 +54,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     uint256 public adminServerSigExpiry;
     mapping(bytes => bool) public sigsUsed;
     mapping(address => uint256) public nonces;
+    uint256 public nonce;
 
     bool lazyInit;
 
@@ -73,7 +74,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         bytes32 depositDataRoot;
         uint256 salt;
         address expectedMinipoolAddress;
-        uint256 sigGenesisTime;
         bytes sig;
     }
 
@@ -210,7 +210,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         // verify admin server signature if required
         if (adminServerCheck) {
-            require(block.timestamp - _config.sigGenesisTime < adminServerSigExpiry, 'as sig expired');
 
             _validateSigUsed(_config.sig);
 
@@ -220,9 +219,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
                         abi.encodePacked(
                             _config.expectedMinipoolAddress,
                             salt,
-                            _config.sigGenesisTime,
                             address(this),
                             nonces[subNodeOperator]++,
+                            nonce,
                             block.chainid
                         )
                     )
@@ -488,5 +487,13 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      */
     function setMaxValidators(uint256 _maxValidators) public onlyMediumTimelock {
         maxValidators = _maxValidators;
+    }
+
+    function invalidateAllOutstandingSigs() external onlyAdmin {
+        nonce++;
+    }
+
+    function invalidateSingleOustandingSig(address _nodeOperator) external onlyAdmin {
+        nonces[_nodeOperator]++;
     }
 }
