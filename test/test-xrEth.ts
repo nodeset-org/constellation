@@ -56,10 +56,10 @@ describe("xrETH", function () {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
-    const {sig, timestamp} = await whitelistUserServerSig(setupData, signers.ethWhale);
+    const {sig} = await whitelistUserServerSig(setupData, signers.ethWhale);
 
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, ethers.utils.parseEther("100"));
-    await protocol.whitelist.connect(signers.admin).addOperator(signers.ethWhale.address, timestamp, sig);
+    await protocol.whitelist.connect(signers.admin).addOperator(signers.ethWhale.address, sig);
 
     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
