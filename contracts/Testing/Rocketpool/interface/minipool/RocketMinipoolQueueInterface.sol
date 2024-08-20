@@ -2,7 +2,7 @@ pragma solidity >0.5.0 <0.9.0;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import '../../types/MinipoolDeposit.sol';
+import "../../types/MinipoolDeposit.sol";
 
 interface RocketMinipoolQueueInterface {
     function getTotalLength() external view returns (uint256);
@@ -17,6 +17,6 @@ interface RocketMinipoolQueueInterface {
     function dequeueMinipoolByDepositLegacy(MinipoolDeposit _depositType) external returns (address minipoolAddress);
     function dequeueMinipools(uint256 _maxToDequeue) external returns (address[] memory minipoolAddress);
     function removeMinipool(MinipoolDeposit _depositType) external;
-    function getMinipoolAt(uint256 _index) external view returns (address);
+    function getMinipoolAt(uint256 _index) external view returns(address);
     function getMinipoolPosition(address _minipool) external view returns (int256);
 }

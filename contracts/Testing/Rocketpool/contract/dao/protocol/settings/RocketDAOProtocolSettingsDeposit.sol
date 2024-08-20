@@ -1,38 +1,37 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import './RocketDAOProtocolSettings.sol';
-import '../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol';
-
+import "./RocketDAOProtocolSettings.sol";
+import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
+ 
 /// @notice Network deposit settings
 contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDAOProtocolSettingsDepositInterface {
-    constructor(
-        RocketStorageInterface _rocketStorageAddress
-    ) RocketDAOProtocolSettings(_rocketStorageAddress, 'deposit') {
+
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "deposit") {
         version = 4;
         // Initialize settings on deployment
-        if (!getBool(keccak256(abi.encodePacked(settingNameSpace, 'deployed')))) {
+        if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
-            setSettingBool('deposit.enabled', false);
-            setSettingBool('deposit.assign.enabled', true);
-            setSettingUint('deposit.minimum', 0.01 ether);
-            setSettingUint('deposit.pool.maximum', 160 ether);
-            setSettingUint('deposit.assign.maximum', 90);
-            setSettingUint('deposit.assign.socialised.maximum', 2);
-            setSettingUint('deposit.fee', 0.0005 ether); // Set to approx. 1 day of rewards at 18.25% APR
+            setSettingBool("deposit.enabled", false);
+            setSettingBool("deposit.assign.enabled", true);
+            setSettingUint("deposit.minimum", 0.01 ether);
+            setSettingUint("deposit.pool.maximum", 160 ether);
+            setSettingUint("deposit.assign.maximum", 90);
+            setSettingUint("deposit.assign.socialised.maximum", 2);
+            setSettingUint("deposit.fee", 0.0005 ether);    // Set to approx. 1 day of rewards at 18.25% APR
             // Settings initialised
-            setBool(keccak256(abi.encodePacked(settingNameSpace, 'deployed')), true);
+            setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
     }
 
     /// @notice Update a setting, overrides inherited setting method with extra checks for this contract
     /// @param _settingPath The path of the setting within this contract's namespace
     /// @param _value The value to set it to
-    function setSettingUint(string memory _settingPath, uint256 _value) public override onlyDAOProtocolProposal {
+    function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
         // Some safety guards for certain settings
-        if (getBool(keccak256(abi.encodePacked(settingNameSpace, 'deployed')))) {
-            if (keccak256(abi.encodePacked(_settingPath)) == keccak256(abi.encodePacked('deposit.fee'))) {
-                require(_value < 0.01 ether, 'Fee must be less than 1%');
+        if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
+            if(keccak256(abi.encodePacked(_settingPath)) == keccak256(abi.encodePacked("deposit.fee"))) {
+                require(_value < 0.01 ether, "Fee must be less than 1%");
             }
         }
         // Update setting now
@@ -40,37 +39,38 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
     }
 
     /// @notice Returns true if deposits are currently enabled
-    function getDepositEnabled() external view override returns (bool) {
-        return getSettingBool('deposit.enabled');
+    function getDepositEnabled() override external view returns (bool) {
+        return getSettingBool("deposit.enabled");
     }
 
     /// @notice Returns true if deposit assignments are currently enabled
-    function getAssignDepositsEnabled() external view override returns (bool) {
-        return getSettingBool('deposit.assign.enabled');
+    function getAssignDepositsEnabled() override external view returns (bool) {
+        return getSettingBool("deposit.assign.enabled");
     }
 
     /// @notice Returns the minimum deposit size
-    function getMinimumDeposit() external view override returns (uint256) {
-        return getSettingUint('deposit.minimum');
+    function getMinimumDeposit() override external view returns (uint256) {
+        return getSettingUint("deposit.minimum");
     }
 
     /// @notice Returns the maximum size of the deposit pool
-    function getMaximumDepositPoolSize() external view override returns (uint256) {
-        return getSettingUint('deposit.pool.maximum');
+    function getMaximumDepositPoolSize() override external view returns (uint256) {
+        return getSettingUint("deposit.pool.maximum");
     }
 
     /// @notice Returns the maximum number of deposit assignments to perform at once
-    function getMaximumDepositAssignments() external view override returns (uint256) {
-        return getSettingUint('deposit.assign.maximum');
+    function getMaximumDepositAssignments() override external view returns (uint256) {
+        return getSettingUint("deposit.assign.maximum");
     }
 
     /// @notice Returns the maximum number of socialised (ie, not related to deposit size) assignments to perform
-    function getMaximumDepositSocialisedAssignments() external view override returns (uint256) {
-        return getSettingUint('deposit.assign.socialised.maximum');
+    function getMaximumDepositSocialisedAssignments() override external view returns (uint256) {
+        return getSettingUint("deposit.assign.socialised.maximum");
     }
 
     /// @notice Returns the current fee paid on user deposits
-    function getDepositFee() external view override returns (uint256) {
-        return getSettingUint('deposit.fee');
+    function getDepositFee() override external view returns (uint256) {
+        return getSettingUint("deposit.fee");
     }
+
 }

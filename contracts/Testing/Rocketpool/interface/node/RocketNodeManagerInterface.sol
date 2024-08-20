@@ -2,9 +2,10 @@
 pragma solidity >0.5.0 <0.9.0;
 pragma abicoder v2;
 
-import '../../types/NodeDetails.sol';
+import "../../types/NodeDetails.sol";
 
 interface RocketNodeManagerInterface {
+
     // Structs
     struct TimezoneCount {
         string timezone;

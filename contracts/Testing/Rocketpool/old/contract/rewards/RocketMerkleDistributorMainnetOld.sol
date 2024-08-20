@@ -3,22 +3,23 @@ pragma abicoder v2;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import '../../../contract/RocketBase.sol';
-import '../../../interface/rewards/RocketRewardsRelayInterface.sol';
-import '../../../interface/RocketVaultWithdrawerInterface.sol';
-import '../../../interface/RocketVaultInterface.sol';
-import '../../../interface/token/RocketTokenRPLInterface.sol';
-import '../../../interface/node/RocketNodeStakingInterface.sol';
+import "../../../contract/RocketBase.sol";
+import "../../../interface/rewards/RocketRewardsRelayInterface.sol";
+import "../../../interface/RocketVaultWithdrawerInterface.sol";
+import "../../../interface/RocketVaultInterface.sol";
+import "../../../interface/token/RocketTokenRPLInterface.sol";
+import "../../../interface/node/RocketNodeStakingInterface.sol";
 
-import 'oz-contracts-3-4-0/math/SafeMath.sol';
-import 'oz-contracts-3-4-0/cryptography/MerkleProof.sol';
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
 
 /*
- * On mainnet, the relay and the distributor are the same contract as there is no need for an intermediate contract to
- * handle cross-chain messaging.
- */
+* On mainnet, the relay and the distributor are the same contract as there is no need for an intermediate contract to
+* handle cross-chain messaging.
+*/
 
 contract RocketMerkleDistributorMainnetOld is RocketBase, RocketRewardsRelayInterface, RocketVaultWithdrawerInterface {
+
     // Libs
     using SafeMath for uint;
 
@@ -33,31 +34,21 @@ contract RocketMerkleDistributorMainnetOld is RocketBase, RocketRewardsRelayInte
     bytes32 immutable rocketTokenRPLKey;
 
     // Allow receiving ETH
-    receive() external payable {}
+    receive() payable external {}
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
         // Precompute keys
-        rocketVaultKey = keccak256(abi.encodePacked('contract.address', 'rocketVault'));
-        rocketTokenRPLKey = keccak256(abi.encodePacked('contract.address', 'rocketTokenRPL'));
+        rocketVaultKey = keccak256(abi.encodePacked("contract.address", "rocketVault"));
+        rocketTokenRPLKey = keccak256(abi.encodePacked("contract.address", "rocketTokenRPL"));
         // Set this contract as the relay for network 0
-        setAddress(keccak256(abi.encodePacked('rewards.relay.address', uint256(0))), address(this));
+        setAddress(keccak256(abi.encodePacked("rewards.relay.address", uint256(0))), address(this));
     }
 
     // Called by RocketRewardsPool to include a snapshot into this distributor
-    function relayRewards(
-        uint256 _rewardIndex,
-        bytes32 _root,
-        uint256 _rewardsRPL,
-        uint256 _rewardsETH
-    )
-        external
-        override
-        onlyLatestContract('rocketMerkleDistributorMainnet', address(this))
-        onlyLatestContract('rocketRewardsPool', msg.sender)
-    {
+    function relayRewards(uint256 _rewardIndex, bytes32 _root, uint256 _rewardsRPL, uint256 _rewardsETH) external override onlyLatestContract("rocketMerkleDistributorMainnet", address(this)) onlyLatestContract("rocketRewardsPool", msg.sender) {
         bytes32 key = keccak256(abi.encodePacked('rewards.merkle.root', _rewardIndex));
         require(getBytes32(key) == bytes32(0));
         setBytes32(key, _root);
@@ -69,30 +60,17 @@ contract RocketMerkleDistributorMainnetOld is RocketBase, RocketRewardsRelayInte
         if (_rewardsRPL > 0) {
             IERC20 rocketTokenRPL = IERC20(getAddress(rocketTokenRPLKey));
             rocketTokenRPL.approve(address(rocketVault), _rewardsRPL);
-            rocketVault.depositToken('rocketMerkleDistributorMainnet', rocketTokenRPL, _rewardsRPL);
+            rocketVault.depositToken("rocketMerkleDistributorMainnet", rocketTokenRPL, _rewardsRPL);
         }
     }
 
     // Reward recipients can call this method with a merkle proof to claim rewards for one or more reward intervals
-    function claim(
-        address _nodeAddress,
-        uint256[] calldata _rewardIndex,
-        uint256[] calldata _amountRPL,
-        uint256[] calldata _amountETH,
-        bytes32[][] calldata _merkleProof
-    ) external override {
+    function claim(address _nodeAddress, uint256[] calldata _rewardIndex, uint256[] calldata _amountRPL, uint256[] calldata _amountETH, bytes32[][] calldata _merkleProof) external override {
         claimAndStake(_nodeAddress, _rewardIndex, _amountRPL, _amountETH, _merkleProof, 0);
     }
 
     // Node operators can call this method to claim rewards for one or more reward intervals and specify an amount of RPL to stake at the same time
-    function claimAndStake(
-        address _nodeAddress,
-        uint256[] calldata _rewardIndex,
-        uint256[] calldata _amountRPL,
-        uint256[] calldata _amountETH,
-        bytes32[][] calldata _merkleProof,
-        uint256 _stakeAmount
-    ) public override {
+    function claimAndStake(address _nodeAddress, uint256[] calldata _rewardIndex, uint256[] calldata _amountRPL, uint256[] calldata _amountETH, bytes32[][] calldata _merkleProof, uint256 _stakeAmount) public override {
         // Get contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getAddress(rocketVaultKey));
         address rocketTokenRPLAddress = getAddress(rocketTokenRPLKey);
@@ -101,10 +79,7 @@ contract RocketMerkleDistributorMainnetOld is RocketBase, RocketRewardsRelayInte
         {
             // Get withdrawal address
             address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
-            require(
-                msg.sender == _nodeAddress || msg.sender == withdrawalAddress,
-                'Can only claim from node or withdrawal address'
-            );
+            require(msg.sender == _nodeAddress || msg.sender == withdrawalAddress, "Can only claim from node or withdrawal address");
             // Calculate totals
             uint256 totalAmountRPL = 0;
             uint256 totalAmountETH = 0;
@@ -113,7 +88,7 @@ contract RocketMerkleDistributorMainnetOld is RocketBase, RocketRewardsRelayInte
                 totalAmountETH = totalAmountETH.add(_amountETH[i]);
             }
             // Validate input
-            require(_stakeAmount <= totalAmountRPL, 'Invalid stake amount');
+            require(_stakeAmount <= totalAmountRPL, "Invalid stake amount");
             // Distribute any remaining tokens to the node's withdrawal address
             uint256 remaining = totalAmountRPL.sub(_stakeAmount);
             if (remaining > 0) {
@@ -122,16 +97,14 @@ contract RocketMerkleDistributorMainnetOld is RocketBase, RocketRewardsRelayInte
             // Distribute ETH
             if (totalAmountETH > 0) {
                 rocketVault.withdrawEther(totalAmountETH);
-                (bool result, ) = withdrawalAddress.call{value: totalAmountETH}('');
-                require(result, 'Failed to claim ETH');
+                (bool result,) = withdrawalAddress.call{value: totalAmountETH}("");
+                require(result, "Failed to claim ETH");
             }
         }
         // Restake requested amount
         if (_stakeAmount > 0) {
             RocketTokenRPLInterface rocketTokenRPL = RocketTokenRPLInterface(rocketTokenRPLAddress);
-            RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(
-                getContractAddress('rocketNodeStaking')
-            );
+            RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
             rocketVault.withdrawToken(address(this), IERC20(rocketTokenRPLAddress), _stakeAmount);
             rocketTokenRPL.approve(address(rocketNodeStaking), _stakeAmount);
             rocketNodeStaking.stakeRPLFor(_nodeAddress, _stakeAmount);
@@ -142,13 +115,7 @@ contract RocketMerkleDistributorMainnetOld is RocketBase, RocketRewardsRelayInte
 
     // Verifies the given data exists as a leaf nodes for the specified reward interval and marks them as claimed if they are valid
     // Note: this function is optimised for gas when _rewardIndex is ordered numerically
-    function _claim(
-        uint256[] calldata _rewardIndex,
-        address _nodeAddress,
-        uint256[] calldata _amountRPL,
-        uint256[] calldata _amountETH,
-        bytes32[][] calldata _merkleProof
-    ) internal {
+    function _claim(uint256[] calldata _rewardIndex, address _nodeAddress, uint256[] calldata _amountRPL, uint256[] calldata _amountETH, bytes32[][] calldata _merkleProof) internal {
         // Set initial parameters to the first reward index in the array
         uint256 indexWordIndex = _rewardIndex[0] / 256;
         bytes32 claimedWordKey = keccak256(abi.encodePacked('rewards.interval.claimed', _nodeAddress, indexWordIndex));
@@ -156,7 +123,7 @@ contract RocketMerkleDistributorMainnetOld is RocketBase, RocketRewardsRelayInte
         // Loop over every entry
         for (uint256 i = 0; i < _rewardIndex.length; i++) {
             // Prevent accidental claim of 0
-            require(_amountRPL[i] > 0 || _amountETH[i] > 0, 'Invalid amount');
+            require(_amountRPL[i] > 0 || _amountETH[i] > 0, "Invalid amount");
             // Check if this entry has a different word index than the previous
             if (indexWordIndex != _rewardIndex[i] / 256) {
                 // Store the previous word
@@ -170,12 +137,9 @@ contract RocketMerkleDistributorMainnetOld is RocketBase, RocketRewardsRelayInte
             uint256 indexBitIndex = _rewardIndex[i] % 256;
             // Ensure the bit is not yet set on this word
             uint256 mask = (1 << indexBitIndex);
-            require(claimedWord & mask != mask, 'Already claimed');
+            require(claimedWord & mask != mask, "Already claimed");
             // Verify the merkle proof
-            require(
-                _verifyProof(_rewardIndex[i], _nodeAddress, _amountRPL[i], _amountETH[i], _merkleProof[i]),
-                'Invalid proof'
-            );
+            require(_verifyProof(_rewardIndex[i], _nodeAddress, _amountRPL[i], _amountETH[i], _merkleProof[i]), "Invalid proof");
             // Set the bit for the current reward index
             claimedWord = claimedWord | (1 << indexBitIndex);
         }
@@ -184,13 +148,7 @@ contract RocketMerkleDistributorMainnetOld is RocketBase, RocketRewardsRelayInte
     }
 
     // Verifies that the
-    function _verifyProof(
-        uint256 _rewardIndex,
-        address _nodeAddress,
-        uint256 _amountRPL,
-        uint256 _amountETH,
-        bytes32[] calldata _merkleProof
-    ) internal view returns (bool) {
+    function _verifyProof(uint256 _rewardIndex, address _nodeAddress, uint256 _amountRPL, uint256 _amountETH, bytes32[] calldata _merkleProof) internal view returns (bool) {
         bytes32 node = keccak256(abi.encodePacked(_nodeAddress, network, _amountRPL, _amountETH));
         bytes32 key = keccak256(abi.encodePacked('rewards.merkle.root', _rewardIndex));
         bytes32 merkleRoot = getBytes32(key);
@@ -198,16 +156,14 @@ contract RocketMerkleDistributorMainnetOld is RocketBase, RocketRewardsRelayInte
     }
 
     // Returns true if the given claimer has claimed for the given reward interval
-    function isClaimed(uint256 _rewardIndex, address _claimer) public view override returns (bool) {
+    function isClaimed(uint256 _rewardIndex, address _claimer) public override view returns (bool) {
         uint256 indexWordIndex = _rewardIndex / 256;
         uint256 indexBitIndex = _rewardIndex % 256;
-        uint256 claimedWord = getUint(
-            keccak256(abi.encodePacked('rewards.interval.claimed', _claimer, indexWordIndex))
-        );
+        uint256 claimedWord = getUint(keccak256(abi.encodePacked('rewards.interval.claimed', _claimer, indexWordIndex)));
         uint256 mask = (1 << indexBitIndex);
         return claimedWord & mask == mask;
     }
 
     // Allow receiving ETH from RocketVault, no action required
-    function receiveVaultWithdrawalETH() external payable override {}
+    function receiveVaultWithdrawalETH() external override payable {}
 }

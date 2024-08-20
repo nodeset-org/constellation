@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.7.6;
 
-import '../../../contract/RocketBase.sol';
-import '../../interface/network/RocketNetworkPricesInterfaceOld.sol';
-import '../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol';
-import '../../../interface/dao/node/RocketDAONodeTrustedInterface.sol';
+import "../../../contract/RocketBase.sol";
+import "../../interface/network/RocketNetworkPricesInterfaceOld.sol";
+import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
+import "../../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 
-import 'oz-contracts-3-4-0/math/SafeMath.sol';
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 /// @notice Oracle contract for network token price data
 contract RocketNetworkPricesOld is RocketBase, RocketNetworkPricesInterfaceOld {
+
     // Libs
     using SafeMath for uint;
 
@@ -28,63 +29,51 @@ contract RocketNetworkPricesOld is RocketBase, RocketNetworkPricesInterfaceOld {
     }
 
     /// @notice Returns the block number which prices are current for
-    function getPricesBlock() public view override returns (uint256) {
-        return getUint(keccak256('network.prices.updated.block'));
+    function getPricesBlock() override public view returns (uint256) {
+        return getUint(keccak256("network.prices.updated.block"));
     }
 
     /// @dev Sets the block number which prices are current for
     function setPricesBlock(uint256 _value) private {
-        setUint(keccak256('network.prices.updated.block'), _value);
+        setUint(keccak256("network.prices.updated.block"), _value);
     }
 
     /// @notice Returns the current network RPL price in ETH
-    function getRPLPrice() public view override returns (uint256) {
-        return getUint(keccak256('network.prices.rpl'));
+    function getRPLPrice() override public view returns (uint256) {
+        return getUint(keccak256("network.prices.rpl"));
     }
 
     /// @dev Sets the current network RPL price in ETH
     function setRPLPrice(uint256 _value) private {
-        setUint(keccak256('network.prices.rpl'), _value);
+        setUint(keccak256("network.prices.rpl"), _value);
     }
 
     /// @notice Submit network price data for a block
     ///         Only accepts calls from trusted (oracle) nodes
     /// @param _block The block this price submission is for
     /// @param _rplPrice The price of RPL at the given block
-    function submitPrices(
-        uint256 _block,
-        uint256 _rplPrice
-    ) external override onlyLatestContract('rocketNetworkPrices', address(this)) onlyTrustedNode(msg.sender) {
+    function submitPrices(uint256 _block, uint256 _rplPrice) override external onlyLatestContract("rocketNetworkPrices", address(this)) onlyTrustedNode(msg.sender) {
         // Check settings
-        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(
-                getContractAddress('rocketDAOProtocolSettingsNetwork')
-            );
-        require(rocketDAOProtocolSettingsNetwork.getSubmitPricesEnabled(), 'Submitting prices is currently disabled');
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
+        require(rocketDAOProtocolSettingsNetwork.getSubmitPricesEnabled(), "Submitting prices is currently disabled");
         // Check block
-        require(_block < block.number, 'Prices can not be submitted for a future block');
-        require(_block > getPricesBlock(), 'Network prices for an equal or higher block are set');
+        require(_block < block.number, "Prices can not be submitted for a future block");
+        require(_block > getPricesBlock(), "Network prices for an equal or higher block are set");
         // Get submission keys
-        bytes32 nodeSubmissionKey = keccak256(
-            abi.encodePacked('network.prices.submitted.node.key', msg.sender, _block, _rplPrice)
-        );
-        bytes32 submissionCountKey = keccak256(abi.encodePacked('network.prices.submitted.count', _block, _rplPrice));
+        bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("network.prices.submitted.node.key", msg.sender, _block, _rplPrice));
+        bytes32 submissionCountKey = keccak256(abi.encodePacked("network.prices.submitted.count", _block, _rplPrice));
         // Check & update node submission status
-        require(!getBool(nodeSubmissionKey), 'Duplicate submission from node');
+        require(!getBool(nodeSubmissionKey), "Duplicate submission from node");
         setBool(nodeSubmissionKey, true);
-        setBool(keccak256(abi.encodePacked('network.prices.submitted.node', msg.sender, _block)), true);
+        setBool(keccak256(abi.encodePacked("network.prices.submitted.node", msg.sender, _block)), true);
         // Increment submission count
         uint256 submissionCount = getUint(submissionCountKey).add(1);
         setUint(submissionCountKey, submissionCount);
         // Emit prices submitted event
         emit PricesSubmitted(msg.sender, _block, _rplPrice, block.timestamp);
         // Check submission count & update network prices
-        RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(
-            getContractAddress('rocketDAONodeTrusted')
-        );
-        if (
-            calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >=
-            rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()
-        ) {
+        RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+        if (calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()) {
             // Update the price
             updatePrices(_block, _rplPrice);
         }
@@ -93,31 +82,20 @@ contract RocketNetworkPricesOld is RocketBase, RocketNetworkPricesInterfaceOld {
     /// @notice Executes updatePrices if consensus threshold is reached
     /// @param _block The block to execute price update for
     /// @param _rplPrice The price of RPL at the given block
-    function executeUpdatePrices(
-        uint256 _block,
-        uint256 _rplPrice
-    ) external override onlyLatestContract('rocketNetworkPrices', address(this)) {
+    function executeUpdatePrices(uint256 _block, uint256 _rplPrice) override external onlyLatestContract("rocketNetworkPrices", address(this)) {
         // Check settings
-        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(
-                getContractAddress('rocketDAOProtocolSettingsNetwork')
-            );
-        require(rocketDAOProtocolSettingsNetwork.getSubmitPricesEnabled(), 'Submitting prices is currently disabled');
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
+        require(rocketDAOProtocolSettingsNetwork.getSubmitPricesEnabled(), "Submitting prices is currently disabled");
         // Check block
-        require(_block < block.number, 'Prices can not be submitted for a future block');
-        require(_block > getPricesBlock(), 'Network prices for an equal or higher block are set');
+        require(_block < block.number, "Prices can not be submitted for a future block");
+        require(_block > getPricesBlock(), "Network prices for an equal or higher block are set");
         // Get submission keys
-        bytes32 submissionCountKey = keccak256(abi.encodePacked('network.prices.submitted.count', _block, _rplPrice));
+        bytes32 submissionCountKey = keccak256(abi.encodePacked("network.prices.submitted.count", _block, _rplPrice));
         // Get submission count
         uint256 submissionCount = getUint(submissionCountKey);
         // Check submission count & update network prices
-        RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(
-            getContractAddress('rocketDAONodeTrusted')
-        );
-        require(
-            calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >=
-                rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold(),
-            'Consensus has not been reached'
-        );
+        RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+        require(calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold(), "Consensus has not been reached");
         // Update the price
         updatePrices(_block, _rplPrice);
     }
@@ -134,11 +112,9 @@ contract RocketNetworkPricesOld is RocketBase, RocketNetworkPricesInterfaceOld {
     }
 
     /// @notice Returns the latest block number that oracles should be reporting prices for
-    function getLatestReportableBlock() external view override returns (uint256) {
+    function getLatestReportableBlock() override external view returns (uint256) {
         // Load contracts
-        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(
-                getContractAddress('rocketDAOProtocolSettingsNetwork')
-            );
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         // Get the block prices were lasted updated and the update frequency
         uint256 updateFrequency = rocketDAOProtocolSettingsNetwork.getSubmitPricesFrequency();
         // Calculate the last reportable block based on update frequency
