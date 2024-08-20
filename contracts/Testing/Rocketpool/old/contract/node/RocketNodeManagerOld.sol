@@ -4,7 +4,7 @@ pragma abicoder v2;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import 'oz-contracts-3-4-0/math/SafeMath.sol';
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import 'oz-contracts-3-4-0/token/ERC20/IERC20.sol';
 
 import "../../interface/node/RocketNodeManagerInterfaceOld.sol";
 import "../../../contract/RocketBase.sol";

@@ -1,10 +1,11 @@
-pragma solidity 0.7.6;
+pragma solidity ^0.8.0;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+import '../../util/SafeMath.sol';
 
 /// @title Dummy Rocket Pool Token (RPL) contract (do not deploy to mainnet)
 /// @author Jake Pospischil <jake@rocketpool.net>
@@ -20,7 +21,7 @@ contract RocketTokenDummyRPL is ERC20, Ownable {
 
 
     /**** Libs *****************/
-    
+
     using SafeMath for uint;
 
 
