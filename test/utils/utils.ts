@@ -557,9 +557,10 @@ export const whitelistUserServerSig = async (setupData: SetupData, nodeOperator:
     goodSigner.address
   );
   expect(role).equals(true);
+  const nonce = await setupData.protocol.whitelist.nonces(nodeOperator.address);
   const packedData = ethers.utils.solidityPack(
-    ['address', 'uint256', 'address', 'uint256'],
-    [nodeOperator.address, timestamp, setupData.protocol.whitelist.address, chainId]
+    ['address', 'uint256', 'address', 'uint256', 'uint256'],
+    [nodeOperator.address, timestamp, setupData.protocol.whitelist.address, nonce, chainId]
   );
   const messageHash = ethers.utils.keccak256(packedData);
   const messageHashBytes = ethers.utils.arrayify(messageHash);

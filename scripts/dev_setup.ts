@@ -10,7 +10,7 @@ import { wEth } from "../typechain-types/contracts/Testing";
 
 
 async function main() {
-    const [deployer, admin, treasurer] = await ethers.getSigners();
+    const [deployer, admin] = await ethers.getSigners();
 
     const rocketStorage = await ethers.getContractAt('RocketStorage', '0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1'); // holesky addr
 
@@ -33,7 +33,7 @@ async function main() {
     });
     console.log("sanctions address", sanctions.address);
 
-    const { directory } = await fastDeployProtocol(treasurer, deployer, admin, admin, deployer, rocketStorage.address, wETH.address, sanctions.address, admin.address, true, 0);
+    const { directory } = await fastDeployProtocol(deployer, deployer, admin, admin, admin, rocketStorage.address, wETH.address, sanctions.address, admin.address, true, 0);
 
     // set adminServer to be ADMIN_SERVER_ROLE
     const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
