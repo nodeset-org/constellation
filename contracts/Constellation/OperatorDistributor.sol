@@ -267,14 +267,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     
     /**
      * @custom:author Mike Leach (Wander)
-     * @notice This is the "tick" function of the protocol. It's the heartbeat of Constellation, called every time there is a major state change:
-     * - Deposits and withdrawals from the xrETH and xRPL vaults
-     * - When operators claim rewards
-     * @dev Performs a RPL stake rebalance for the node and distributes the outstanding balance for a minipool.
+     * @notice This is the "tick" function of the protocol. It's the heartbeat of Constellation, 
+     * and it's called every time deposits and withdrawals from the xrETH and xRPL vaults
+     * @dev Performs a RPL stake rebalance for the node, distributes the outstanding balance for a minipool, 
+     * and then rebalance protocol liquidity.
      */
     function processMinipool(IMinipool minipool) public {
         if (address(minipool) == address(0)) {
-            return; // should only happen if there are no miniopools in the system
+            return; // should only happen if there are no minipools in the system
         }
         if (address(minipool).balance == 0) {
             return;
