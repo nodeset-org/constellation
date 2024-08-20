@@ -96,7 +96,6 @@ describe("SuperNodeAccount close", function () {
                 depositDataRoot: config.depositDataRoot,
                 salt: rawSalt,
                 expectedMinipoolAddress: config.expectedMinipoolAddress,
-                sigGenesisTime: timestamp,
                 sig: sig
                 }, { value: ethers.utils.parseEther('1') }))
             .to.not.be.reverted;
@@ -131,7 +130,6 @@ describe("SuperNodeAccount close", function () {
                         depositDataRoot: config.depositDataRoot,
                         salt: rawSalt,
                         expectedMinipoolAddress: config.expectedMinipoolAddress,
-                        sigGenesisTime: timestamp,
                         sig: sig
                         }, { value: ethers.utils.parseEther('1') }))
                     .to.not.be.reverted;
@@ -169,7 +167,6 @@ describe("SuperNodeAccount close", function () {
                         depositDataRoot: config.depositDataRoot,
                         salt: rawSalt,
                         expectedMinipoolAddress: config.expectedMinipoolAddress,
-                        sigGenesisTime: timestamp,
                         sig: sig
                         }, { value: ethers.utils.parseEther('1') }))
                     .to.not.be.reverted;
@@ -206,7 +203,6 @@ describe("SuperNodeAccount close", function () {
                     depositDataRoot: config.depositDataRoot,
                     salt: rawSalt,
                     expectedMinipoolAddress: config.expectedMinipoolAddress,
-                    sigGenesisTime: timestamp,
                     sig: sig
                     }, { value: ethers.utils.parseEther('1') }))
                 .to.not.be.reverted;
