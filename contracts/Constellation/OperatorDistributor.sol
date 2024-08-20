@@ -411,7 +411,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 rplBalance = rpl.balanceOf(address(this));
 
         // Fetch the required capital in RPL and the total RPL balance of the contract
-        uint256 requiredRpl = vrpl.getRequiredCollateral();
+        uint256 requiredRpl = vrpl.getMissingLiquidity();
 
         // Transfer RPL to the RPLVault
         if (rplBalance >= requiredRpl) { 
