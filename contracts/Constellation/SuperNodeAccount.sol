@@ -330,7 +330,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @param subNodeOperatorAddress Address of the sub-node operator associated with the minipool.
      * @param minipoolAddress Address of the minipool to close.
      */
-    function close(address subNodeOperatorAddress, address minipoolAddress) external onlyRecognizedMinipool(minipoolAddress) {
+    function closeDissolvedMinipool(address subNodeOperatorAddress, address minipoolAddress) external onlyRecognizedMinipool(minipoolAddress) {
         require(minipoolData[minipoolAddress].subNodeOperator == subNodeOperatorAddress, "operator does not own the specified minipool");
         IMinipool minipool = IMinipool(minipoolAddress);
         Whitelist(getDirectory().getWhitelistAddress()).removeValidator(minipoolData[minipoolAddress].subNodeOperator);
@@ -343,7 +343,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev This function provides a mechanism for delegated upgrades of minipools, enhancing flexibility in maintenance and upgrades.
      * @param _minipool Address of the minipool which is to be upgraded.
      */
-    function delegateUpgrade(address _minipool) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
+    function minipoolDelegateUpgrade(address _minipool) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateUpgrade();
     }
@@ -353,7 +353,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev Provides a rollback mechanism for previously delegated upgrades, ensuring that upgrades can be reversed if necessary.
      * @param _minipool Address of the minipool whose upgrade is to be rolled back.
      */
-    function delegateRollback(address _minipool) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
+    function minipoolDelegateRollback(address _minipool) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateRollback();
     }
@@ -364,7 +364,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @param _setting Boolean indicating whether to use the latest delegate.
      * @param _minipool Address of the minipool whose delegation setting is to be configured.
      */
-    function setUseLatestDelegate(
+    function setUseLatestMinipoolDelegate(
         bool _setting,
         address _minipool
     ) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
