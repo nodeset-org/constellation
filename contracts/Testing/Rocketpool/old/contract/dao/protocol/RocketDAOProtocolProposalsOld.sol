@@ -11,8 +11,7 @@ import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsReward
 import "../../../../interface/rewards/claims/RocketClaimDAOInterface.sol";
 import "../../../../types/SettingType.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-
+import 'oz-contracts-3-4-0/math/SafeMath.sol';
 
 // The protocol DAO Proposals - Placeholder contracts until DAO is implemented
 contract RocketDAOProtocolProposalsOld is RocketBase, RocketDAOProtocolProposalsInterfaceOld {

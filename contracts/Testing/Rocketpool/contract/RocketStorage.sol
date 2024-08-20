@@ -3,7 +3,7 @@ pragma solidity 0.7.6;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../interface/RocketStorageInterface.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import './util/SafeMath.sol';
 
 /// @title The primary persistent storage for Rocket Pool
 /// @author David Rugendyke

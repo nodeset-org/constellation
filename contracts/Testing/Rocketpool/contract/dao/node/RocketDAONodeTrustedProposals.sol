@@ -11,11 +11,10 @@ import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsInterfa
 import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsProposalsInterface.sol";
 import "../../../interface/dao/RocketDAOProposalInterface.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import '../../util/SafeMath.sol';
 
-
-// The Trusted Node DAO Proposals 
-contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedProposalsInterface {  
+// The Trusted Node DAO Proposals
+contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedProposalsInterface {
 
     using SafeMath for uint;
 
@@ -35,7 +34,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
         version = 1;
     }
 
-        
+
     /*** Proposals **********************/
 
     // Create a DAO proposal with calldata, if successful will be added to a queue where it can be executed
@@ -60,13 +59,13 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
         // Load contracts
         RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
         RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        // Did they join after this proposal was created? If so, they can't vote or it'll throw off the set proposalVotesRequired 
+        // Did they join after this proposal was created? If so, they can't vote or it'll throw off the set proposalVotesRequired
         require(daoNodeTrusted.getMemberJoinedTime(msg.sender) < daoProposal.getCreated(_proposalID), "Member cannot vote on proposal created before they became a member");
         // Vote now, one vote per trusted node member
         daoProposal.vote(msg.sender, 1 ether, _proposalID, _support);
     }
-    
-    // Cancel a proposal 
+
+    // Cancel a proposal
     function cancel(uint256 _proposalID) override external onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedProposals", address(this)) {
         // Load contracts
         RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
@@ -74,7 +73,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
         daoProposal.cancel(msg.sender, _proposalID);
     }
 
-    // Execute a proposal 
+    // Execute a proposal
     function execute(uint256 _proposalID) override external onlyLatestContract("rocketDAONodeTrustedProposals", address(this)) {
         // Load contracts
         RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
@@ -174,6 +173,6 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.bond.rpl", _nodeAddress)), 0);
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.time", _nodeAddress)), 0);
     }
-        
+
 
 }

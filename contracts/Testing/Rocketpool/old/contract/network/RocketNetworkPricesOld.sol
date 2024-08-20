@@ -6,7 +6,7 @@ import "../../interface/network/RocketNetworkPricesInterfaceOld.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import 'oz-contracts-3-4-0/math/SafeMath.sol';
 
 /// @notice Oracle contract for network token price data
 contract RocketNetworkPricesOld is RocketBase, RocketNetworkPricesInterfaceOld {

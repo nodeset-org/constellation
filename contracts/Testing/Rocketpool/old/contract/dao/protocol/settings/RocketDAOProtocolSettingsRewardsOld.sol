@@ -5,7 +5,7 @@ pragma solidity 0.7.6;
 import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterfaceOld.sol";
 import "../../../../../contract/dao/protocol/settings/RocketDAOProtocolSettings.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import 'oz-contracts-3-4-0/math/SafeMath.sol';
 
 // Settings in RP which the DAO will have full control over
 contract RocketDAOProtocolSettingsRewardsOld is RocketDAOProtocolSettings, RocketDAOProtocolSettingsRewardsInterfaceOld {

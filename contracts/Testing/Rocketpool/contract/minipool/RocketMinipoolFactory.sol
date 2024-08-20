@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import '../util/SafeMath.sol';
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import "../RocketBase.sol";

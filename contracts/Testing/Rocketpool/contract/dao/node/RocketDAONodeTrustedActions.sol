@@ -12,8 +12,7 @@ import "../../../interface/rewards/claims/RocketClaimTrustedNodeInterface.sol";
 import "../../../interface/util/AddressSetStorageInterface.sol";
 import "../../../interface/util/IERC20Burnable.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-
+import '../../util/SafeMath.sol';
 
 // The Trusted Node DAO Actions
 contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsInterface {
@@ -54,7 +53,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Record the block number they joined at
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.time", _nodeAddress)), block.timestamp);
          // Add to member index now
-        addressSetStorage.addItem(keccak256(abi.encodePacked(daoNameSpace, "member.index")), _nodeAddress); 
+        addressSetStorage.addItem(keccak256(abi.encodePacked(daoNameSpace, "member.index")), _nodeAddress);
     }
 
     // Remove a member from the DAO
@@ -73,7 +72,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.time", "invited", _nodeAddress)));
         deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.time", "leave", _nodeAddress)));
          // Remove from member index now
-        addressSetStorage.removeItem(keccak256(abi.encodePacked(daoNameSpace, "member.index")), _nodeAddress); 
+        addressSetStorage.removeItem(keccak256(abi.encodePacked(daoNameSpace, "member.index")), _nodeAddress);
     }
 
     // A member official joins the DAO with their bond ready, if successful they are added as a member
@@ -108,7 +107,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Log it
         emit ActionJoined(_nodeAddress, rplBondAmount, block.timestamp);
     }
-  
+
     /*** Action Methods ************************/
 
     // When a new member has been successfully invited to join, they must call this method to join officially
@@ -123,7 +122,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     function actionJoinRequired(address _nodeAddress) override external onlyRegisteredNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrusted", msg.sender) {
         _memberJoin(_nodeAddress);
     }
-    
+
     // When a new member has successfully requested to leave with a proposal, they must call this method to leave officially and receive their RPL bond
     function actionLeave(address _rplBondRefundAddress) override external onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
         // Load contracts
@@ -173,7 +172,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Remove the member now
         _memberRemove(_nodeAddress);
         // Log it
-        emit ActionKick(_nodeAddress, rplBondRefundAmount, block.timestamp);   
+        emit ActionKick(_nodeAddress, rplBondRefundAmount, block.timestamp);
     }
 
 
@@ -203,7 +202,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         emit ActionChallengeMade(_nodeAddress, msg.sender, block.timestamp);
     }
 
-    
+
     // Decides the success of a challenge. If called by the challenged node within the challenge window, the challenge is defeated and the member stays as they have indicated their node is still alive.
     // If called after the challenge window has passed by anyone except the original challenge initiator, then the challenge has succeeded and the member is removed
     function actionChallengeDecide(address _nodeAddress) override external onlyTrustedNode(_nodeAddress) onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {

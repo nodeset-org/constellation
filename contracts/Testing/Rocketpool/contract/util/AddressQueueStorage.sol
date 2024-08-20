@@ -2,12 +2,9 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-
+import '../util/SafeMath.sol';
 import "../RocketBase.sol";
 import "../../interface/util/AddressQueueStorageInterface.sol";
-
-import "@openzeppelin/contracts/math/SafeMath.sol";
 
 // Address queue storage helper for RocketStorage data (ring buffer implementation)
 

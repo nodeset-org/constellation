@@ -5,7 +5,8 @@ pragma abicoder v2;
 
 import "../RocketBase.sol";
 import "../../interface/rewards/RocketSmoothingPoolInterface.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+
+import '../util/SafeMath.sol';
 
 /*
 Receives priority fees and MEV via fee_recipient

@@ -2,7 +2,7 @@
 pragma solidity 0.7.6;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import '../util/SafeMath.sol';
 
 import "../RocketBase.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
