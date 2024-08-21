@@ -353,6 +353,72 @@ describe("Claiming Rewards", async () => {
                                 })
                             })
 
+                            describe("When 1 users needs their sig invalidated", async () => {
+                                it("Should pass only for valid user", async () => {
+                                    const setupData = await loadFixture(protocolFixture);
+                                    const { protocol, signers, rocketPool } = setupData;
+
+                                    const amount = ethers.utils.parseEther("1");
+                                    const rewardee = signers.random.address;
+                                    const rewardee2 = signers.random2.address;
+                                    await assertAddOperator(setupData, signers.random);
+                                    await assertAddOperator(setupData, signers.random2);
+
+                                    await signers.ethWhale.sendTransaction({
+                                        to: protocol.yieldDistributor.address,
+                                        value: amount
+                                    })
+
+                                    const did = createMockDid(rewardee);
+                                    const did2 = createMockDid(rewardee2);
+
+                                    const sig = await createClaimRewardSigWithNonce(setupData, ethers.constants.AddressZero, did, rewardee, amount.div(2), ethers.BigNumber.from(0));
+                                    const sig2 = await createClaimRewardSigWithNonce(setupData, ethers.constants.AddressZero, did2, rewardee2, amount.div(2), ethers.BigNumber.from(0));
+
+                                    expect(await protocol.yieldDistributor.nonces(did)).equals(0);
+                                    expect(await protocol.yieldDistributor.nonces(did2)).equals(0);
+                                    await protocol.yieldDistributor.connect(signers.nodesetAdmin).invalidateSingleOustandingSig(did);
+                                    expect(await protocol.yieldDistributor.nonces(did)).equals(1);
+
+                                    await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig, ethers.constants.AddressZero, did, rewardee, amount.div(2))).to.be.revertedWith("bad signer role, params, or encoding");
+                                    await expect(protocol.yieldDistributor.connect(signers.random2).claimRewards(sig2, ethers.constants.AddressZero, did2, rewardee2, amount.div(2))).to.not.be.reverted;
+
+                                    expect(await protocol.yieldDistributor.nonces(did2)).equals(1);
+
+                                })
+                            })
+
+                            describe("When users are trying to claim a nonce 0 that became invalidated", async () => {
+                                it("Should revert", async () => {
+                                    const setupData = await loadFixture(protocolFixture);
+                                    const { protocol, signers, rocketPool } = setupData;
+
+                                    const amount = ethers.utils.parseEther("1");
+                                    const rewardee = signers.random.address;
+                                    const rewardee2 = signers.random2.address;
+                                    await assertAddOperator(setupData, signers.random);
+                                    await assertAddOperator(setupData, signers.random2);
+
+                                    await signers.ethWhale.sendTransaction({
+                                        to: protocol.yieldDistributor.address,
+                                        value: amount
+                                    })
+
+                                    const did = createMockDid(rewardee);
+                                    const did2 = createMockDid(rewardee2);
+
+                                    const sig = await createClaimRewardSigWithNonce(setupData, ethers.constants.AddressZero, did, rewardee, amount.div(2), ethers.BigNumber.from(0));
+                                    const sig2 = await createClaimRewardSigWithNonce(setupData, ethers.constants.AddressZero, did2, rewardee2, amount.div(2), ethers.BigNumber.from(0));
+
+                                    expect(await protocol.yieldDistributor.nonce()).equals(0);
+                                    await protocol.yieldDistributor.connect(signers.nodesetAdmin).invalidateAllOutstandingSigs();
+                                    expect(await protocol.yieldDistributor.nonce()).equals(1);
+
+                                    await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig, ethers.constants.AddressZero, did, rewardee, amount.div(2))).to.be.revertedWith("bad signer role, params, or encoding");
+                                    await expect(protocol.yieldDistributor.connect(signers.random2).claimRewards(sig2, ethers.constants.AddressZero, did2, rewardee2, amount.div(2))).to.be.revertedWith("bad signer role, params, or encoding");
+                                })
+                            })
+
 
                             describe("When another user tries to steal sig to claim funds", async () => {
                                 it("Should give funds to rewardee NOT sender", async () => {
