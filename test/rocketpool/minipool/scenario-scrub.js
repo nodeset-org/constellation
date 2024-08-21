@@ -1,13 +1,19 @@
 // Dissolve a minipool
 import {
     RocketDAONodeTrusted,
-    RocketDAONodeTrustedSettingsMinipool, RocketDAOProtocolSettingsNode, RocketNetworkPrices,
+    RocketDAONodeTrustedSettingsMinipool,
+    RocketDAOProtocolSettingsNode,
+    RocketMinipoolManager,
+    RocketMinipoolManagerNew,
+    RocketNetworkPrices,
     RocketNodeStaking,
+    RocketNodeStakingNew,
     RocketTokenRPL,
-    RocketVault
+    RocketVault,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 import { minipoolStates } from '../_helpers/minipool';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 
 export async function voteScrub(minipool, txOptions) {
@@ -15,7 +21,7 @@ export async function voteScrub(minipool, txOptions) {
     const nodeAddress = await minipool.getNodeAddress.call();
 
     // Get contracts
-    const rocketNodeStaking = await RocketNodeStaking.deployed();
+    const rocketNodeStaking = (await upgradeExecuted()) ? await RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed();
     const rocketVault = await RocketVault.deployed();
     const rocketTokenRPL = await RocketTokenRPL.deployed();
     const rocketDAONodeTrustedSettingsMinipool = await RocketDAONodeTrustedSettingsMinipool.deployed();
@@ -31,7 +37,7 @@ export async function voteScrub(minipool, txOptions) {
             rocketNodeStaking.getNodeRPLStake.call(nodeAddress),
             rocketVault.balanceOfToken('rocketAuctionManager', rocketTokenRPL.address),
             rocketDAONodeTrustedSettingsMinipool.getScrubPenaltyEnabled(),
-            minipool.getVacant.call()
+            minipool.getVacant.call(),
         ]).then(
             ([status, userDepositBalance, votes, nodeRPLStake, auctionBalance, penaltyEnabled, vacant]) =>
             ({status, userDepositBalance, votes, nodeRPLStake, auctionBalance, penaltyEnabled, vacant})
@@ -69,6 +75,13 @@ export async function voteScrub(minipool, txOptions) {
             // Perform checks
             assertBN.equal(slashAmountEth, expectedSlash, 'Amount of RPL slashed is incorrect');
             assertBN.equal(details2.auctionBalance.sub(details1.auctionBalance), slashAmount, 'RPL was not sent to auction manager');
+        }
+        if (details1.vacant) {
+            // Expect pubkey -> minipool mapping to be removed
+            const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+            const actualPubKey = await rocketMinipoolManager.getMinipoolPubkey(minipool.address);
+            const reverseAddress = await rocketMinipoolManager.getMinipoolByPubkey(actualPubKey);
+            assert.equal(reverseAddress, "0x0000000000000000000000000000000000000000");
         }
     } else {
         assertBN.equal(details2.votes.sub(details1.votes), 1, 'Vote count not incremented');

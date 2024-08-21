@@ -20,12 +20,17 @@ import nodeManagerTests from './node/node-manager-tests';
 import nodeStakingTests from './node/node-staking-tests';
 import nodeDistributorTests from './node/node-distributor-tests';
 import daoProtocolTests from './dao/dao-protocol-tests';
+import daoProtocolTreasuryTests from './dao/dao-protocol-treasury-tests';
 import daoNodeTrustedTests from './dao/dao-node-trusted-tests';
+import daoSecurityTests from './dao/dao-security-tests';
 import rethTests from './token/reth-tests';
 import rplTests from './token/rpl-tests';
 import rewardsPoolTests from './rewards/rewards-tests';
 import { injectBNHelpers } from './_helpers/bn';
 import { checkInvariants } from './_helpers/invariants';
+import networkSnapshotsTests from './network/network-snapshots-tests';
+import networkVotingTests from './network/network-voting-tests';
+import upgradeTests from './upgrade/upgrade-tests';
 
 // Header
 console.log('\n');
@@ -36,7 +41,6 @@ console.log('|    // _ \\ / __| |/ / _ \\ __| |  __/ _ \\ / _ \\| |');
 console.log('| |\\ \\ (_) | (__|   <  __/ |_  | | | (_) | (_) | |');
 console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 
-/*
 // BN helpers
 injectBNHelpers();
 
@@ -59,11 +63,14 @@ before(async function() {
 
 // Run tests
 daoProtocolTests();
+daoProtocolTreasuryTests();
 daoNodeTrustedTests();
+daoSecurityTests();
 auctionTests();
 depositPoolTests();
 minipoolScrubTests();
 minipoolTests();
+upgradeTests();
 minipoolVacantTests();
 minipoolStatusTests();
 minipoolWithdrawalTests();
@@ -71,6 +78,8 @@ networkBalancesTests();
 networkPenaltiesTests();
 networkFeesTests();
 networkPricesTests();
+networkSnapshotsTests();
+networkVotingTests();
 nodeDepositTests();
 nodeManagerTests();
 nodeStakingTests();
@@ -78,5 +87,3 @@ nodeDistributorTests();
 rethTests();
 rplTests();
 rewardsPoolTests();
-
-*/

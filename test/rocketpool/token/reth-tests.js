@@ -17,6 +17,7 @@ import { beginUserDistribute, withdrawValidatorBalance } from '../minipool/scena
 import { increaseTime, mineBlocks } from '../_utils/evm'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { assertBN } from '../_helpers/bn';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketTokenRETH', async (accounts) => {
@@ -43,6 +44,11 @@ export default function() {
         const userDistributeStartTime = 60 * 60 * 24 * 90; // 90 days
 
         before(async () => {
+            // Upgrade to Houston
+            await upgradeOneDotThree();
+
+            let slotTimestamp = '1600000000';
+
             // Get current rETH exchange rate
             let exchangeRate1 = await getRethExchangeRate();
 
@@ -61,8 +67,8 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', '1'.ether, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.frequency', submitPricesFrequency, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.deposit.delay', depositDeplay, {from: owner});
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.user.distribute.window.start', userDistributeStartTime, {from: owner});
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
             // Stake RPL to cover minipools
             let rplStake = await getMinipoolMinimumRPLStake();
@@ -83,7 +89,7 @@ export default function() {
             let halfRewards = rewards.divn(2);
             let nodeCommissionFee = halfRewards.mul(nodeFee).div('1'.ether);
             let ethBalance = userAmount.add(halfRewards.sub(nodeCommissionFee));
-            await submitBalances(1, ethBalance, 0, rethSupply, {from: trustedNode});
+            await submitBalances(1, slotTimestamp, ethBalance, 0, rethSupply, {from: trustedNode});
 
             // Get & check staker rETH balance
             rethBalance = await getRethBalance(staker1);

@@ -15,6 +15,7 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
 import { assignDepositsV2 } from './scenario-assign-deposits-v2';
 import { assertBN } from '../_helpers/bn';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketDepositPool', async (accounts) => {
@@ -32,6 +33,9 @@ export default function() {
 
         // Setup
         before(async () => {
+            // Upgrade to Houston
+            await upgradeOneDotThree();
+
             // Register node
             await registerNode({from: node});
 
@@ -59,7 +63,8 @@ export default function() {
             // Update network ETH total to 130% to alter rETH exchange rate
             let totalBalance = '13'.ether;
             let rethSupply = await getRethTotalSupply();
-            await submitBalances(1, totalBalance, 0, rethSupply, {from: trustedNode});
+            let slotTimestamp = '1600000000';
+            await submitBalances(1, slotTimestamp, totalBalance, 0, rethSupply, {from: trustedNode});
 
             // Get & check updated rETH exchange rate
             let exchangeRate2 = await getRethExchangeRate();

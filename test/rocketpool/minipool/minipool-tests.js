@@ -43,6 +43,7 @@ import { reduceBond } from './scenario-reduce-bond';
 import { assertBN } from '../_helpers/bn';
 import { skimRewards } from './scenario-skim-rewards';
 import { artifacts } from 'hardhat';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -60,12 +61,15 @@ export default function() {
 
 
         // Setup
+        const secondsPerEpoch = 384;
         let launchTimeout =  (60 * 60 * 72); // 72 hours
         let withdrawalDelay = 20;
         let scrubPeriod = (60 * 60 * 24); // 24 hours
         let bondReductionWindowStart = (2 * 24 * 60 * 60);
         let bondReductionWindowLength = (2 * 24 * 60 * 60);
-        let rewardClaimPeriodTime = (28 * 24 * 60 * 60); // 28 days
+        let rewardClaimBalanceIntervals = 28;
+        let balanceSubmissionFrequency = (60 * 60 * 24);
+        let rewardClaimPeriodTime = (rewardClaimBalanceIntervals * balanceSubmissionFrequency * secondsPerEpoch); // 28 days
         let userDistributeTime = (90 * 24 * 60 * 60); // 90 days
         let initialisedMinipool;
         let prelaunchMinipool;
@@ -80,6 +84,9 @@ export default function() {
         const halfDepositNodeAmount = '16'.ether;
 
         before(async () => {
+            // Upgrade to Houston
+            await upgradeOneDotThree();
+
             oldDelegateAddress = (await RocketMinipoolDelegate.deployed()).address;
 
             // Register node & set withdrawal address
@@ -99,13 +106,11 @@ export default function() {
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.bond.reduction.window.start', bondReductionWindowStart, {from: owner});
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.bond.reduction.window.length', bondReductionWindowLength, {from: owner});
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rpl.rewards.claim.period.time', rewardClaimPeriodTime, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.balances.frequency', balanceSubmissionFrequency, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', rewardClaimBalanceIntervals, {from: owner});
 
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', '50'.ether, {from: owner});
-
-            // Set user distribute time
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.user.distribute.window.start', userDistributeTime, {from: owner});
 
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();

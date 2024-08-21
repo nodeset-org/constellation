@@ -3,6 +3,7 @@ pragma solidity >0.5.0 <0.9.0;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../interface/RocketStorageInterface.sol";
+import "hardhat/console.sol";
 
 /// @title Base settings / modifiers for each contract in Rocket Pool
 /// @author David Rugendyke
@@ -60,7 +61,7 @@ abstract contract RocketBase {
         require(getBool(keccak256(abi.encodePacked("minipool.exists", _minipoolAddress))), "Invalid minipool");
         _;
     }
-    
+
 
     /**
     * @dev Throws if called by any account other than a guardian account (temporary account allowed access to settings before DAO is fully enabled)
@@ -87,6 +88,8 @@ abstract contract RocketBase {
         // Get the current contract address
         address contractAddress = getAddress(keccak256(abi.encodePacked("contract.address", _contractName)));
         // Check it
+        console.log("!!!contractName: %s", _contractName, contractAddress);
+
         require(contractAddress != address(0x0), "Contract not found");
         // Return
         return contractAddress;

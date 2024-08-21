@@ -1,13 +1,14 @@
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode } from '../_helpers/node';
-import { RocketDAOProtocolSettingsNode, RocketNodeManager } from '../_utils/artifacts'
+import { RocketDAOProtocolSettingsNode, RocketNodeManager, RocketNodeManagerNew } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime } from '../dao/scenario-dao-protocol-bootstrap';
 import { register } from './scenario-register';
 import { setTimezoneLocation } from './scenario-set-timezone';
 import { setWithdrawalAddress, confirmWithdrawalAddress } from './scenario-set-withdrawal-address';
 import { setSmoothingPoolRegistrationState } from './scenario-register-smoothing-pool';
 import { increaseTime } from '../_utils/evm';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 
 export default function() {
@@ -35,6 +36,9 @@ export default function() {
 
         // Setup
         before(async () => {
+            // Upgrade to Houston
+            await upgradeOneDotThree();
+
             // Enable smoothing pool registrations
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.smoothing.pool.registration.enabled', true, {from: owner});
 
@@ -241,7 +245,7 @@ export default function() {
 
 
         it(printTitle('random', 'can query timezone counts'), async () => {
-            const rocketNodeManager = await RocketNodeManager.deployed();
+            const rocketNodeManager = await RocketNodeManagerNew.deployed();
             await rocketNodeManager.registerNode('Australia/Sydney', {from: random2});
             await rocketNodeManager.registerNode('Australia/Perth', {from: random3});
 

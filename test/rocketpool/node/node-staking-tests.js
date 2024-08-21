@@ -1,6 +1,6 @@
 import {
-    RocketDAONodeTrustedSettingsMinipool, RocketDAOProtocolSettingsMinipool,
-    RocketNodeStaking,
+    RocketDAONodeTrustedSettingsMinipool, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsRewards,
+    RocketNodeStaking, RocketNodeStakingNew,
 } from '../_utils/artifacts';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
@@ -10,7 +10,7 @@ import {
     nodeDeposit,
     setNodeTrusted,
     nodeStakeRPLFor,
-    setStakeRPLForAllowed,
+    setStakeRPLForAllowed, setNodeWithdrawalAddress, setNodeRPLWithdrawalAddress, setStakeRPLForAllowedWithNodeAddress,
 } from '../_helpers/node';
 import { mintRPL, approveRPL } from '../_helpers/tokens';
 import { stakeRpl } from './scenario-stake-rpl';
@@ -21,6 +21,7 @@ import { userDeposit } from '../_helpers/deposit'
 import { increaseTime } from '../_utils/evm'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime } from '../dao/scenario-dao-protocol-bootstrap';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketNodeStaking', async (accounts) => {
@@ -32,6 +33,8 @@ export default function() {
             node,
             trustedNode,
             random,
+            rplWithdrawalAddress,
+            withdrawalAddress,
         ] = accounts;
 
         let scrubPeriod = (60 * 60 * 24); // 24 hours
@@ -40,12 +43,14 @@ export default function() {
         // Setup
         let rocketNodeStaking;
         before(async () => {
+            // Upgrade to Houston
+            await upgradeOneDotThree();
+
             // Load contracts
-            rocketNodeStaking = await RocketNodeStaking.deployed();
+            rocketNodeStaking = await RocketNodeStakingNew.deployed();
 
             // Set settings
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.user.distribute.window.start', userDistributeStartTime, {from: owner});
 
             // Register node
             await registerNode({from: node});
@@ -58,6 +63,8 @@ export default function() {
             const rplAmount = '10000'.ether;
             await mintRPL(owner, node, rplAmount);
             await mintRPL(owner, random, rplAmount);
+            await mintRPL(owner, rplWithdrawalAddress, rplAmount);
+            await mintRPL(owner, withdrawalAddress, rplAmount);
 
         });
 
@@ -100,7 +107,7 @@ export default function() {
             const rplAmount = '10000'.ether;
 
             // Remove withdrawal cooldown period
-            await setRewardsClaimIntervalTime(0, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', 0, {from: owner});
 
             // Stake RPL
             await nodeStakeRPL(rplAmount, {from: node});
@@ -132,7 +139,7 @@ export default function() {
             const withdrawAmount = '20000'.ether;
 
             // Remove withdrawal cooldown period
-            await setRewardsClaimIntervalTime(0, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', 0, {from: owner});
 
             // Stake RPL
             await nodeStakeRPL(stakeAmount, {from: node});
@@ -149,7 +156,7 @@ export default function() {
             const rplAmount = '10000'.ether;
 
             // Remove withdrawal cooldown period
-            await setRewardsClaimIntervalTime(0, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', 0, {from: owner});
 
             // Stake RPL
             await nodeStakeRPL(rplAmount, {from: node});
@@ -169,7 +176,7 @@ export default function() {
             const rplAmount = '10000'.ether;
 
             // Remove withdrawal cooldown period
-            await setRewardsClaimIntervalTime(0, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', 0, {from: owner});
 
             // Stake RPL
             await nodeStakeRPL(rplAmount, {from: node});
@@ -205,7 +212,7 @@ export default function() {
             const rplAmount = '10000'.ether;
 
             // Remove withdrawal cooldown period
-            await setRewardsClaimIntervalTime(0, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', 0, {from: owner});
 
             // Stake RPL
             await nodeStakeRPL(rplAmount, {from: node});
@@ -250,7 +257,7 @@ export default function() {
             const rplAmount = '10000'.ether;
 
             // Remove withdrawal cooldown period
-            await setRewardsClaimIntervalTime(0, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', 0, {from: owner});
 
             // Stake RPL
             await nodeStakeRPL(rplAmount, {from: node});
@@ -280,6 +287,60 @@ export default function() {
 
             // Stake RPL
             await nodeStakeRPLFor(node, rplAmount, {from: random});
+        });
+
+
+        it(printTitle('random address', 'can stake on behalf of a node with allowance from withdrawal address'), async () => {
+            // Set parameters
+            const rplAmount = '10000'.ether;
+
+            // Set RPL withdrawal address
+            await setNodeRPLWithdrawalAddress(node, rplWithdrawalAddress, {from: node});
+
+            // Not allowed to set from node address any more
+            await shouldRevert(setStakeRPLForAllowed(random, true, {from: node}), 'Was able to allow', 'Must be called from RPL withdrawal address');
+
+            // Allow from RPL withdrawal address
+            await setStakeRPLForAllowedWithNodeAddress(node, random, true, {from: rplWithdrawalAddress});
+
+            // Stake RPL
+            await nodeStakeRPLFor(node, rplAmount, {from: random});
+        });
+
+
+        it(printTitle('node operator', 'cannot stake from node address once RPL withdrawal address is set'), async () => {
+            // Set parameters
+            const rplAmount = '10000'.ether;
+
+            // Set RPL withdrawal address
+            await setNodeRPLWithdrawalAddress(node, rplWithdrawalAddress, {from: node});
+
+            // Stake RPL
+            await shouldRevert(nodeStakeRPL(rplAmount, {from: node}), 'Was able to stake', 'Not allowed to stake for');
+        });
+
+
+        it(printTitle('node operator', 'can stake from primary withdrawal address'), async () => {
+            // Set parameters
+            const rplAmount = '10000'.ether;
+
+            // Set RPL withdrawal address
+            await setNodeWithdrawalAddress(node, withdrawalAddress, {from: node});
+
+            // Stake RPL
+            await nodeStakeRPLFor(node, rplAmount, {from: withdrawalAddress});
+        });
+
+
+        it(printTitle('node operator', 'can stake from RPL withdrawal address'), async () => {
+            // Set parameters
+            const rplAmount = '10000'.ether;
+
+            // Set RPL withdrawal address
+            await setNodeRPLWithdrawalAddress(node, rplWithdrawalAddress, {from: node});
+
+            // Stake RPL
+            await nodeStakeRPLFor(node, rplAmount, {from: rplWithdrawalAddress});
         });
     });
 }

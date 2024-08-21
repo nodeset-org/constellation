@@ -12,6 +12,7 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
 import { daoNodeTrustedExecute, daoNodeTrustedMemberLeave, daoNodeTrustedPropose, daoNodeTrustedVote } from '../dao/scenario-dao-node-trusted'
 import { getDAOProposalEndTime, getDAOProposalStartTime } from '../dao/scenario-dao-proposal'
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketNetworkPrices', async (accounts) => {
@@ -36,6 +37,9 @@ export default function() {
 
         // Setup
         before(async () => {
+            // Upgrade to Houston
+            await upgradeOneDotThree();
+
             // Register node
             await registerNode({from: node});
 
@@ -95,16 +99,17 @@ export default function() {
         it(printTitle('trusted nodes', 'can submit network prices'), async () => {
             // Set parameters
             let block = await web3.eth.getBlockNumber();
+            let slotTimestamp = '1600000000'; 
             let rplPrice = '0.02'.ether;
 
             // Submit different prices
-            await submitPrices(block, '0.03'.ether, {
+            await submitPrices(block, slotTimestamp, '0.03'.ether, {
                 from: trustedNode1,
             });
-            await submitPrices(block, '0.04'.ether, {
+            await submitPrices(block, slotTimestamp, '0.04'.ether, {
                 from: trustedNode2,
             });
-            await submitPrices(block, '0.05'.ether, {
+            await submitPrices(block, slotTimestamp, '0.05'.ether, {
                 from: trustedNode3,
             });
 
@@ -112,10 +117,10 @@ export default function() {
             block = await web3.eth.getBlockNumber();
 
             // Submit identical prices to trigger update
-            await submitPrices(block, rplPrice, {
+            await submitPrices(block, slotTimestamp, rplPrice, {
                 from: trustedNode1,
             });
-            await submitPrices(block, rplPrice, {
+            await submitPrices(block, slotTimestamp, rplPrice, {
                 from: trustedNode2,
             });
         });
@@ -124,13 +129,14 @@ export default function() {
         it(printTitle('trusted nodes', 'cannot submit network prices while price submissions are disabled'), async () => {
             // Set parameters
             let block = await web3.eth.getBlockNumber();
+            let slotTimestamp = '1600000000'; 
             let rplPrice = '0.02'.ether;
 
             // Disable submissions
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.enabled', false, {from: owner});
 
             // Attempt to submit prices
-            await shouldRevert(submitPrices(block, rplPrice, {
+            await shouldRevert(submitPrices(block, slotTimestamp, rplPrice, {
                 from: trustedNode1,
             }), 'Submitted prices while price submissions were disabled');
         });
@@ -139,55 +145,73 @@ export default function() {
         it(printTitle('trusted nodes', 'cannot submit network prices for a future block'), async () => {
             // Get current block
             let blockCurrent = await web3.eth.getBlockNumber();
-
+            let slotTimestamp = '1600000000'; 
             // Set parameters
             let block = blockCurrent + 1;
             let rplPrice = '0.02'.ether;
 
             // Attempt to submit prices for future block
-            await shouldRevert(submitPrices(block, rplPrice, {
+            await shouldRevert(submitPrices(block, slotTimestamp, rplPrice, {
                 from: trustedNode1,
             }), 'Submitted prices for a future block');
         });
 
 
-        it(printTitle('trusted nodes', 'cannot submit network prices for the current recorded block or lower'), async () => {
+        it(printTitle('trusted nodes', 'cannot submit network prices for a lower block than recorded'), async () => {
             // Set parameters
             let block = await web3.eth.getBlockNumber();
+            let slotTimestamp = '1600000000'; 
             let rplPrice = '0.02'.ether;
 
             // Submit prices for block to trigger update
-            await submitPrices(block, rplPrice, {
+            await submitPrices(block, slotTimestamp, rplPrice, {
                 from: trustedNode1,
             });
-            await submitPrices(block, rplPrice, {
+            await submitPrices(block, slotTimestamp, rplPrice, {
+                from: trustedNode2,
+            });
+
+            // Attempt to submit prices for lower block
+            await shouldRevert(submitPrices(block - 1, slotTimestamp, rplPrice, {
+                from: trustedNode3,
+            }), 'Submitted prices for a lower block');
+        });
+
+        it(printTitle('trusted nodes', 'can submit network prices for the current recorded block (vote past consensus)'), async () => {
+            // Set parameters
+            let block = await web3.eth.getBlockNumber();
+            let slotTimestamp = '1600000000'; 
+            let rplPrice = '0.02'.ether;
+
+            // Submit prices for block to trigger update
+            await submitPrices(block, slotTimestamp, rplPrice, {
+                from: trustedNode1,
+            });
+            await submitPrices(block, slotTimestamp, rplPrice, {
                 from: trustedNode2,
             });
 
             // Attempt to submit prices for current block
-            await shouldRevert(submitPrices(block, rplPrice, {
+            await submitPrices(block, slotTimestamp, rplPrice, {
                 from: trustedNode3,
-            }), 'Submitted prices for the current block');
+            });
 
-            // Attempt to submit prices for lower block
-            await shouldRevert(submitPrices(block - 1, rplPrice, {
-                from: trustedNode3,
-            }), 'Submitted prices for a lower block');
         });
 
 
         it(printTitle('trusted nodes', 'cannot submit the same network prices twice'), async () => {
             // Set parameters
             let block = await web3.eth.getBlockNumber();
+            let slotTimestamp = '1600000000'; 
             let rplPrice = '0.02'.ether;
 
             // Submit prices for block
-            await submitPrices(block, rplPrice, {
+            await submitPrices(block, slotTimestamp, rplPrice, {
                 from: trustedNode1,
             });
 
             // Attempt to submit prices for block again
-            await shouldRevert(submitPrices(block, rplPrice, {
+            await shouldRevert(submitPrices(block, slotTimestamp, rplPrice, {
                 from: trustedNode1,
             }), 'Submitted the same network prices twice');
         });
@@ -196,10 +220,11 @@ export default function() {
         it(printTitle('regular nodes', 'cannot submit network prices'), async () => {
             // Set parameters
             let block = await web3.eth.getBlockNumber();
+            let slotTimestamp = '1600000000'; 
             let rplPrice = '0.02'.ether;
 
             // Attempt to submit prices
-            await shouldRevert(submitPrices(block, rplPrice, {
+            await shouldRevert(submitPrices(block, slotTimestamp, rplPrice, {
                 from: node,
             }), 'Regular node submitted network prices');
         });
@@ -210,18 +235,19 @@ export default function() {
             await trustedNode4JoinDao();
             // Set parameters
             let block = await web3.eth.getBlockNumber();
+            let slotTimestamp = '1600000000'; 
             let rplPrice = '0.02'.ether;
             // Submit same price from 2 nodes (not enough for 4 member consensus but enough for 3)
-            await submitPrices(block, rplPrice, {
+            await submitPrices(block, slotTimestamp, rplPrice, {
                 from: trustedNode1,
             });
-            await submitPrices(block, rplPrice, {
+            await submitPrices(block, slotTimestamp, rplPrice, {
                 from: trustedNode2,
             });
             // trustedNode4 leaves the DAO
             await trustedNode4LeaveDao();
             // There is now consensus with the remaining 3 trusted nodes about the price, try to execute the update
-            await executeUpdatePrices(block, rplPrice, {
+            await executeUpdatePrices(block, slotTimestamp, rplPrice, {
                 from: random
             })
         });
@@ -232,16 +258,17 @@ export default function() {
             await trustedNode4JoinDao();
             // Set parameters
             let block = await web3.eth.getBlockNumber();
+            let slotTimestamp = '1600000000'; 
             let rplPrice = '0.02'.ether;
             // Submit same price from 2 nodes (not enough for 4 member consensus)
-            await submitPrices(block, rplPrice, {
+            await submitPrices(block, slotTimestamp, rplPrice, {
                 from: trustedNode1,
             });
-            await submitPrices(block, rplPrice, {
+            await submitPrices(block, slotTimestamp, rplPrice, {
                 from: trustedNode2,
             });
             // There is no consensus so execute should fail
-            await shouldRevert(executeUpdatePrices(block, rplPrice, {
+            await shouldRevert(executeUpdatePrices(block, slotTimestamp, rplPrice, {
                 from: random
             }), 'Random account could execute update prices without consensus')
         });

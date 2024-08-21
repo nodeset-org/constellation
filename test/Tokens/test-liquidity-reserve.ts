@@ -4,7 +4,7 @@ import { protocolFixture } from ".././test";
 
 describe("Liquidity Reserve", async function () {
     describe("when liquidity reserve ratio is lowered", async function () {
-        it("should have proper ETH sent to vaults and OD", async function () {
+        it.only("should have proper ETH sent to vaults and OD", async function () {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool } = setupData;
 
@@ -27,7 +27,7 @@ describe("Liquidity Reserve", async function () {
             const rplMintAmount = ethers.utils.parseEther("1000");
             await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
             await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
-            await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
+            await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address);
 
             // Assert 10 ETH and 100 RPL are in vault (rest in operator distributor)
             expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).to.equal(ethers.utils.parseEther("10"));
@@ -53,7 +53,7 @@ describe("Liquidity Reserve", async function () {
 
             await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
             await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
-            await protocol.vCRPL.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address); 
+            await protocol.vCRPL.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address);
 
             // Redeem 1 xWETH and 1 xRPL
             await protocol.vCWETH.connect(signers.ethWhale).redeem(ethers.utils.parseEther("1"), signers.ethWhale.address, signers.ethWhale.address);
@@ -91,7 +91,7 @@ describe("Liquidity Reserve", async function () {
             const rplMintAmount = ethers.utils.parseEther("1000");
             await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
             await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
-            await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address); 
+            await protocol.vCRPL.connect(signers.ethWhale).deposit(rplMintAmount, signers.ethWhale.address);
 
             // Assert 10 ETH and 100 RPL are in vault (rest in operator distributor)
             expect(await protocol.wETH.balanceOf(protocol.vCWETH.address)).to.equal(ethers.utils.parseEther("10"));
@@ -119,7 +119,7 @@ describe("Liquidity Reserve", async function () {
 
             await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.ethWhale.address, rplMintAmount);
             await rocketPool.rplContract.connect(signers.ethWhale).approve(protocol.vCRPL.address, rplMintAmount);
-            await protocol.vCRPL.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address); 
+            await protocol.vCRPL.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address);
 
             // Redeem 1 xWETH and 1 xRPL
             await protocol.vCWETH.connect(signers.ethWhale).redeem(ethers.utils.parseEther("1"), signers.ethWhale.address, signers.ethWhale.address);
