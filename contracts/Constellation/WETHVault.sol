@@ -41,6 +41,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     // see the original issue for RP for more details: https://consensys.io/diligence/audits/2021/04/rocketpool/#rockettokenreth---sandwiching-opportunity-on-price-updates
     uint256 public mintFee;
 
+    bool public depositsEnabled;
+
     constructor() initializer {}
 
     /**
@@ -62,6 +64,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         treasuryFee = 0.14788e18; 
         nodeOperatorFee = 0.14788e18;
         mintFee = 0.0003e18; // .03% by default
+        depositsEnabled = true;
     }
 
     /**
@@ -79,6 +82,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 assets,
         uint256 shares
     ) internal virtual override nonReentrant {
+        require(depositsEnabled, "deposits are disabled"); // emergency switch for deposits
         require(caller == receiver, 'caller must be receiver');
         if (_directory.isSanctioned(caller, receiver)) {
             return;
@@ -339,5 +343,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function setMintFee(uint256 newMintFee) external onlyMediumTimelock() {
         require(newMintFee >= 0 && newMintFee <= 1e18, "new mint fee must be between 0 and 100%");
         mintFee = newMintFee;
+    }
+
+    function setDepositsEnabled(bool newValue) external onlyAdmin {
+        depositsEnabled = newValue;
     }
 }
