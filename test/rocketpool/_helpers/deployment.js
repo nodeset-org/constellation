@@ -163,7 +163,7 @@ export async function deployRocketPool() {
     console.log(`Deploying from: ${accounts[0]}`)
     console.log('\n');
 
-    const casperDepositABI = loadABI('./contracts/contract/casper/compiled/Deposit.abi');
+    const casperDepositABI = loadABI('./contracts/Testing/Rocketpool/contract/casper/compiled/Deposit.abi');
 
     // Live deployment
     if ( network.name === 'live' ) {
@@ -201,7 +201,7 @@ export async function deployRocketPool() {
         const casperDepositContract = await casperDeposit.deploy(
             // Casper deployment
             {
-                data: fs.readFileSync('./contracts/contract/casper/compiled/Deposit.bin').toString()
+                data: fs.readFileSync('./contracts/Testing/Rocketpool/contract/casper/compiled/Deposit.bin').toString()
             }).send({
             from: accounts[0],
             gas: 8000000,
@@ -376,7 +376,7 @@ export async function deployRocketPool() {
                     case 'rocketNetworkVoting':
                     case 'rocketDAOProtocolProposal':
                         break;
-                        
+
                     default:
                         const address = contract === 'casperDeposit' ? contracts[contract].address : (await contracts[contract].deployed()).address;
 

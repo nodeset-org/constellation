@@ -98,6 +98,28 @@ export async function getMinipoolMaximumRPLStake() {
 
 let minipoolSalt = 1
 
+// Function to generate deposit data for creating a minipool
+export async function generateDepositData(sender, salt) {
+    const rocketMinipoolFactory = await RocketMinipoolFactory.deployed();
+    let minipoolAddress = (await rocketMinipoolFactory.getExpectedAddress(sender, salt)).substr(2);
+    let withdrawalCredentials = '0x010000000000000000000000' + minipoolAddress;
+
+    // Get validator deposit data
+    let depositData = {
+        pubkey: getValidatorPubkey(),
+        withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
+        amount: BigInt(1000000000), // gwei
+        signature: getValidatorSignature(),
+    };
+
+    // Calculate the deposit data root - this might involve hashing the deposit data
+    // depending on your implementation specifics.
+    let depositDataRoot = getDepositDataRoot(depositData);
+
+    // Return the deposit data and its root
+    return { depositData, depositDataRoot, minipoolAddress };
+}
+
 // Create a minipool
 export async function createMinipool(txOptions, salt = null) {
     return createMinipoolWithBondAmount(txOptions.value, txOptions, salt);
