@@ -91,6 +91,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         targetStakeRatio = 0.6e18; // 60% of bonded ETH by default.
         minimumStakeRatio = 0.15e18; // 15% of matched ETH by default
         minipoolProcessingEnabled = true;
+        rplStakeRebalanceEnabled = true;
     }
 
     // Index for the current minipool being processed
