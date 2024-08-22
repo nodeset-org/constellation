@@ -1,6 +1,6 @@
 {
   "name": "@nodeset/contracts",
-  "version": "0.0.7-alpha",
+  "version": "0.0.9-alpha",
   "description": "Protocol for accessing NodeSet's Constellation Ethereum staking network",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
