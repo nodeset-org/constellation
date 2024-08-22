@@ -18,7 +18,7 @@ import './RPLVault.sol';
 import 'hardhat/console.sol';
 
 /// @title MerkleClaimStreamer
-/// @author Mike Leach
+/// @author Mike Leach, Theodore Clapp
 /// @notice Allows claiming of merkle rewards and reports a "streamed" value for these assets over a specified time interval to the rest of the 
 /// protocol. This prevents the TVL from updating with a significant step which would allow for sandwich attacks.
 /// See this issue with Rocket Pool for a deeper description: https://consensys.io/diligence/audits/2021/04/rocketpool/#rockettokenreth---sandwiching-opportunity-on-price-updates
