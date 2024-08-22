@@ -198,7 +198,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));
         od.rebalanceRplVault();
-        od.rebalanceRplStake(SuperNodeAccount(getDirectory().getSuperNodeAddress()).getTotalEthStaked());
+        od.rebalanceRplStake(SuperNodeAccount(getDirectory().getSuperNodeAddress()).getEthStaked());
     }
 
     /// Calculates the treasury portion of a specific RPL reward amount.
