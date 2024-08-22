@@ -118,7 +118,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
     })
 
     const treasuryProxy = await retryOperation(async function () {
-        const at = await upgrades.deployProxy(await ethers.getContractFactory("Treasury", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+        const at = await upgrades.deployProxy(await ethers.getContractFactory("Treasury", deployer), [treasurer.address], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
         if (log) console.log("admin treasury deployed to", at.address)
         return at
     })
