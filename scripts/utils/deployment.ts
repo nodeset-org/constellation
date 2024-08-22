@@ -101,7 +101,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
 
     const merkleClaimStreamerProxy = await retryOperation(async function () {
         const od = await upgrades.deployProxy(await ethers.getContractFactory("MerkleClaimStreamer", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
-        if (log) console.log("operator distributor deployed to", od.address)
+        if (log) console.log("merkle claim streamer deployed to", od.address)
         return od
     })
 
@@ -118,7 +118,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
     })
 
     const treasuryProxy = await retryOperation(async function () {
-        const at = await upgrades.deployProxy(await ethers.getContractFactory("Treasury", deployer), [directoryAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+        const at = await upgrades.deployProxy(await ethers.getContractFactory("Treasury", deployer), [treasurer.address], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
         if (log) console.log("admin treasury deployed to", at.address)
         return at
     })

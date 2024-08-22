@@ -158,6 +158,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     /**
+     * Note for the following functions: Ideally, minipools would be processed in order of the longest since last processing, 
+     * but there are some scenarios where minipools may be processed out of order for the sake of gas efficiency with other operations. 
+     * For example:
+     * - when minipools are removed (which swaps the last minipool with the removed one in the list)
+     * - when minipools are created (which adds them to the end of the list)
+     */
+
+    /**
      * @dev This function helps read state for the rotation and handling of different minipools within the system.
      * @return IMinipool Returns the next minipool to process. Returns a binding to the zero address if there are no minipools.
      */
@@ -259,14 +267,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     
     /**
      * @custom:author Mike Leach (Wander)
-     * @notice This is the "tick" function of the protocol. It's the heartbeat of Constellation, called every time there is a major state change:
-     * - Deposits and withdrawals from the xrETH and xRPL vaults
-     * - When operators claim rewards
-     * @dev Performs a RPL stake rebalance for the node and distributes the outstanding balance for a minipool.
+     * @notice This is the "tick" function of the protocol. It's the heartbeat of Constellation, 
+     * and it's called every time deposits and withdrawals from the xrETH and xRPL vaults
+     * @dev Performs a RPL stake rebalance for the node, distributes the outstanding balance for a minipool, 
+     * and then rebalance protocol liquidity.
      */
     function processMinipool(IMinipool minipool) public {
         if (address(minipool) == address(0)) {
-            return; // should only happen if there are no miniopools in the system
+            return; // should only happen if there are no minipools in the system
         }
         if (address(minipool).balance == 0) {
             return;
@@ -403,7 +411,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 rplBalance = rpl.balanceOf(address(this));
 
         // Fetch the required capital in RPL and the total RPL balance of the contract
-        uint256 requiredRpl = vrpl.getRequiredCollateral();
+        uint256 requiredRpl = vrpl.getMissingLiquidity();
 
         // Transfer RPL to the RPLVault
         if (rplBalance >= requiredRpl) { 

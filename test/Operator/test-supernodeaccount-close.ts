@@ -96,7 +96,6 @@ describe("SuperNodeAccount close", function () {
                 depositDataRoot: config.depositDataRoot,
                 salt: rawSalt,
                 expectedMinipoolAddress: config.expectedMinipoolAddress,
-                sigGenesisTime: timestamp,
                 sig: sig
                 }, { value: ethers.utils.parseEther('1') }))
             .to.not.be.reverted;
@@ -115,7 +114,7 @@ describe("SuperNodeAccount close", function () {
             expect(await protocol.superNode.connect(nodeOperator).getNumMinipools()).to.be.equal(1);
 
             // Only close minipool
-            await expect(protocol.superNode.connect(nodeOperator).close(nodeOperator.address, config.expectedMinipoolAddress)).to.be.revertedWith("The minipool can only be closed while dissolved");
+            await expect(protocol.superNode.connect(nodeOperator).closeDissolvedMinipool(nodeOperator.address, config.expectedMinipoolAddress)).to.be.revertedWith("The minipool can only be closed while dissolved");
         });
     });
     describe("when minipool is dissolved", function () {
@@ -131,7 +130,6 @@ describe("SuperNodeAccount close", function () {
                         depositDataRoot: config.depositDataRoot,
                         salt: rawSalt,
                         expectedMinipoolAddress: config.expectedMinipoolAddress,
-                        sigGenesisTime: timestamp,
                         sig: sig
                         }, { value: ethers.utils.parseEther('1') }))
                     .to.not.be.reverted;
@@ -151,7 +149,7 @@ describe("SuperNodeAccount close", function () {
 
                     // Dissolve and close minipool
                     await expect(minipoolContract.connect(nodeOperator).dissolve()).to.not.be.reverted;
-                    await protocol.superNode.connect(nodeOperator).close(nodeOperator.address, config.expectedMinipoolAddress);
+                    await protocol.superNode.connect(nodeOperator).closeDissolvedMinipool(nodeOperator.address, config.expectedMinipoolAddress);
 
                     // Assert validator count prior after closing minipool
                     expect(await protocol.whitelist.getActiveValidatorCountForOperator(nodeOperator.address)).to.be.equal(0);
@@ -169,7 +167,6 @@ describe("SuperNodeAccount close", function () {
                         depositDataRoot: config.depositDataRoot,
                         salt: rawSalt,
                         expectedMinipoolAddress: config.expectedMinipoolAddress,
-                        sigGenesisTime: timestamp,
                         sig: sig
                         }, { value: ethers.utils.parseEther('1') }))
                     .to.not.be.reverted;
@@ -190,7 +187,7 @@ describe("SuperNodeAccount close", function () {
                     // Dissolve and close minipool
                     await expect(minipoolContract.connect(nodeOperator).dissolve()).to.not.be.reverted;
                     // Invalid minipool address
-                    await expect(protocol.superNode.connect(nodeOperator).close(nodeOperator.address, nodeOperator.address)).to.be.revertedWith("minipool not recognized");
+                    await expect(protocol.superNode.connect(nodeOperator).closeDissolvedMinipool(nodeOperator.address, nodeOperator.address)).to.be.revertedWith("minipool not recognized");
                 });
             });
 
@@ -206,7 +203,6 @@ describe("SuperNodeAccount close", function () {
                     depositDataRoot: config.depositDataRoot,
                     salt: rawSalt,
                     expectedMinipoolAddress: config.expectedMinipoolAddress,
-                    sigGenesisTime: timestamp,
                     sig: sig
                     }, { value: ethers.utils.parseEther('1') }))
                 .to.not.be.reverted;
@@ -227,7 +223,7 @@ describe("SuperNodeAccount close", function () {
                 // Dissolve and close minipool
                 await expect(minipoolContract.connect(nodeOperator).dissolve()).to.not.be.reverted;
                 // Close with invalid address
-                await expect(protocol.superNode.connect(nodeOperator).close(config.expectedMinipoolAddress, config.expectedMinipoolAddress)).to.be.revertedWith("operator does not own the specified minipool");
+                await expect(protocol.superNode.connect(nodeOperator).closeDissolvedMinipool(config.expectedMinipoolAddress, config.expectedMinipoolAddress)).to.be.revertedWith("operator does not own the specified minipool");
             });
         });
     });

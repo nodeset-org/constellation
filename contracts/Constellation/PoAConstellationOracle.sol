@@ -15,7 +15,7 @@ pragma solidity 0.8.17;
  * The reported yield is the sum of the rewards or penalties for all validators and minipool contract balances
  * with the treasury and NO fees already subtracted. It does NOT include bonds, which are already tracked upon minipool creation.
  * @dev When the protocol receives rewards, it will remove these fees and keep track of an 
- * the amount received so that it is not double counted against the last reported oracle value. See also: OperatorDistributor.onEthRewardsReceived()
+ * the amount received so that it is not double counted against the last reported oracle value. See also: OperatorDistributor.onEthBeaconRewardsReceived()
  */
 contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
     struct PoAOracleSignatureData {
