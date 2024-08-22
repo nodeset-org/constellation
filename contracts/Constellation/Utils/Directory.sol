@@ -22,7 +22,6 @@ struct Protocol {
     address rplVault;
     address payable operatorDistributor;
     address payable merkleClaimStreamer;
-    address payable operatorReward;
     address oracle;
     address priceFetcher;
     address payable superNode;
@@ -61,6 +60,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     Protocol private _protocol;
     RocketIntegrations private _integrations;
     address private _treasury;
+    address payable private _operatorReward;
     bool private _enabledSanctions;
 
     constructor() initializer {}
@@ -112,7 +112,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     }
 
     function getOperatorRewardAddress() public view returns (address payable) {
-        return _protocol.operatorReward;
+        return _operatorReward;
     }
 
     function getRocketNodeManagerAddress() public view returns (address) {
@@ -195,6 +195,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     /// @dev This function sets up the initial protocol contract addresses and grants roles to the admin and treasurer.
     function initialize(
         Protocol memory newProtocol,
+        address operatorReward,
         address treasury,
         address treasurer,
         address admin
@@ -214,7 +215,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
             Constants.INITIALIZATION_ERROR
         );
         require(
-            _protocol.operatorReward == address(0) && newProtocol.operatorReward != address(0),
+            _operatorReward == address(0) && operatorReward != address(0),
             Constants.INITIALIZATION_ERROR
         );
         require(_protocol.oracle == address(0) && newProtocol.oracle != address(0), Constants.INITIALIZATION_ERROR);
@@ -358,16 +359,11 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _treasury = newTreasury;
     }
 
-    /// @notice Disables sanctions enforcement.
-    function disableSanctions() public {
+    /// @notice Sets the operator rewards contract address.
+    /// @param newOperatorRewards The new operator rewards contract address.
+    function setOperatorRewards(address payable newOperatorRewards) public {
         require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
-        _enabledSanctions = false;
-    }
-
-    /// @notice Enables sanctions enforcement.
-    function enableSanctions() public {
-        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
-        _enabledSanctions = true;
+        _operatorReward = newOperatorRewards;
     }
 
     /// @notice Sets the oracle contract address.
@@ -383,6 +379,18 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     function setAll(Protocol memory newProtocol) public {
         require(hasRole(Constants.TIMELOCK_SHORT, msg.sender), Constants.ADMIN_ONLY_ERROR);
         _protocol = newProtocol;
+    }
+
+    /// @notice Disables sanctions enforcement.
+    function disableSanctions() public {
+        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
+        _enabledSanctions = false;
+    }
+
+    /// @notice Enables sanctions enforcement.
+    function enableSanctions() public {
+        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
+        _enabledSanctions = true;
     }
 
     /// @notice Checks if a single account is sanctioned.
