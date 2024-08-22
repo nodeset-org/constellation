@@ -434,6 +434,13 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /**
+     * @return uint256 The amount of ETH matched with this node from the rETH deposit pool
+     */
+    function getTotalRplStaked() public view returns (uint256) {
+        return IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStake(address(this));
+    }
+
+    /**
      * @notice Checks if there is sufficient liquidity in the protocol to cover a specified bond amount.
      * @dev This function helps ensure that there are enough resources (both RPL and ETH) available
      * in the system to cover the bonds required for creating or operating a minipool.
