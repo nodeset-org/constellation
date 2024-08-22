@@ -61,6 +61,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     // List of all minipools
     address[] public minipools;
 
+    // FOR OFFCHAIN USE ONLY - DO NOT USE IN CONTRACTS
+    mapping(address => address[]) public __subNodeOperatorMinipools__;
+
     struct Minipool {
         address subNodeOperator;
         uint256 ethTreasuryFee;
@@ -264,6 +267,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             salt,
             _config.expectedMinipoolAddress
         );
+
+        __subNodeOperatorMinipools__[subNodeOperator].push(_config.expectedMinipoolAddress);
 
         emit MinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator);
     }
@@ -495,5 +500,19 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     function invalidateSingleOustandingSig(address _nodeOperator) external onlyAdmin {
         nonces[_nodeOperator]++;
+    }
+
+    // FOR OFFCHAIN USE ONLY - DO NOT USE IN CONTRACTS
+    /// @notice Get the complete minipool count for a sub-node operator, including removed minipools
+    /// @param _subNodeOperator The address of the sub-node operator
+    function getMinipoolCount(address _subNodeOperator) external view returns (uint256) {
+        return __subNodeOperatorMinipools__[_subNodeOperator].length;
+    }
+
+    // FOR OFFCHAIN USE ONLY - DO NOT USE IN CONTRACTS
+    /// @notice Get the complete minipool list for a sub-node operator, including removed minipools
+    /// @param _subNodeOperator The address of the sub-node operator
+    function getMinipools(address _subNodeOperator) external view returns (address[] memory) {
+        return __subNodeOperatorMinipools__[_subNodeOperator];
     }
 }
