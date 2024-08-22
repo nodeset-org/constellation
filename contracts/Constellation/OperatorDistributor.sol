@@ -109,7 +109,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @return uint256 Total amount of RPL under the management of the contract.
      */
     function getTvlRpl() public view returns (uint) {
-        return IERC20(_directory.getRPLAddress()).balanceOf(address(this)) + ;
+        return IERC20(_directory.getRPLAddress()).balanceOf(address(this));
     }
 
     /**
