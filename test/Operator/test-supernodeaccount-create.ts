@@ -75,7 +75,6 @@ describe("SuperNodeAccount creation under validator limits", function () {
                 depositDataRoot: config.depositDataRoot,
                 salt: rawSalt,
                 expectedMinipoolAddress: config.expectedMinipoolAddress,
-                sigGenesisTime: timestamp,
                 sig: sig
                 }, { value: ethers.utils.parseEther('1') }))
             .to.be.revertedWith('NodeAccount: protocol must have enough rpl and eth');
@@ -118,7 +117,6 @@ describe("SuperNodeAccount creation under validator limits", function () {
                 depositDataRoot: config.depositDataRoot,
                 salt: rawSalt,
                 expectedMinipoolAddress: config.expectedMinipoolAddress,
-                sigGenesisTime: timestamp,
                 sig: sig
                 }, { value: ethers.utils.parseEther('1') }))
             .to.not.be.reverted;
@@ -156,6 +154,9 @@ describe("SuperNodeAccount creation under validator limits", function () {
                     config.salt,
                 );
 
+                expect(await protocol.superNode.getMinipoolCount(nodeOperator.address)).equals(0)
+                expect(await protocol.superNode.getMinipools(nodeOperator.address)).eqls([])
+
                 await expect(
                     protocol.superNode
                 .connect(nodeOperator)
@@ -165,14 +166,17 @@ describe("SuperNodeAccount creation under validator limits", function () {
                     depositDataRoot: config.depositDataRoot,
                     salt: salts.rawSalt,
                     expectedMinipoolAddress: config.expectedMinipoolAddress,
-                    sigGenesisTime: exitMessage.timestamp,
                     sig: exitMessage.sig
                     }, { value: ethers.utils.parseEther('1') }))
                 .to.not.be.reverted;
 
+                expect(await protocol.superNode.getMinipoolCount(nodeOperator.address)).equals(1)
+                expect(await protocol.superNode.getMinipools(nodeOperator.address)).eqls(['0x'+config.expectedMinipoolAddress])
+
                 // Create second minipool
                 salts = await approvedSalt(4, nodeOperator.address);
                 depositData = await generateDepositData(protocol.superNode.address, salts.pepperedSalt)
+                const lastMinipool = config.expectedMinipoolAddress;
                 config = {
                     timezoneLocation: 'Australia/Brisbane',
                     bondAmount: bond,
@@ -191,6 +195,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
                     config.salt,
                 );
 
+
                 await expect(
                     protocol.superNode
                 .connect(nodeOperator)
@@ -200,10 +205,12 @@ describe("SuperNodeAccount creation under validator limits", function () {
                     depositDataRoot: config.depositDataRoot,
                     salt: salts.rawSalt,
                     expectedMinipoolAddress: config.expectedMinipoolAddress,
-                    sigGenesisTime: exitMessage.timestamp,
                     sig: exitMessage.sig
                     }, { value: ethers.utils.parseEther('1') }))
                 .to.not.be.reverted;
+
+                expect(await protocol.superNode.getMinipoolCount(nodeOperator.address)).equals(2)
+                expect(await protocol.superNode.getMinipools(nodeOperator.address)).eqls(['0x'+lastMinipool, '0x'+config.expectedMinipoolAddress])
 
                 // Create third minipool
                 salts = await approvedSalt(5, nodeOperator.address);
@@ -235,7 +242,6 @@ describe("SuperNodeAccount creation under validator limits", function () {
                     depositDataRoot: config.depositDataRoot,
                     salt: salts.rawSalt,
                     expectedMinipoolAddress: config.expectedMinipoolAddress,
-                    sigGenesisTime: exitMessage.timestamp,
                     sig: exitMessage.sig
                     }, { value: ethers.utils.parseEther('1') }))
                 .to.not.be.reverted;
@@ -270,7 +276,6 @@ describe("SuperNodeAccount creation under validator limits", function () {
                     depositDataRoot: config.depositDataRoot,
                     salt: salts.rawSalt,
                     expectedMinipoolAddress: config.expectedMinipoolAddress,
-                    sigGenesisTime: exitMessage.timestamp,
                     sig: exitMessage.sig
                     }, { value: ethers.utils.parseEther('1') }))
                 .to.be.revertedWith('NodeAccount: protocol must have enough rpl and eth');
@@ -286,7 +291,6 @@ describe("SuperNodeAccount creation under validator limits", function () {
                     depositDataRoot: config.depositDataRoot,
                     salt: salts.rawSalt,
                     expectedMinipoolAddress: config.expectedMinipoolAddress,
-                    sigGenesisTime: exitMessage.timestamp,
                     sig: exitMessage.sig
                     }, { value: ethers.utils.parseEther('1') }))
                 .to.be.revertedWith('Sub node operator has created too many minipools already');
@@ -336,7 +340,6 @@ describe("SuperNodeAccount creation under validator limits", function () {
                     depositDataRoot: config.depositDataRoot,
                     salt: salts.rawSalt,
                     expectedMinipoolAddress: config.expectedMinipoolAddress,
-                    sigGenesisTime: exitMessage.timestamp,
                     sig: exitMessage.sig
                     }, { value: ethers.utils.parseEther('1') }))
                 .to.not.be.reverted;
@@ -371,7 +374,6 @@ describe("SuperNodeAccount creation under validator limits", function () {
                     depositDataRoot: config.depositDataRoot,
                     salt: salts.rawSalt,
                     expectedMinipoolAddress: config.expectedMinipoolAddress,
-                    sigGenesisTime: exitMessage.timestamp,
                     sig: exitMessage.sig
                     }, { value: ethers.utils.parseEther('1') }))
                 .to.not.be.reverted;
@@ -406,7 +408,6 @@ describe("SuperNodeAccount creation under validator limits", function () {
                     depositDataRoot: config.depositDataRoot,
                     salt: salts.rawSalt,
                     expectedMinipoolAddress: config.expectedMinipoolAddress,
-                    sigGenesisTime: exitMessage.timestamp,
                     sig: exitMessage.sig
                     }, { value: ethers.utils.parseEther('1') }))
                 .to.be.revertedWith('Sub node operator has created too many minipools already');
@@ -422,7 +423,6 @@ describe("SuperNodeAccount creation under validator limits", function () {
                     depositDataRoot: config.depositDataRoot,
                     salt: salts.rawSalt,
                     expectedMinipoolAddress: config.expectedMinipoolAddress,
-                    sigGenesisTime: exitMessage.timestamp,
                     sig: exitMessage.sig
                     }, { value: ethers.utils.parseEther('1') }))
                 .to.not.be.reverted;
@@ -458,7 +458,6 @@ describe("SuperNodeAccount creation under validator limits", function () {
                     depositDataRoot: config.depositDataRoot,
                     salt: salts.rawSalt,
                     expectedMinipoolAddress: config.expectedMinipoolAddress,
-                    sigGenesisTime: exitMessage.timestamp,
                     sig: exitMessage.sig
                     }, { value: ethers.utils.parseEther('1') }))
                 .to.be.revertedWith('NodeAccount: protocol must have enough rpl and eth');
