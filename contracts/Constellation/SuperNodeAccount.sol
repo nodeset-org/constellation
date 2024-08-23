@@ -61,6 +61,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     // List of all minipools
     address[] public minipools;
 
+    // FOR OFFCHAIN USE ONLY - DO NOT USE IN CONTRACTS
+    mapping(address => address[]) public __subNodeOperatorMinipools__;
+
     struct Minipool {
         address subNodeOperator;
         uint256 ethTreasuryFee;
@@ -252,7 +255,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         Whitelist(getDirectory().getWhitelistAddress()).registerNewValidator(subNodeOperator);
 
         // stake additional RPL to cover the new minipool
-        od.rebalanceRplStake(getTotalEthStaked() + bond);
+        od.rebalanceRplStake(this.getEthStaked() + bond);
 
         // do the deposit!
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: bond}(
@@ -264,6 +267,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             salt,
             _config.expectedMinipoolAddress
         );
+
+        __subNodeOperatorMinipools__[subNodeOperator].push(_config.expectedMinipoolAddress);
 
         emit MinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator);
     }
@@ -417,15 +422,22 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     /**
      * @return uint256 The amount of ETH bonded with this node from WETHVault deposits.
      */
-    function getTotalEthStaked() public view returns (uint256) {
+    function getEthStaked() public view returns (uint256) {
         return IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).getNodeETHProvided(address(this));
     }
 
     /**
      * @return uint256 The amount of ETH matched with this node from the rETH deposit pool
      */
-    function getTotalEthMatched() public view returns (uint256) {
+    function getEthMatched() public view returns (uint256) {
         return IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).getNodeETHMatched(address(this));
+    }
+
+    /**
+     * @return uint256 The amount of RPL staked on this node
+     */
+    function getRplStaked() public view returns (uint256) {
+        return IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStake(address(this));
     }
 
     /**
@@ -443,7 +455,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         uint256 newEthBorrowed = IRocketDAOProtocolSettingsMinipool(_directory.getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() - _bond;
         uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(
             rplStaking,
-            getTotalEthMatched() + newEthBorrowed
+            this.getEthMatched() + newEthBorrowed
         );
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired && od.balance >= _bond;
     }
@@ -495,5 +507,19 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     function invalidateSingleOustandingSig(address _nodeOperator) external onlyAdmin {
         nonces[_nodeOperator]++;
+    }
+
+    // FOR OFFCHAIN USE ONLY - DO NOT USE IN CONTRACTS
+    /// @notice Get the complete minipool count for a sub-node operator, including removed minipools
+    /// @param _subNodeOperator The address of the sub-node operator
+    function getMinipoolCount(address _subNodeOperator) external view returns (uint256) {
+        return __subNodeOperatorMinipools__[_subNodeOperator].length;
+    }
+
+    // FOR OFFCHAIN USE ONLY - DO NOT USE IN CONTRACTS
+    /// @notice Get the complete minipool list for a sub-node operator, including removed minipools
+    /// @param _subNodeOperator The address of the sub-node operator
+    function getMinipools(address _subNodeOperator) external view returns (address[] memory) {
+        return __subNodeOperatorMinipools__[_subNodeOperator];
     }
 }
