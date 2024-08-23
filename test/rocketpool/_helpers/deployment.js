@@ -273,6 +273,8 @@ export async function deployRocketPool() {
                                 (await contracts.rocketDAOProtocolSettingsMinipoolNew.deployed()).address,
                                 (await contracts.rocketDAOProtocolSettingsNodeNew.deployed()).address,
                                 (await contracts.rocketMerkleDistributorMainnetNew.deployed()).address,
+                                // (await contracts.rocketDAOProtocolSettingsNodeNew.deployed()).address,
+                                // (await contracts.rocketMerkleDistributorMainnetNew.deployed()).address,
                                 (await contracts.rocketDAOProtocolVerifier.deployed()).address,
                                 (await contracts.rocketDAOProtocolSettingsProposals.deployed()).address,
                                 (await contracts.rocketDAOProtocolSettingsSecurity.deployed()).address,
@@ -299,6 +301,8 @@ export async function deployRocketPool() {
                                 compressABI(contracts.rocketDAOProtocolSettingsAuctionNew.abi),
                                 compressABI(contracts.rocketDAOProtocolSettingsDepositNew.abi),
                                 compressABI(contracts.rocketDAOProtocolSettingsInflationNew.abi),
+                                // compressABI(contracts.rocketDAOProtocolSettingsNodeNew.abi),
+                                // compressABI(contracts.rocketMerkleDistributorMainnetNew.abi),
                                 compressABI(contracts.rocketDAOProtocolSettingsMinipoolNew.abi),
                                 compressABI(contracts.rocketDAOProtocolSettingsNodeNew.abi),
                                 compressABI(contracts.rocketMerkleDistributorMainnetNew.abi),
@@ -318,7 +322,11 @@ export async function deployRocketPool() {
 
                     // All other contracts - pass storage address
                     default:
-                        instance = await contracts[contract].new(rocketStorageInstance.address);
+                        if (contract === 'rocketStorage') {
+                            instance = await contracts[contract].new();
+                        } else {
+                            instance = await contracts[contract].new(rocketStorageInstance.address);
+                        }
                         contracts[contract].setAsDeployed(instance);
                         // Slight hack to allow gas optimisation using immutable addresses for non-upgradable contracts
                         if (contract === 'rocketVault' || contract === 'rocketTokenRETH') {
@@ -359,6 +367,8 @@ export async function deployRocketPool() {
                     case 'rocketMinipoolManagerNew':
                     case 'rocketRewardsPoolNew':
                     case 'rocketNetworkBalancesNew':
+                    // case 'rocketDAOProtocolSettingsNodeNew':
+                    // case 'rocketMerkleDistributorMainnetNew':
                     case 'rocketDAOProtocolSettingsNetworkNew':
                     case 'rocketDAOProtocolSettingsAuctionNew':
                     case 'rocketDAOProtocolSettingsDepositNew':
@@ -475,10 +485,10 @@ export async function deployRocketPool() {
     }
 
     // Perform upgrade if we are not running in test environment
-    if (network.name !== 'hardhat') {
-        console.log('Executing upgrade to v1.3')
-        const RocketUpgradeOneDotThree = artifacts.require('RocketUpgradeOneDotThree')
-        const rocketUpgradeOneDotThree = await RocketUpgradeOneDotThree.deployed();
-        await rocketUpgradeOneDotThree.execute({ from: accounts[0] });
-    }
+    console.log('Executing upgrade to v1.3')
+    const RocketUpgradeOneDotThree = artifacts.require('RocketUpgradeOneDotThree')
+    const rocketUpgradeOneDotThree = await RocketUpgradeOneDotThree.deployed();
+    await rocketUpgradeOneDotThree.execute({ from: accounts[0] });
+
+    return rs;
 };
