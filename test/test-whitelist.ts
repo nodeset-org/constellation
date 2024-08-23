@@ -22,7 +22,7 @@ describe("Whitelist (proxy)", function () {
             initialSlotValues.push(await ethers.provider.getStorageAt(initialAddress, i));
         }
 
-        const WhitelistV2Logic = await ethers.getContractFactory("WhitelistV2", signers.admin);
+        const WhitelistV2Logic = await ethers.getContractFactory("MockWhitelistV2", signers.admin);
 
         // upgrade protocol.whitelist to V2
         const newWhitelist = await upgrades.upgradeProxy(protocol.whitelist.address, WhitelistV2Logic, {
