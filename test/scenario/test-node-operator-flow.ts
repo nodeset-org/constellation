@@ -55,8 +55,8 @@ describe("Node Operator Onboarding", function () {
         await prepareOperatorDistributionContract(setupData, 1);
         expect(await protocol.superNode.hasSufficientLiquidity(bondValue)).equals(true);
 
-        expect(await protocol.superNode.getTotalEthStaked()).equals(BigInt(0));
-        expect(await protocol.superNode.getTotalEthMatched()).equals(BigInt(0));
+        expect(await protocol.superNode.getEthStaked()).equals(BigInt(0));
+        expect(await protocol.superNode.getEthMatched()).equals(BigInt(0));
 
         minipoolAddress = await deployMinipool(setupData, bondValue, signers.hyperdriver.address);
 

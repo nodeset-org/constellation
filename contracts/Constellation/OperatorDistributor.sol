@@ -100,7 +100,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @return uint256 Total amount of ETH under the management of the contract.
      */
     function getTvlEth() public view returns (uint) {
-        return address(this).balance + IWETH(_directory.getWETHAddress()).balanceOf(address(this)) + SuperNodeAccount(_directory.getSuperNodeAddress()).getTotalEthStaked();
+        return address(this).balance + IWETH(_directory.getWETHAddress()).balanceOf(address(this)) + SuperNodeAccount(_directory.getSuperNodeAddress()).getEthStaked();
     }
 
     /**
@@ -109,7 +109,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @return uint256 Total amount of RPL under the management of the contract.
      */
     function getTvlRpl() public view returns (uint) {
-        return IERC20(_directory.getRPLAddress()).balanceOf(address(this)) + IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getTotalRPLStake();
+        return IERC20(_directory.getRPLAddress()).balanceOf(address(this)) + SuperNodeAccount(_directory.getSuperNodeAddress()).getRplStaked();
     }
 
     /**
@@ -283,7 +283,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
         require(sna.getIsMinipoolRecognized(address(minipool)), "Must be a minipool managed by Constellation"); 
 
-        this.rebalanceRplStake(sna.getTotalEthStaked());
+        this.rebalanceRplStake(sna.getEthStaked());
 
         MinipoolStatus status = minipool.getStatus();
 
