@@ -322,7 +322,7 @@ export async function deployRocketPool() {
                             instance = await contracts[contract].new();
                         } else {
                             instance = await contracts[contract].new(rocketStorageInstance.address);
-                        }
+                    }
                         contracts[contract].setAsDeployed(instance);
                         // Slight hack to allow gas optimisation using immutable addresses for non-upgradable contracts
                         if (contract === 'rocketVault' || contract === 'rocketTokenRETH') {
@@ -363,8 +363,6 @@ export async function deployRocketPool() {
                     case 'rocketMinipoolManagerNew':
                     case 'rocketRewardsPoolNew':
                     case 'rocketNetworkBalancesNew':
-                    case 'rocketDAOProtocolSettingsNodeNew':
-                    case 'rocketMerkleDistributorMainnetNew':
                     case 'rocketDAOProtocolSettingsNetworkNew':
                     case 'rocketDAOProtocolSettingsAuctionNew':
                     case 'rocketDAOProtocolSettingsDepositNew':
