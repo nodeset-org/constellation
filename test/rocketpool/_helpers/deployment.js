@@ -273,8 +273,6 @@ export async function deployRocketPool() {
                                 (await contracts.rocketDAOProtocolSettingsMinipoolNew.deployed()).address,
                                 (await contracts.rocketDAOProtocolSettingsNodeNew.deployed()).address,
                                 (await contracts.rocketMerkleDistributorMainnetNew.deployed()).address,
-                                // (await contracts.rocketDAOProtocolSettingsNodeNew.deployed()).address,
-                                // (await contracts.rocketMerkleDistributorMainnetNew.deployed()).address,
                                 (await contracts.rocketDAOProtocolVerifier.deployed()).address,
                                 (await contracts.rocketDAOProtocolSettingsProposals.deployed()).address,
                                 (await contracts.rocketDAOProtocolSettingsSecurity.deployed()).address,
@@ -301,8 +299,6 @@ export async function deployRocketPool() {
                                 compressABI(contracts.rocketDAOProtocolSettingsAuctionNew.abi),
                                 compressABI(contracts.rocketDAOProtocolSettingsDepositNew.abi),
                                 compressABI(contracts.rocketDAOProtocolSettingsInflationNew.abi),
-                                // compressABI(contracts.rocketDAOProtocolSettingsNodeNew.abi),
-                                // compressABI(contracts.rocketMerkleDistributorMainnetNew.abi),
                                 compressABI(contracts.rocketDAOProtocolSettingsMinipoolNew.abi),
                                 compressABI(contracts.rocketDAOProtocolSettingsNodeNew.abi),
                                 compressABI(contracts.rocketMerkleDistributorMainnetNew.abi),
@@ -367,8 +363,8 @@ export async function deployRocketPool() {
                     case 'rocketMinipoolManagerNew':
                     case 'rocketRewardsPoolNew':
                     case 'rocketNetworkBalancesNew':
-                    // case 'rocketDAOProtocolSettingsNodeNew':
-                    // case 'rocketMerkleDistributorMainnetNew':
+                    case 'rocketDAOProtocolSettingsNodeNew':
+                    case 'rocketMerkleDistributorMainnetNew':
                     case 'rocketDAOProtocolSettingsNetworkNew':
                     case 'rocketDAOProtocolSettingsAuctionNew':
                     case 'rocketDAOProtocolSettingsDepositNew':
