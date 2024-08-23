@@ -202,7 +202,6 @@ export async function deployMinipool(setupData: SetupData, bondValue: BigNumber,
     depositDataRoot: config.depositDataRoot,
     salt: rawSalt,
     expectedMinipoolAddress: config.expectedMinipoolAddress,
-    sigGenesisTime: timestamp,
     sig: sig
   }, { value: ethers.utils.parseEther('1') });
 
@@ -368,7 +367,6 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
         depositDataRoot: config.depositDataRoot,
         salt: rawSalt,
         expectedMinipoolAddress: config.expectedMinipoolAddress,
-        sigGenesisTime: timestamp,
         sig: sig
       }, { value: ethers.utils.parseEther('1') });
 

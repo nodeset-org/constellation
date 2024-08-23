@@ -8,7 +8,7 @@ import { expectNumberE18ToBeApproximately, getEventNames, prepareOperatorDistrib
 import { ContractTransaction } from "@ethersproject/contracts";
 import { MerkleClaimStreamer, RocketMerkleDistributorMainnet, RocketVault } from "../../typechain-types";
 
-describe.only("setStreamingInterval()", async () => {
+describe("setStreamingInterval()", async () => {
 
     describe("When sender is admin", async () => {
         describe("When streaming interval is greater than 0", async () => {

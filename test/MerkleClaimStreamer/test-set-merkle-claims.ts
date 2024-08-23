@@ -11,10 +11,24 @@ import { MerkleClaimStreamer, RocketMerkleDistributorMainnet, RocketVault } from
 describe("setMerkleClaimsEnabled()", async () => {
 
     describe("When sender is admin", async () => {
+        it("Should Pass", async () => {
+            const setupData = await loadFixture(protocolFixture);
+            const { protocol, signers, rocketPool } = setupData;
 
+            const initial = await protocol.merkleClaimStreamer.merkleClaimsEnabled();
+            await expect(protocol.merkleClaimStreamer.connect(signers.admin).setMerkleClaimsEnabled(!initial)).to.not.be.reverted;
+            const final = await protocol.merkleClaimStreamer.merkleClaimsEnabled();
+
+            expect(initial).not.equals(final);
+        })
     })
 
     describe("When sender is not admin", async () => {
-        
+        it("Shoudl revert", async () => {
+            const setupData = await loadFixture(protocolFixture);
+            const { protocol, signers, rocketPool } = setupData;
+            await expect(protocol.merkleClaimStreamer.connect(signers.random).setMerkleClaimsEnabled(false)).to.be.revertedWith("Can only be called by admin address!");
+
+        })
     })
 })
