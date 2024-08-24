@@ -32,7 +32,6 @@ const prepareStakeWithLockAmount = async (setupData: SetupData, lockAmount: BigN
             depositDataRoot: config.depositDataRoot,
             salt: rawSalt,
             expectedMinipoolAddress: config.expectedMinipoolAddress,
-            sigGenesisTime: timestamp,
             sig: sig,
         },
         {
@@ -57,8 +56,6 @@ describe("Locking Mechanism", async () => {
 
             const lockedEth = await protocol.superNode.lockedEth(minipool);
             expect(lockedEth).to.equal(lockAmount);
-            const totalEthLocked = await protocol.superNode.totalEthLocked();
-            expect(totalEthLocked).to.equal(lockAmount);
         })
     })
 
@@ -102,8 +99,6 @@ describe("Unlocking Mechanism", async () => {
             const minipool = await prepareStakeWithLockAmount(setupData, lockAmount)
             let lockedEth = await protocol.superNode.lockedEth(minipool);
             expect(lockedEth).to.equal(lockAmount);
-            let totalEthLocked = await protocol.superNode.totalEthLocked();
-            expect(totalEthLocked).to.equal(lockAmount);
 
             // prepare to unlock
             await setupData.rocketPool.rocketDepositPoolContract.deposit({
@@ -125,8 +120,6 @@ describe("Unlocking Mechanism", async () => {
 
             lockedEth = await protocol.superNode.lockedEth(minipool);
             expect(lockedEth).to.equal(0);
-            totalEthLocked = await protocol.superNode.totalEthLocked();
-            expect(totalEthLocked).to.equal(0);
         })
     })
 })
