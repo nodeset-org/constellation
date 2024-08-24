@@ -12,8 +12,6 @@ import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/IConstellationOracle.sol';
 import '../Interfaces/IWETH.sol';
 
-import 'hardhat/console.sol';
-
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;

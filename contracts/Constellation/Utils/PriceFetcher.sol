@@ -7,8 +7,6 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import './UpgradeableBase.sol';
 import './Constants.sol';
 
-import 'hardhat/console.sol';
-
 /// @title PriceFetcher
 /// @author Theodore Clapp, Mike Leach
 /// @notice Fetches current RPL/ETH price using Rocket Pool's reported value. Upgradeable in case something changes in Rocket Pool.

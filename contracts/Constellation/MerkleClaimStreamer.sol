@@ -15,8 +15,6 @@ import './OperatorDistributor.sol';
 import './WETHVault.sol';
 import './RPLVault.sol';
 
-import 'hardhat/console.sol';
-
 /// @title MerkleClaimStreamer
 /// @author Mike Leach, Theodore Clapp
 /// @notice Allows claiming of merkle rewards and reports a "streamed" value for these assets over a specified time interval to the rest of the 
@@ -36,10 +34,10 @@ contract MerkleClaimStreamer is UpgradeableBase {
         );
 
     // the prior interval's rewards which are "streamed" to the TVL 
-    uint256 public priorEthStreamAmount;
-    uint256 public priorRplStreamAmount;
+    uint256 public priorEthStreamAmount; // slot 67
+    uint256 public priorRplStreamAmount; // slot 68
 
-    uint256 public lastClaimTime;
+    uint256 public lastClaimTime; // slot 69
 
     uint256 public streamingInterval;
 
