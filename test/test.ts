@@ -205,11 +205,11 @@ export async function createSigners(): Promise<Signers> {
 
 export async function protocolFixture(): Promise<SetupData> {
   try {
-    await loadFixture(deployRocketPool);
+    const rs: RocketStorage = await loadFixture(deployRocketPool);
     await loadFixture(setDefaultParameters);
 
     const signers = await createSigners();
-    const deployedProtocol = await deployProtocol(signers);
+    const deployedProtocol = await deployProtocol(signers, rs.address);
     const rocketPool = await getRocketPool(deployedProtocol.directory);
 
     return { protocol: deployedProtocol, signers, rocketPool };

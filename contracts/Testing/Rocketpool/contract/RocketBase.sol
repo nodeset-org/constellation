@@ -88,8 +88,6 @@ abstract contract RocketBase {
         // Get the current contract address
         address contractAddress = getAddress(keccak256(abi.encodePacked("contract.address", _contractName)));
         // Check it
-        console.log("!!!contractName: %s", _contractName, contractAddress);
-
         require(contractAddress != address(0x0), "Contract not found");
         // Return
         return contractAddress;

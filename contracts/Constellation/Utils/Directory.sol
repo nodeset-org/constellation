@@ -199,8 +199,6 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         address treasurer,
         address admin
     ) public initializer {
-        console.log("!!! rocketStorage: %s", newProtocol.rocketStorage);
-
         // require(msg.sender != admin, Constants.INITIALIZATION_ERROR);
         require(
             _protocol.whitelist == address(0) && newProtocol.whitelist != address(0),

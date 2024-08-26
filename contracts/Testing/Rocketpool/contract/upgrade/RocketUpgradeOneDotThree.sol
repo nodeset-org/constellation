@@ -197,7 +197,6 @@ contract RocketUpgradeOneDotThree is RocketBase {
         _addContract("rocketDAOSecurityProposals", rocketDAOSecurityProposals, rocketDAOSecurityProposalsAbi);
         _addContract("rocketNetworkSnapshots", rocketNetworkSnapshots, rocketNetworkSnapshotsAbi);
         _addContract("rocketNetworkVoting", rocketNetworkVoting, rocketNetworkVotingAbi);
-        console.log("!!! cow", rocketDAOProtocolProposal);
         _addContract("rocketDAOProtocolProposal", rocketDAOProtocolProposal, rocketDAOProtocolProposalAbi);
 
         // Update the rewards relay address

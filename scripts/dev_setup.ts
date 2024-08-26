@@ -34,7 +34,6 @@ async function main() {
     console.log("sanctions address", sanctions.address);
 
     const { directory } = await fastDeployProtocol(deployer, deployer, admin, admin, admin, rocketStorage.address, wETH.address, sanctions.address, admin.address, true, 0);
-    console.log("4!!! directory address", directory.address);
     // set adminServer to be ADMIN_SERVER_ROLE
     const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
     await retryOperation(async () => {

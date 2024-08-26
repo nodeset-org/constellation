@@ -55,7 +55,6 @@ export const generateBytes32Identifier = (identifier: string) => {
 };
 
 export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer: SignerWithAddress, nodesetAdmin: SignerWithAddress, nodesetServerAdmin: SignerWithAddress, directoryDeployer: SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, admin: string, log: boolean, defaultOffset = 1) {
-    console.log("!!!! FAST!!!")
     const directoryAddress = await getNextContractAddress(directoryDeployer, defaultOffset)
 
     const whitelistProxy = await retryOperation(async () => {
@@ -201,13 +200,11 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
     }
 }
 
-export async function deployProtocol(signers: Signers, log = false): Promise<Protocol> {
-    const RocketStorageDeployment = await RocketStorage.deployed();
+export async function deployProtocol(signers: Signers, rocketStorageAddress: string, log = false): Promise<Protocol> {
     const rockStorageContract = (await ethers.getContractAt(
         "RocketStorage",
-        RocketStorageDeployment.address
+        rocketStorageAddress
     )) as IRocketStorage;
-    console.log("!!! rocketStorage from deployProtocol", rockStorageContract.address)
     const RplToken = await RocketTokenRPL.deployed();
     const rplContract = (await ethers.getContractAt(
         "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
