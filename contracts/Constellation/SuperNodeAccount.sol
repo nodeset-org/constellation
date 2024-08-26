@@ -49,8 +49,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     // Variables for admin server message checks (if enabled for minipool creation)
     bool public adminServerCheck;
-    uint256 public adminServerSigExpiry;
-    mapping(bytes => bool) public sigsUsed;
     mapping(address => uint256) public nonces;
     uint256 public nonce;
 
@@ -137,7 +135,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         super.initialize(_directory);
 
         adminServerCheck = true;
-        adminServerSigExpiry = 1 days;
         minimumNodeFee = 14e16;
         bond = 8 ether;
         maxValidators = 1;
@@ -211,8 +208,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         // verify admin server signature if required
         if (adminServerCheck) {
-
-            _validateSigUsed(_config.sig);
 
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
@@ -375,17 +370,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     }
 
     /**
-     * @notice Validates if a signature has already been used to prevent replay attacks.
-     * @dev This function checks against a mapping to ensure that each signature is used only once,
-     *      adding an additional layer of security by preventing the reuse of signatures in unauthorized transactions.
-     * @param _sig The signature to validate.
-     */
-    function _validateSigUsed(bytes memory _sig) internal {
-        require(!sigsUsed[_sig], 'sig already used');
-        sigsUsed[_sig] = true;
-    }
-
-    /**
      * @notice Enables or disables the protocol's participation in the Rocket Pool smoothing pool
      * @dev Admin-only
      */
@@ -463,14 +447,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     function getNumMinipools() external view returns (uint256) {
         return minipools.length;
-    }
-
-    /**
-     * @notice Sets a new admin sig expiry time.
-     * @param _newExpiry The new sig expiry time in seconds.
-     */
-    function setAdminServerSigExpiry(uint256 _newExpiry) external onlyAdmin {
-        adminServerSigExpiry = _newExpiry;
     }
 
     /**

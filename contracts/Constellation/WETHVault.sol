@@ -39,10 +39,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     // see the original issue for RP for more details: https://consensys.io/diligence/audits/2021/04/rocketpool/#rockettokenreth---sandwiching-opportunity-on-price-updates
     uint256 public mintFee;
 
-    uint256 public totalCounts;
-    uint256 public totalPenaltyBond;
-    uint256 public penaltyBondCount;
-
     constructor() initializer {}
 
     /**
