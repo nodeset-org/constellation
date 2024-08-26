@@ -19,7 +19,6 @@ contract NodeSetOperatorRewardDistributorV1Storage {
     event RewardDistributed(bytes32 indexed _did, address indexed _rewardee);
 
     mapping(bytes32 => uint256) public nonces;
-    mapping(bytes => bool) public claimSigsUsed;
 
     uint256 public nonce;
 }
@@ -72,8 +71,6 @@ contract NodeSetOperatorRewardDistributor is
         uint256 _amount
     ) public nonReentrant {
         require(_rewardee != address(0), 'rewardee cannot be zero address');
-        require(!claimSigsUsed[_sig], 'sig already used');
-        claimSigsUsed[_sig] = true;
 
         address recoveredAddress = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(

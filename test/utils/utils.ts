@@ -202,7 +202,6 @@ export async function deployMinipool(setupData: SetupData, bondValue: BigNumber,
     depositDataRoot: config.depositDataRoot,
     salt: rawSalt,
     expectedMinipoolAddress: config.expectedMinipoolAddress,
-    sigGenesisTime: timestamp,
     sig: sig
   }, { value: ethers.utils.parseEther('1') });
 
@@ -368,7 +367,6 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
         depositDataRoot: config.depositDataRoot,
         salt: rawSalt,
         expectedMinipoolAddress: config.expectedMinipoolAddress,
-        sigGenesisTime: timestamp,
         sig: sig
       }, { value: ethers.utils.parseEther('1') });
 
@@ -557,7 +555,7 @@ export const whitelistUserServerSig = async (setupData: SetupData, nodeOperator:
     goodSigner.address
   );
   expect(role).equals(true);
-  const nonce = await setupData.protocol.whitelist.nonces(nodeOperator.address);
+  const nonce = await setupData.protocol.whitelist.getNonceForOperator(nodeOperator.address);
   const packedData = ethers.utils.solidityPack(
     ['address', 'address', 'uint256', 'uint256', 'uint256'],
     [nodeOperator.address, setupData.protocol.whitelist.address, nonce, 0, chainId]
