@@ -95,7 +95,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
         }
         
         if(priorRplStreamAmount > 0){
-            SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), getDirectory().getMerkleClaimStreamerAddress(), priorRplStreamAmount);
+            SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), getDirectory().getOperatorDistributorAddress(), priorRplStreamAmount);
             od.rebalanceRplVault();
         }
     }
