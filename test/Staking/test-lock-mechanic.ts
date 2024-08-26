@@ -4,6 +4,7 @@ import { protocolFixture, SetupData } from ".././test";
 import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract } from "../utils/utils";
 import { generateDepositData, generateDepositDataForStake } from "../rocketpool/_helpers/minipool";
 import { BigNumber } from "ethers";
+import { IMinipool } from "../../typechain-types";
 
 const prepareStakeWithLockAmount = async (setupData: SetupData, lockAmount: BigNumber) => {
     const { protocol, signers } = setupData;
@@ -52,7 +53,12 @@ describe("Locking Mechanism", async () => {
             const lockAmount = ethers.utils.parseEther("1");
             expect(lockAmount).equals(realLockAmount);
 
+            let tvl = await protocol.vCWETH.totalAssets();
+
             const minipool = await prepareStakeWithLockAmount(setupData, lockAmount)
+
+            // ensure tvl is not changed after locking
+            expect(tvl).equals(await protocol.vCWETH.totalAssets());
 
             const lockedEth = await protocol.superNode.lockedEth(minipool);
             expect(lockedEth).to.equal(lockAmount);
@@ -108,6 +114,8 @@ describe("Unlocking Mechanism", async () => {
             await increaseEVMTime(60 * 60 * 24 * 7 * 32);
             const depositDataStake = await generateDepositDataForStake(minipool);
 
+            let tvl = await protocol.vCWETH.totalAssets();
+
             // unlock
             const tx = await protocol.superNode.connect(signers.hyperdriver).stake(depositDataStake.depositData.signature, depositDataStake.depositDataRoot, minipool);
             const receipt = await tx.wait();
@@ -116,7 +124,65 @@ describe("Unlocking Mechanism", async () => {
             const initialBalance = await ethers.provider.getBalance(signers.hyperdriver.address, blockNumber - 1);
             const finalBalance = await ethers.provider.getBalance(signers.hyperdriver.address, blockNumber);
 
+            // ensure tvl is not changed after unlocking
+            expect(tvl).equals(await protocol.vCWETH.totalAssets());
+
             expect(finalBalance.sub(initialBalance)).equals(lockAmount.sub(ethPriceOfTx));
+
+            lockedEth = await protocol.superNode.lockedEth(minipool);
+            expect(lockedEth).to.equal(0);
+        })
+    })
+
+    describe("When minipool is closed", async () => {
+        it("should reclaim lock for OD", async () => {
+            const setupData = await loadFixture(protocolFixture);
+            const { protocol, signers } = setupData;
+
+            const realLockAmount = await protocol.superNode.lockThreshold();
+            const lockAmount = ethers.utils.parseEther("1");
+            expect(lockAmount).equals(realLockAmount);
+            const minipool = await prepareStakeWithLockAmount(setupData, lockAmount)
+
+            // Assert validator count prior to closing minipool
+            expect(await protocol.whitelist.getActiveValidatorCountForOperator(signers.hyperdriver.address)).to.be.equal(1);
+            expect(await protocol.superNode.connect(signers.hyperdriver).getNumMinipools()).to.be.equal(1);
+
+            // ensure lock is 1 ETH
+            let lockedEth = await protocol.superNode.lockedEth(minipool);
+            expect(lockedEth).equals(await protocol.superNode.lockThreshold());
+
+            let tvl = await protocol.vCWETH.totalAssets();
+
+            let odBalanacePrior = await ethers.provider.getBalance(protocol.operatorDistributor.address);
+            let snaBalanacePrior = await ethers.provider.getBalance(protocol.superNode.address);
+            let operatorBalanacePrior = await ethers.provider.getBalance(signers.hyperdriver.address);
+
+            const minipoolContract: IMinipool = await ethers.getContractAt("IMinipool", minipool);
+
+            // Deposit minipool to set to prelaunch state
+                await expect(minipoolContract.connect(signers.hyperdriver).deposit({
+                    value: ethers.utils.parseEther("8")
+            })).to.not.be.reverted;
+
+            // Increase the time by 10 days
+            await ethers.provider.send("evm_increaseTime", [10*24*3600]);
+            await ethers.provider.send("evm_mine", []);
+
+            // Dissolve and close minipool (unlock)
+            await expect(minipoolContract.connect(signers.hyperdriver).dissolve()).to.not.be.reverted;
+            await expect(protocol.superNode.closeDissolvedMinipool(signers.hyperdriver.address, minipool)).to.not.be.reverted;
+
+            // ensure tvl is not changed after unlocking
+            expect(tvl).equals(await protocol.vCWETH.totalAssets());
+
+            lockedEth = await protocol.superNode.lockedEth(minipool);
+            expect(lockedEth).equals(0);
+
+            // lock amount should be reclaimed by OD
+            expect(await ethers.provider.balanceOf(protocol.operatorDistributor.address)).equals(odBalanacePrior.add(realLockAmount));
+            expect(await ethers.provider.balanceOf(protocol.superNode.address)).equals(snaBalanacePrior.sub(realLockAmount));
+            expect(await ethers.provider.balanceOf(signers.hyperdriver.address)).equals(operatorBalanacePrior);
 
             lockedEth = await protocol.superNode.lockedEth(minipool);
             expect(lockedEth).to.equal(0);
