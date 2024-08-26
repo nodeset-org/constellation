@@ -199,6 +199,8 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         address treasurer,
         address admin
     ) public initializer {
+        console.log("!!! rocketStorage: %s", newProtocol.rocketStorage);
+
         // require(msg.sender != admin, Constants.INITIALIZATION_ERROR);
         require(
             _protocol.whitelist == address(0) && newProtocol.whitelist != address(0),
@@ -263,43 +265,42 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
         _treasury = treasury;
         _protocol = newProtocol;
-
         // set rocket integrations
         _integrations.rocketDAOProtocolProposal = IRocketStorage(newProtocol.rocketStorage).getAddress(
             RocketpoolEncoder.generateBytes32Identifier('rocketDAOProtocolProposal')
         );
 
-        require(_integrations.rocketDAOProtocolProposal != address(0), 'rocketDAOProtocolProposal is 0x0');
+        // require(_integrations.rocketDAOProtocolProposal != address(0), 'rocketDAOProtocolProposal is 0x0');
 
         _integrations.rocketNetworkVoting = IRocketStorage(newProtocol.rocketStorage).getAddress(
             RocketpoolEncoder.generateBytes32Identifier('rocketNetworkVoting')
         );
 
-        require(_integrations.rocketNetworkVoting != address(0), 'rocketNetworkVoting is 0x0');
+        // require(_integrations.rocketNetworkVoting != address(0), 'rocketNetworkVoting is 0x0');
 
         _integrations.rocketMerkleDistributorMainnet = IRocketStorage(newProtocol.rocketStorage).getAddress(
             RocketpoolEncoder.generateBytes32Identifier('rocketMerkleDistributorMainnet')
         );
 
-        require(_integrations.rocketMerkleDistributorMainnet != address(0), 'rocketMerkleDistributorMainnet is 0x0');
+        // require(_integrations.rocketMerkleDistributorMainnet != address(0), 'rocketMerkleDistributorMainnet is 0x0');
 
         _integrations.rocketNetworkPenalties = IRocketStorage(newProtocol.rocketStorage).getAddress(
             RocketpoolEncoder.generateBytes32Identifier('rocketNetworkPenalties')
         );
 
-        require(_integrations.rocketNetworkPenalties != address(0), 'rocketNetworkPenalties is 0x0');
+        // require(_integrations.rocketNetworkPenalties != address(0), 'rocketNetworkPenalties is 0x0');
 
         _integrations.rocketNodeManager = IRocketStorage(newProtocol.rocketStorage).getAddress(
             RocketpoolEncoder.generateBytes32Identifier('rocketNodeManager')
         );
 
-        require(_integrations.rocketNodeManager != address(0), 'rocketNodeManager is 0x0');
+        // require(_integrations.rocketNodeManager != address(0), 'rocketNodeManager is 0x0');
 
         _integrations.rocketNodeStaking = IRocketStorage(newProtocol.rocketStorage).getAddress(
             RocketpoolEncoder.generateBytes32Identifier('rocketNodeStaking')
         );
 
-        require(_integrations.rocketNodeStaking != address(0), 'rocketNodeStaking is 0x0');
+        // require(_integrations.rocketNodeStaking != address(0), 'rocketNodeStaking is 0x0');
 
         _integrations.rocketMinipoolManager = IRocketStorage(newProtocol.rocketStorage).getAddress(
             RocketpoolEncoder.generateBytes32Identifier('rocketMinipoolManager')

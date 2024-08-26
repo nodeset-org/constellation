@@ -226,6 +226,7 @@ export async function deployRocketPool() {
     const deployBlock = rsTx.blockNumber;
     // Update the storage with the new addresses
     let rocketStorageInstance = await rocketStorage.deployed();
+    console.log("!!! rocketStorage from deployment.js: ", rocketStorageInstance.address);
 
     // Deploy other contracts - have to be inside an async loop
     const deployContracts = async function() {
@@ -322,7 +323,8 @@ export async function deployRocketPool() {
                             instance = await contracts[contract].new();
                         } else {
                             instance = await contracts[contract].new(rocketStorageInstance.address);
-                    }
+                        }
+                        // instance = await contracts[contract].new(rocketStorageInstance.address);
                         contracts[contract].setAsDeployed(instance);
                         // Slight hack to allow gas optimisation using immutable addresses for non-upgradable contracts
                         if (contract === 'rocketVault' || contract === 'rocketTokenRETH') {
@@ -463,7 +465,7 @@ export async function deployRocketPool() {
     // Disable direct access to storage now
     await rocketStorageInstance.setDeployedStatus();
     if(await rocketStorageInstance.getDeployedStatus() !== true) throw 'Storage Access Not Locked Down!!';
-
+    console.log("2!!! rocketStorage: ", rocketStorageInstance.address);
     // Log it
     console.log('\n');
     console.log('\x1b[32m%s\x1b[0m', '  Storage Direct Access For Owner Removed... Lets begin! :)');
