@@ -4,7 +4,7 @@ import { protocolFixture } from ".././test";
 
 describe("Liquidity Reserve", async function () {
     describe("when liquidity reserve ratio is lowered", async function () {
-        it.only("should have proper ETH sent to vaults and OD", async function () {
+        it("should have proper ETH sent to vaults and OD", async function () {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool } = setupData;
 
