@@ -8,8 +8,6 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
-import 'hardhat/console.sol';
-
 library RewardDistributorConstants {
     bytes32 internal constant NODESET_ADMIN_SERVER_ROLE = keccak256('NODESET_ADMIN_SERVER_ROLE');
     bytes32 internal constant NODESET_ADMIN_ROLE = keccak256('NODESET_ADMIN_ROLE');

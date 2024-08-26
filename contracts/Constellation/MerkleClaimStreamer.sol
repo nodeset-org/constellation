@@ -15,10 +15,8 @@ import './OperatorDistributor.sol';
 import './WETHVault.sol';
 import './RPLVault.sol';
 
-import 'hardhat/console.sol';
-
 /// @title MerkleClaimStreamer
-/// @author Mike Leach
+/// @author Mike Leach, Theodore Clapp
 /// @notice Allows claiming of merkle rewards and reports a "streamed" value for these assets over a specified time interval to the rest of the 
 /// protocol. This prevents the TVL from updating with a significant step which would allow for sandwich attacks.
 /// See this issue with Rocket Pool for a deeper description: https://consensys.io/diligence/audits/2021/04/rocketpool/#rockettokenreth---sandwiching-opportunity-on-price-updates
@@ -36,27 +34,16 @@ contract MerkleClaimStreamer is UpgradeableBase {
         );
 
     // the prior interval's rewards which are "streamed" to the TVL 
-    uint256 public priorEthStreamAmount;
-    uint256 public priorRplStreamAmount;
+    uint256 public priorEthStreamAmount; // slot 67
+    uint256 public priorRplStreamAmount; // slot 68
 
-    uint256 public lastClaimTime;
+    uint256 public lastClaimTime; // slot 69
 
     uint256 public streamingInterval;
-
-    function setStreamingInterval(uint256 newStreamingInterval) external onlyAdmin {
-        require(newStreamingInterval > 0 seconds && newStreamingInterval <= 365 days, "New streaming interval must be > 0 seconds and <= 365 days");
-        require(newStreamingInterval != streamingInterval, "New streaming interval must be different");
-        
-        streamingInterval = newStreamingInterval;
-    }
 
     // The admin needs to be able to disable merkle claims in case the RP rewards interval is reduced. That way, they can disable claims, then wait for
     // the current streamingInterval to be completely finished, lower the streamingInterval, and re-enable claims.
     bool public merkleClaimsEnabled;
-
-    function setMerkleClaimsEnabled(bool isEnabled) external onlyAdmin {
-        merkleClaimsEnabled = isEnabled;
-    }
     
     constructor() initializer {}
     
@@ -64,6 +51,17 @@ contract MerkleClaimStreamer is UpgradeableBase {
         super.initialize(_directory);
         streamingInterval = 28 days; // default RP rewards interval
         merkleClaimsEnabled = true;
+    }
+
+    function setStreamingInterval(uint256 _newStreamingInterval) external onlyAdmin {
+        require(_newStreamingInterval > 0 seconds && _newStreamingInterval <= 365 days, "New streaming interval must be > 0 seconds and <= 365 days");
+        require(_newStreamingInterval != streamingInterval, "New streaming interval must be different");
+        
+        streamingInterval = _newStreamingInterval;
+    }
+
+    function setMerkleClaimsEnabled(bool _isEnabled) external onlyAdmin {
+        merkleClaimsEnabled = _isEnabled;
     }
 
     /// @return The current amount of currently-locked TVL which is applicable to xrETH right now
@@ -97,7 +95,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
         }
         
         if(priorRplStreamAmount > 0){
-            SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), getDirectory().getMerkleClaimStreamerAddress(), priorRplStreamAmount);
+            SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), odAddress, priorRplStreamAmount);
             od.rebalanceRplVault();
         }
     }
