@@ -12,8 +12,6 @@ import './MerkleClaimStreamer.sol';
 import './Utils/UpgradeableBase.sol';
 import './OperatorDistributor.sol';
 
-import 'hardhat/console.sol';
-
 /**
  * @title RPLVault
  * @author Theodore Clapp, Mike Leach

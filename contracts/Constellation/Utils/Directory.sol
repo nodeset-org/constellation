@@ -14,8 +14,6 @@ import './UpgradeableBase.sol';
 import '../Utils/RocketPoolEncoder.sol';
 import '../Utils/Constants.sol';
 
-import 'hardhat/console.sol';
-
 struct Protocol {
     address whitelist;
     address payable wethVault;
@@ -141,6 +139,10 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     function getSuperNodeAddress() public view returns (address payable) {
         return _protocol.superNode;
+    }
+
+    function getProtocol() public view returns(Protocol memory) {
+        return _protocol;
     }
 
     function getRocketDAOProtocolSettingsRewardsAddress() public view returns (address) {

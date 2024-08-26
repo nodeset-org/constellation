@@ -84,7 +84,7 @@ describe("SuperNodeAccount creation sig", function () {
                         salt: rawSalt2,
                         expectedMinipoolAddress: config2.expectedMinipoolAddress,
                         sig: sig
-                    }, { value: ethers.utils.parseEther('1') })).to.be.revertedWith("sig already used");
+                    }, { value: ethers.utils.parseEther('1') })).to.be.revertedWith("bad signer role, params, or encoding");
 
             })
         })
