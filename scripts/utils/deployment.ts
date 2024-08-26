@@ -1,4 +1,5 @@
 import { ethers, upgrades } from "hardhat";
+import { Contract } from "ethers"
 import fs from 'fs';
 import path from 'path';
 import { getNextContractAddress } from "../../test/utils/utils";
@@ -7,7 +8,6 @@ import readline from 'readline';
 import { Treasury, Directory, IRocketStorage, IConstellationOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, NodeSetOperatorRewardDistributor, PoAConstellationOracle, MerkleClaimStreamer } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Protocol, Signers } from "../../test/test";
-import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
 import { ERC20 } from "../../typechain-types/contracts/Testing/Rocketpool/contract/util";
 import { expect } from "chai";
 
@@ -201,18 +201,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
     }
 }
 
-export async function deployProtocol(signers: Signers, log = false): Promise<Protocol> {
-    const RocketStorageDeployment = await RocketStorage.deployed();
-    const rockStorageContract = (await ethers.getContractAt(
-        "RocketStorage",
-        RocketStorageDeployment.address
-    )) as IRocketStorage;
-
-    const RplToken = await RocketTokenRPL.deployed();
-    const rplContract = (await ethers.getContractAt(
-        "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
-        RplToken.address
-    )) as ERC20;
+export async function deployProtocol(signers: Signers, log = false, rocketStorageAddress: string): Promise<Protocol> {
 
     upgrades.silenceWarnings();
     // deploy weth
@@ -233,7 +222,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
         signers.nodesetAdmin,
         signers.nodesetServerAdmin,
         signers.random5,
-        rockStorageContract.address,
+        rocketStorageAddress,
         wETH.address,
         sanctions.address,
         signers.admin.address,
@@ -272,6 +261,12 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     const returnData: Protocol = { treasury, directory, whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
 
     // send all rpl from admin to rplWhale
+    const rplContract = await retryOperation(async () => {
+        const bytes32IdentifierRplContract = generateBytes32Identifier('rocketTokenRPL');
+        const rocketStorageDeployment = await ethers.getContractAt("RocketStorage", rocketStorageAddress);
+        const addressRplContract = await rocketStorageDeployment.getAddress(bytes32IdentifierRplContract);
+        return await ethers.getContractAt("RocketTokenRPL", addressRplContract)
+    })
     const rplWhaleBalance = await rplContract.balanceOf(signers.deployer.address);
     tx = await rplContract.transfer(signers.rplWhale.address, rplWhaleBalance);
     await tx.wait();
