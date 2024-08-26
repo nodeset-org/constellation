@@ -2,7 +2,7 @@ import { expect, version } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { OperatorStruct } from "../typechain-types/contracts/Whitelist/Whitelist";
+import { OperatorStruct } from "../typechain-types/contracts/Constellation/Whitelist";
 import { protocolFixture } from "./test";
 import { BigNumber } from "ethers";
 import { keccak256 } from "ethereumjs-util";

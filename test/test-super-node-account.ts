@@ -524,7 +524,7 @@ describe("SuperNodeAccount", function () {
 
                         expect(await rocketPool.rocketNodeManagerContract.callStatic.getSmoothingPoolRegistrationState(protocol.superNode.address)).equals(true)
                         await protocol.superNode.connect(signers.admin).setSmoothingPoolParticipation(false);
-                        
+
                         expect(await rocketPool.rocketNodeManagerContract.callStatic.getSmoothingPoolRegistrationState(protocol.superNode.address)).equals(false)
                         await expect(protocol.superNode.connect(signers.admin).setSmoothingPoolParticipation(true)).to.revertedWith("Not enough time has passed since changing state");
                     })

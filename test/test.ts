@@ -3,8 +3,8 @@ import { ethers, upgrades } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
-import { Directory } from "../typechain-types/contracts/Directory";
-import { Whitelist } from "../typechain-types/contracts/Whitelist";
+import { Directory } from "../typechain-types/contracts/Constellation/Utils/Directory";
+import { Whitelist } from "../typechain-types/contracts/Constellation/Whitelist";
 import { WETHVault, RPLVault, OperatorDistributor, NodeSetOperatorRewardDistributor, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetworkInterface, IConstellationOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, RocketDepositPool, RocketNodeDeposit, RocketDAONodeTrusted, RocketTokenRETH, RocketClaimDAO, RocketRewardsPool, RocketDAONodeTrustedActions, SuperNodeAccount, PoAConstellationOracle, RocketStorage, RocketMinipoolDelegate, RocketMinipoolInterface, MerkleClaimStreamer, Treasury } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
