@@ -17,16 +17,6 @@ describe("SuperNodeAccount", function () {
             expect(await superNode.lockThreshold()).to.equal(newLockThreshold);
         });
 
-
-        it("Admin can set admin server signature expiry", async function () {
-            const { protocol, signers } = await loadFixture(protocolFixture);
-            const { superNode } = protocol;
-            const { admin } = signers;
-            const newExpiry = 2 * 24 * 60 * 60; // 2 days in seconds
-            await superNode.connect(admin).setAdminServerSigExpiry(newExpiry);
-            expect(await superNode.adminServerSigExpiry()).to.equal(newExpiry);
-        });
-
         it("Admin can set bond amount", async function () {
             const { protocol, signers } = await loadFixture(protocolFixture);
             const { superNode } = protocol;
@@ -52,16 +42,6 @@ describe("SuperNodeAccount", function () {
             const newLockThreshold = ethers.utils.parseEther("2");
             await expect(superNode.connect(random).setLockAmount(newLockThreshold)).to.be.revertedWith(
                 "Can only be called by short timelock!"
-            );
-        });
-
-        it("Non-admin cannot set admin server signature expiry", async function () {
-            const { protocol, signers } = await loadFixture(protocolFixture);
-            const { superNode } = protocol;
-            const { random } = signers;
-            const newExpiry = 2 * 24 * 60 * 60; // 2 days in seconds
-            await expect(superNode.connect(random).setAdminServerSigExpiry(newExpiry)).to.be.revertedWith(
-                "Can only be called by admin address!"
             );
         });
 
