@@ -4,7 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { Protocol, protocolFixture, RocketPool, SetupData } from "../test";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { expectNumberE18ToBeApproximately, getEventNames, prepareOperatorDistributionContract, registerNewValidator, upgradePriceFetcherToMock, whitelistUserServerSig } from "../utils/utils";
+import { assertTransferEvents, expectNumberE18ToBeApproximately, getEventNames, prepareOperatorDistributionContract, registerNewValidator, upgradePriceFetcherToMock, whitelistUserServerSig } from "../utils/utils";
 import { ContractTransaction } from "@ethersproject/contracts";
 import { MerkleClaimStreamer, RocketMerkleDistributorMainnet, RocketVault } from "../../typechain-types";
 
@@ -48,18 +48,22 @@ describe("sweepLockedTVL()", async () => {
 
                         expect(await protocol.merkleClaimStreamer.priorEthStreamAmount()).equals(0)
 
-                        const odInitial = await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address);
                         const mcInitial = await rocketPool.rplContract.balanceOf(protocol.merkleClaimStreamer.address);
                         const tx = await protocol.merkleClaimStreamer.connect(signers.admin).sweepLockedTVL();
-                        const odFinal = await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address);
                         const mcFinal = await rocketPool.rplContract.balanceOf(protocol.merkleClaimStreamer.address);
 
                         const receipt = await tx.wait();
                         expect(receipt.events?.length).not.equals(0);
 
                         // assert the exact transfers that happended
-                        expect(odFinal.sub(odInitial)).equals(rplOut.mul(-1));
-                        expect(mcFinal.sub(mcInitial)).equals(rplOut);
+                        expect(mcFinal.sub(mcInitial)).equals(rplOut.mul(-1));
+
+                        expect(assertTransferEvents(receipt, [{
+                            address: rocketPool.rplContract.address,
+                            from: protocol.merkleClaimStreamer.address,
+                            to: protocol.operatorDistributor.address,
+                            amount: rplOut
+                        }])).to.be.true;
                     })
                 })
             })
@@ -67,7 +71,39 @@ describe("sweepLockedTVL()", async () => {
             describe("When prior eth stream amount is not 0", async () => {
                 describe("When prior rpl stream amount is 0", async () => {
                     it("Should pass (transfer out eth NOT rpl)", async () => {
+                        const setupData = await loadFixture(protocolFixture);
+                        const { protocol, signers, rocketPool } = setupData;
 
+                        const rplOut = ethers.utils.parseEther("1");
+                        const priorRplStreamAmountValue = rplOut.toHexString();
+                        const priorRplStreamAmountSlot = ethers.BigNumber.from(68).toHexString();
+                        await ethers.provider.send("hardhat_setStorageAt", [
+                            protocol.merkleClaimStreamer.address,
+                            "0x"+ethers.utils.stripZeros(priorRplStreamAmountSlot),
+                            ethers.utils.hexZeroPad(priorRplStreamAmountValue, 32)
+                        ]);
+                        const priorRplStreamAmount = await protocol.merkleClaimStreamer.priorRplStreamAmount();
+                        expect(priorRplStreamAmount).equals(priorRplStreamAmountValue);
+                        await rocketPool.rplContract.connect(signers.rplWhale).transfer(protocol.merkleClaimStreamer.address, rplOut);
+
+                        expect(await protocol.merkleClaimStreamer.priorEthStreamAmount()).equals(0)
+
+                        const mcInitial = await rocketPool.rplContract.balanceOf(protocol.merkleClaimStreamer.address);
+                        const tx = await protocol.merkleClaimStreamer.connect(signers.admin).sweepLockedTVL();
+                        const mcFinal = await rocketPool.rplContract.balanceOf(protocol.merkleClaimStreamer.address);
+
+                        const receipt = await tx.wait();
+                        expect(receipt.events?.length).not.equals(0);
+
+                        // assert the exact transfers that happended
+                        expect(mcFinal.sub(mcInitial)).equals(rplOut.mul(-1));
+
+                        expect(assertTransferEvents(receipt, [{
+                            address: rocketPool.rplContract.address,
+                            from: protocol.merkleClaimStreamer.address,
+                            to: protocol.operatorDistributor.address,
+                            amount: rplOut
+                        }])).to.be.true;
                     })
                 })
 

@@ -13,6 +13,14 @@ import { ContractTransaction } from '@ethersproject/contracts';
 import { Contract, EventFilter, utils } from 'ethers';
 import seedrandom from 'seedrandom';
 import { deposit } from '../rocketpool/deposit/scenario-deposit';
+import {  ContractReceipt } from "ethers";
+
+interface TransferEvent {
+  address: string;
+  from: string;
+  to: string;
+  amount: BigNumber;
+}
 
 // optionally include the names of the accounts
 export const printBalances = async (accounts: string[], opts: any = {}) => {
@@ -25,6 +33,34 @@ export const printBalances = async (accounts: string[], opts: any = {}) => {
   }
 };
 
+export function assertTransferEvents(receipt: ContractReceipt, expectedEvents: TransferEvent[]): boolean {
+  if (!receipt || !receipt.events || receipt.events.length === 0) {
+      throw new Error("No events found in the receipt.");
+  }
+
+  expectedEvents.forEach(expectedEvent => {
+      const event = receipt.events?.find(event =>
+          event.address === expectedEvent.address &&
+          event.topics[0] === ethers.utils.id("Transfer(address,address,uint256)") &&
+          BigNumber.from(event.data).eq(expectedEvent.amount)
+      );
+
+      if (!event) {
+          throw new Error(`Expected transfer event not found: ${JSON.stringify(expectedEvent)}`);
+      }
+
+      // Decode the 'from' and 'to' addresses from the topics
+      const from = ethers.utils.defaultAbiCoder.decode(["address"], event.topics[1])[0];
+      const to = ethers.utils.defaultAbiCoder.decode(["address"], event.topics[2])[0];
+
+      if (from.toLowerCase() !== expectedEvent.from.toLowerCase() || 
+          to.toLowerCase() !== expectedEvent.to.toLowerCase()) {
+          throw new Error(`Transfer event details do not match: expected ${JSON.stringify(expectedEvent)}, got { from: ${from}, to: ${to} }`);
+      }
+  });
+
+  return true;
+}
 
 export function computeKeccak256FromBytes32(bytes32String: string): string {
   // Computing the keccak256 hash directly from the Bytes32 string
