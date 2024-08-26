@@ -367,6 +367,45 @@ describe("xrETH", function () {
       const tvlCoverageRatio = ethers.utils.parseEther("0.1542069");
       await expect(protocol.vCWETH.connect(signers.ethWhale).setMaxWethRplRatio(tvlCoverageRatio)).to.be.revertedWith("Can only be called by short timelock!");
     });
+
+    it("success - admin can enable or disable deposits", async () => {
+      const { protocol, signers } = await loadFixture(protocolFixture);
+
+      expect(await protocol.vCWETH.depositsEnabled()).equals(true);
+
+      await expect(protocol.vCWETH.connect(signers.admin).setDepositsEnabled(true)).to.not.be.reverted;
+      let depositAmount =  ethers.utils.parseEther("1");
+      await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmount });
+      await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, depositAmount);
+      await expect(protocol.vCWETH.connect(signers.ethWhale).deposit(depositAmount, signers.ethWhale.address)).to.not.be.reverted;
+
+      await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmount });
+      await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, depositAmount);
+      await expect(protocol.vCWETH.connect(signers.admin).setDepositsEnabled(false)).to.not.be.reverted;
+      await expect(protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address)).to.be.revertedWith("deposits are disabled");
+
+      await expect(protocol.vCWETH.connect(signers.admin).setDepositsEnabled(true)).to.not.be.reverted;
+      await expect(protocol.vCWETH.connect(signers.admin).setDepositsEnabled(true)).to.not.be.reverted;
+      await expect(protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address)).to.not.be.reverted;
+
+      await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmount });
+      await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, depositAmount);
+      await expect(protocol.vCWETH.connect(signers.admin).setDepositsEnabled(false)).to.not.be.reverted;
+      await expect(protocol.vCWETH.connect(signers.admin).setDepositsEnabled(false)).to.not.be.reverted;
+      await expect(protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address)).to.be.revertedWith("deposits are disabled");
+    });
+
+    it("fail - non-admin cannot set deposits enabled", async () => {
+      const { protocol, signers } = await loadFixture(protocolFixture);
+
+      expect(await protocol.vCWETH.depositsEnabled()).equals(true);
+
+      let depositAmount =  ethers.utils.parseEther("1");
+      await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmount });
+      await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, depositAmount);
+      await expect(protocol.vCWETH.connect(signers.random).setDepositsEnabled(false)).to.be.revertedWith("Can only be called by admin address!");
+      await expect(protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address)).to.not.be.reverted;
+    });
   });
 
   describe("sanctions checks", () => {
