@@ -4,6 +4,7 @@ pragma solidity 0.7.6;
 
 import "../interface/RocketStorageInterface.sol";
 import './util/SafeMath.sol';
+import 'hardhat/console.sol';
 
 /// @title The primary persistent storage for Rocket Pool
 /// @author David Rugendyke
@@ -55,6 +56,7 @@ contract RocketStorage is RocketStorageInterface {
 
     /// @dev Construct RocketStorage
     constructor() {
+        console.log("!!! RocketStorage:", address(this));
         // Set the guardian upon deployment
         guardian = msg.sender;
     }

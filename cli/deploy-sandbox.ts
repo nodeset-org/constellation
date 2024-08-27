@@ -12,7 +12,7 @@ import { RocketStorage } from "../typechain-types";
 
 	const signers = await createSigners();
 
-	// keccak256(abi.encodePacked("contract.address.rocketTokenRPL"))
+	// keccak256(abi.encodePacked("contract.addressrocketTokenRPL"))
     const identifier = 'rocketTokenRPL';
     const rocketTokenAddressKey =  ethers.utils.solidityKeccak256(["string"], [`contract.address${identifier}`]);
     const rocketToken = await rs.getAddress(rocketTokenAddressKey);

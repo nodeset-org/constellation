@@ -206,6 +206,7 @@ export async function deployProtocol(signers: Signers, rocketStorageAddress: str
         rocketStorageAddress
     )) as IRocketStorage;
     // const RplToken = await RocketTokenRPL.deployed();
+    console.log("!!! rocketStorageAddress", rocketStorageAddress);
     const rplContract = (await ethers.getContractAt(
         "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
         rplTokenAddress // RplToken.address
@@ -214,9 +215,9 @@ export async function deployProtocol(signers: Signers, rocketStorageAddress: str
     upgrades.silenceWarnings();
 
     // deploy weth
-    const WETH = await ethers.getContractFactory("WETH");
-    const wETH = await WETH.deploy();
-    await wETH.deployed();
+    // const WETH = await ethers.getContractFactory("WETH");
+    // const wETH = await WETH.deploy();
+    // await wETH.deployed();
 
     // deploy mock sanctions
     const Sanctions = await ethers.getContractFactory("MockSanctions");
