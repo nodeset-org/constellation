@@ -210,19 +210,19 @@ export async function createSigners(): Promise<Signers> {
 
 export async function protocolFixture(): Promise<SetupData> {
   try {
-    const rs: RocketStorage = await loadFixture(deployRocketPool);
+    await loadFixture(deployRocketPool);
     await loadFixture(setDefaultParameters);
 
-    const signers = await createSigners();
-    const network = hre.network;
-    let $web3 = new Web3(network.provider);
+    // const signers = await createSigners();
+    // const network = hre.network;
+    // let $web3 = new Web3(network.provider);
 
     // keccak256(abi.encodePacked("contract.address.rocketTokenRPL"))
-    const identifier = 'rocketTokenRPL';
-    const rocketTokenAddressKey =  ethers.utils.solidityKeccak256(["string"], [`contract.address${identifier}`]);
-    const rocketToken = await rs.getAddress(rocketTokenAddressKey);
+    // const identifier = 'rocketTokenRPL';
+    // const rocketTokenAddressKey =  ethers.utils.solidityKeccak256(["string"], [`contract.address${identifier}`]);
+    // const rocketToken = await rs.getAddress(rocketTokenAddressKey);
 
-    const deployedProtocol = await deployProtocol(signers, rs.address, rocketToken);
+    const deployedProtocol = await deployProtocol(signers);
     const rocketPool = await getRocketPool(deployedProtocol.directory);
 
     return { protocol: deployedProtocol, signers, rocketPool };

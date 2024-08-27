@@ -200,16 +200,15 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
     }
 }
 
-export async function deployProtocol(signers: Signers, rocketStorageAddress: string, rplTokenAddress: string, log = false): Promise<Protocol> {
+export async function deployProtocol(signers: Signers, log = false): Promise<Protocol> {
     const rockStorageContract = (await ethers.getContractAt(
         "RocketStorage",
-        rocketStorageAddress
+        RocketStorageDeployment.address
     )) as IRocketStorage;
-    // const RplToken = await RocketTokenRPL.deployed();
-    console.log("!!! rocketStorageAddress", rocketStorageAddress);
+    const RplToken = await RocketTokenRPL.deployed();
     const rplContract = (await ethers.getContractAt(
         "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
-        rplTokenAddress // RplToken.address
+        RplToken.address // RplToken.address
     )) as ERC20;
 
     upgrades.silenceWarnings();
