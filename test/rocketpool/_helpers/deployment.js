@@ -334,10 +334,8 @@ export async function deployRocketPool() {
             }
         }
     };
-    console.log("!!! Teddy 5");
     // Run it
     await deployContracts();
-    console.log("!!! Teddy 6");
 
 
     // Register all other contracts with storage and store their abi
