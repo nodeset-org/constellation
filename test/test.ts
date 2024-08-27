@@ -213,7 +213,7 @@ export async function protocolFixture(): Promise<SetupData> {
     await loadFixture(deployRocketPool);
     await loadFixture(setDefaultParameters);
 
-    // const signers = await createSigners();
+    const signers = await createSigners();
     // const network = hre.network;
     // let $web3 = new Web3(network.provider);
 

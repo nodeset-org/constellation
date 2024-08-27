@@ -201,6 +201,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
 }
 
 export async function deployProtocol(signers: Signers, log = false): Promise<Protocol> {
+    const RocketStorageDeployment = await RocketStorage.deployed();
     const rockStorageContract = (await ethers.getContractAt(
         "RocketStorage",
         RocketStorageDeployment.address
