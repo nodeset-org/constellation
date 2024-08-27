@@ -304,8 +304,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         minipool.stake(_validatorSignature, _depositDataRoot);
 
         // Refund the locked ETH
-        uint256 lockupBalance = lockedEth[_minipool];
-        if (lockupBalance > 0) {
+        if (lockedEth[_minipool] > 0) {
+            uint256 lockupBalance = lockedEth[_minipool];
             lockedEth[_minipool] = 0;
             (bool success, ) = msg.sender.call{value: lockupBalance}('');
             require(success, 'ETH transfer failed');
