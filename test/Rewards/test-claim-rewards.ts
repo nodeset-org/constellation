@@ -229,13 +229,13 @@ describe("Claiming Rewards", async () => {
                                         // this nonce increases should invalidate all existing sigs
                                         expect(await protocol.yieldDistributor.nonces(did)).equals(1)
 
-                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("sig already used")
-                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig1, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("sig already used")
-                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig2, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("sig already used")
-                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig3, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("sig already used")
-                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig4, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("sig already used")
-                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig5, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("sig already used")
-                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig6, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("sig already used")
+                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
+                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig1, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
+                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig2, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
+                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig3, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
+                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig4, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
+                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig5, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
+                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig6, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
 
                                     })
                                 })
@@ -283,7 +283,7 @@ describe("Claiming Rewards", async () => {
                                         // this nonce increases should invalidate all existing sigs
                                         expect(await protocol.yieldDistributor.nonces(did)).equals(1)
 
-                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("sig already used")
+                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
                                         await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig1, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
                                         await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig2, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
                                         await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig3, ethers.constants.AddressZero, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
@@ -678,13 +678,13 @@ describe("Claiming Rewards", async () => {
                                         // this nonce increases should invalidate all existing sigs
                                         expect(await protocol.yieldDistributor.nonces(did)).equals(1)
 
-                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig, token.address, did, rewardee, amount)).to.be.revertedWith("sig already used")
-                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig1, token.address, did, rewardee, amount)).to.be.revertedWith("sig already used")
-                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig2, token.address, did, rewardee, amount)).to.be.revertedWith("sig already used")
-                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig3, token.address, did, rewardee, amount)).to.be.revertedWith("sig already used")
-                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig4, token.address, did, rewardee, amount)).to.be.revertedWith("sig already used")
-                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig5, token.address, did, rewardee, amount)).to.be.revertedWith("sig already used")
-                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig6, token.address, did, rewardee, amount)).to.be.revertedWith("sig already used")
+                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig, token.address, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
+                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig1, token.address, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
+                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig2, token.address, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
+                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig3, token.address, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
+                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig4, token.address, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
+                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig5, token.address, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
+                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig6, token.address, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
 
                                     })
                                 })
@@ -729,7 +729,7 @@ describe("Claiming Rewards", async () => {
                                         // this nonce increases should invalidate all existing sigs
                                         expect(await protocol.yieldDistributor.nonces(did)).equals(1)
 
-                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig, token.address, did, rewardee, amount)).to.be.revertedWith("sig already used")
+                                        await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig, token.address, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
                                         await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig1, token.address, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
                                         await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig2, token.address, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
                                         await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig3, token.address, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding")
@@ -1037,7 +1037,7 @@ describe("Claiming Rewards", async () => {
                 expect(finalBalanceYd.sub(initalBalanceYd)).equals(amount.mul(-1));
                 expect(finalBalanceRewardee.sub(initialBalanceRewardee)).equals(amount)
 
-                await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig, token.address, did, rewardee, amount)).to.be.revertedWith("sig already used");
+                await expect(protocol.yieldDistributor.connect(signers.random).claimRewards(sig, token.address, did, rewardee, amount)).to.be.revertedWith("bad signer role, params, or encoding");
             });
         });
     })
