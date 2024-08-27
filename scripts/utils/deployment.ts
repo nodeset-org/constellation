@@ -215,9 +215,9 @@ export async function deployProtocol(signers: Signers, rocketStorageAddress: str
     upgrades.silenceWarnings();
 
     // deploy weth
-    // const WETH = await ethers.getContractFactory("WETH");
-    // const wETH = await WETH.deploy();
-    // await wETH.deployed();
+    const WETH = await ethers.getContractFactory("WETH");
+    const wETH = await WETH.deploy();
+    await wETH.deployed();
 
     // deploy mock sanctions
     const Sanctions = await ethers.getContractFactory("MockSanctions");
