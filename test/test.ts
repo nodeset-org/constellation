@@ -21,10 +21,6 @@ import { BigNumber } from 'ethers';
 import { DepositData } from "@chainsafe/lodestar-types";
 
 
-const hre = require('hardhat');
-const Web3 = require('web3');
-
-
 export type SetupData = {
   protocol: Protocol;
   signers: Signers;
@@ -214,13 +210,6 @@ export async function protocolFixture(): Promise<SetupData> {
     await loadFixture(setDefaultParameters);
 
     const signers = await createSigners();
-    // const network = hre.network;
-    // let $web3 = new Web3(network.provider);
-
-    // keccak256(abi.encodePacked("contract.address.rocketTokenRPL"))
-    // const identifier = 'rocketTokenRPL';
-    // const rocketTokenAddressKey =  ethers.utils.solidityKeccak256(["string"], [`contract.address${identifier}`]);
-    // const rocketToken = await rs.getAddress(rocketTokenAddressKey);
 
     const deployedProtocol = await deployProtocol(signers);
     const rocketPool = await getRocketPool(deployedProtocol.directory);

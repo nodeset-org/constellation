@@ -3517,20 +3517,6 @@ export const mockNodeAccountV2Abi = [
   {
     type: 'function',
     inputs: [],
-    name: 'getEthMatched',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getEthStaked',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
     name: 'getImplementation',
     outputs: [{ name: '', internalType: 'address', type: 'address' }],
     stateMutability: 'view',
@@ -3570,7 +3556,14 @@ export const mockNodeAccountV2Abi = [
   {
     type: 'function',
     inputs: [],
-    name: 'getRplStaked',
+    name: 'getTotalEthMatched',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getTotalEthStaked',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
@@ -4595,20 +4588,6 @@ export const mockSuperNodeV2Abi = [
   {
     type: 'function',
     inputs: [],
-    name: 'getEthMatched',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getEthStaked',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
     name: 'getImplementation',
     outputs: [{ name: '', internalType: 'address', type: 'address' }],
     stateMutability: 'view',
@@ -4648,7 +4627,14 @@ export const mockSuperNodeV2Abi = [
   {
     type: 'function',
     inputs: [],
-    name: 'getRplStaked',
+    name: 'getTotalEthMatched',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getTotalEthStaked',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
@@ -6953,30 +6939,6 @@ export const rplVaultAbi = [
 
 export const revertOnTransferAbi = [
   { type: 'fallback', stateMutability: 'payable' },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_address', internalType: 'address', type: 'address' },
-      { name: '_payload', internalType: 'bytes', type: 'bytes' },
-    ],
-    name: 'call',
-    outputs: [],
-    stateMutability: 'payable',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'enabled',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_enabled', internalType: 'bool', type: 'bool' }],
-    name: 'setEnabled',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -7725,15 +7687,6 @@ export const rocketClaimDaoAbi = [
   {
     type: 'function',
     inputs: [
-      { name: '_contractNames', internalType: 'string[]', type: 'string[]' },
-    ],
-    name: 'payOutContractsAndWithdraw',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
       { name: '_invoiceID', internalType: 'string', type: 'string' },
       { name: '_recipientAddress', internalType: 'address', type: 'address' },
       { name: '_amount', internalType: 'uint256', type: 'uint256' },
@@ -7826,24 +7779,6 @@ export const rocketClaimDaoInterfaceAbi = [
       { name: '_numPeriods', internalType: 'uint256', type: 'uint256' },
     ],
     name: 'newContract',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_contractNames', internalType: 'string[]', type: 'string[]' },
-    ],
-    name: 'payOutContracts',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_contractNames', internalType: 'string[]', type: 'string[]' },
-    ],
-    name: 'payOutContractsAndWithdraw',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -8503,6 +8438,15 @@ export const rocketDaoNodeTrustedActionsAbi = [
       },
     ],
     name: 'actionLeave',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_nodeAddress', internalType: 'address', type: 'address' },
+    ],
+    name: 'memberQuickAdd',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -10319,25 +10263,6 @@ export const rocketDaoProtocolAbi = [
     type: 'event',
     anonymous: false,
     inputs: [
-      {
-        name: 'block',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: false,
-      },
-      {
-        name: 'time',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: false,
-      },
-    ],
-    name: 'BootstrapProtocolDAOEnabled',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
       { name: 'id', internalType: 'string', type: 'string', indexed: false },
       {
         name: 'memberAddress',
@@ -10667,13 +10592,6 @@ export const rocketDaoProtocolAbi = [
   },
   {
     type: 'function',
-    inputs: [],
-    name: 'bootstrapEnableGovernance',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
     inputs: [
       { name: '_id', internalType: 'string', type: 'string' },
       { name: '_memberAddress', internalType: 'address', type: 'address' },
@@ -10854,13 +10772,6 @@ export const rocketDaoProtocolInterfaceAbi = [
       },
     ],
     name: 'bootstrapDisable',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'bootstrapEnableGovernance',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -11529,16 +11440,6 @@ export const rocketDaoProtocolProposalAbi = [
   },
   {
     type: 'function',
-    inputs: [
-      { name: '_proposalID', internalType: 'uint256', type: 'uint256' },
-      { name: '_nodeAddress', internalType: 'address', type: 'address' },
-    ],
-    name: 'getReceiptHasVotedPhase1',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
     inputs: [{ name: '_proposalID', internalType: 'uint256', type: 'uint256' }],
     name: 'getStart',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
@@ -11814,16 +11715,6 @@ export const rocketDaoProtocolProposalInterfaceAbi = [
       { name: '_nodeAddress', internalType: 'address', type: 'address' },
     ],
     name: 'getReceiptHasVoted',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_proposalID', internalType: 'uint256', type: 'uint256' },
-      { name: '_nodeAddress', internalType: 'address', type: 'address' },
-    ],
-    name: 'getReceiptHasVotedPhase1',
     outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
     stateMutability: 'view',
   },
@@ -13894,117 +13785,6 @@ export const rocketDaoProtocolSettingsMinipoolInterfaceAbi = [
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// RocketDAOProtocolSettingsMinipoolInterfaceOld
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export const rocketDaoProtocolSettingsMinipoolInterfaceOldAbi = [
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getBondReductionEnabled',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
-      {
-        name: '_depositType',
-        internalType: 'enum MinipoolDeposit',
-        type: 'uint8',
-      },
-    ],
-    name: 'getDepositUserAmount',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getFullDepositUserAmount',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getHalfDepositUserAmount',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getLaunchBalance',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getLaunchTimeout',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getMaximumCount',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getPreLaunchValue',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'pure',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getSubmitWithdrawableEnabled',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getUserDistributeWindowLength',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getUserDistributeWindowStart',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getVariableDepositAmount',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_time', internalType: 'uint256', type: 'uint256' }],
-    name: 'hasUserDistributeWindowPassed',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_time', internalType: 'uint256', type: 'uint256' }],
-    name: 'isWithinUserDistributeWindow',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-] as const
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // RocketDAOProtocolSettingsMinipoolOld
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -14122,7 +13902,7 @@ export const rocketDaoProtocolSettingsMinipoolOldAbi = [
     inputs: [],
     name: 'getUserDistributeWindowStart',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
+    stateMutability: 'pure',
   },
   {
     type: 'function',
@@ -14775,13 +14555,6 @@ export const rocketDaoProtocolSettingsNodeAbi = [
   {
     type: 'function',
     inputs: [],
-    name: 'getMaximumStakeForVotingPower',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
     name: 'getMinimumPerMinipoolStake',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
@@ -14889,13 +14662,6 @@ export const rocketDaoProtocolSettingsNodeInterfaceAbi = [
   {
     type: 'function',
     inputs: [],
-    name: 'getMaximumStakeForVotingPower',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
     name: 'getMinimumPerMinipoolStake',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
@@ -14919,173 +14685,6 @@ export const rocketDaoProtocolSettingsNodeInterfaceAbi = [
     inputs: [],
     name: 'getVacantMinipoolsEnabled',
     outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-] as const
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// RocketDAOProtocolSettingsNodeInterfaceOld
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export const rocketDaoProtocolSettingsNodeInterfaceOldAbi = [
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getDepositEnabled',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getMaximumPerMinipoolStake',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getMinimumPerMinipoolStake',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getRegistrationEnabled',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getSmoothingPoolRegistrationEnabled',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getVacantMinipoolsEnabled',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-] as const
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// RocketDAOProtocolSettingsNodeOld
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export const rocketDaoProtocolSettingsNodeOldAbi = [
-  {
-    type: 'constructor',
-    inputs: [
-      {
-        name: '_rocketStorageAddress',
-        internalType: 'contract RocketStorageInterface',
-        type: 'address',
-      },
-    ],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getDepositEnabled',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getMaximumPerMinipoolStake',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getMinimumPerMinipoolStake',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getRegistrationEnabled',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_settingPath', internalType: 'string', type: 'string' }],
-    name: 'getSettingAddress',
-    outputs: [{ name: '', internalType: 'address', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_settingPath', internalType: 'string', type: 'string' }],
-    name: 'getSettingBool',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_settingPath', internalType: 'string', type: 'string' }],
-    name: 'getSettingUint',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getSmoothingPoolRegistrationEnabled',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getVacantMinipoolsEnabled',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_settingPath', internalType: 'string', type: 'string' },
-      { name: '_value', internalType: 'address', type: 'address' },
-    ],
-    name: 'setSettingAddress',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_settingPath', internalType: 'string', type: 'string' },
-      { name: '_value', internalType: 'bool', type: 'bool' },
-    ],
-    name: 'setSettingBool',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_settingPath', internalType: 'string', type: 'string' },
-      { name: '_value', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'setSettingUint',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'version',
-    outputs: [{ name: '', internalType: 'uint8', type: 'uint8' }],
     stateMutability: 'view',
   },
 ] as const
@@ -17342,23 +16941,9 @@ export const rocketMerkleDistributorMainnetAbi = [
   {
     type: 'function',
     inputs: [],
-    name: 'claimOutstandingEth',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [],
     name: 'disableMock',
     outputs: [],
     stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_address', internalType: 'address', type: 'address' }],
-    name: 'getOutstandingEth',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
   },
   {
     type: 'function',
@@ -17399,6 +16984,20 @@ export const rocketMerkleDistributorMainnetAbi = [
   {
     type: 'function',
     inputs: [],
+    name: 'rocketTokenRPLKey',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rocketVaultKey',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
     name: 'useMock',
     outputs: [],
     stateMutability: 'nonpayable',
@@ -17411,84 +17010,6 @@ export const rocketMerkleDistributorMainnetAbi = [
     stateMutability: 'view',
   },
   { type: 'receive', stateMutability: 'payable' },
-] as const
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// RocketMerkleDistributorMainnetInterface
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export const rocketMerkleDistributorMainnetInterfaceAbi = [
-  {
-    type: 'function',
-    inputs: [
-      { name: '_nodeAddress', internalType: 'address', type: 'address' },
-      { name: '_intervalIndex', internalType: 'uint256[]', type: 'uint256[]' },
-      { name: '_amountRPL', internalType: 'uint256[]', type: 'uint256[]' },
-      { name: '_amountETH', internalType: 'uint256[]', type: 'uint256[]' },
-      {
-        name: '_merkleProof',
-        internalType: 'bytes32[][]',
-        type: 'bytes32[][]',
-      },
-    ],
-    name: 'claim',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_nodeAddress', internalType: 'address', type: 'address' },
-      { name: '_intervalIndex', internalType: 'uint256[]', type: 'uint256[]' },
-      { name: '_amountRPL', internalType: 'uint256[]', type: 'uint256[]' },
-      { name: '_amountETH', internalType: 'uint256[]', type: 'uint256[]' },
-      {
-        name: '_merkleProof',
-        internalType: 'bytes32[][]',
-        type: 'bytes32[][]',
-      },
-      { name: '_stakeAmount', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'claimAndStake',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'claimOutstandingEth',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_address', internalType: 'address', type: 'address' }],
-    name: 'getOutstandingEth',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_intervalIndex', internalType: 'uint256', type: 'uint256' },
-      { name: '_claimer', internalType: 'address', type: 'address' },
-    ],
-    name: 'isClaimed',
-    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_intervalIndex', internalType: 'uint256', type: 'uint256' },
-      { name: '_merkleRoot', internalType: 'bytes32', type: 'bytes32' },
-      { name: '_rewardsRPL', internalType: 'uint256', type: 'uint256' },
-      { name: '_rewardsETH', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'relayRewards',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -18450,6 +17971,13 @@ export const rocketMinipoolDelegateAbi = [
     name: 'getNodeRefundBalance',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getNodeRefundBalanceSlot',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'pure',
   },
   {
     type: 'function',
@@ -21091,7 +20619,7 @@ export const rocketNetworkBalancesAbi = [
         name: 'block',
         internalType: 'uint256',
         type: 'uint256',
-        indexed: true,
+        indexed: false,
       },
       {
         name: 'slotTimestamp',
@@ -21746,12 +21274,6 @@ export const rocketNetworkPricesAbi = [
         indexed: false,
       },
       {
-        name: 'slotTimestamp',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: false,
-      },
-      {
         name: 'rplPrice',
         internalType: 'uint256',
         type: 'uint256',
@@ -21774,10 +21296,10 @@ export const rocketNetworkPricesAbi = [
         name: 'block',
         internalType: 'uint256',
         type: 'uint256',
-        indexed: true,
+        indexed: false,
       },
       {
-        name: 'slotTimestamp',
+        name: '_slotTimestamp',
         internalType: 'uint256',
         type: 'uint256',
         indexed: false,
@@ -22123,6 +21645,7 @@ export const rocketNetworkSnapshotsAbi = [
     type: 'function',
     inputs: [
       { name: '_key', internalType: 'bytes32', type: 'bytes32' },
+      { name: '_block', internalType: 'uint32', type: 'uint32' },
       { name: '_value', internalType: 'uint224', type: 'uint224' },
     ],
     name: 'push',
@@ -22200,6 +21723,7 @@ export const rocketNetworkSnapshotsInterfaceAbi = [
     type: 'function',
     inputs: [
       { name: '_key', internalType: 'bytes32', type: 'bytes32' },
+      { name: '_block', internalType: 'uint32', type: 'uint32' },
       { name: '_value', internalType: 'uint224', type: 'uint224' },
     ],
     name: 'push',
@@ -22303,13 +21827,6 @@ export const rocketNetworkVotingAbi = [
   },
   {
     type: 'function',
-    inputs: [{ name: '_delegate', internalType: 'address', type: 'address' }],
-    name: 'initialiseVotingWithDelegate',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
     inputs: [
       { name: '_newDelegate', internalType: 'address', type: 'address' },
     ],
@@ -22380,13 +21897,6 @@ export const rocketNetworkVotingInterfaceAbi = [
     type: 'function',
     inputs: [],
     name: 'initialiseVoting',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_delegate', internalType: 'address', type: 'address' }],
-    name: 'initialiseVotingWithDelegate',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -26540,6 +26050,13 @@ export const rocketRewardsPoolInterfaceOldAbi = [
   {
     type: 'function',
     inputs: [{ name: '_interval', internalType: 'uint256', type: 'uint256' }],
+    name: 'getClaimIntervalExecutionAddress',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_interval', internalType: 'uint256', type: 'uint256' }],
     name: 'getClaimIntervalExecutionBlock',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
@@ -26643,6 +26160,37 @@ export const rocketRewardsPoolInterfaceOldAbi = [
     ],
     name: 'getSubmissionCount',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_trustedNodeAddress', internalType: 'address', type: 'address' },
+      {
+        name: '_submission',
+        internalType: 'struct RewardSubmission',
+        type: 'tuple',
+        components: [
+          { name: 'rewardIndex', internalType: 'uint256', type: 'uint256' },
+          { name: 'executionBlock', internalType: 'uint256', type: 'uint256' },
+          { name: 'consensusBlock', internalType: 'uint256', type: 'uint256' },
+          { name: 'merkleRoot', internalType: 'bytes32', type: 'bytes32' },
+          { name: 'merkleTreeCID', internalType: 'string', type: 'string' },
+          { name: 'intervalsPassed', internalType: 'uint256', type: 'uint256' },
+          { name: 'treasuryRPL', internalType: 'uint256', type: 'uint256' },
+          {
+            name: 'trustedNodeRPL',
+            internalType: 'uint256[]',
+            type: 'uint256[]',
+          },
+          { name: 'nodeRPL', internalType: 'uint256[]', type: 'uint256[]' },
+          { name: 'nodeETH', internalType: 'uint256[]', type: 'uint256[]' },
+          { name: 'userETH', internalType: 'uint256', type: 'uint256' },
+        ],
+      },
+    ],
+    name: 'getSubmissionFromNodeExists',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
     stateMutability: 'view',
   },
   {
@@ -26833,6 +26381,13 @@ export const rocketRewardsPoolOldAbi = [
   {
     type: 'function',
     inputs: [{ name: '_interval', internalType: 'uint256', type: 'uint256' }],
+    name: 'getClaimIntervalExecutionAddress',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_interval', internalType: 'uint256', type: 'uint256' }],
     name: 'getClaimIntervalExecutionBlock',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
@@ -26936,6 +26491,37 @@ export const rocketRewardsPoolOldAbi = [
     ],
     name: 'getSubmissionCount',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_trustedNodeAddress', internalType: 'address', type: 'address' },
+      {
+        name: '_submission',
+        internalType: 'struct RewardSubmission',
+        type: 'tuple',
+        components: [
+          { name: 'rewardIndex', internalType: 'uint256', type: 'uint256' },
+          { name: 'executionBlock', internalType: 'uint256', type: 'uint256' },
+          { name: 'consensusBlock', internalType: 'uint256', type: 'uint256' },
+          { name: 'merkleRoot', internalType: 'bytes32', type: 'bytes32' },
+          { name: 'merkleTreeCID', internalType: 'string', type: 'string' },
+          { name: 'intervalsPassed', internalType: 'uint256', type: 'uint256' },
+          { name: 'treasuryRPL', internalType: 'uint256', type: 'uint256' },
+          {
+            name: 'trustedNodeRPL',
+            internalType: 'uint256[]',
+            type: 'uint256[]',
+          },
+          { name: 'nodeRPL', internalType: 'uint256[]', type: 'uint256[]' },
+          { name: 'nodeETH', internalType: 'uint256[]', type: 'uint256[]' },
+          { name: 'userETH', internalType: 'uint256', type: 'uint256' },
+        ],
+      },
+    ],
+    name: 'getSubmissionFromNodeExists',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
     stateMutability: 'view',
   },
   {
@@ -28915,19 +28501,6 @@ export const rocketUpgradeOneDotThreeAbi = [
   },
   {
     type: 'function',
-    inputs: [
-      {
-        name: '_minipoolAddresses',
-        internalType: 'address[]',
-        type: 'address[]',
-      },
-    ],
-    name: 'fixPubkeys',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
     inputs: [],
     name: 'getRocketStorageAddress',
     outputs: [{ name: '', internalType: 'address', type: 'address' }],
@@ -29062,20 +28635,6 @@ export const rocketUpgradeOneDotThreeAbi = [
   {
     type: 'function',
     inputs: [],
-    name: 'newRocketDAOProtocolSettingsNode',
-    outputs: [{ name: '', internalType: 'address', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'newRocketDAOProtocolSettingsNodeAbi',
-    outputs: [{ name: '', internalType: 'string', type: 'string' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
     name: 'newRocketDAOProtocolSettingsRewards',
     outputs: [{ name: '', internalType: 'address', type: 'address' }],
     stateMutability: 'view',
@@ -29084,20 +28643,6 @@ export const rocketUpgradeOneDotThreeAbi = [
     type: 'function',
     inputs: [],
     name: 'newRocketDAOProtocolSettingsRewardsAbi',
-    outputs: [{ name: '', internalType: 'string', type: 'string' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'newRocketMerkleDistributorMainnet',
-    outputs: [{ name: '', internalType: 'address', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'newRocketMerkleDistributorMainnetAbi',
     outputs: [{ name: '', internalType: 'string', type: 'string' }],
     stateMutability: 'view',
   },
@@ -29629,6 +29174,7 @@ export const rocketVaultAbi = [
     outputs: [],
     stateMutability: 'nonpayable',
   },
+  { type: 'receive', stateMutability: 'payable' },
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -29810,6 +29356,7 @@ export const snapshotTestAbi = [
     type: 'function',
     inputs: [
       { name: '_key', internalType: 'string', type: 'string' },
+      { name: '_block', internalType: 'uint32', type: 'uint32' },
       { name: '_value', internalType: 'uint224', type: 'uint224' },
     ],
     name: 'push',
@@ -30071,20 +29618,6 @@ export const superNodeAccountAbi = [
   {
     type: 'function',
     inputs: [],
-    name: 'getEthMatched',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getEthStaked',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
     name: 'getImplementation',
     outputs: [{ name: '', internalType: 'address', type: 'address' }],
     stateMutability: 'view',
@@ -30124,7 +29657,14 @@ export const superNodeAccountAbi = [
   {
     type: 'function',
     inputs: [],
-    name: 'getRplStaked',
+    name: 'getTotalEthMatched',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getTotalEthStaked',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
