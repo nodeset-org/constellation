@@ -9,6 +9,20 @@ import { RocketDepositPool } from "./rocketpool/_utils/artifacts";
 
 describe("Operator Distributor", function () {
 
+	describe("Minipool processing", async function () {
+		describe("When admin disables minipool processing", async function () {
+			it("Cannot be enabled by a random address", async function () {
+			
+			})
+
+			it("Can be enabled by an admin", async function () {
+			
+			})
+		})
+	})
+	
+
+
 	it("Processes minipool rewards correctly even when nodeRefundBalance > 0 (no exit)", async function (){
 		const setupData = await loadFixture(protocolFixture);
 		const { protocol, signers, rocketPool } = setupData;
