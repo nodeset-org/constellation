@@ -741,4 +741,13 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             }
         }
     }
+
+   function getNodeRefundBalanceSlot() external pure returns(bytes32) {
+        bytes32 slot;
+        assembly {
+            slot := nodeRefundBalance.slot
+        }
+        return slot;
+    }
+
 }

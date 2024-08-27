@@ -227,7 +227,6 @@ describe("Exiting Minipools", function () {
     })
 
     describe("When Node Refund Balance is 1 eth", async () => {
-
         let newNodeRefundAmount: BigNumber;
         beforeEach(async () => {
 
@@ -254,7 +253,6 @@ describe("Exiting Minipools", function () {
         })
 
         describe("When caller is admin", async () => {
-
             beforeEach(async () => {
                 caller = signers.admin;
             })

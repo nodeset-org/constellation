@@ -24,8 +24,8 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketMerkleDistributorMa
     uint256 constant network = 0;
 
     // Immutables
-    bytes32 immutable rocketVaultKey;
-    bytes32 immutable rocketTokenRPLKey;
+    bytes32 public immutable rocketVaultKey;
+    bytes32 public immutable rocketTokenRPLKey;
 
     // Allow receiving ETH
     receive() payable external {}

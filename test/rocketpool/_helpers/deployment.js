@@ -226,7 +226,6 @@ export async function deployRocketPool() {
     const deployBlock = rsTx.blockNumber;
     // Update the storage with the new addresses
     let rocketStorageInstance = await rocketStorage.deployed();
-    // contracts['rocketStorage'] = rocketStorageInstance;
     // Deploy other contracts - have to be inside an async loop
     const deployContracts = async function() {
         for (let contract in contracts) {
