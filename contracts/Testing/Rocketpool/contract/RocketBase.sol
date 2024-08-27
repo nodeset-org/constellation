@@ -3,13 +3,11 @@ pragma solidity >0.5.0 <0.9.0;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../interface/RocketStorageInterface.sol";
-import "hardhat/console.sol";
 
 /// @title Base settings / modifiers for each contract in Rocket Pool
 /// @author David Rugendyke
 
 abstract contract RocketBase {
-
     // Calculate using this as the base
     uint256 constant calcBase = 1 ether;
 
@@ -18,7 +16,6 @@ abstract contract RocketBase {
 
     // The main storage contract where primary persistant storage is maintained
     RocketStorageInterface rocketStorage = RocketStorageInterface(address(0));
-
 
     /*** Modifiers **********************************************************/
 
@@ -71,9 +68,6 @@ abstract contract RocketBase {
         _;
     }
 
-
-
-
     /*** Methods **********************************************************/
 
     /// @dev Set the main Rocket Storage address
@@ -123,8 +117,6 @@ abstract contract RocketBase {
         }
         return abi.decode(_returnData, (string)); // All that remains is the revert string
     }
-
-
 
     /*** Rocket Storage Methods ****************************************/
 

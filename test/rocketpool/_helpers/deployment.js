@@ -226,7 +226,7 @@ export async function deployRocketPool() {
     const deployBlock = rsTx.blockNumber;
     // Update the storage with the new addresses
     let rocketStorageInstance = await rocketStorage.deployed();
-    contracts['rocketStorage'] = rocketStorageInstance;
+    // contracts['rocketStorage'] = rocketStorageInstance;
     // Deploy other contracts - have to be inside an async loop
     const deployContracts = async function() {
         for (let contract in contracts) {
@@ -318,14 +318,9 @@ export async function deployRocketPool() {
 
                     // All other contracts - pass storage address
                     default:
-                        if (contract !== 'rocketStorage') {
-                            instance = await contracts[contract].new(rocketStorageInstance.address);
-                        }
-                        // instance = await contracts[contract].new(rocketStorageInstance.address);
-                        if (instance) {
-                            contracts[contract].setAsDeployed(instance);
+                        instance = await contracts[contract].new(rocketStorageInstance.address);
+                        contracts[contract].setAsDeployed(instance);
 
-                        }
                         // Slight hack to allow gas optimisation using immutable addresses for non-upgradable contracts
                         if (contract === 'rocketVault' || contract === 'rocketTokenRETH') {
                             await rocketStorageInstance.setAddress(

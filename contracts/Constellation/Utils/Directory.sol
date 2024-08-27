@@ -263,6 +263,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
         _treasury = treasury;
         _protocol = newProtocol;
+
         // set rocket integrations
         _integrations.rocketDAOProtocolProposal = IRocketStorage(newProtocol.rocketStorage).getAddress(
             RocketpoolEncoder.generateBytes32Identifier('rocketDAOProtocolProposal')
