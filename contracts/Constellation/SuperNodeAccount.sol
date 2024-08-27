@@ -272,7 +272,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     function removeMinipool(address minipool) external onlyProtocol() onlyRecognizedMinipool(address(minipool)) {
         uint256 index = minipoolData[minipool].index;
         // in case a minipool was dissolved or scrubbed, unlock the ETH and move it to the OD for later use
-        if(lockedEth[minipool] >= 0) {
+        if(lockedEth[minipool] > 0) {
             uint256 lockupBalance = lockedEth[minipool];
             lockedEth[minipool] = 0;
             (bool success, ) = getDirectory().getOperatorDistributorAddress().call{value: lockupBalance}('');
@@ -305,7 +305,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         // Refund the locked ETH
         uint256 lockupBalance = lockedEth[_minipool];
-        if (lockupBalance >= 0) {
+        if (lockupBalance > 0) {
             lockedEth[_minipool] = 0;
             (bool success, ) = msg.sender.call{value: lockupBalance}('');
             require(success, 'ETH transfer failed');
