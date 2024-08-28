@@ -1,15 +1,18 @@
 import {
     RocketMerkleDistributorMainnet,
-    RocketNodeManager, RocketNodeStaking,
+    RocketNodeManager, RocketNodeStaking, RocketNodeStakingNew,
     RocketRewardsPool,
-    RocketStorage, RocketTokenRPL
+    RocketStorage, RocketTokenRPL,
 } from '../_utils/artifacts';
 import { parseRewardsMap } from '../_utils/merkle-tree';
 import { assertBN } from '../_helpers/bn';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Submit network prices
 export async function claimAndStakeRewards(nodeAddress, indices, rewards, stakeAmount, txOptions) {
+
+    const upgraded = await upgradeExecuted();
 
     // Load contracts
     const [
@@ -22,7 +25,7 @@ export async function claimAndStakeRewards(nodeAddress, indices, rewards, stakeA
     ] = await Promise.all([
         RocketRewardsPool.deployed(),
         RocketNodeManager.deployed(),
-        RocketNodeStaking.deployed(),
+        upgraded ? RocketNodeStakingNew.deployed() : RocketNodeStaking.deployed(),
         RocketMerkleDistributorMainnet.deployed(),
         RocketStorage.deployed(),
         RocketTokenRPL.deployed(),
@@ -37,10 +40,11 @@ export async function claimAndStakeRewards(nodeAddress, indices, rewards, stakeA
             rocketRewardsPool.getClaimIntervalTimeStart(),
             rocketTokenRPL.balanceOf.call(nodeWithdrawalAddress),
             rocketNodeStaking.getNodeRPLStake(nodeAddress),
-            web3.eth.getBalance(nodeWithdrawalAddress)
+            web3.eth.getBalance(nodeWithdrawalAddress),
+            rocketMerkleDistributorMainnet.getOutstandingEth(nodeWithdrawalAddress),
         ]).then(
-          ([claimIntervalTimeStart, nodeRpl, rplStake, nodeEth]) =>
-            ({claimIntervalTimeStart, nodeRpl, rplStake, nodeEth: web3.utils.toBN(nodeEth)})
+          ([claimIntervalTimeStart, nodeRpl, rplStake, nodeEth, outstandingEth]) =>
+            ({claimIntervalTimeStart, nodeRpl, rplStake, nodeEth: web3.utils.toBN(nodeEth), outstandingEth: web3.utils.toBN(outstandingEth)})
         );
     }
 
@@ -72,6 +76,7 @@ export async function claimAndStakeRewards(nodeAddress, indices, rewards, stakeA
         proofs.push(proof.proof);
 
         totalAmountRPL = totalAmountRPL.add(web3.utils.toBN(proof.amountRPL));
+        totalAmountETH = totalAmountETH.add(web3.utils.toBN(proof.amountETH));
     }
 
     const tx = await rocketMerkleDistributorMainnet.claimAndStake(nodeAddress, indices, amountsRPL, amountsETH, proofs, stakeAmount, txOptions);
@@ -88,5 +93,6 @@ export async function claimAndStakeRewards(nodeAddress, indices, rewards, stakeA
     let amountStaked = balances2.rplStake.sub(balances1.rplStake);
 
     assertBN.equal(balances2.nodeRpl.sub(balances1.nodeRpl), totalAmountRPL.sub(amountStaked), 'Incorrect updated node RPL balance');
-    assertBN.equal(balances2.nodeEth.sub(balances1.nodeEth).add(gasUsed), totalAmountETH, 'Incorrect updated node ETH balance');
+    const ethDiff = balances2.nodeEth.sub(balances1.nodeEth).add(gasUsed).add(balances2.outstandingEth.sub(balances1.outstandingEth));
+    assertBN.equal(ethDiff, totalAmountETH, 'Incorrect updated node ETH balance');
 }

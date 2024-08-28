@@ -17,20 +17,9 @@ interface RocketClaimDAOInterface {
     function getContract(string calldata _contractName) external view returns (PaymentContract memory);
     function getBalance(address _recipientAddress) external view returns (uint256);
     function spend(string memory _invoiceID, address _recipientAddress, uint256 _amount) external;
-    function newContract(
-        string memory _contractName,
-        address _recipientAddress,
-        uint256 _amountPerPeriod,
-        uint256 _periodLength,
-        uint256 _startTime,
-        uint256 _numPeriods
-    ) external;
-    function updateContract(
-        string memory _contractName,
-        address _recipientAddress,
-        uint256 _amountPerPeriod,
-        uint256 _periodLength,
-        uint256 _numPeriods
-    ) external;
+    function newContract(string memory _contractName, address _recipientAddress, uint256 _amountPerPeriod, uint256 _periodLength, uint256 _startTime, uint256 _numPeriods) external;
+    function updateContract(string memory _contractName, address _recipientAddress, uint256 _amountPerPeriod, uint256 _periodLength, uint256 _numPeriods) external;
     function withdrawBalance(address _recipientAddress) external;
+    function payOutContracts(string[] calldata _contractNames) external;
+    function payOutContractsAndWithdraw(string[] calldata _contractNames) external;
 }

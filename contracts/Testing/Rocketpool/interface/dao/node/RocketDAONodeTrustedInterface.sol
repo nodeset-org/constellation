@@ -13,28 +13,16 @@ interface RocketDAONodeTrustedInterface {
     function getMemberID(address _nodeAddress) external view returns (string memory);
     function getMemberUrl(address _nodeAddress) external view returns (string memory);
     function getMemberJoinedTime(address _nodeAddress) external view returns (uint256);
-    function getMemberProposalExecutedTime(
-        string memory _proposalType,
-        address _nodeAddress
-    ) external view returns (uint256);
+    function getMemberProposalExecutedTime(string memory _proposalType, address _nodeAddress) external view returns (uint256);
     function getMemberRPLBondAmount(address _nodeAddress) external view returns (uint256);
     function getMemberIsChallenged(address _nodeAddress) external view returns (bool);
     function getMemberUnbondedValidatorCount(address _nodeAddress) external view returns (uint256);
     function incrementMemberUnbondedValidatorCount(address _nodeAddress) external;
     function decrementMemberUnbondedValidatorCount(address _nodeAddress) external;
     function bootstrapMember(string memory _id, string memory _url, address _nodeAddress) external;
-    function bootstrapSettingUint(
-        string memory _settingContractName,
-        string memory _settingPath,
-        uint256 _value
-    ) external;
+    function bootstrapSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) external;
     function bootstrapSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) external;
-    function bootstrapUpgrade(
-        string memory _type,
-        string memory _name,
-        string memory _contractAbi,
-        address _contractAddress
-    ) external;
+    function bootstrapUpgrade(string memory _type, string memory _name, string memory _contractAbi, address _contractAddress) external;
     function bootstrapDisable(bool _confirmDisableBootstrapMode) external;
     function memberJoinRequired(string memory _id, string memory _url) external;
 }

@@ -30,8 +30,8 @@ describe("Merkle Claim Streamer", async () => {
     rocketVault = await ethers.getContractAt("RocketVault", await rocketpool.rockStorageContract.getAddress(await rocketMDM.rocketVaultKey()));
     await rocketVault.useMock();
   })
-  
-  
+
+
 
   describe("streaming interval is changed", async () => {
     it("can be changed by admin to something above zero and up to 365 days", async () => {
@@ -66,7 +66,7 @@ describe("Merkle Claim Streamer", async () => {
 
     it.skip("can submit merkle claim after changing streaming interval time", async () => {
       await assertMerkleClaim(rocketVault, setupData, ethers.utils.parseEther("1"),ethers.utils.parseEther("1"), 69);
-      
+
       await expect(mcs.connect(admin).setStreamingInterval(6969)).to.not.be.reverted;
       expect(await mcs.streamingInterval()).equals(6969)
 
@@ -122,8 +122,8 @@ describe("Merkle Claim Streamer", async () => {
     describe("when either eth or rpl amount is above 0", async () => {
       type ParamsType = { ethRewards: number; rplRewards: number; waitTime: number};
       [
-        { ethRewards: 28, rplRewards: 28, waitTime: 86400}, 
-        { ethRewards: .6, rplRewards: .4, waitTime: 1}, 
+        { ethRewards: 28, rplRewards: 28, waitTime: 86400},
+        { ethRewards: .6, rplRewards: .4, waitTime: 1},
         { ethRewards: .1, rplRewards: .1, waitTime: 86400}, // 1 day in seconds
         { ethRewards: .5, rplRewards: .4, waitTime: 31556952000}, // 1000 years
         { ethRewards: .99, rplRewards: .01, waitTime: 2419200}, // 28 days in seconds
@@ -137,23 +137,23 @@ describe("Merkle Claim Streamer", async () => {
         let rplRewards = ethers.utils.parseEther(`${params.rplRewards}`)
         let ethRewards = ethers.utils.parseEther(`${params.ethRewards}`)
 
-        it(`can submit claim with ethRewards=${ethRewards}, rplRewards=${rplRewards}, waitTime=${params.waitTime}`, async () => { 
+        it(`can submit claim with ethRewards=${ethRewards}, rplRewards=${rplRewards}, waitTime=${params.waitTime}`, async () => {
           await assertMerkleClaim(rocketVault, setupData, ethRewards, rplRewards, params.waitTime);
         });
 
-        it.skip(`can submit multiple claims with ethRewards=${ethRewards}, rplRewards=${rplRewards}, waitTime=${params.waitTime}`, async () => { 
+        it.skip(`can submit multiple claims with ethRewards=${ethRewards}, rplRewards=${rplRewards}, waitTime=${params.waitTime}`, async () => {
           await assertMerkleClaim(rocketVault, setupData, ethRewards, rplRewards, params.waitTime);
           await assertMerkleClaim(rocketVault, setupData, ethRewards, rplRewards, params.waitTime);
           await assertMerkleClaim(rocketVault, setupData, ethRewards, rplRewards, params.waitTime);
         })
-    
-        it.skip(`can submit multiple claims in the same block with ethRewards=${ethRewards}, rplRewards=${rplRewards}, waitTime=${params.waitTime}`, async () => { 
+
+        it.skip(`can submit multiple claims in the same block with ethRewards=${ethRewards}, rplRewards=${rplRewards}, waitTime=${params.waitTime}`, async () => {
           await assertMerkleClaim(rocketVault, setupData, ethRewards, rplRewards, 0);
           await assertMerkleClaim(rocketVault, setupData, ethRewards, rplRewards, 0);
           await assertMerkleClaim(rocketVault, setupData, ethRewards, rplRewards, 0);
         })
 
-        it.skip(`can submit multiple claims with different wait times and ethRewards=${ethRewards}, rplRewards=${rplRewards}}`, async () => { 
+        it.skip(`can submit multiple claims with different wait times and ethRewards=${ethRewards}, rplRewards=${rplRewards}}`, async () => {
           await assertMerkleClaim(rocketVault, setupData, ethRewards, rplRewards, 69);
           await assertMerkleClaim(rocketVault, setupData, ethRewards, rplRewards, 2419200);
           await assertMerkleClaim(rocketVault, setupData, ethRewards, rplRewards, 31556952000);
@@ -168,7 +168,7 @@ async function assertMerkleClaim(rocketVault: RocketVault, setupData: SetupData,
     let protocol = setupData.protocol;
     let rocketpool = setupData.rocketPool;
     let mcs = protocol.merkleClaimStreamer;
-    
+
     // send rewards to merkle distributor
     await rocketpool.rplContract.connect(setupData.signers.rplWhale).transfer(rocketVault.address, rplRewards);
     await setupData.signers.ethWhale.sendTransaction({
@@ -183,9 +183,9 @@ async function assertMerkleClaim(rocketVault: RocketVault, setupData: SetupData,
 
     const streamingInterval = await mcs.streamingInterval()
 
-    const expectedTreasuryPortionEth = await protocol.vCWETH.getTreasuryPortion(ethRewards); 
-    const expectedTreasuryPortionRpl = await protocol.vCRPL.getTreasuryPortion(rplRewards); 
-    const expectedOperatorPortionEth = await protocol.vCWETH.getOperatorPortion(ethRewards); 
+    const expectedTreasuryPortionEth = await protocol.vCWETH.getTreasuryPortion(ethRewards);
+    const expectedTreasuryPortionRpl = await protocol.vCRPL.getTreasuryPortion(rplRewards);
+    const expectedOperatorPortionEth = await protocol.vCWETH.getOperatorPortion(ethRewards);
     const expectedCommunityPortionEth = ethRewards.sub(expectedTreasuryPortionEth).sub(expectedOperatorPortionEth);
     const expectedCommunityPortionRpl = rplRewards.sub(expectedTreasuryPortionRpl);
 
@@ -196,8 +196,8 @@ async function assertMerkleClaim(rocketVault: RocketVault, setupData: SetupData,
     let claimTx = mcs.submitMerkleClaim(rewardIndex, [rplRewards], [ethRewards], proof)
     // no time has passed, so no tvl has been streamed
     expect(await protocol.vCRPL.totalAssets()).equals(originalTotalAssetsRpl);
-    expect(await protocol.vCWETH.totalAssets()).equals(originalTotalAssetsEth); 
-          
+    expect(await protocol.vCWETH.totalAssets()).equals(originalTotalAssetsEth);
+
     // mine a block with the merkle claim transaction above
     await ethers.provider.send("evm_mine", [claimTimestamp]);
     await expect(claimTx).to.not.be.revertedWith("");
@@ -221,7 +221,7 @@ async function assertMerkleClaim(rocketVault: RocketVault, setupData: SetupData,
       // mine another block to wait some time
       await ethers.provider.send("evm_mine", [waitTime + claimTimestamp]);
     }
-    
+
     let expectedStreamedTVLEth = streamingInterval.gt(waitTime) ? expectedCommunityPortionEth.mul(waitTime).div(streamingInterval) : expectedCommunityPortionEth;
     let expectedStreamedTVLRpl = streamingInterval.gt(waitTime) ? expectedCommunityPortionRpl.mul(waitTime).div(streamingInterval) : expectedCommunityPortionRpl;
     let expectedTotalAssetsEth = originalTotalAssetsEth.add(expectedStreamedTVLEth);
@@ -231,7 +231,7 @@ async function assertMerkleClaim(rocketVault: RocketVault, setupData: SetupData,
     expect(await mcs.getStreamedTvlEth()).equals(expectedStreamedTVLEth);
     expect(await mcs.getStreamedTvlRpl()).equals(expectedStreamedTVLRpl);
     expect(await protocol.vCWETH.totalAssets()).equals(expectedTotalAssetsEth);
-    expect(await protocol.vCRPL.totalAssets()).equals(expectedTotalAssetsRpl);    
+    expect(await protocol.vCRPL.totalAssets()).equals(expectedTotalAssetsRpl);
   }
   // re-enable automine
   finally { await ethers.provider.send("evm_setAutomine", [true]); }

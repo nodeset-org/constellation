@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.7.6;
 
-import 'oz-contracts-3-4-0/math/SafeMath.sol';
+import '../util/SafeMath.sol';
 import 'oz-contracts-3-4-0/utils/SafeCast.sol';
 
-import '../RocketBase.sol';
-import '../../interface/deposit/RocketDepositPoolInterface.sol';
-import '../../interface/minipool/RocketMinipoolQueueInterface.sol';
-import '../../interface/network/RocketNetworkFeesInterface.sol';
-import '../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol';
+import "../RocketBase.sol";
+import "../../interface/deposit/RocketDepositPoolInterface.sol";
+import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
+import "../../interface/network/RocketNetworkFeesInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 
 /// @notice Network node demand and commission rate
 contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
+
     // Libs
     using SafeMath for uint;
     using SafeCast for uint;
@@ -22,14 +23,10 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
 
     /// @notice Returns the current RP network node demand in ETH
     ///         Node demand is equal to deposit pool balance minus available minipool capacity
-    function getNodeDemand() public view override returns (int256) {
+    function getNodeDemand() override public view returns (int256) {
         // Load contracts
-        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(
-            getContractAddress('rocketDepositPool')
-        );
-        RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(
-            getContractAddress('rocketMinipoolQueue')
-        );
+        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+        RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
         // Calculate & return
         int256 depositPoolBalance = rocketDepositPool.getBalance().toInt256();
         int256 minipoolCapacity = rocketMinipoolQueue.getEffectiveCapacity().toInt256();
@@ -39,19 +36,17 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
     }
 
     /// @notice Returns the current RP network node fee as a fraction of 1 ETH
-    function getNodeFee() external view override returns (uint256) {
+    function getNodeFee() override external view returns (uint256) {
         return getNodeFeeByDemand(getNodeDemand());
     }
 
     /// @notice Returns the network node fee for a given node demand value
     /// @param _nodeDemand The node demand to calculate the fee for
-    function getNodeFeeByDemand(int256 _nodeDemand) public view override returns (uint256) {
+    function getNodeFeeByDemand(int256 _nodeDemand) override public view returns (uint256) {
         // Calculation base values
         uint256 demandDivisor = 1000000000000;
         // Get settings
-        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(
-                getContractAddress('rocketDAOProtocolSettingsNetwork')
-            );
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         uint256 minFee = rocketDAOProtocolSettingsNetwork.getMinimumNodeFee();
         uint256 targetFee = rocketDAOProtocolSettingsNetwork.getTargetNodeFee();
         uint256 maxFee = rocketDAOProtocolSettingsNetwork.getMaximumNodeFee();
@@ -68,21 +63,16 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
         }
         nNodeDemand = nNodeDemand.mul(calcBase).div(demandRange);
         // Check range bounds
-        if (nNodeDemand == 0) {
-            return targetFee;
-        }
+        if (nNodeDemand == 0) { return targetFee; }
         if (nNodeDemand >= calcBase) {
-            if (nNodeDemandSign) {
-                return maxFee;
-            }
+            if (nNodeDemandSign) { return maxFee; }
             return minFee;
         }
         // Get fee interpolation factor
         uint256 t = nNodeDemand.div(demandDivisor) ** 3;
         // Interpolate between min / target / max fee
-        if (nNodeDemandSign) {
-            return targetFee.add(maxFee.sub(targetFee).mul(t).div(calcBase));
-        }
+        if (nNodeDemandSign) { return targetFee.add(maxFee.sub(targetFee).mul(t).div(calcBase)); }
         return minFee.add(targetFee.sub(minFee).mul(calcBase.sub(t)).div(calcBase));
     }
+
 }

@@ -2,9 +2,9 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import '../../interface/RocketStorageInterface.sol';
-import '../../types/MinipoolDeposit.sol';
-import '../../types/MinipoolStatus.sol';
+import "../../interface/RocketStorageInterface.sol";
+import "../../types/MinipoolDeposit.sol";
+import "../../types/MinipoolStatus.sol";
 
 // The RocketMinipool contract storage layout, shared by RocketMinipoolDelegate
 
@@ -22,7 +22,7 @@ abstract contract RocketMinipoolStorageLayout {
         Initialised
     }
 
-    // Main Rocket Pool storage contract
+	// Main Rocket Pool storage contract
     RocketStorageInterface internal rocketStorage = RocketStorageInterface(0);
 
     // Status
@@ -38,7 +38,7 @@ abstract contract RocketMinipoolStorageLayout {
     address internal nodeAddress;
     uint256 internal nodeFee;
     uint256 internal nodeDepositBalance;
-    bool internal nodeDepositAssigned; // NO LONGER IN USE
+    bool internal nodeDepositAssigned;          // NO LONGER IN USE
     uint256 internal nodeRefundBalance;
     uint256 internal nodeSlashBalance;
 
