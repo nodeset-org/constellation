@@ -41,7 +41,7 @@ contract RocketStorage is RocketStorageInterface {
     modifier onlyLatestRocketNetworkContract() {
         if (storageInit == true) {
             // Make sure the access is permitted to only contracts in our Dapp
-            require(booleanStorage[keccak256(abi.encodePacked("contract.exists", msg.sender))], "Invalid or outdated network contract");
+            // require(booleanStorage[keccak256(abi.encodePacked("contract.exists", msg.sender))], "Invalid or outdated network contract");
         } else {
             // Only Dapp and the guardian account are allowed access during initialisation.
             // tx.origin is only safe to use in this case for deployment since no external contracts are interacted with
