@@ -50,6 +50,10 @@ describe("submitMerkleClaim()", async () => {
                             const initialBalanceTreasury = await ethers.provider.getBalance(treasury);
                             const initialBalanceOd = await ethers.provider.getBalance(operatorRewards);
 
+                            expect(await protocol.merkleClaimStreamer.priorEthStreamAmount()).equals(0);
+                            expect(await protocol.merkleClaimStreamer.priorRplStreamAmount()).equals(0);
+                            expect(await protocol.merkleClaimStreamer.lastClaimTime()).equals(0)
+
                             const tx = await protocol.merkleClaimStreamer.submitMerkleClaim(rewardIndex, [rplRewards], [ethRewards], proof);
 
                             const finalBalanceTreasury = await ethers.provider.getBalance(treasury);
@@ -59,6 +63,11 @@ describe("submitMerkleClaim()", async () => {
 
                             expect(finalBalanceTreasury.sub(initialBalanceTreasury)).equals(expectedTreasuryPortionEth);
                             expect(finalBalanceOd.sub(initialBalanceOd)).equals(expectedOperatorPortionEth);
+
+                            expect(await protocol.merkleClaimStreamer.priorEthStreamAmount()).equals(expectedCommunityPortionEth);
+                            expect(await protocol.merkleClaimStreamer.priorRplStreamAmount()).equals(0);
+                            expect(await protocol.merkleClaimStreamer.lastClaimTime()).equals((await ethers.provider.getBlock(receipt.blockNumber)).timestamp)
+
 
                         })
                     })
@@ -127,6 +136,10 @@ describe("submitMerkleClaim()", async () => {
                     const initialBalanceTreasury = await ethers.provider.getBalance(treasury);
                     const initialBalanceOd = await ethers.provider.getBalance(operatorRewards);
 
+                    expect(await protocol.merkleClaimStreamer.priorEthStreamAmount()).equals(0);
+                    expect(await protocol.merkleClaimStreamer.priorRplStreamAmount()).equals(0);
+                    expect(await protocol.merkleClaimStreamer.lastClaimTime()).equals(0)
+
                     const tx = await protocol.merkleClaimStreamer.submitMerkleClaim(rewardIndex, [rplRewards], [ethRewards], proof);
 
                     const finalBalanceTreasury = await ethers.provider.getBalance(treasury);
@@ -137,6 +150,9 @@ describe("submitMerkleClaim()", async () => {
                     expect(finalBalanceTreasury.sub(initialBalanceTreasury)).equals(0);
                     expect(finalBalanceOd.sub(initialBalanceOd)).equals(0);
 
+                    expect(await protocol.merkleClaimStreamer.priorEthStreamAmount()).equals(0);
+                    expect(await protocol.merkleClaimStreamer.priorRplStreamAmount()).equals(0);
+                    expect(await protocol.merkleClaimStreamer.lastClaimTime()).equals((await ethers.provider.getBlock(receipt.blockNumber)).timestamp)
 
                 })
 
@@ -179,6 +195,10 @@ describe("submitMerkleClaim()", async () => {
                         const initialBalanceTreasury = await rocketPool.rplContract.balanceOf(treasury);
                         const initialBalanceOd = await rocketPool.rplContract.balanceOf(operatorRewards);
 
+                        expect(await protocol.merkleClaimStreamer.priorEthStreamAmount()).equals(0);
+                        expect(await protocol.merkleClaimStreamer.priorRplStreamAmount()).equals(0);
+                        expect(await protocol.merkleClaimStreamer.lastClaimTime()).equals(0)
+
                         const tx = await protocol.merkleClaimStreamer.submitMerkleClaim(rewardIndex, [rplRewards], [ethRewards], proof);
 
                         const finalBalanceTreasury = await rocketPool.rplContract.balanceOf(treasury);
@@ -188,6 +208,10 @@ describe("submitMerkleClaim()", async () => {
 
                         expect(finalBalanceTreasury.sub(initialBalanceTreasury)).equals(expectedTreasuryPortionRpl);
                         expect(finalBalanceOd.sub(initialBalanceOd)).equals(0);
+
+                        expect(await protocol.merkleClaimStreamer.priorEthStreamAmount()).equals(0);
+                        expect(await protocol.merkleClaimStreamer.priorRplStreamAmount()).equals(expectedCommunityPortionRpl);
+                        expect(await protocol.merkleClaimStreamer.lastClaimTime()).equals((await ethers.provider.getBlock(receipt.blockNumber)).timestamp)
 
                     })
 
@@ -249,6 +273,10 @@ describe("submitMerkleClaim()", async () => {
                     const initialBalanceTreasury = await rocketPool.rplContract.balanceOf(treasury);
                     const initialBalanceOd = await rocketPool.rplContract.balanceOf(operatorRewards);
 
+                    expect(await protocol.merkleClaimStreamer.priorEthStreamAmount()).equals(0);
+                    expect(await protocol.merkleClaimStreamer.priorRplStreamAmount()).equals(0);
+                    expect(await protocol.merkleClaimStreamer.lastClaimTime()).equals(0)
+
                     const tx = await protocol.merkleClaimStreamer.submitMerkleClaim(rewardIndex, [rplRewards], [ethRewards], proof);
 
                     const finalBalanceTreasury = await rocketPool.rplContract.balanceOf(treasury);
@@ -258,6 +286,10 @@ describe("submitMerkleClaim()", async () => {
 
                     expect(finalBalanceTreasury.sub(initialBalanceTreasury)).equals(0);
                     expect(finalBalanceOd.sub(initialBalanceOd)).equals(0);
+
+                    expect(await protocol.merkleClaimStreamer.priorEthStreamAmount()).equals(0);
+                    expect(await protocol.merkleClaimStreamer.priorRplStreamAmount()).equals(0);
+                    expect(await protocol.merkleClaimStreamer.lastClaimTime()).equals((await ethers.provider.getBlock(receipt.blockNumber)).timestamp)
                 })
 
             })
