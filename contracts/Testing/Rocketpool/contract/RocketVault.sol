@@ -32,6 +32,8 @@ contract RocketVault is RocketBase, RocketVaultInterface {
 
     bool public isMocking;
 
+    receive() external payable {}
+
     function useMock() public {
         isMocking = true;
     }

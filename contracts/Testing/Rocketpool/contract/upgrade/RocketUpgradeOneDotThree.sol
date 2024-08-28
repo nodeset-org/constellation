@@ -8,8 +8,6 @@ import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInter
 import "../../interface/util/AddressSetStorageInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 
-import "hardhat/console.sol";
-
 /// @notice Transient contract to upgrade Rocket Pool with the Houston set of contract upgrades
 contract RocketUpgradeOneDotThree is RocketBase {
 
