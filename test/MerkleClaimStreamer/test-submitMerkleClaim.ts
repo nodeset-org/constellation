@@ -279,6 +279,8 @@ describe("submitMerkleClaim()", async () => {
                     expect(await protocol.merkleClaimStreamer.priorRplStreamAmount()).equals(0);
                     expect(await protocol.merkleClaimStreamer.lastClaimTime()).equals(0)
 
+                    // TODO: This should fail in RP but we've added a mock mode to the RocketMerkleDistributorMainnet's _claim function to bypass
+                    // actual merkle proof validation for unit tests.
                     const tx = await protocol.merkleClaimStreamer.submitMerkleClaim(rewardIndex, [rplRewards], [ethRewards], proof);
 
                     const finalBalanceTreasury = await rocketPool.rplContract.balanceOf(treasury);
