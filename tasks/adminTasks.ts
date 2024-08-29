@@ -27,6 +27,20 @@ task("setMinimumNodeFee", "Sets minimum node fee")
     console.log(tx)
   });
 
+task("setMaxValidators", "Sets max number of validators a user can make")
+  .addParam("address", "The address of the SuperNodeAccount")
+  .addParam("maxValidators", "Sets the _maxValidators")
+  .setAction(async ({ address, maxValidators }, hre) => {
+
+    const [deployer, admin] = await hre.ethers.getSigners();
+    const sna = await hre.ethers.getContractAt("SuperNodeAccount", address, admin);
+
+    console.log("Trying to set...");
+    const tx = await sna.connect(deployer).setMaxValidators(ethers.utils.parseEther(maxValidators));
+    console.log("Setting Max Validators Fee to ", ethers.utils.parseEther(maxValidators));
+    console.log(tx)
+  });
+
 task("reset", "Resets the node to the initial state")
   .setAction(async (_, hre) => {
     await hre.network.provider.send("hardhat_reset");
