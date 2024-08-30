@@ -14,7 +14,7 @@ describe("Operator Distributor", function () {
 			
 			let setupData: SetupData;
 
-			this.beforeEach(async ()=>{
+			beforeEach(async ()=>{
 				setupData = await loadFixture(protocolFixture);
 				const {protocol, signers } = setupData;
 				await protocol.operatorDistributor.connect(signers.admin).setMinipoolProcessingEnabled(false);
