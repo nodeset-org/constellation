@@ -122,7 +122,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
                     }, { value: ethers.utils.parseEther('1') }))
                 .to.not.be.reverted;
             });
-            it.only("should allow for the reuse of funds", async function () {
+            it("should allow for the reuse of funds", async function () {
                 await protocol.superNode.connect(signers.admin).setMaxValidators(1);
                 // Deposit ETH (for 3 minipools)
                 await prepareOperatorDistributionContract(setupData, 3);
@@ -588,7 +588,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
                 .to.be.revertedWith('NodeAccount: protocol must have enough rpl and eth');
             });
 
-            it("should allow for the reuse of funds", async function () {
+            it.only("should allow for the reuse of funds", async function () {
                 await protocol.superNode.connect(signers.admin).setMaxValidators(1);
                 // Deposit ETH (for 3 minipools)
                 await prepareOperatorDistributionContract(setupData, 3);
@@ -706,15 +706,11 @@ describe("SuperNodeAccount creation under validator limits", function () {
                     'IMinipool',
                     config1.expectedMinipoolAddress
                 ));
-                await expect(minipoolContract.connect(nodeOperator1).deposit({
-                    value: ethMintAmount
-                })).to.not.be.reverted;
-                await expect(setupData.rocketPool.rocketDepositPoolContract.connect(nodeOperator1).deposit({
-                    value: ethMintAmount
+                await expect(setupData.rocketPool.rocketDepositPoolContract.connect(signers.ethWhale).deposit({
+                    value: ethers.utils.parseEther("100")
                 })).to.not.be.reverted
-                // await ethers.provider.send("evm_increaseTime", [10*24*3600]);
                 let timestamp = (await ethers.provider.getBlock("latest")).timestamp;
-                await ethers.provider.send("evm_mine", [timestamp+(30*24*3600)]);
+                await ethers.provider.send("evm_mine", [timestamp+(10*24*3600)]);
                 expect(await protocol.whitelist.getActiveValidatorCountForOperator(nodeOperator1.address)).to.be.equal(1);
                 await expect(minipoolContract.connect(nodeOperator1).dissolve()).to.not.be.reverted;
                 await protocol.superNode.connect(nodeOperator1).closeDissolvedMinipool(nodeOperator1.address, config1.expectedMinipoolAddress);
@@ -756,7 +752,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
 
                 // create minipool for nodeOperator1
                 salts = await approvedSalt(7, nodeOperator1.address);
-                depositData = await generateDepositData(nodeOperator1.address, salts.pepperedSalt)
+                depositData = await generateDepositData(protocol.superNode.address, salts.pepperedSalt)
                 const config5 = {
                     timezoneLocation: 'Australia/Brisbane',
                     bondAmount: await protocol.superNode.bond(),
