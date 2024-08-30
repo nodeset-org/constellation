@@ -356,7 +356,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     /// @notice Sets the treasury address.
     /// @param newTreasury The new treasury address.
-    function setTreasurer(address newTreasury) public {
+    function setTreasury(address newTreasury) public {
         require(hasRole(Constants.TREASURER_ROLE, msg.sender), Constants.TREASURER_ONLY_ERROR);
         _treasury = newTreasury;
     }

@@ -194,7 +194,7 @@ describe("xrETH", function () {
     const fullPreviewRedeem = (await protocol.vCWETH.previewRedeem((await protocol.vCWETH.balanceOf(signers.random.address)).add(initialDeposit).sub(await protocol.vCWETH.getMintFeePortion(initialDeposit))));
     expectNumberE18ToBeApproximately(fullPreviewRedeem, (await protocol.vCWETH.totalAssets()), .00000001);
 
-    expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).equals(expectedNodeOperatorPortion);
+    expect(await ethers.provider.getBalance(protocol.directory.getOperatorRewardAddress())).equals(expectedNodeOperatorPortion);
     expect(finalTreasuryBalance.sub(initalTreasuryBalance)).equals(expectedTreasuryPortion);
   })
 
@@ -259,7 +259,7 @@ describe("xrETH", function () {
     const fullPreviewRedeem = (await protocol.vCWETH.previewRedeem((await protocol.vCWETH.balanceOf(signers.random.address)).add(initialDeposit).sub(await protocol.vCWETH.getMintFeePortion(initialDeposit))));
     expectNumberE18ToBeApproximately(fullPreviewRedeem, (await protocol.vCWETH.totalAssets()), .00000001); 
 
-    expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).equals(0);
+    expect(await ethers.provider.getBalance(protocol.directory.getOperatorRewardAddress())).equals(0);
     expect(await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit));
   })
 
@@ -335,7 +335,7 @@ describe("xrETH", function () {
     const fullPreviewRedeem = (await protocol.vCWETH.previewRedeem((await protocol.vCWETH.balanceOf(signers.random.address)).add(initialDeposit).sub(await protocol.vCWETH.getMintFeePortion(initialDeposit))));
     expectNumberE18ToBeApproximately(fullPreviewRedeem, (await protocol.vCWETH.totalAssets()), .00000001); 
 
-    expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).equals(expectedNodeOperatorPortion);
+    expect(await ethers.provider.getBalance(protocol.directory.getOperatorRewardAddress())).equals(expectedNodeOperatorPortion);
     expect(await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit))
     expect(await ethers.provider.getBalance(protocol.directory.getTreasuryAddress())).equals(expectedTreasuryPortion)
   })
