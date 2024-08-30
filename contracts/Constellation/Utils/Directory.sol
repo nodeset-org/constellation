@@ -57,7 +57,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     Protocol private _protocol;
     RocketIntegrations private _integrations;
-    address private _treasury;
+    address payable private _treasury;
     address payable private _operatorReward;
     bool private _enabledSanctions;
 
@@ -157,7 +157,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _integrations.rplToken;
     }
 
-    function getTreasuryAddress() public view returns (address) {
+    function getTreasuryAddress() public view returns (address payable) {
         return _treasury;
     }
 
@@ -197,8 +197,8 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     /// @dev This function sets up the initial protocol contract addresses and grants roles to the admin and treasurer.
     function initialize(
         Protocol memory newProtocol,
-        address operatorReward,
-        address treasury,
+        address payable operatorReward,
+        address payable treasury,
         address treasurer,
         address admin
     ) public initializer {
@@ -265,6 +265,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
         _treasury = treasury;
+        _operatorReward = operatorReward;
         _protocol = newProtocol;
 
         // set rocket integrations
@@ -356,7 +357,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     /// @notice Sets the treasury address.
     /// @param newTreasury The new treasury address.
-    function setTreasury(address newTreasury) public {
+    function setTreasury(address payable newTreasury) public {
         require(hasRole(Constants.TREASURER_ROLE, msg.sender), Constants.TREASURER_ONLY_ERROR);
         _treasury = newTreasury;
     }

@@ -4,6 +4,7 @@ import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from "../test";
 import { assertAddOperator, createClaimRewardBadChainIdSigWithNonce, createClaimRewardBadEncodedSigWithNonce, createClaimRewardBadSignerSigWithNonce, createClaimRewardBadTargetSigWithNonce, createClaimRewardSig, createClaimRewardSigWithNonce, createMockDid, deployMockToken, increaseEVMTime } from "../utils/utils";
 import { BigNumber } from "ethers";
+import { directoryAbi } from "../..";
 
 describe("Claiming Rewards", async () => {
     describe("When _rewardee is not equal to address(0)", async () => {
