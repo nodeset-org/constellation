@@ -209,7 +209,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         od.rebalanceRplStake(SuperNodeAccount(getDirectory().getSuperNodeAddress()).getEthStaked());
     }
 
-    function setDepositsEnabled(bool newValue) external onlyAdmin {
-        depositsEnabled = newValue;
+    function setDepositsEnabled(bool _newValue) external onlyAdmin {
+        depositsEnabled = _newValue;
     }
 }
