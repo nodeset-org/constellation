@@ -100,10 +100,8 @@ describe("SuperNodeAccount close", function () {
                 }, { value: ethers.utils.parseEther('1') }))
             .to.not.be.reverted;
 
-            // Deposit minipool to set to prelaunch state
-            await expect(minipoolContract.connect(nodeOperator).deposit({
-                    value: ethMintAmount
-            })).to.not.be.reverted;
+            // mint rETH, which will deposit into the minipool and set it to prelaunch state
+            setupData.rocketPool.rocketDepositPoolContract.connect(signers.ethWhale).deposit({value: ethers.utils.parseEther("100")})
 
             // Increase the time by 10 days
             await ethers.provider.send("evm_increaseTime", [10*24*3600]);
@@ -134,14 +132,13 @@ describe("SuperNodeAccount close", function () {
                         }, { value: ethers.utils.parseEther('1') }))
                     .to.not.be.reverted;
 
-                    // Deposit minipool to set to prelaunch state
-                    await expect(minipoolContract.connect(nodeOperator).deposit({
-                            value: ethMintAmount
-                    })).to.not.be.reverted;
+                    // mint rETH, which will deposit into the minipool and set it to prelaunch state
+                    setupData.rocketPool.rocketDepositPoolContract.connect(signers.ethWhale).deposit({value: ethers.utils.parseEther("100")})
 
                     // Increase the time by 10 days
-                    await ethers.provider.send("evm_increaseTime", [10*24*3600]);
-                    await ethers.provider.send("evm_mine", []);
+                    const tenDays = 10*24*3600;
+                    let latestTimestamp = (await ethers.provider.getBlock("latest")).timestamp
+                    await ethers.provider.send("evm_mine", [latestTimestamp + tenDays]);
 
                     // Assert validator count prior to closing minipool
                     expect(await protocol.whitelist.getActiveValidatorCountForOperator(nodeOperator.address)).to.be.equal(1);
@@ -171,14 +168,13 @@ describe("SuperNodeAccount close", function () {
                         }, { value: ethers.utils.parseEther('1') }))
                     .to.not.be.reverted;
 
-                    // Deposit minipool to set to prelaunch state
-                    await expect(minipoolContract.connect(nodeOperator).deposit({
-                            value: ethMintAmount
-                    })).to.not.be.reverted;
+                    // mint rETH, which will deposit into the minipool and set it to prelaunch state
+                    setupData.rocketPool.rocketDepositPoolContract.connect(signers.ethWhale).deposit({value: ethers.utils.parseEther("100")})
 
                     // Increase the time by 10 days
-                    await ethers.provider.send("evm_increaseTime", [10*24*3600]);
-                    await ethers.provider.send("evm_mine", []);
+                    const tenDays = 10*24*3600;
+                    let latestTimestamp = (await ethers.provider.getBlock("latest")).timestamp
+                    await ethers.provider.send("evm_mine", [latestTimestamp + tenDays]);
 
                     // Assert validator count prior to closing minipool
                     expect(await protocol.whitelist.getActiveValidatorCountForOperator(nodeOperator.address)).to.be.equal(1);
@@ -207,14 +203,13 @@ describe("SuperNodeAccount close", function () {
                     }, { value: ethers.utils.parseEther('1') }))
                 .to.not.be.reverted;
 
-                // Deposit minipool to set to prelaunch state
-                await expect(minipoolContract.connect(nodeOperator).deposit({
-                        value: ethMintAmount
-                })).to.not.be.reverted;
+                // mint rETH, which will deposit into the minipool and set it to prelaunch state
+                setupData.rocketPool.rocketDepositPoolContract.connect(signers.ethWhale).deposit({value: ethers.utils.parseEther("100")})
 
                 // Increase the time by 10 days
-                await ethers.provider.send("evm_increaseTime", [10*24*3600]);
-                await ethers.provider.send("evm_mine", []);
+                const tenDays = 10*24*3600;
+                let latestTimestamp = (await ethers.provider.getBlock("latest")).timestamp
+                await ethers.provider.send("evm_mine", [latestTimestamp + tenDays]);
 
                 // Assert validator count prior to closing minipool
                 expect(await protocol.whitelist.getActiveValidatorCountForOperator(nodeOperator.address)).to.be.equal(1);

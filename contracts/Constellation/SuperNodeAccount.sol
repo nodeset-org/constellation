@@ -41,9 +41,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     // Mapping of minipool address to the amount of ETH locked
     mapping(address => uint256) public lockedEth;
 
-    // Total amount of ETH locked in for all minipools
-    uint256 public totalEthLocked;
-
     // Lock threshold amount in wei
     uint256 public lockThreshold;
 
@@ -146,13 +143,14 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      */
     function lazyInitialize() external lazyInitializer {
         Directory directory = Directory(_directory);
-        _registerNode('Australia/Brisbane');
+        IRocketNodeManager rnm = IRocketNodeManager(_directory.getRocketNodeManagerAddress());
+        rnm.registerNode('Australia/Brisbane');
         address od = directory.getOperatorDistributorAddress();
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), od, true);
-        lazyInit = true;
-        
         lockThreshold = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getPreLaunchValue();
-        IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(true);
+        rnm.setSmoothingPoolRegistrationState(true);
+        
+        lazyInit = true;
     }
 
     /**
@@ -231,7 +229,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         }
 
         lockedEth[_config.expectedMinipoolAddress] = msg.value;
-        totalEthLocked += msg.value;
 
         minipools.push(_config.expectedMinipoolAddress);
 
@@ -274,6 +271,13 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      */
     function removeMinipool(address minipool) external onlyProtocol() onlyRecognizedMinipool(address(minipool)) {
         uint256 index = minipoolData[minipool].index;
+        // in case a minipool was dissolved or scrubbed, unlock the ETH and move it to the OD for later use
+        if(lockedEth[minipool] > 0) {
+            uint256 lockupBalance = lockedEth[minipool];
+            lockedEth[minipool] = 0;
+            (bool success, ) = getDirectory().getOperatorDistributorAddress().call{value: lockupBalance}('');
+            require(success, 'ETH transfer failed');
+        }
         address operatorAddress = minipoolData[minipool].subNodeOperator;
         uint256 lastIndex = minipools.length - 1;
         address lastMinipool = minipools[lastIndex];
@@ -283,14 +287,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         delete minipoolData[minipool];
 
         emit MinipoolDestroyed(minipool, operatorAddress);
-    }
-
-    /**
-     * @notice Registers a new node with the specified timezone location.
-     * @param _timezoneLocation The timezone location of the node.
-     */
-    function _registerNode(string memory _timezoneLocation) internal {
-        IRocketNodeManager(_directory.getRocketNodeManagerAddress()).registerNode(_timezoneLocation);
     }
 
     /**
@@ -308,10 +304,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         minipool.stake(_validatorSignature, _depositDataRoot);
 
         // Refund the locked ETH
-        uint256 lockupBalance = lockedEth[_minipool];
-        if (lockupBalance >= 0) {
+        if (lockedEth[_minipool] > 0) {
+            uint256 lockupBalance = lockedEth[_minipool];
             lockedEth[_minipool] = 0;
-            totalEthLocked -= lockupBalance;
             (bool success, ) = msg.sender.call{value: lockupBalance}('');
             require(success, 'ETH transfer failed');
         }

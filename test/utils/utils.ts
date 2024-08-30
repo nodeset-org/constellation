@@ -328,11 +328,8 @@ export async function predictDeploymentAddress(address: string, factoryNonceOffs
 }
 
 export async function increaseEVMTime(seconds: number) {
-  // Sending the evm_increaseTime request
-  await ethers.provider.send('evm_increaseTime', [seconds]);
-
-  // Mining a new block to apply the EVM time change
-  await ethers.provider.send('evm_mine', []);
+  let latestTimestamp = (await ethers.provider.getBlock("latest")).timestamp
+  await ethers.provider.send("evm_mine", [latestTimestamp + seconds]);
 }
 
 /**
@@ -385,8 +382,6 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
     await setupData.rocketPool.rocketDepositPoolContract.deposit({
       value: ethers.utils.parseEther('32'),
     });
-    await setupData.rocketPool.rocketDepositPoolContract.assignDeposits();
-
 
     const { sig, timestamp } = await approveHasSignedExitMessageSig(
       setupData,

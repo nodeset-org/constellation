@@ -40,6 +40,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     uint256 public minWethRplRatio;
 
+    bool public depositsEnabled;
+
     constructor() initializer {}
 
     /**
@@ -56,6 +58,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         liquidityReservePercent = 0.02e18;
         minWethRplRatio = 0; // 0% by default
         treasuryFee = 0.01e18;
+        depositsEnabled = true;
     }
 
     /**
@@ -70,6 +73,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param shares The number of shares to be exchanged for the deposit.
      */
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
+        require(depositsEnabled, "deposits are disabled"); // emergency switch for deposits
         require(caller == receiver, 'caller must be receiver');
         if (_directory.isSanctioned(caller, receiver)) {
             return;
@@ -152,6 +156,12 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         return getMissingLiquidityAfterDeposit(0);
     }
 
+    /// Calculates the treasury portion of a specific RPL reward amount.
+    /// @param _amount The RPL reward expected
+    function getTreasuryPortion(uint256 _amount) external view returns (uint256) {
+        return _amount.mulDiv(treasuryFee, 1e18);
+    }
+
     /**ADMIN FUNCTIONS */
 
     /**
@@ -199,9 +209,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         od.rebalanceRplStake(SuperNodeAccount(getDirectory().getSuperNodeAddress()).getEthStaked());
     }
 
-    /// Calculates the treasury portion of a specific RPL reward amount.
-    /// @param _amount The RPL reward expected
-    function getTreasuryPortion(uint256 _amount) external view returns (uint256) {
-        return _amount.mulDiv(treasuryFee, 1e18);
+    function setDepositsEnabled(bool _newValue) external onlyAdmin {
+        depositsEnabled = _newValue;
     }
 }

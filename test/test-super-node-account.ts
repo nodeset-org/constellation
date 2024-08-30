@@ -144,10 +144,7 @@ describe("SuperNodeAccount", function () {
 
         const lockedEth = await protocol.superNode.lockedEth(config.expectedMinipoolAddress);
         expect(lockedEth).to.equal(ethers.utils.parseEther("1"));
-
-        const totalEthLocked = await protocol.superNode.totalEthLocked();
-        expect(totalEthLocked).to.equal(ethers.utils.parseEther("1"));
-
+        
         const minipoolData = await protocol.superNode.minipoolData('0x' + config.expectedMinipoolAddress);
         expect(minipoolData.subNodeOperator).to.equal(signers.hyperdriver.address);
         expect(minipoolData.ethTreasuryFee).to.equal(await protocol.vCWETH.treasuryFee());
