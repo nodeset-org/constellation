@@ -202,7 +202,6 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         address treasurer,
         address admin
     ) public initializer {
-        // require(msg.sender != admin, Constants.INITIALIZATION_ERROR);
         require(
             _protocol.whitelist == address(0) && newProtocol.whitelist != address(0),
             Constants.INITIALIZATION_ERROR
@@ -231,6 +230,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         );
         require(_protocol.weth == address(0) && newProtocol.weth != address(0), Constants.INITIALIZATION_ERROR);
         require(_treasury == address(0) && treasury != address(0), Constants.INITIALIZATION_ERROR);
+        require(treasurer == address(0) && treasurer != address(0), Constants.INITIALIZATION_ERROR);
         require(
             _protocol.sanctions == address(0) && newProtocol.sanctions != address(0),
             Constants.INITIALIZATION_ERROR
