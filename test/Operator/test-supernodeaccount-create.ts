@@ -588,7 +588,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
                 .to.be.revertedWith('NodeAccount: protocol must have enough rpl and eth');
             });
 
-            it.only("should allow for the reuse of funds", async function () {
+            it("should allow for the reuse of funds", async function () {
                 await protocol.superNode.connect(signers.admin).setMaxValidators(1);
                 // Deposit ETH (for 3 minipools)
                 await prepareOperatorDistributionContract(setupData, 3);
