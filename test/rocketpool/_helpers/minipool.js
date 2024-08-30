@@ -133,7 +133,7 @@ export async function generateDepositData(sender, salt) {
 
     // Get validator deposit data
     let depositData = {
-        pubkey: getValidatorPubkey(),
+        pubkey: getValidatorPubkey(), // HUY!!!
         withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
         amount: BigInt(1000000000), // gwei
         signature: getValidatorSignature(),
