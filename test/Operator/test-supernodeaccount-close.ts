@@ -35,7 +35,7 @@ describe("SuperNodeAccount close", function () {
         // Set liquidity reserve to 0%
         await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
         await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(0);
-        
+
         // set fee to 0%
         await protocol.vCWETH.connect(signers.admin).setMintFee(0);
 
@@ -70,7 +70,7 @@ describe("SuperNodeAccount close", function () {
         };
 
         const message = await approveHasSignedExitMessageSig(
-            setupData, 
+            setupData,
             nodeOperator.address,
             '0x' + config.expectedMinipoolAddress,
             config.salt,

@@ -8,8 +8,5 @@ interface RocketDAOSecurityInterface {
     function getMemberCount() external view returns (uint256);
     function getMemberID(address _nodeAddress) external view returns (string memory);
     function getMemberJoinedTime(address _nodeAddress) external view returns (uint256);
-    function getMemberProposalExecutedTime(
-        string memory _proposalType,
-        address _nodeAddress
-    ) external view returns (uint256);
+    function getMemberProposalExecutedTime(string memory _proposalType, address _nodeAddress) external view returns (uint256);
 }

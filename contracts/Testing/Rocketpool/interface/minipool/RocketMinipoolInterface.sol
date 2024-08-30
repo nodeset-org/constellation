@@ -2,9 +2,9 @@ pragma solidity >0.5.0 <0.9.0;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import '../../types/MinipoolDeposit.sol';
-import '../../types/MinipoolStatus.sol';
-import '../RocketStorageInterface.sol';
+import "../../types/MinipoolDeposit.sol";
+import "../../types/MinipoolStatus.sol";
+import "../RocketStorageInterface.sol";
 
 interface RocketMinipoolInterface {
     function version() external view returns (uint8);
@@ -31,12 +31,7 @@ interface RocketMinipoolInterface {
     function getTotalScrubVotes() external view returns (uint256);
     function calculateNodeShare(uint256 _balance) external view returns (uint256);
     function calculateUserShare(uint256 _balance) external view returns (uint256);
-    function preDeposit(
-        uint256 _bondingValue,
-        bytes calldata _validatorPubkey,
-        bytes calldata _validatorSignature,
-        bytes32 _depositDataRoot
-    ) external payable;
+    function preDeposit(uint256 _bondingValue, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external payable;
     function deposit() external payable;
     function userDeposit() external payable;
     function distributeBalance(bool _rewardsOnly) external;
