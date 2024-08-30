@@ -343,7 +343,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         mintFee = newMintFee;
     }
 
-    function setDepositsEnabled(bool newValue) external onlyAdmin {
-        depositsEnabled = newValue;
+    function setDepositsEnabled(bool _newValue) external onlyAdmin {
+        depositsEnabled = _newValue;
     }
 }
