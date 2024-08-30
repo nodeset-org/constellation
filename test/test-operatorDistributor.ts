@@ -29,7 +29,7 @@ describe("Operator Distributor", function () {
 			to: minipools[0],
 			value: baconReward
 		  })
-		
+
 		// random person distributes the balance to increase nodeRefundBalance
 		const minipool = await ethers.getContractAt("IMinipool", minipools[0]);
 		await minipool.connect(signers.random).distributeBalance(true);
@@ -61,7 +61,7 @@ describe("Operator Distributor", function () {
 			to: minipools[0],
 			value: baconReward
 		  })
-		
+
 		// random person distributes the balance to increase nodeRefundBalance
 		const minipool = await ethers.getContractAt("IMinipool", minipools[0]);
 		await minipool.connect(signers.random).distributeBalance(true);
@@ -73,7 +73,7 @@ describe("Operator Distributor", function () {
 			to: minipools[0],
 			value: beaconBalance
 		  })
-		
+
 		// protocol sweeps in rewards
 		await protocol.operatorDistributor.connect(signers.random).processMinipool(minipools[0]);
 
@@ -91,7 +91,7 @@ describe("Operator Distributor", function () {
 
 		// set expectations for params
 		//expect(setupData.protocol.operatorDistributor.targetStakeRatio >= (await setupData.protocol.operatorDistributor.minimumStakeRatio()).mul(2));
-		
+
 		// add minimum assets for 2 minipools
 		await prepareOperatorDistributionContract(setupData, 2);
 

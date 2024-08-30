@@ -12,6 +12,15 @@ export const proposalStates = {
     Executed    : 6
 };
 
+// Possible vote direction
+export const voteStates = {
+    NoVote       : 0,
+    Abstain      : 1,
+    For          : 2,
+    Against      : 3,
+    AgainstWithVeto  : 4,
+};
+
 // Get the status of a proposal
 export async function getDAOProposalState(proposalID, txOptions) {
     // Load contracts
@@ -54,3 +63,9 @@ export async function getDAOProposalVotesAgainst(proposalID, txOptions) {
     return await rocketDAOProposal.getVotesAgainst.call(proposalID);
 }
 
+// Get the quroum for a proposal
+export async function getDAOProposalVotesRequired(proposalID, txOptions) {
+    // Load contracts
+    const rocketDAOProposal = await RocketDAOProposal.deployed();
+    return await rocketDAOProposal.getVotesRequired.call(proposalID);
+}

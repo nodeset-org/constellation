@@ -2,17 +2,18 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import '../RocketBase.sol';
-import '../../interface/dao/protocol/settings/RocketDAOProtocolSettingsInflationInterface.sol';
-import '../../interface/token/RocketTokenRPLInterface.sol';
-import '../../interface/RocketVaultInterface.sol';
-import '../util/ERC20Burnable.sol';
-import '../util/SafeMath.sol';
+import "../RocketBase.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsInflationInterface.sol";
+import "../../interface/token/RocketTokenRPLInterface.sol";
+import "../../interface/RocketVaultInterface.sol";
+import "../util/ERC20Burnable.sol";
+import "../util/SafeMath.sol";
 
 // RPL Governance and utility token
 // Inlfationary with rate determined by DAO
 
 contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
+
     // Libs
     using SafeMath for uint;
 
@@ -28,21 +29,21 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     // Timestamp of last block inflation was calculated at
     uint256 private inflationCalcTime = 0;
 
+
     /**** Contracts ************/
 
     // The address of our fixed supply RPL ERC20 token contract
     IERC20 rplFixedSupplyContract = IERC20(address(0));
+
 
     /**** Events ***********/
 
     event RPLInflationLog(address sender, uint256 value, uint256 inflationCalcTime);
     event RPLFixedSupplyBurn(address indexed from, uint256 amount, uint256 time);
 
+
     // Construct
-    constructor(
-        RocketStorageInterface _rocketStorageAddress,
-        IERC20 _rocketTokenRPLFixedSupplyAddress
-    ) RocketBase(_rocketStorageAddress) ERC20('Rocket Pool Protocol', 'RPL') {
+    constructor(RocketStorageInterface _rocketStorageAddress, IERC20 _rocketTokenRPLFixedSupplyAddress) RocketBase(_rocketStorageAddress) ERC20("Rocket Pool Protocol", "RPL") {
         // Version
         version = 1;
         // Set the mainnet RPL fixed supply token address
@@ -53,10 +54,10 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     }
 
     /**
-     * Get the last time that inflation was calculated at
-     * @return uint256 Last timestamp since inflation was calculated
-     */
-    function getInflationCalcTime() public view override returns (uint256) {
+    * Get the last time that inflation was calculated at
+    * @return uint256 Last timestamp since inflation was calculated
+    */
+    function getInflationCalcTime() override public view returns(uint256) {
         // Get the last time inflation was calculated if it has even started
         uint256 inflationStartTime = getInflationIntervalStartTime();
         // If inflation has just begun but not been calculated previously, use the start block as the last calculated point if it has passed
@@ -64,70 +65,68 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     }
 
     /**
-     * How many seconds to calculate inflation at
-     * @return uint256 how many seconds to calculate inflation at
-     */
-    function getInflationIntervalTime() external pure override returns (uint256) {
+    * How many seconds to calculate inflation at
+    * @return uint256 how many seconds to calculate inflation at
+    */
+    function getInflationIntervalTime() override external pure returns(uint256) {
         return inflationInterval;
     }
 
     /**
-     * The current inflation rate per interval (eg 1000133680617113500 = 5% annual)
-     * @return uint256 The current inflation rate per interval
-     */
-    function getInflationIntervalRate() public view override returns (uint256) {
+    * The current inflation rate per interval (eg 1000133680617113500 = 5% annual)
+    * @return uint256 The current inflation rate per interval
+    */
+    function getInflationIntervalRate() override public view returns(uint256) {
         // Inflation rate controlled by the DAO
-        RocketDAOProtocolSettingsInflationInterface daoSettingsInflation = RocketDAOProtocolSettingsInflationInterface(
-            getContractAddress('rocketDAOProtocolSettingsInflation')
-        );
+        RocketDAOProtocolSettingsInflationInterface daoSettingsInflation = RocketDAOProtocolSettingsInflationInterface(getContractAddress("rocketDAOProtocolSettingsInflation"));
         return daoSettingsInflation.getInflationIntervalRate();
     }
 
     /**
-     * The current block to begin inflation at
-     * @return uint256 The current block to begin inflation at
-     */
-    function getInflationIntervalStartTime() public view override returns (uint256) {
+    * The current block to begin inflation at
+    * @return uint256 The current block to begin inflation at
+    */
+    function getInflationIntervalStartTime() override public view returns(uint256) {
         // Inflation rate start time controlled by the DAO
-        RocketDAOProtocolSettingsInflationInterface daoSettingsInflation = RocketDAOProtocolSettingsInflationInterface(
-            getContractAddress('rocketDAOProtocolSettingsInflation')
-        );
+        RocketDAOProtocolSettingsInflationInterface daoSettingsInflation = RocketDAOProtocolSettingsInflationInterface(getContractAddress("rocketDAOProtocolSettingsInflation"));
         return daoSettingsInflation.getInflationIntervalStartTime();
     }
 
     /**
-     * The current rewards pool address that receives the inflation
-     * @return address The rewards pool contract address
-     */
-    function getInflationRewardsContractAddress() external view override returns (address) {
+    * The current rewards pool address that receives the inflation
+    * @return address The rewards pool contract address
+    */
+    function getInflationRewardsContractAddress() override external view returns(address) {
         // Inflation rate start block controlled by the DAO
-        return getContractAddress('rocketRewardsPool');
+        return getContractAddress("rocketRewardsPool");
     }
 
+
     /**
-     * Compute interval since last inflation update (on call)
-     * @return uint256 Time intervals since last update
-     */
-    function getInflationIntervalsPassed() public view override returns (uint256) {
+    * Compute interval since last inflation update (on call)
+    * @return uint256 Time intervals since last update
+    */
+    function getInflationIntervalsPassed() override public view returns(uint256) {
         // The time that inflation was last calculated at
         uint256 inflationLastCalculatedTime = getInflationCalcTime();
         return _getInflationIntervalsPassed(inflationLastCalculatedTime);
     }
 
-    function _getInflationIntervalsPassed(uint256 _inflationLastCalcTime) private view returns (uint256) {
+    function _getInflationIntervalsPassed(uint256 _inflationLastCalcTime) private view returns(uint256) {
         // Calculate now if inflation has begun
-        if (_inflationLastCalcTime > 0) {
+        if(_inflationLastCalcTime > 0) {
             return (block.timestamp).sub(_inflationLastCalcTime).div(inflationInterval);
-        } else {
+        }else{
             return 0;
         }
     }
 
+
     /**
-     * @dev Function to compute how many tokens should be minted
-     * @return A uint256 specifying number of new tokens to mint
-     */
-    function inflationCalculate() external view override returns (uint256) {
+    * @dev Function to compute how many tokens should be minted
+    * @return A uint256 specifying number of new tokens to mint
+    */
+    function inflationCalculate() override external view returns (uint256) {
         uint256 intervalsSinceLastMint = getInflationIntervalsPassed();
         return _inflationCalculate(intervalsSinceLastMint);
     }
@@ -136,16 +135,16 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         // The inflation amount
         uint256 inflationTokenAmount = 0;
         // Only update  if last interval has passed and inflation rate is > 0
-        if (_intervalsSinceLastMint > 0) {
+        if(_intervalsSinceLastMint > 0) {
             // Optimisation
             uint256 inflationRate = getInflationIntervalRate();
-            if (inflationRate > 0) {
+            if(inflationRate > 0) {
                 // Get the total supply now
                 uint256 totalSupplyCurrent = totalSupply();
                 uint256 newTotalSupply = totalSupplyCurrent;
                 // Compute inflation for total inflation intervals elapsed
                 for (uint256 i = 0; i < _intervalsSinceLastMint; i++) {
-                    newTotalSupply = newTotalSupply.mul(inflationRate).div(10 ** 18);
+                    newTotalSupply = newTotalSupply.mul(inflationRate).div(10**18);
                 }
                 // Return inflation amount
                 inflationTokenAmount = newTotalSupply.sub(totalSupplyCurrent);
@@ -155,11 +154,12 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         return inflationTokenAmount;
     }
 
+
     /**
-     * @dev Mint new tokens if enough time has elapsed since last mint
-     * @return A uint256 specifying number of new tokens that were minted
-     */
-    function inflationMintTokens() external override returns (uint256) {
+    * @dev Mint new tokens if enough time has elapsed since last mint
+    * @return A uint256 specifying number of new tokens that were minted
+    */
+    function inflationMintTokens() override external returns (uint256) {
         // Only run inflation process if at least 1 interval has passed (function returns 0 otherwise)
         uint256 inflationLastCalcTime = getInflationCalcTime();
         uint256 intervalsSinceLastMint = _getInflationIntervalsPassed(inflationLastCalcTime);
@@ -167,8 +167,8 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
             return 0;
         }
         // Address of the vault where to send tokens
-        address rocketVaultAddress = getContractAddress('rocketVault');
-        require(rocketVaultAddress != address(0x0), 'rocketVault address not set');
+        address rocketVaultAddress = getContractAddress("rocketVault");
+        require(rocketVaultAddress != address(0x0), "rocketVault address not set");
         // Only mint if we have new tokens to mint since last interval and an address is set to receive them
         RocketVaultInterface rocketVaultContract = RocketVaultInterface(rocketVaultAddress);
         // Calculate the amount of tokens now based on inflation rate
@@ -184,12 +184,9 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
             // Get the current allowance for Rocket Vault
             uint256 vaultAllowance = rplFixedSupplyContract.allowance(rocketVaultAddress, address(this));
             // Now allow Rocket Vault to move those tokens, we also need to account of any other allowances for this token from other contracts in the same block
-            require(
-                rplInflationContract.approve(rocketVaultAddress, vaultAllowance.add(newTokens)),
-                'Allowance for Rocket Vault could not be approved'
-            );
+            require(rplInflationContract.approve(rocketVaultAddress, vaultAllowance.add(newTokens)), "Allowance for Rocket Vault could not be approved");
             // Let vault know it can move these tokens to itself now and credit the balance to the RPL rewards pool contract
-            rocketVaultContract.depositToken('rocketRewardsPool', IERC20(address(this)), newTokens);
+            rocketVaultContract.depositToken("rocketRewardsPool", IERC20(address(this)), newTokens);
         }
         // Log it
         emit RPLInflationLog(msg.sender, newTokens, inflationCalcTime);
@@ -197,20 +194,17 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         return newTokens;
     }
 
-    /**
-     * @dev Swap current RPL fixed supply tokens for new RPL 1:1 to the same address from the user calling it
-     * @param _amount The amount of RPL fixed supply tokens to swap
-     */
-    function swapTokens(uint256 _amount) external override {
+   /**
+   * @dev Swap current RPL fixed supply tokens for new RPL 1:1 to the same address from the user calling it
+   * @param _amount The amount of RPL fixed supply tokens to swap
+   */
+    function swapTokens(uint256 _amount) override external {
         // Valid amount?
-        require(_amount > 0, 'Please enter valid amount of RPL to swap');
+        require(_amount > 0, "Please enter valid amount of RPL to swap");
         // Send the tokens to this contract now and mint new ones for them
-        require(
-            rplFixedSupplyContract.transferFrom(msg.sender, address(this), _amount),
-            'Token transfer from existing RPL contract was not successful'
-        );
+        require(rplFixedSupplyContract.transferFrom(msg.sender, address(this), _amount), "Token transfer from existing RPL contract was not successful");
         // Transfer from the contracts RPL balance to the user
-        require(this.transfer(msg.sender, _amount), 'Token transfer from RPL inflation contract was not successful');
+        require(this.transfer(msg.sender, _amount), "Token transfer from RPL inflation contract was not successful");
         // Update the total swapped
         totalSwappedRPL = totalSwappedRPL.add(_amount);
         // Log it

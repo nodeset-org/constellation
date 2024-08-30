@@ -1,19 +1,19 @@
-pragma solidity 0.7.6;
+pragma solidity ^0.8.1;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import './RocketBase.sol';
-import './util/SafeERC20.sol';
-import '../interface/RocketVaultInterface.sol';
-import '../interface/RocketVaultWithdrawerInterface.sol';
-import '../interface/util/IERC20Burnable.sol';
-
-import 'hardhat/console.sol';
+import "./RocketBase.sol";
+import "./util/SafeERC20.sol";
+import "../interface/RocketVaultInterface.sol";
+import "../interface/RocketVaultWithdrawerInterface.sol";
+import "../interface/util/IERC20Burnable.sol";
+import './util/SafeMath.sol';
 
 // ETH and rETH are stored here to prevent contract upgrades from affecting balances
 // The RocketVault contract must not be upgraded
 
 contract RocketVault is RocketBase, RocketVaultInterface {
+
     // Libs
     using SafeMath for uint;
     using SafeERC20 for IERC20;
@@ -28,15 +28,11 @@ contract RocketVault is RocketBase, RocketVaultInterface {
     event TokenDeposited(bytes32 indexed by, address indexed tokenAddress, uint256 amount, uint256 time);
     event TokenWithdrawn(bytes32 indexed by, address indexed tokenAddress, uint256 amount, uint256 time);
     event TokenBurned(bytes32 indexed by, address indexed tokenAddress, uint256 amount, uint256 time);
-    event TokenTransfer(
-        bytes32 indexed by,
-        bytes32 indexed to,
-        address indexed tokenAddress,
-        uint256 amount,
-        uint256 time
-    );
+    event TokenTransfer(bytes32 indexed by, bytes32 indexed to, address indexed tokenAddress, uint256 amount, uint256 time);
 
     bool public isMocking;
+
+    receive() external payable {}
 
     function useMock() public {
         isMocking = true;
@@ -46,31 +42,28 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         isMocking = false;
     }
 
-    // Construct
+	// Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 
     // Get a contract's ETH balance by address
-    function balanceOf(string memory _networkContractName) external view override returns (uint256) {
+    function balanceOf(string memory _networkContractName) override external view returns (uint256) {
         // Return balance
         return etherBalances[_networkContractName];
     }
 
     // Get the balance of a token held by a network contract
-    function balanceOfToken(
-        string memory _networkContractName,
-        IERC20 _tokenAddress
-    ) external view override returns (uint256) {
+    function balanceOfToken(string memory _networkContractName, IERC20 _tokenAddress) override external view returns (uint256) {
         // Return balance
         return tokenBalances[keccak256(abi.encodePacked(_networkContractName, _tokenAddress))];
     }
 
     // Accept an ETH deposit from a network contract
     // Only accepts calls from Rocket Pool network contracts
-    function depositEther() external payable override onlyLatestNetworkContract {
+    function depositEther() override external payable onlyLatestNetworkContract {
         // Valid amount?
-        require(msg.value > 0, 'No valid amount of ETH given to deposit');
+        require(msg.value > 0, "No valid amount of ETH given to deposit");
         // Get contract key
         string memory contractName = getContractName(msg.sender);
         // Update contract balance
@@ -79,17 +72,14 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         emit EtherDeposited(contractName, msg.value, block.timestamp);
     }
 
-    receive() external payable {}
-
     // Withdraw an amount of ETH to a network contract
     // Only accepts calls from Rocket Pool network contracts
-    function withdrawEther(uint256 _amount) external override onlyLatestNetworkContract {
+    function withdrawEther(uint256 _amount) override external onlyLatestNetworkContract {
         // Valid amount?
-        require(_amount > 0, 'No valid amount of ETH given to withdraw');
+        require(_amount > 0, "No valid amount of ETH given to withdraw");
         // Get contract key
         string memory contractName = getContractName(msg.sender);
         // Check and update contract balance
-
         if (!isMocking) {
             require(etherBalances[contractName] >= _amount, 'Insufficient contract ETH balance');
             etherBalances[contractName] = etherBalances[contractName].sub(_amount);
@@ -97,27 +87,20 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         // Withdraw
         RocketVaultWithdrawerInterface withdrawer = RocketVaultWithdrawerInterface(msg.sender);
         withdrawer.receiveVaultWithdrawalETH{value: _amount}();
-        //(bool result, ) = payable(msg.sender).call{value: _amount}('');
-        //require(result, "bad trasnfer in vualt");
-
         // Emit ether withdrawn event
         emit EtherWithdrawn(contractName, _amount, block.timestamp);
     }
 
     // Accept an token deposit and assign its balance to a network contract (saves a large amount of gas this way through not needing a double token transfer via a network contract first)
-    function depositToken(
-        string memory _networkContractName,
-        IERC20 _tokenContract,
-        uint256 _amount
-    ) external override {
-        // Valid amount?
-        require(_amount > 0, 'No valid amount of tokens given to deposit');
+    function depositToken(string memory _networkContractName, IERC20 _tokenContract, uint256 _amount) override external {
+         // Valid amount?
+        require(_amount > 0, "No valid amount of tokens given to deposit");
         // Make sure the network contract is valid (will throw if not)
-        require(getContractAddress(_networkContractName) != address(0x0), 'Not a valid network contract');
+        require(getContractAddress(_networkContractName) != address(0x0), "Not a valid network contract");
         // Get contract key
         bytes32 contractKey = keccak256(abi.encodePacked(_networkContractName, address(_tokenContract)));
         // Send the tokens to this contract now
-        require(_tokenContract.transferFrom(msg.sender, address(this), _amount), 'Token transfer was not successful');
+        require(_tokenContract.transferFrom(msg.sender, address(this), _amount), "Token transfer was not successful");
         // Update contract balance
         tokenBalances[contractKey] = tokenBalances[contractKey].add(_amount);
         // Emit token transfer
@@ -126,13 +109,9 @@ contract RocketVault is RocketBase, RocketVaultInterface {
 
     // Withdraw an amount of a ERC20 token to an address
     // Only accepts calls from Rocket Pool network contracts
-    function withdrawToken(
-        address _withdrawalAddress,
-        IERC20 _tokenAddress,
-        uint256 _amount
-    ) external override onlyLatestNetworkContract {
+    function withdrawToken(address _withdrawalAddress, IERC20 _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract {
         // Valid amount?
-        require(_amount > 0, 'No valid amount of tokens given to withdraw');
+        require(_amount > 0, "No valid amount of tokens given to withdraw");
         // Get contract key
         bytes32 contractKey = keccak256(abi.encodePacked(getContractName(msg.sender), _tokenAddress));
         // Update balances
@@ -142,22 +121,18 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         // Get the token ERC20 instance
         IERC20 tokenContract = IERC20(_tokenAddress);
         // Withdraw to the desired address
-        require(tokenContract.transfer(_withdrawalAddress, _amount), 'Rocket Vault token withdrawal unsuccessful');
+        require(tokenContract.transfer(_withdrawalAddress, _amount), "Rocket Vault token withdrawal unsuccessful");
         // Emit token withdrawn event
         emit TokenWithdrawn(contractKey, address(_tokenAddress), _amount, block.timestamp);
     }
 
     // Transfer token from one contract to another
     // Only accepts calls from Rocket Pool network contracts
-    function transferToken(
-        string memory _networkContractName,
-        IERC20 _tokenAddress,
-        uint256 _amount
-    ) external override onlyLatestNetworkContract {
+    function transferToken(string memory _networkContractName, IERC20 _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract {
         // Valid amount?
-        require(_amount > 0, 'No valid amount of tokens given to transfer');
+        require(_amount > 0, "No valid amount of tokens given to transfer");
         // Make sure the network contract is valid (will throw if not)
-        require(getContractAddress(_networkContractName) != address(0x0), 'Not a valid network contract');
+        require(getContractAddress(_networkContractName) != address(0x0), "Not a valid network contract");
         // Get contract keys
         bytes32 contractKeyFrom = keccak256(abi.encodePacked(getContractName(msg.sender), _tokenAddress));
         bytes32 contractKeyTo = keccak256(abi.encodePacked(_networkContractName, _tokenAddress));
@@ -170,7 +145,7 @@ contract RocketVault is RocketBase, RocketVaultInterface {
 
     // Burns an amount of a token that implements a burn(uint256) method
     // Only accepts calls from Rocket Pool network contracts
-    function burnToken(IERC20Burnable _tokenAddress, uint256 _amount) external override onlyLatestNetworkContract {
+    function burnToken(IERC20Burnable _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract {
         // Get contract key
         bytes32 contractKey = keccak256(abi.encodePacked(getContractName(msg.sender), _tokenAddress));
         // Update balances
