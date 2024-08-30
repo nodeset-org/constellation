@@ -162,13 +162,26 @@ describe("Unlocking Mechanism", async () => {
             const minipoolContract: IMinipool = await ethers.getContractAt("IMinipool", minipool);
 
             // Deposit minipool to set to prelaunch state
-                await expect(minipoolContract.connect(signers.hyperdriver).deposit({
-                    value: ethers.utils.parseEther("8")
-            })).to.not.be.reverted;
+            //     await expect(minipoolContract.connect(signers.hyperdriver).deposit({
+            //         value: ethers.utils.parseEther("8")
+            // })).to.not.be.reverted;
+
+            // mint rETH, which will deposit into the minipool, which sets it to prelaunch state
+            setupData.rocketPool.rocketDepositPoolContract.connect(signers.ethWhale).deposit({value: ethers.utils.parseEther("100")})
+
+            const initTime = await minipoolContract.getStatusTime();
+            console.log("init time for minipool:", initTime);
 
             // Increase the time by 10 days
-            await ethers.provider.send("evm_increaseTime", [10*24*3600]);
-            await ethers.provider.send("evm_mine", []);
+            const tenDays = 10*24*3600;
+            let latestTimestamp = await ethers.provider.getBlock("latest").timestamp()
+            await ethers.provider.send("evm_increaseTime", [tenDays]);
+            console.log("latest block time", latestTimestamp);
+            await ethers.provider.send("evm_mine", [latestTimestamp.add(tenDays)]);
+
+            latestTimestamp = await ethers.provider.getBlock("latest").timestamp()
+            console.log("latest block time", latestTimestamp);
+            console.log("latest timestamp - init timestamp", latestTimestamp.sub(initTime))
 
             // Dissolve and close minipool (unlock)
             await expect(minipoolContract.connect(signers.hyperdriver).dissolve()).to.not.be.reverted;
