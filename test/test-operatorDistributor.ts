@@ -23,7 +23,7 @@ describe("Operator Distributor", function () {
 			
 			it("Cannot be enabled by a random address", async function () {
 				const {protocol, signers } = setupData;
-				await expect(protocol.operatorDistributor.connect(signers.random).setMinipoolProcessingEnabled(true)).to.be.revertedWith("Can only be called by Admin address!");
+				await expect(protocol.operatorDistributor.connect(signers.random).setMinipoolProcessingEnabled(true)).to.be.revertedWith("Can only be called by admin address!");
 			})
 
 			it("Can be enabled by an admin", async function () {
@@ -46,7 +46,7 @@ describe("Operator Distributor", function () {
 			
 			it("Cannot be enabled by a random address", async function () {
 				const {protocol, signers } = setupData;
-				await expect(protocol.operatorDistributor.connect(signers.random).setMinipoolProcessingEnabled(false)).to.be.revertedWith("Can only be called by Admin address!");
+				await expect(protocol.operatorDistributor.connect(signers.random).setMinipoolProcessingEnabled(false)).to.be.revertedWith("Can only be called by admin address!");
 			})
 
 			it("Can be enabled by an admin", async function () {
