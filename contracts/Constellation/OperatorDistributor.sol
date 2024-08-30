@@ -40,10 +40,22 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     using Math for uint256;
 
+    bool public rplStakeRebalanceEnabled;
+
+    function setRplStakeRebalanceEnabled(bool _newValue) external onlyAdmin {
+        rplStakeRebalanceEnabled = _newValue;
+    }
+    
+    bool public minipoolProcessingEnabled;
+
+    function setMinipoolProcessingEnabled(bool _newValue) external onlyAdmin {
+        minipoolProcessingEnabled = _newValue;
+    }
+
     // Target ratio of SuperNode's bonded ETH to RPL stake.
     // RPL will be staked if the stake balance is below this and unstaked if the balance is above.
     uint256 public targetStakeRatio;
-    
+
     /**
      * @notice Sets the target ratio of the SuperNode's bonded ETH to RPL stake.
      * @dev RPL will be staked or unstaked to try to reach this ratio during some common state changes. 
@@ -78,6 +90,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         super.initialize(_directory);
         targetStakeRatio = 0.6e18; // 60% of bonded ETH by default.
         minimumStakeRatio = 0.15e18; // 15% of matched ETH by default
+        minipoolProcessingEnabled = true;
+        rplStakeRebalanceEnabled = true;
     }
 
     // Index for the current minipool being processed
@@ -221,6 +235,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * and then rebalance protocol liquidity.
      */
     function processMinipool(IMinipool minipool) public {
+        if(!minipoolProcessingEnabled) return; // emergency switch for minipool processing
         if (address(minipool) == address(0)) {
             return; // should only happen if there are no minipools in the system
         }
@@ -288,6 +303,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @param _ethStaked Amount of ETH currently staked in the SuperNode.
      */
     function rebalanceRplStake(uint256 _ethStaked) public onlyProtocol {
+        if(!rplStakeRebalanceEnabled) return;
         address _nodeAccount = _directory.getSuperNodeAddress();
 
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());

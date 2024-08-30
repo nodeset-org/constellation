@@ -21,7 +21,43 @@ describe("xRPL", function () {
     expect(await protocol.vCRPL.liquidityReservePercent()).equals(ethers.utils.parseUnits("0.02", 18))
     expect(await protocol.vCRPL.minWethRplRatio()).equals(ethers.utils.parseUnits("0", 18))
     expect(await protocol.vCRPL.treasuryFee()).equals(ethers.utils.parseUnits("0.01", 18))
+    expect(await protocol.vCRPL.depositsEnabled()).equals(true);
   })
+
+  it("success - admin can enable or disable deposits", async () => {
+    const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
+
+    expect(await protocol.vCRPL.depositsEnabled()).equals(true);
+
+    await expect(protocol.vCRPL.connect(signers.admin).setDepositsEnabled(true)).to.not.be.reverted;
+    let depositAmount =  ethers.utils.parseEther("1");
+    await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, depositAmount);
+    await expect(protocol.vCRPL.connect(signers.rplWhale).deposit(depositAmount, signers.rplWhale.address)).to.not.be.reverted;
+
+    await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, depositAmount);
+    await expect(protocol.vCRPL.connect(signers.admin).setDepositsEnabled(false)).to.not.be.reverted;
+    await expect(protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("1"), signers.rplWhale.address)).to.be.revertedWith("deposits are disabled");
+
+    await expect(protocol.vCRPL.connect(signers.admin).setDepositsEnabled(true)).to.not.be.reverted;
+    await expect(protocol.vCRPL.connect(signers.admin).setDepositsEnabled(true)).to.not.be.reverted;
+    await expect(protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("1"), signers.rplWhale.address)).to.not.be.reverted;
+
+    await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, depositAmount);
+    await expect(protocol.vCRPL.connect(signers.admin).setDepositsEnabled(false)).to.not.be.reverted;
+    await expect(protocol.vCRPL.connect(signers.admin).setDepositsEnabled(false)).to.not.be.reverted;
+    await expect(protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("1"), signers.rplWhale.address)).to.be.revertedWith("deposits are disabled");
+  });
+
+  it("fail - non-admin cannot set deposits enabled", async () => {
+    const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
+
+    expect(await protocol.vCWETH.depositsEnabled()).equals(true);
+
+    let depositAmount =  ethers.utils.parseEther("1");
+    await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, depositAmount);
+    await expect(protocol.vCRPL.connect(signers.random).setDepositsEnabled(false)).to.be.revertedWith("Can only be called by admin address!");
+    await expect(protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("1"), signers.rplWhale.address)).to.not.be.reverted;
+  });
 
   it("fail - tries to deposit as 'bad actor' involved in AML or other flavors of bad", async () => {
     const setupData = await loadFixture(protocolFixture);
