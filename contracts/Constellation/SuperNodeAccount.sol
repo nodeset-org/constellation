@@ -22,6 +22,7 @@ import '../Interfaces/RocketPool/IRocketStorage.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/IConstellationOracle.sol';
 import '../Interfaces/IWETH.sol';
+import '../Interfaces/ILazyInitializable.sol';
 
 import './WETHVault.sol';
 import './RPLVault.sol';
@@ -34,7 +35,7 @@ import './Utils/Errors.sol';
  * @author Theodore Clapp, Mike Leach
  * @dev Abstracts all created minipools under a single node
  */
-contract SuperNodeAccount is UpgradeableBase, Errors {
+contract SuperNodeAccount is UpgradeableBase, ILazyInitializable, Errors {
     event MinipoolCreated(address indexed minipoolAddress, address indexed operatorAddress);
     event MinipoolDestroyed(address indexed minipoolAddress, address indexed operatorAddress);
     
@@ -135,7 +136,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         super.initialize(_directory);
 
         adminServerCheck = true;
-        minimumNodeFee = 14e16;
+        minimumNodeFee = 14e16; // 14% 
         bond = 8 ether;
         maxValidators = 1;
         allowSubOpDelegateChanges = false;
@@ -144,13 +145,11 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     /**
      * @notice Performs lazy initialization of the contract.
      */
-    function lazyInitialize() external lazyInitializer {
-        Directory directory = Directory(_directory);
+    function lazyInitialize() external lazyInitializer onlyProtocol {
         _registerNode('Australia/Brisbane');
-        address od = directory.getOperatorDistributorAddress();
-        IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), od, true);
+        address od = _directory.getOperatorDistributorAddress();
+        IRocketStorage(_directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), od, true);
         lazyInit = true;
-        
         lockThreshold = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getPreLaunchValue();
         IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(true);
     }

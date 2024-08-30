@@ -9,10 +9,12 @@ import '../../Interfaces/RocketPool/IRocketStorage.sol';
 import '../../Interfaces/ISanctions.sol';
 import '../../Interfaces/RocketPool/IRocketNetworkPrices.sol';
 import '../../Interfaces/RocketPool/IRocketNetworkPenalties.sol';
+import '../../Interfaces/ILazyInitializable.sol';
 
 import './UpgradeableBase.sol';
 import '../Utils/RocketPoolEncoder.sol';
 import '../Utils/Constants.sol';
+
 
 struct Protocol {
     address whitelist;
@@ -244,10 +246,9 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         AccessControlUpgradeable.__AccessControl_init();
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.TIMELOCK_SHORT, Constants.ADMIN_ROLE);
-        _setRoleAdmin(Constants.TIMELOCK_MED, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.TIMELOCK_LONG, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.ADMIN_ORACLE_ROLE, Constants.ADMIN_ROLE);
-        _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.ADMIN_ROLE);
+        // _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.TREASURER_ROLE, Constants.TREASURER_ROLE);
 
         _grantRole(Constants.ADMIN_ROLE, admin);
@@ -266,6 +267,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.oracle);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.priceFetcher);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.superNode);
+        _grantRole(Constants.CORE_PROTOCOL_ROLE, address(this));
 
         _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
@@ -358,6 +360,8 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         );
 
         _enabledSanctions = true;
+
+        ILazyInitializable(getSuperNodeAddress()).lazyInitialize();
     }
 
     /// @notice Sets the treasury address.
