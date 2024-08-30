@@ -21,6 +21,7 @@ import "../../types/MinipoolDeposit.sol";
 import "../../types/MinipoolStatus.sol";
 import "../../interface/node/RocketNodeDepositInterface.sol";
 import "../../interface/minipool/RocketMinipoolBondReducerInterface.sol";
+import "hardhat/console.sol";
 
 /// @notice Provides the logic for each individual minipool in the Rocket Pool network
 /// @dev Minipools exclusively DELEGATECALL into this contract it is never called directly
@@ -165,6 +166,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(status == MinipoolStatus.Initialised, "The node deposit can only be assigned while initialised");
         require(userDepositAssignedTime == 0, "The user deposit has already been assigned");
         // Set the minipool status to prelaunch (ready for node to call `stake()`)
+        console.log("!!! HUY");
         setStatus(MinipoolStatus.Prelaunch);
         // Update deposit details
         userDepositBalance = msg.value.add(preLaunchValue).sub(nodeDepositBalance);
@@ -180,6 +182,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(status >= MinipoolStatus.Initialised && status <= MinipoolStatus.Staking, "The user deposit can only be assigned while initialised, in prelaunch, or staking");
         require(userDepositAssignedTime == 0, "The user deposit has already been assigned");
         // Progress initialised minipool to prelaunch
+         console.log("!!! HUY2");
         if (status == MinipoolStatus.Initialised) { setStatus(MinipoolStatus.Prelaunch); }
         // Update user deposit details
         userDepositBalance = msg.value;
@@ -305,6 +308,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Refund the node whatever rewards they have accrued prior to becoming a RP validator
         nodeRefundBalance = _currentBalance.sub(launchAmount);
         // Set status to preLaunch
+         console.log("!!! HUY 3");
         setStatus(MinipoolStatus.Prelaunch);
         // Emit event
         emit MinipoolVacancyPrepared(_bondAmount, _currentBalance, block.timestamp);
