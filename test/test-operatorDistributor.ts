@@ -3,20 +3,56 @@ import { ethers, upgrades } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber as BN } from "ethers";
-import { computeKeccak256FromBytes32, prepareOperatorDistributionContract, printEventDetails, registerNewValidator, upgradePriceFetcherToMock } from "./utils/utils";
+import { computeKeccak256FromBytes32, prepareOperatorDistributionContract, printEventDetails, registerNewValidator, upgradePriceFetcherToMock} from "./utils/utils";
 import { IMinipool, MockMinipool } from "../typechain-types";
 import { RocketDepositPool } from "./rocketpool/_utils/artifacts";
 
 describe("Operator Distributor", function () {
 
-	describe("Minipool processing", async function () {
+	describe("Minipool processing flag", async function () {
 		describe("When admin disables minipool processing", async function () {
-			it("Cannot be enabled by a random address", async function () {
 			
+			let setupData: SetupData;
+
+			this.beforeEach(async ()=>{
+				setupData = await loadFixture(protocolFixture);
+				const {protocol, signers } = setupData;
+				await protocol.operatorDistributor.connect(signers.admin).setMinipoolProcessingEnabled(false);
+				expect(await protocol.operatorDistributor.minipoolProcessingEnabled()).equals(false);
+			})
+			
+			it("Cannot be enabled by a random address", async function () {
+				const {protocol, signers } = setupData;
+				await expect(protocol.operatorDistributor.connect(signers.random).setMinipoolProcessingEnabled(true)).to.be.revertedWith("Can only be called by Admin address!");
 			})
 
 			it("Can be enabled by an admin", async function () {
+				const {protocol, signers } = setupData;
+				await expect(protocol.operatorDistributor.connect(signers.admin).setMinipoolProcessingEnabled(true)).to.not.be.reverted;
+				expect(await protocol.operatorDistributor.minipoolProcessingEnabled()).equals(true);
+			})
+		})
+
+		describe("When admin enables minipool processing", async function () {
 			
+			let setupData: SetupData;
+
+			this.beforeEach(async ()=>{
+				setupData = await loadFixture(protocolFixture);
+				const {protocol, signers } = setupData;
+
+				expect(await protocol.operatorDistributor.minipoolProcessingEnabled()).equals(true); // default is true
+			})
+			
+			it("Cannot be enabled by a random address", async function () {
+				const {protocol, signers } = setupData;
+				await expect(protocol.operatorDistributor.connect(signers.random).setMinipoolProcessingEnabled(false)).to.be.revertedWith("Can only be called by Admin address!");
+			})
+
+			it("Can be enabled by an admin", async function () {
+				const {protocol, signers } = setupData;
+				await expect(protocol.operatorDistributor.connect(signers.admin).setMinipoolProcessingEnabled(false)).to.not.be.reverted;
+				expect(await protocol.operatorDistributor.minipoolProcessingEnabled()).equals(false);
 			})
 		})
 	})
