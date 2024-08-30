@@ -42,14 +42,14 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     bool public rplStakeRebalanceEnabled;
 
-    function setRplStakeRebalanceEnabled(bool newValue) external onlyAdmin {
-        rplStakeRebalanceEnabled = newValue;
+    function setRplStakeRebalanceEnabled(bool _newValue) external onlyAdmin {
+        rplStakeRebalanceEnabled = _newValue;
     }
     
     bool public minipoolProcessingEnabled;
 
-    function setMinipoolProcessingEnabled(bool newValue) external onlyAdmin {
-        minipoolProcessingEnabled = newValue;
+    function setMinipoolProcessingEnabled(bool _newValue) external onlyAdmin {
+        minipoolProcessingEnabled = _newValue;
     }
 
     // Target ratio of SuperNode's bonded ETH to RPL stake.
