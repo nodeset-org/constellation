@@ -26,6 +26,9 @@ const prepareStakeWithLockAmount = async (setupData: SetupData, lockAmount: BigN
         expectedMinipoolAddress: depositData.minipoolAddress
     };
     const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, signers.hyperdriver.address, '0x' + config.expectedMinipoolAddress, config.salt);
+
+    let tvl = await protocol.vCWETH.totalAssets();
+
     await protocol.superNode.connect(signers.hyperdriver).createMinipool(
         {
             validatorPubkey: config.validatorPubkey,
@@ -38,6 +41,9 @@ const prepareStakeWithLockAmount = async (setupData: SetupData, lockAmount: BigN
         {
             value: lockAmount
         });
+        
+    // ensure tvl is not changed after locking
+    expect(tvl).equals(await protocol.vCWETH.totalAssets());
 
     return config.expectedMinipoolAddress;
 }
@@ -53,12 +59,7 @@ describe("Locking Mechanism", async () => {
             const lockAmount = ethers.utils.parseEther("1");
             expect(lockAmount).equals(realLockAmount);
 
-            let tvl = await protocol.vCWETH.totalAssets();
-
-            const minipool = await prepareStakeWithLockAmount(setupData, lockAmount)
-
-            // ensure tvl is not changed after locking
-            expect(tvl).equals(await protocol.vCWETH.totalAssets());
+            const minipool = await prepareStakeWithLockAmount(setupData, lockAmount)           
 
             const lockedEth = await protocol.superNode.lockedEth(minipool);
             expect(lockedEth).to.equal(lockAmount);
