@@ -787,20 +787,3 @@ describe("SuperNodeAccount creation under validator limits", function () {
         });
     });
 });
-
-async function getPublicKey(signer: any) {
-    // Message to be signed
-    const message = "Hello, Ethers!";
-    const messageBytes = ethers.utils.toUtf8Bytes(message);
-
-    // Hash the message
-    const messageHash = ethers.utils.hashMessage(messageBytes);
-
-    // Sign the message
-    const signature = await signer.signMessage(messageBytes);
-
-    // Recover the public key
-    const publicKey = ethers.utils.recoverPublicKey(messageHash, signature);
-
-    return publicKey;
-}
