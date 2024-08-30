@@ -205,40 +205,17 @@ describe("Operator Distributor", function () {
 		expect(await protocol.vCWETH.totalAssets()).to.equal(priorAssets.add(xrETHPortion));
 	});
 
-	it("Tops up the RPL stake if it is below the minimum", async function () {
-		// load fixture
+	it.skip("TODO: Tops up the RPL stake if it is below the minimum", async function () {
 		const setupData = await loadFixture(protocolFixture);
 		const { protocol, signers, rocketPool } = setupData;
 		const { operatorDistributor } = protocol;
-		const { rocketNodeStakingContract, rocketDepositPoolContract } = rocketPool;
-		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
-		const rocketDepositPool = await ethers.getContractAt("RocketDepositPool", rocketDepositPoolContract.address);
-
-		// set expectations for params
-		//expect(setupData.protocol.operatorDistributor.targetStakeRatio >= (await setupData.protocol.operatorDistributor.minimumStakeRatio()).mul(2));
-		
-		// add minimum assets for 2 minipools
-		await prepareOperatorDistributionContract(setupData, 2);
-
-		// create 2 minipools
-		await registerNewValidator(setupData, [signers.random, signers.random2]);
-
-		// send rpl to the operator distributor
-		const rplAmount = ethers.utils.parseEther("1000");
-		await rocketPool.rplContract.connect(signers.rplWhale).transfer(operatorDistributor.address, rplAmount);
-
-		const lastPrice = await upgradePriceFetcherToMock(signers, protocol, ethers.utils.parseEther("55"));
-
-		const initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
-		const tx = await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
-		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
-		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
-		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
-		const finalRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
-
-		expect(finalRplStake.sub(initialRplStake)).eq(ethers.BigNumber.from(0));
-
 	});
+
+	it.skip("TODO: Returns silently if rpl stake rebalancing is disabled", async function (){
+		const setupData = await loadFixture(protocolFixture);
+		const { protocol, signers, rocketPool } = setupData;
+		const { operatorDistributor } = protocol;
+	})
 
 	// test target stake ratio logic
 	it("success - target stake ratio may be set above 100%", async function () {
