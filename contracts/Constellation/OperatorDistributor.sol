@@ -211,59 +211,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     receive() external payable {}
 
     /**
-     * @notice Adjusts the RPL stake of the SuperNode to maintain the target RPL stake ratio based on the current ETH price
-     *  and staking metrics.
-     * @dev Anyone can call to rebalance the current stake, but normally called during processMinipool() or minipool creation. 
-     * @param _ethStaked Amount of ETH currently staked in the SuperNode.
-     */
-    function rebalanceRplStake(uint256 _ethStaked) public {
-        if(!rplStakeRebalanceEnabled) return; // emergency switch for rebalancing
-        address _nodeAccount = _directory.getSuperNodeAddress();
-
-        IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
-        uint256 rplStaked = rocketNodeStaking.getNodeRPLStake(_nodeAccount);
-        uint256 lockedStake = rocketNodeStaking.getNodeRPLLocked(_nodeAccount);
-
-        uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
-
-        uint256 targetStake = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
-        
-        // need to stake more
-        if (targetStake > rplStaked) {
-            uint256 stakeIncrease = targetStake - rplStaked;
-            if (stakeIncrease == 0) return;
-
-            uint256 currentRplBalance = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
-
-            if (currentRplBalance >= stakeIncrease) {
-                this.stakeRpl(stakeIncrease);
-            } else {
-                // stake what we have
-                if (currentRplBalance == 0) return;
-                this.stakeRpl(currentRplBalance);
-            }
-        }
-
-        // need to unstake
-        if (targetStake < rplStaked) {
-            uint256 elapsed = block.timestamp -
-                IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStakedTime(_nodeAccount);
-
-            uint256 excessRpl = rplStaked - targetStake;
-            bool noShortfall = rplStaked - excessRpl - lockedStake >=
-                rocketNodeStaking.getNodeMaximumRPLStake(_nodeAccount);
-            if (
-                elapsed >=
-                IRocketDAOProtocolSettingsRewards(_directory.getRocketDAOProtocolSettingsRewardsAddress())
-                    .getRewardsClaimIntervalTime() &&
-                noShortfall
-            ) {
-                this.unstakeRpl(excessRpl);
-            }
-        }
-    }
-
-    /**
      * @notice Process the next minipool in line, then increments lastProcessedMinipoolIndex.
      * Handles RPL rebalancing and minipool distribution based on minipool's current state.
      * Although this can be called manually, this typically happens automatically as part of other state changes
@@ -348,6 +295,59 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /**
      * INTERNAL
      */
+
+    /**
+     * @notice Adjusts the RPL stake of the SuperNode to maintain the target RPL stake ratio based on the current ETH price
+     *  and staking metrics.
+     * @dev Internal only. Called during processMinipool() or minipool creation. 
+     * @param _ethStaked Amount of ETH currently staked in the SuperNode.
+     */
+    function rebalanceRplStake(uint256 _ethStaked) public onlyProtocol {
+        if(!rplStakeRebalanceEnabled) return;
+        address _nodeAccount = _directory.getSuperNodeAddress();
+
+        IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
+        uint256 rplStaked = rocketNodeStaking.getNodeRPLStake(_nodeAccount);
+        uint256 lockedStake = rocketNodeStaking.getNodeRPLLocked(_nodeAccount);
+
+        uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+
+        uint256 targetStake = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
+        
+        // need to stake more
+        if (targetStake > rplStaked) {
+            uint256 stakeIncrease = targetStake - rplStaked;
+            if (stakeIncrease == 0) return;
+
+            uint256 currentRplBalance = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
+
+            if (currentRplBalance >= stakeIncrease) {
+                this.stakeRpl(stakeIncrease);
+            } else {
+                // stake what we have
+                if (currentRplBalance == 0) return;
+                this.stakeRpl(currentRplBalance);
+            }
+        }
+
+        // need to unstake
+        if (targetStake < rplStaked) {
+            uint256 elapsed = block.timestamp -
+                IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStakedTime(_nodeAccount);
+
+            uint256 excessRpl = rplStaked - targetStake;
+            bool noShortfall = rplStaked - excessRpl - lockedStake >=
+                rocketNodeStaking.getNodeMaximumRPLStake(_nodeAccount);
+            if (
+                elapsed >=
+                IRocketDAOProtocolSettingsRewards(_directory.getRocketDAOProtocolSettingsRewardsAddress())
+                    .getRewardsClaimIntervalTime() &&
+                noShortfall
+            ) {
+                this.unstakeRpl(excessRpl);
+            }
+        }
+    }
 
     /// @notice Unstakes a specified amount of RPL tokens.
     /// @dev This function unstakes a specified amount of RPL tokens from the Rocket Node Staking contract.
