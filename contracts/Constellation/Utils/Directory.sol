@@ -211,6 +211,9 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
             Constants.INITIALIZATION_ERROR
         );
         require(_protocol.rplVault == address(0) && newProtocol.rplVault != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.merkleClaimStreamer == address(0) && newProtocol.merkleClaimStreamer != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.superNode == address(0) && newProtocol.superNode != address(0), Constants.INITIALIZATION_ERROR);
+        require(_protocol.oracle == address(0) && newProtocol.oracle != address(0), Constants.INITIALIZATION_ERROR);
         require(
             _protocol.operatorDistributor == address(0) && newProtocol.operatorDistributor != address(0),
             Constants.INITIALIZATION_ERROR
@@ -228,13 +231,15 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
             _protocol.rocketStorage == address(0) && newProtocol.rocketStorage != address(0),
             Constants.INITIALIZATION_ERROR
         );
-        require(_protocol.weth == address(0) && newProtocol.weth != address(0), Constants.INITIALIZATION_ERROR);
-        require(_treasury == address(0) && treasury != address(0), Constants.INITIALIZATION_ERROR);
-        require(treasurer == address(0) && treasurer != address(0), Constants.INITIALIZATION_ERROR);
         require(
             _protocol.sanctions == address(0) && newProtocol.sanctions != address(0),
             Constants.INITIALIZATION_ERROR
         );
+        require(_protocol.weth == address(0) && newProtocol.weth != address(0), Constants.INITIALIZATION_ERROR);
+        require(_treasury == address(0) && treasury != address(0), Constants.INITIALIZATION_ERROR);
+        require(treasurer != address(0), Constants.INITIALIZATION_ERROR);
+        require(admin != address(0), Constants.INITIALIZATION_ERROR);
+
 
         AccessControlUpgradeable.__AccessControl_init();
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
