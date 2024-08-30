@@ -2,8 +2,8 @@
 
 pragma solidity >0.5.0 <0.9.0;
 
-import './ERC20.sol';
-import './Context.sol';
+import "./ERC20.sol";
+import "./Context.sol";
 
 /**
  * @dev Extension of {ERC20} that allows token holders to destroy both their own
@@ -34,10 +34,7 @@ abstract contract ERC20Burnable is Context, ERC20 {
      * `amount`.
      */
     function burnFrom(address account, uint256 amount) public virtual {
-        uint256 decreasedAllowance = allowance(account, _msgSender()).sub(
-            amount,
-            'ERC20: burn amount exceeds allowance'
-        );
+        uint256 decreasedAllowance = allowance(account, _msgSender()).sub(amount, "ERC20: burn amount exceeds allowance");
 
         _approve(account, _msgSender(), decreasedAllowance);
         _burn(account, amount);

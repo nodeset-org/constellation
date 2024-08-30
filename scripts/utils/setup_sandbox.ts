@@ -11,7 +11,6 @@ export const setupSandbox = async () => {
   const [deployer, admin] = await ethers.getSigners();
 
   console.log('deploying RP...');
-
   const rocketStorage = await deployRocketPool();
   await setDefaultParameters();
 

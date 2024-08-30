@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity 0.8.18;
+pragma solidity >0.5.0 <0.9.0;
 
 struct Checkpoint224 {
     uint32 _block;
@@ -8,7 +8,7 @@ struct Checkpoint224 {
 
 /// @notice Accounting for snapshotting of values based on block numbers
 interface RocketNetworkSnapshotsInterface {
-    function push(bytes32 _key, uint32 _block, uint224 _value) external;
+    function push(bytes32 _key, uint224 _value) external;
     function length(bytes32 _key) external view returns (uint256);
     function latest(bytes32 _key) external view returns (bool, uint32, uint224);
     function latestBlock(bytes32 _key) external view returns (uint32);

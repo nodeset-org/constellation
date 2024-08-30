@@ -7,20 +7,19 @@ import {
     RocketNodeDeposit,
     RocketDAOProtocolSettingsNode,
     RocketStorage,
-    RocketNodeStaking,
-    RocketNodeDepositNew,
-    RocketNodeStakingNew,
+    RocketNodeStaking, RocketNodeDepositNew, RocketNodeStakingNew, RocketNetworkPricesNew, RocketMinipoolManagerNew,
 } from '../_utils/artifacts';
 import { getValidatorPubkey, getValidatorSignature, getDepositDataRoot } from '../_utils/beacon';
 import { assertBN } from './bn';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 // Possible states that a proposal may be in
 export const minipoolStates = {
-    Initialised: 0,
-    Prelaunch: 1,
-    Staking: 2,
-    Withdrawable: 3,
-    Dissolved: 4
+    Initialised     : 0,
+    Prelaunch       : 1,
+    Staking         : 2,
+    Withdrawable    : 3,
+    Dissolved       : 4
 };
 
 // Get the number of minipools a node has
@@ -32,9 +31,9 @@ export async function getNodeMinipoolCount(nodeAddress) {
 
 // Get the number of minipools a node has in Staking status
 export async function getNodeStakingMinipoolCount(nodeAddress) {
-    const rocketMinipoolManager = await RocketMinipoolManager.deployed();
-    let count = await rocketMinipoolManager.getNodeStakingMinipoolCount.call(nodeAddress);
-    return count;
+  const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+  let count = await rocketMinipoolManager.getNodeStakingMinipoolCount.call(nodeAddress);
+  return count;
 }
 
 // Get the number of minipools a node has in that are active
@@ -70,38 +69,37 @@ export async function getMinipoolMinimumRPLStake() {
 
 }
 
+// Get the minimum required RPL stake for a minipool
+export async function getMinipoolMaximumRPLStake() {
+
+    // Load contracts
+    const upgraded = await upgradeExecuted();
+    const [
+        rocketDAOProtocolSettingsMinipool,
+        rocketNetworkPrices,
+        rocketDAOProtocolSettingsNode,
+    ] = await Promise.all([
+        RocketDAOProtocolSettingsMinipool.deployed(),
+        (upgraded) ? RocketNetworkPricesNew.deployed() : await RocketNetworkPrices.deployed(),
+        RocketDAOProtocolSettingsNode.deployed(),
+    ]);
+
+    // Load data
+    let [depositUserAmount, maxMinipoolStake, rplPrice] = await Promise.all([
+        rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount(),
+        rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake(),
+        rocketNetworkPrices.getRPLPrice(),
+    ]);
+
+    // Calculate & return
+    return depositUserAmount.mul(maxMinipoolStake).div(rplPrice);
+
+}
+
 let minipoolSalt = 1
 
-// Create a minipool
-export async function createMinipool(txOptions, salt = null) {
-    return createMinipoolWithBondAmount(txOptions.value, txOptions, salt);
-}
-
-// Function to generate deposit data for creating a minipool
-export async function generateDepositData(sender, salt) {
-    const rocketMinipoolFactory = await RocketMinipoolFactory.deployed();
-
-    let minipoolAddress = (await rocketMinipoolFactory.getExpectedAddress(sender, salt)).substr(2);
-    let withdrawalCredentials = '0x010000000000000000000000' + minipoolAddress;
-
-    // Get validator deposit data
-    let depositData = {
-        pubkey: getValidatorPubkey(),
-        withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
-        amount: BigInt(1000000000), // gwei
-        signature: getValidatorSignature(),
-    };
-
-    // Calculate the deposit data root - this might involve hashing the deposit data
-    // depending on your implementation specifics.
-    let depositDataRoot = getDepositDataRoot(depositData);
-
-    // Return the deposit data and its root
-    return { depositData, depositDataRoot, minipoolAddress };
-}
 
 export async function generateDepositDataForStake(minipoolAddress) {
-
     // Get contracts
     const rocketMinipoolManager = await RocketMinipoolManager.deployed();
 
@@ -127,25 +125,50 @@ export async function generateDepositDataForStake(minipoolAddress) {
     return { depositData, depositDataRoot };
 }
 
+// Function to generate deposit data for creating a minipool
+export async function generateDepositData(sender, salt) {
+    const rocketMinipoolFactory = await RocketMinipoolFactory.deployed();
+    let minipoolAddress = (await rocketMinipoolFactory.getExpectedAddress(sender, salt)).substr(2);
+    let withdrawalCredentials = '0x010000000000000000000000' + minipoolAddress;
+
+    // Get validator deposit data
+    let depositData = {
+        pubkey: getValidatorPubkey(),
+        withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
+        amount: BigInt(1000000000), // gwei
+        signature: getValidatorSignature(),
+    };
+
+    // Calculate the deposit data root - this might involve hashing the deposit data
+    // depending on your implementation specifics.
+    let depositDataRoot = getDepositDataRoot(depositData);
+
+    // Return the deposit data and its root
+    return { depositData, depositDataRoot, minipoolAddress };
+}
+
+// Create a minipool
+export async function createMinipool(txOptions, salt = null) {
+    return createMinipoolWithBondAmount(txOptions.value, txOptions, salt);
+}
 
 export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt = null) {
     // Load contracts
+    const upgraded = await upgradeExecuted();
     const [
         rocketMinipoolFactory,
         rocketNodeDeposit,
         rocketNodeStaking,
-        rocketStorage,
     ] = await Promise.all([
         RocketMinipoolFactory.deployed(),
-        RocketNodeDepositNew.deployed(),
-        RocketNodeStakingNew.deployed(),
-        RocketStorage.deployed()
+        (upgraded) ? RocketNodeDepositNew.deployed() : await RocketNodeDeposit.deployed(),
+        (upgraded) ? RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed(),
     ]);
 
     // Get minipool contract bytecode
     let contractBytecode;
 
-    if (salt === null) {
+    if (salt === null){
         salt = minipoolSalt++;
     }
 
@@ -167,15 +190,15 @@ export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt =
     let depositDataRoot = getDepositDataRoot(depositData);
 
     if (txOptions.value.eq(bondAmount)) {
-        await rocketNodeDeposit.deposit(bondAmount, 0, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+        await rocketNodeDeposit.deposit(bondAmount, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
     } else {
-        await rocketNodeDeposit.depositWithCredit(bondAmount, 0, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+        await rocketNodeDeposit.depositWithCredit(bondAmount, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
     }
 
     const ethMatched2 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
 
     // Expect node's ETH matched to be increased by (32 - bondAmount)
-    assertBN.equal(ethMatched2.sub(ethMatched1), ethers.utils.parseEther("32").sub(bondAmount), 'Incorrect ETH matched');
+    assertBN.equal(ethMatched2.sub(ethMatched1), '32'.ether.sub(bondAmount), 'Incorrect ETH matched');
 
     return RocketMinipoolDelegate.at('0x' + minipoolAddress);
 }
@@ -184,6 +207,7 @@ export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt =
 // Create a vacant minipool
 export async function createVacantMinipool(bondAmount, txOptions, salt = null, currentBalance = '32'.ether, pubkey = null) {
     // Load contracts
+    const upgraded = await upgradeExecuted();
     const [
         rocketMinipoolFactory,
         rocketNodeDeposit,
@@ -191,16 +215,16 @@ export async function createVacantMinipool(bondAmount, txOptions, salt = null, c
         rocketStorage,
     ] = await Promise.all([
         RocketMinipoolFactory.deployed(),
-        RocketNodeDeposit.deployed(),
-        RocketNodeStaking.deployed(),
+        (upgraded) ? RocketNodeDepositNew.deployed() : await RocketNodeDeposit.deployed(),
+        (upgraded) ? RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed(),
         RocketStorage.deployed()
     ]);
 
-    if (salt === null) {
+    if (salt === null){
         salt = minipoolSalt++;
     }
 
-    if (pubkey === null) {
+    if (pubkey === null){
         pubkey = getValidatorPubkey();
     }
 
@@ -227,7 +251,7 @@ export async function refundMinipoolNodeETH(minipool, txOptions) {
 export async function stakeMinipool(minipool, txOptions) {
 
     // Get contracts
-    const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+    const rocketMinipoolManager = (await upgradeExecuted()) ? await RocketMinipoolManagerNew.deployed() : await RocketMinipoolManager.deployed();
 
     // Get minipool validator pubkey
     const validatorPubkey = await rocketMinipoolManager.getMinipoolPubkey(minipool.address);
@@ -267,6 +291,13 @@ export async function stakeMinipool(minipool, txOptions) {
 // Promote a minipool to staking
 export async function promoteMinipool(minipool, txOptions) {
     await minipool.promote(txOptions);
+    if (await upgradeExecuted()) {
+        // Expect pubkey -> minipool mapping still exists
+        const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+        const actualPubKey = await rocketMinipoolManager.getMinipoolPubkey(minipool.address);
+        const reverseAddress = await rocketMinipoolManager.getMinipoolByPubkey(actualPubKey);
+        assert.equal(reverseAddress, minipool.address);
+    }
 }
 
 

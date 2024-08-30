@@ -20,6 +20,7 @@ import { deployProtocol, fastDeployProtocol } from "../scripts/utils/deployment"
 import { BigNumber } from 'ethers';
 import { DepositData } from "@chainsafe/lodestar-types";
 
+
 export type SetupData = {
   protocol: Protocol;
   signers: Signers;
@@ -209,6 +210,7 @@ export async function protocolFixture(): Promise<SetupData> {
     await loadFixture(setDefaultParameters);
 
     const signers = await createSigners();
+
     const deployedProtocol = await deployProtocol(signers);
     const rocketPool = await getRocketPool(deployedProtocol.directory);
 
