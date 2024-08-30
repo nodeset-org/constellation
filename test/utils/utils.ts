@@ -13,6 +13,14 @@ import { ContractTransaction } from '@ethersproject/contracts';
 import { Contract, EventFilter, utils } from 'ethers';
 import seedrandom from 'seedrandom';
 import { deposit } from '../rocketpool/deposit/scenario-deposit';
+import {  ContractReceipt } from "ethers";
+
+interface TransferEvent {
+  address: string;
+  from: string;
+  to: string;
+  amount: BigNumber;
+}
 
 // optionally include the names of the accounts
 export const printBalances = async (accounts: string[], opts: any = {}) => {
@@ -25,6 +33,34 @@ export const printBalances = async (accounts: string[], opts: any = {}) => {
   }
 };
 
+export function assertTransferEvents(receipt: ContractReceipt, expectedEvents: TransferEvent[]): boolean {
+  if (!receipt || !receipt.events || receipt.events.length === 0) {
+      throw new Error("No events found in the receipt.");
+  }
+
+  expectedEvents.forEach(expectedEvent => {
+      const event = receipt.events?.find(event =>
+          event.address === expectedEvent.address &&
+          event.topics[0] === ethers.utils.id("Transfer(address,address,uint256)") &&
+          BigNumber.from(event.data).eq(expectedEvent.amount)
+      );
+
+      if (!event) {
+          throw new Error(`Expected transfer event not found: ${JSON.stringify(expectedEvent)}`);
+      }
+
+      // Decode the 'from' and 'to' addresses from the topics
+      const from = ethers.utils.defaultAbiCoder.decode(["address"], event.topics[1])[0];
+      const to = ethers.utils.defaultAbiCoder.decode(["address"], event.topics[2])[0];
+
+      if (from.toLowerCase() !== expectedEvent.from.toLowerCase() || 
+          to.toLowerCase() !== expectedEvent.to.toLowerCase()) {
+          throw new Error(`Transfer event details do not match: expected ${JSON.stringify(expectedEvent)}, got { from: ${from}, to: ${to} }`);
+      }
+  });
+
+  return true;
+}
 
 export function computeKeccak256FromBytes32(bytes32String: string): string {
   // Computing the keccak256 hash directly from the Bytes32 string
@@ -202,7 +238,6 @@ export async function deployMinipool(setupData: SetupData, bondValue: BigNumber,
     depositDataRoot: config.depositDataRoot,
     salt: rawSalt,
     expectedMinipoolAddress: config.expectedMinipoolAddress,
-    sigGenesisTime: timestamp,
     sig: sig
   }, { value: ethers.utils.parseEther('1') });
 
@@ -359,7 +394,7 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
       '0x' + config.expectedMinipoolAddress,
       config.salt,
     );
-    
+
     await protocol.superNode
       .connect(nodeOperator)
       .createMinipool({
@@ -368,7 +403,6 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
         depositDataRoot: config.depositDataRoot,
         salt: rawSalt,
         expectedMinipoolAddress: config.expectedMinipoolAddress,
-        sigGenesisTime: timestamp,
         sig: sig
       }, { value: ethers.utils.parseEther('1') });
 
@@ -415,8 +449,8 @@ export const approveHasSignedExitMessageSig = async (
   const nonce = await setupData.protocol.superNode.nonces(subNodeOperator)
 
   const packedData = ethers.utils.solidityPack(
-    ['address', 'uint256', 'uint256', 'address', 'uint256', 'uint256'],
-    [expectedMinipoolAddress, salt, timestamp, setupData.protocol.superNode.address, nonce, chainId]
+    ['address', 'uint256', 'address', 'uint256', 'uint256', 'uint256'],
+    [expectedMinipoolAddress, salt, setupData.protocol.superNode.address, nonce, 0, chainId]
   );
 
   const messageHash = ethers.utils.keccak256(packedData);
@@ -445,8 +479,8 @@ export const approveHasSignedExitMessageSigBadTarget = async (
   const nonce = await setupData.protocol.superNode.nonces(subNodeOperator)
 
   const packedData = ethers.utils.solidityPack(
-    ['address', 'uint256', 'uint256', 'address', 'uint256', 'uint256'],
-    [expectedMinipoolAddress, salt, timestamp, setupData.protocol.operatorDistributor.address, nonce, chainId]
+    ['address', 'uint256', 'address', 'uint256', 'uint256', 'uint256'],
+    [expectedMinipoolAddress, salt, setupData.protocol.operatorDistributor.address, nonce, 0, chainId]
   );
 
   const messageHash = ethers.utils.keccak256(packedData);
@@ -475,8 +509,8 @@ export const approveHasSignedExitMessageSigBadNonce = async (
   const nonce = await setupData.protocol.superNode.nonces(subNodeOperator)
 
   const packedData = ethers.utils.solidityPack(
-    ['address', 'uint256', 'uint256', 'address', 'uint256', 'uint256'],
-    [expectedMinipoolAddress, salt, timestamp, setupData.protocol.superNode.address, nonce.add(1), chainId]
+    ['address', 'uint256', 'address', 'uint256', 'uint256', 'uint256'],
+    [expectedMinipoolAddress, salt, setupData.protocol.superNode.address, nonce.add(1), 0, chainId]
   );
 
   const messageHash = ethers.utils.keccak256(packedData);
@@ -505,8 +539,8 @@ export const approveHasSignedExitMessageSigBadChainId = async (
   const nonce = await setupData.protocol.superNode.nonces(subNodeOperator)
 
   const packedData = ethers.utils.solidityPack(
-    ['address', 'uint256', 'uint256', 'address', 'uint256', 'uint256'],
-    [expectedMinipoolAddress, salt, timestamp, setupData.protocol.superNode.address, nonce, chainId + 1]
+    ['address', 'uint256', 'address', 'uint256', 'uint256', 'uint256'],
+    [expectedMinipoolAddress, salt, setupData.protocol.superNode.address, nonce, 0, chainId + 1]
   );
 
   const messageHash = ethers.utils.keccak256(packedData);
@@ -557,9 +591,10 @@ export const whitelistUserServerSig = async (setupData: SetupData, nodeOperator:
     goodSigner.address
   );
   expect(role).equals(true);
+  const nonce = await setupData.protocol.whitelist.getNonceForOperator(nodeOperator.address);
   const packedData = ethers.utils.solidityPack(
-    ['address', 'uint256', 'address', 'uint256'],
-    [nodeOperator.address, timestamp, setupData.protocol.whitelist.address, chainId]
+    ['address', 'address', 'uint256', 'uint256', 'uint256'],
+    [nodeOperator.address, setupData.protocol.whitelist.address, nonce, 0, chainId]
   );
   const messageHash = ethers.utils.keccak256(packedData);
   const messageHashBytes = ethers.utils.arrayify(messageHash);
@@ -572,7 +607,7 @@ export const assertAddOperator = async (setupData: SetupData, nodeOperator: Sign
   expect(await setupData.protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address)).equals(false);
   await setupData.protocol.whitelist
     .connect(setupData.signers.adminServer)
-    .addOperator(nodeOperator.address, timestamp, sig);
+    .addOperator(nodeOperator.address, sig);
   expect(await setupData.protocol.whitelist.getIsAddressInWhitelist(nodeOperator.address)).equals(true);
 };
 
@@ -594,8 +629,8 @@ export const badAutWhitelistUserServerSig = async (setupData: SetupData, nodeOpe
   );
   expect(role).equals(false);
   const packedData = ethers.utils.solidityPack(
-    ['address', 'uint256', 'address', 'uint256'],
-    [nodeOperator.address, timestamp, setupData.protocol.whitelist.address, chainId]
+    ['address', 'address', 'uint256', 'uint256'],
+    [nodeOperator.address, setupData.protocol.whitelist.address, 0, chainId]
   );
   const messageHash = ethers.utils.keccak256(packedData);
   const messageHashBytes = ethers.utils.arrayify(messageHash);
@@ -611,7 +646,7 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
 
   let requiredEth;
   let liquidityReservePercent = await setupData.protocol.vCWETH.liquidityReservePercent();
-  if(liquidityReservePercent.eq(BigNumber.from(0))) {
+  if (liquidityReservePercent.eq(BigNumber.from(0))) {
     requiredEth = depositTarget;
   } else {
     requiredEth = depositAmount
@@ -639,26 +674,26 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
   }
   requiredEth = requiredEth.mul(ethers.utils.parseEther('1')).div(ethers.utils.parseEther('1').sub(await vweth.mintFee()));
   let error = 0;
-  switch(numOperators) {
-    case 1: 
+  switch (numOperators) {
+    case 1:
       error = 1;
       break;
-    case 2: 
+    case 2:
       error = 2;
       break;
-    case 3: 
+    case 3:
       error = (await setupData.protocol.vCWETH.liquidityReservePercent()).eq(0) ? 1 : 3;
       break;
-    case 4: 
+    case 4:
       error = 4;
       break;
-    case 5: 
+    case 5:
       error = 5;
       break;
   }
   // the real math is probably some weird function of the fee amount and liquidity reserve, 
   // but we only use a param value of up to 5 in our tests and 3 is the only weird case
-  requiredEth = requiredEth.add(error); 
+  requiredEth = requiredEth.add(error);
 
   await setupData.protocol.wETH.connect(setupData.signers.ethWhale).deposit({ value: requiredEth });
   await setupData.protocol.wETH.connect(setupData.signers.ethWhale).approve(setupData.protocol.vCWETH.address, requiredEth);
@@ -703,8 +738,8 @@ export async function createClaimRewardSigWithNonce(setupData: SetupData, token:
    */
 
   const packedData = ethers.utils.solidityPack(
-    ['address', 'bytes32', 'address', 'uint256', 'uint256', 'address', 'uint256'],
-    [token, did, rewardee, amount, nonce, setupData.protocol.yieldDistributor.address, chainId]
+    ['address', 'bytes32', 'address', 'uint256', 'uint256', 'uint256', 'address', 'uint256'],
+    [token, did, rewardee, amount, nonce, 0, setupData.protocol.yieldDistributor.address, chainId]
   );
 
   const messageHash = ethers.utils.keccak256(packedData);
@@ -725,8 +760,8 @@ export async function createClaimRewardBadTargetSigWithNonce(setupData: SetupDat
   const chainId = network.chainId;
 
   const packedData = ethers.utils.solidityPack(
-    ['address', 'bytes32', 'address', 'uint256', 'uint256', 'address', 'uint256'],
-    [token, did, rewardee, amount, nonce, setupData.protocol.superNode.address, chainId] // we are signing super node which is an intended bug
+    ['address', 'bytes32', 'address', 'uint256', 'uint256', 'uint256', 'address', 'uint256'],
+    [token, did, rewardee, amount, nonce, 0, setupData.protocol.superNode.address, chainId] // we are signing super node which is an intended bug
   );
 
   const messageHash = ethers.utils.keccak256(packedData);
@@ -747,8 +782,8 @@ export async function createClaimRewardBadChainIdSigWithNonce(setupData: SetupDa
   const chainId = network.chainId + 1; // this bug is intended
 
   const packedData = ethers.utils.solidityPack(
-    ['address', 'bytes32', 'address', 'uint256', 'uint256', 'address', 'uint256'],
-    [token, did, rewardee, amount, nonce, setupData.protocol.yieldDistributor.address, chainId]
+    ['address', 'bytes32', 'address', 'uint256', 'uint256', 'uint256', 'address', 'uint256'],
+    [token, did, rewardee, amount, nonce, 0, setupData.protocol.yieldDistributor.address, chainId]
   );
 
   const messageHash = ethers.utils.keccak256(packedData);
@@ -768,8 +803,8 @@ export async function createClaimRewardBadSignerSigWithNonce(setupData: SetupDat
   const chainId = network.chainId;
 
   const packedData = ethers.utils.solidityPack(
-    ['address', 'bytes32', 'address', 'uint256', 'uint256', 'address', 'uint256'],
-    [token, did, rewardee, amount, nonce, setupData.protocol.yieldDistributor.address, chainId]
+    ['address', 'bytes32', 'address', 'uint256', 'uint256', 'uint256', 'address', 'uint256'],
+    [token, did, rewardee, amount, nonce, 0, setupData.protocol.yieldDistributor.address, chainId]
   );
 
   const messageHash = ethers.utils.keccak256(packedData);

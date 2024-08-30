@@ -55,8 +55,8 @@ describe("Node Operator Onboarding", function () {
         await prepareOperatorDistributionContract(setupData, 1);
         expect(await protocol.superNode.hasSufficientLiquidity(bondValue)).equals(true);
 
-        expect(await protocol.superNode.getTotalEthStaked()).equals(BigInt(0));
-        expect(await protocol.superNode.getTotalEthMatched()).equals(BigInt(0));
+        expect(await protocol.superNode.getEthStaked()).equals(BigInt(0));
+        expect(await protocol.superNode.getEthMatched()).equals(BigInt(0));
 
         minipoolAddress = await deployMinipool(setupData, bondValue, signers.hyperdriver.address);
 
@@ -105,12 +105,12 @@ describe("Node Operator Onboarding", function () {
         await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.hyperdriver.address, ethers.utils.parseEther("200"));
         await rocketPool.rplContract.connect(signers.hyperdriver).approve(protocol.vCRPL.address, ethers.utils.parseEther("200"));
         await protocol.vCRPL.connect(signers.hyperdriver).deposit(ethers.utils.parseEther("200"), signers.hyperdriver.address);
-        
+
         // deposit into protocol
         await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
         await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
         await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
-        
+
         const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp
         const network = await ethers.provider.getNetwork();
         const chainId = network.chainId;

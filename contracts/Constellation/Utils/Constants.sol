@@ -8,13 +8,13 @@ pragma solidity 0.8.17;
 library Constants {
     // ROLES
     bytes32 internal constant ADMIN_ROLE = keccak256('ADMIN_ROLE');
-    bytes32 internal constant TREASURY_ROLE = keccak256('TREASURY_ROLE');
+    bytes32 internal constant TREASURER_ROLE = keccak256('TREASURER_ROLE');
     bytes32 internal constant ADMIN_ORACLE_ROLE = keccak256('ADMIN_ORACLE_ROLE');
     bytes32 internal constant ADMIN_SERVER_ROLE = keccak256('ADMIN_SERVER_ROLE');
 
     // Note that the protocol role should ONLY be given to protocol contracts
     // This is a dangerous role that MUST be kept internal
-    // It should never be given to a non-core-protocol contract (e.g. don't give it to the treasury or operator rewards address)
+    // It should never be given to a non-core-protocol contract (e.g. don't give it to the treasurer or operator rewards address)
     // and it should also never be given to an EOA (e.g. don't give this to the ADMIN or TREASURER)
     // See Directory.sol for a list of contracts which are allowed to have this role
     bytes32 internal constant CORE_PROTOCOL_ROLE = keccak256('CORE_PROTOCOL_ROLE');

@@ -3,8 +3,9 @@ pragma abicoder v2;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import '../RocketBase.sol';
-import '../../interface/rewards/RocketSmoothingPoolInterface.sol';
+import "../RocketBase.sol";
+import "../../interface/rewards/RocketSmoothingPoolInterface.sol";
+
 import '../util/SafeMath.sol';
 
 /*
@@ -16,6 +17,7 @@ transferred from this contract to the upgraded one.
 */
 
 contract RocketSmoothingPool is RocketBase, RocketSmoothingPoolInterface {
+
     // Libs
     using SafeMath for uint256;
 
@@ -29,18 +31,18 @@ contract RocketSmoothingPool is RocketBase, RocketSmoothingPoolInterface {
     }
 
     // Allow receiving ETH
-    receive() external payable {}
+    receive() payable external {}
 
     // Withdraws ETH to given address
     // Only accepts calls from Rocket Pool network contracts
-    function withdrawEther(address _to, uint256 _amount) external override onlyLatestNetworkContract {
+    function withdrawEther(address _to, uint256 _amount) override external onlyLatestNetworkContract {
         // Valid amount?
-        require(_amount > 0, 'No valid amount of ETH given to withdraw');
+        require(_amount > 0, "No valid amount of ETH given to withdraw");
         // Get contract name
         string memory contractName = getContractName(msg.sender);
         // Send the ETH
-        (bool result, ) = _to.call{value: _amount}('');
-        require(result, 'Failed to withdraw ETH');
+        (bool result,) = _to.call{value: _amount}("");
+        require(result, "Failed to withdraw ETH");
         // Emit ether withdrawn event
         emit EtherWithdrawn(contractName, _to, _amount, block.timestamp);
     }

@@ -1,6 +1,18 @@
 import Web3 from 'web3';
-import { RocketDAOProtocol, RocketDAOProtocolSettingsRewards, RocketDAOProtocolSettingsInflation, RocketTokenRPL, RocketVault, RocketDAOProtocolNew } from '../_utils/artifacts';
+import {
+    RocketDAOProtocol,
+    RocketDAOProtocolSettingsRewards,
+    RocketDAOProtocolSettingsInflation,
+    RocketTokenRPL,
+    RocketVault,
+    RocketDAOProtocolNew,
+    RocketNetworkPricesNew,
+    RocketNetworkPrices,
+    RocketDAOProtocolSettingsRewardsNew,
+    RocketClaimDAO, RocketClaimDAONew,
+} from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Change a trusted node DAO setting while bootstrap mode is enabled
@@ -12,7 +24,7 @@ export async function setDAOProtocolBootstrapSetting(_settingContractInstance, _
     }
 
     // Load contracts
-    const rocketDAOProtocol = await RocketDAOProtocolNew.deployed();
+    const rocketDAOProtocol = (await upgradeExecuted()) ? await RocketDAOProtocolNew.deployed() : await RocketDAOProtocol.deployed();
     const rocketDAOProtocolSettingsContract = await _settingContractInstance.deployed();
 
     // Get data about the tx
@@ -30,12 +42,18 @@ export async function setDAOProtocolBootstrapSetting(_settingContractInstance, _
     // Capture data
     let ds1 = await getTxData();
 
+    // Trim "Old" off contract name
+    let contractName = _settingContractInstance._json.contractName.lowerCaseFirstLetter();
+    if (contractName.endsWith('Old')) {
+        contractName = contractName.substring(0, contractName.length - 3);
+    }
+
     // Set as a bootstrapped setting. detect type first, can be a number, string or bn object
     if(Web3.utils.isAddress(_value)) {
-        await rocketDAOProtocol.bootstrapSettingAddress(_settingContractInstance._json.contractName.lowerCaseFirstLetter(), _settingPath, _value, txOptions);
+        await rocketDAOProtocol.bootstrapSettingAddress(contractName, _settingPath, _value, txOptions);
     }else{
-        if(typeof(_value) == 'number' || typeof(_value) == 'string' || typeof(_value) == 'object') await rocketDAOProtocol.bootstrapSettingUint(_settingContractInstance._json.contractName.lowerCaseFirstLetter(), _settingPath, _value, txOptions);
-        if(typeof(_value) == 'boolean') await rocketDAOProtocol.bootstrapSettingBool(_settingContractInstance._json.contractName.lowerCaseFirstLetter(), _settingPath, _value, txOptions);
+        if(typeof(_value) == 'number' || typeof(_value) == 'string' || typeof(_value) == 'object') await rocketDAOProtocol.bootstrapSettingUint(contractName, _settingPath, _value, txOptions);
+        if(typeof(_value) == 'boolean') await rocketDAOProtocol.bootstrapSettingBool(contractName, _settingPath, _value, txOptions);
     }
 
     // Capture data
@@ -55,30 +73,27 @@ export async function setDAOProtocolBootstrapSetting(_settingContractInstance, _
 }
 
 // Set a contract that can claim rewards
-export async function setDAONetworkBootstrapRewardsClaimer(_contractName, _perc, txOptions, expectedTotalPerc = null) {
+export async function setDAONetworkBootstrapRewardsClaimers(_trustedNodePerc, _protocolPerc, _nodePerc, txOptions) {
     // Load contracts
-    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
-    const rocketDAOProtocolSettingsRewards = await RocketDAOProtocolSettingsRewards.deployed();
+    const rocketDAOProtocol = (await upgradeExecuted()) ? await RocketDAOProtocolNew.deployed() : await RocketDAOProtocol.deployed();
+    const rocketDAOProtocolSettingsRewards = (await upgradeExecuted()) ? await RocketDAOProtocolSettingsRewardsNew.deployed() : await RocketDAOProtocolSettingsRewards.deployed();
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAOProtocolSettingsRewards.getRewardsClaimerPerc(_contractName),
-            rocketDAOProtocolSettingsRewards.getRewardsClaimersPercTotal(),
+            rocketDAOProtocolSettingsRewards.getRewardsClaimersPerc(),
         ]).then(
-            ([rewardsClaimerPerc, rewardsClaimersPercTotal]) =>
-            ({rewardsClaimerPerc, rewardsClaimersPercTotal})
+            ([rewardsClaimerPerc]) =>
+            ({rewardsClaimerPerc})
         );
     }
     // Perform tx
-    await rocketDAOProtocol.bootstrapSettingClaimer(_contractName, _perc, txOptions);
+    await rocketDAOProtocol.bootstrapSettingClaimers(_trustedNodePerc, _protocolPerc, _nodePerc, txOptions);
     // Capture data
     let dataSet2 = await getTxData();
     // Verify
-    assertBN.equal(dataSet2.rewardsClaimerPerc, _perc, 'Claim percentage not updated correctly');
-    // Verify an expected total Perc if given
-    if (expectedTotalPerc) {
-        assertBN.equal(dataSet2.rewardsClaimersPercTotal, expectedTotalPerc, 'Total claim percentage not matching given target');
-    }
+    assertBN.equal(dataSet2.rewardsClaimerPerc[0], _trustedNodePerc, 'Claim percentage not updated correctly');
+    assertBN.equal(dataSet2.rewardsClaimerPerc[1], _protocolPerc, 'Claim percentage not updated correctly');
+    assertBN.equal(dataSet2.rewardsClaimerPerc[2], _nodePerc, 'Claim percentage not updated correctly');
 }
 
 
@@ -127,6 +142,46 @@ export async function spendRewardsClaimTreasury(_invoiceID, _recipientAddress, _
 }
 
 
+// Create a new recurring payment via bootstrap
+export async function bootstrapTreasuryNewContract(_contractName, _recipientAddress, _amount, _periodLength, _startTime, _numPeriods, txOptions) {
+    assert(await upgradeExecuted());
+
+    // Load contracts
+    const rocketDAOProtocol = await RocketDAOProtocolNew.deployed();
+    const rocketClaimDAO = await RocketClaimDAONew.deployed();
+
+    // Perform tx
+    await rocketDAOProtocol.bootstrapTreasuryNewContract(_contractName, _recipientAddress, _amount, _periodLength, _startTime, _numPeriods, txOptions);
+
+    // Sanity check
+    const contract = await rocketClaimDAO.getContract(_contractName);
+    assert(contract.recipient === _recipientAddress);
+    assertBN.equal(contract.amountPerPeriod, _amount, "Invalid amount");
+    assert(Number(contract.periodLength) === _periodLength);
+    assert(Number(contract.numPeriods) === _numPeriods);
+    assert(Number(contract.lastPaymentTime) === _startTime);
+}
+
+
+// Update an existing recurring payment via bootstrap
+export async function bootstrapTreasuryUpdateContract(_contractName, _recipientAddress, _amount, _periodLength, _numPeriods, txOptions) {
+    assert(await upgradeExecuted());
+
+    // Load contracts
+    const rocketDAOProtocol = await RocketDAOProtocolNew.deployed();
+    const rocketClaimDAO = await RocketClaimDAONew.deployed();
+
+    // Perform tx
+    await rocketDAOProtocol.bootstrapTreasuryUpdateContract(_contractName, _recipientAddress, _amount, _periodLength, _numPeriods, txOptions);
+
+    // Sanity check
+    const contract = await rocketClaimDAO.getContract(_contractName);
+    assert(contract.recipient === _recipientAddress);
+    assertBN.equal(contract.amountPerPeriod, _amount, "Invalid amount");
+    assert(Number(contract.periodLength) === _periodLength);
+    assert(Number(contract.numPeriods) === _numPeriods);
+}
+
 /*** Inflation *******/
 
 // Set the current RPL inflation rate
@@ -148,7 +203,7 @@ export async function setRPLInflationStartTime(startTime, txOptions) {
 // Disable bootstrap mode
 export async function setDaoProtocolBootstrapModeDisabled(txOptions) {
     // Load contracts
-    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+    const rocketDAOProtocol = (await upgradeExecuted()) ? await RocketDAOProtocolNew.deployed() : await RocketDAOProtocol.deployed();
 
     // Get data about the tx
     function getTxData() {
@@ -181,7 +236,7 @@ export async function setDAOProtocolBootstrapSettingMulti(_settingContractInstan
   }
 
   // Load contracts
-  const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+  const rocketDAOProtocol = (await upgradeExecuted()) ? await RocketDAOProtocolNew.deployed() : await RocketDAOProtocol.deployed();
 
 
   const contractNames = [];
@@ -248,4 +303,29 @@ export async function setDAOProtocolBootstrapSettingMulti(_settingContractInstan
         break;
     }
   }
+}
+
+export async function setDAOProtocolBootstrapEnableGovernance(txOptions) {
+    // Load contracts
+    const rocketDAOProtocol = (await upgradeExecuted()) ? await RocketDAOProtocolNew.deployed() : await RocketDAOProtocol.deployed();
+    // Execute enable transaction
+    await rocketDAOProtocol.bootstrapEnableGovernance();
+}
+
+/*** Security council *******/
+
+// Use bootstrap power to invite a member to the security council
+export async function setDAOProtocolBootstrapSecurityInvite(_id, _memberAddress, txOptions) {
+    // Load contracts
+    const rocketDAOProtocol = (await upgradeExecuted()) ? await RocketDAOProtocolNew.deployed() : await RocketDAOProtocol.deployed();
+    // Execute the invite
+    await rocketDAOProtocol.bootstrapSecurityInvite(_id, _memberAddress, txOptions);
+}
+
+// Use bootstrap power to kick a member from the security council
+export async function setDAOProtocolBootstrapSecurityKick(_id, _memberAddress, txOptions) {
+    // Load contracts
+    const rocketDAOProtocol = (await upgradeExecuted()) ? await RocketDAOProtocolNew.deployed() : await RocketDAOProtocol.deployed();
+    // Execute the kick
+    await rocketDAOProtocol.bootstrapSecurityKick(_memberAddress, txOptions);
 }

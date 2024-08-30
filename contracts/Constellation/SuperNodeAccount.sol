@@ -29,8 +29,6 @@ import './RPLVault.sol';
 import './Utils/Constants.sol';
 import './Utils/Errors.sol';
 
-import 'hardhat/console.sol';
-
 /**
  * @title SuperNodeAccount
  * @author Theodore Clapp, Mike Leach
@@ -51,14 +49,16 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     // Variables for admin server message checks (if enabled for minipool creation)
     bool public adminServerCheck;
-    uint256 public adminServerSigExpiry;
-    mapping(bytes => bool) public sigsUsed;
     mapping(address => uint256) public nonces;
+    uint256 public nonce;
 
     bool lazyInit;
 
     // List of all minipools
     address[] public minipools;
+
+    // FOR OFFCHAIN USE ONLY - DO NOT USE IN CONTRACTS
+    mapping(address => address[]) public __subNodeOperatorMinipools__;
 
     struct Minipool {
         address subNodeOperator;
@@ -73,7 +73,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         bytes32 depositDataRoot;
         uint256 salt;
         address expectedMinipoolAddress;
-        uint256 sigGenesisTime;
         bytes sig;
     }
 
@@ -136,7 +135,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         super.initialize(_directory);
 
         adminServerCheck = true;
-        adminServerSigExpiry = 1 days;
         minimumNodeFee = 14e16;
         bond = 8 ether;
         maxValidators = 1;
@@ -210,9 +208,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         // verify admin server signature if required
         if (adminServerCheck) {
-            require(block.timestamp - _config.sigGenesisTime < adminServerSigExpiry, 'as sig expired');
-
-            _validateSigUsed(_config.sig);
 
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
@@ -220,9 +215,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
                         abi.encodePacked(
                             _config.expectedMinipoolAddress,
                             salt,
-                            _config.sigGenesisTime,
                             address(this),
                             nonces[subNodeOperator]++,
+                            nonce,
                             block.chainid
                         )
                     )
@@ -253,7 +248,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         Whitelist(getDirectory().getWhitelistAddress()).registerNewValidator(subNodeOperator);
 
         // stake additional RPL to cover the new minipool
-        od.rebalanceRplStake(getTotalEthStaked() + bond);
+        od.rebalanceRplStake(this.getEthStaked() + bond);
 
         // do the deposit!
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: bond}(
@@ -265,6 +260,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             salt,
             _config.expectedMinipoolAddress
         );
+
+        __subNodeOperatorMinipools__[subNodeOperator].push(_config.expectedMinipoolAddress);
 
         emit MinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator);
     }
@@ -330,7 +327,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @param subNodeOperatorAddress Address of the sub-node operator associated with the minipool.
      * @param minipoolAddress Address of the minipool to close.
      */
-    function close(address subNodeOperatorAddress, address minipoolAddress) external onlyRecognizedMinipool(minipoolAddress) {
+    function closeDissolvedMinipool(address subNodeOperatorAddress, address minipoolAddress) external onlyRecognizedMinipool(minipoolAddress) {
         require(minipoolData[minipoolAddress].subNodeOperator == subNodeOperatorAddress, "operator does not own the specified minipool");
         IMinipool minipool = IMinipool(minipoolAddress);
         Whitelist(getDirectory().getWhitelistAddress()).removeValidator(minipoolData[minipoolAddress].subNodeOperator);
@@ -343,7 +340,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev This function provides a mechanism for delegated upgrades of minipools, enhancing flexibility in maintenance and upgrades.
      * @param _minipool Address of the minipool which is to be upgraded.
      */
-    function delegateUpgrade(address _minipool) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
+    function minipoolDelegateUpgrade(address _minipool) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateUpgrade();
     }
@@ -353,7 +350,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev Provides a rollback mechanism for previously delegated upgrades, ensuring that upgrades can be reversed if necessary.
      * @param _minipool Address of the minipool whose upgrade is to be rolled back.
      */
-    function delegateRollback(address _minipool) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
+    function minipoolDelegateRollback(address _minipool) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateRollback();
     }
@@ -364,23 +361,12 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @param _setting Boolean indicating whether to use the latest delegate.
      * @param _minipool Address of the minipool whose delegation setting is to be configured.
      */
-    function setUseLatestDelegate(
+    function setUseLatestMinipoolDelegate(
         bool _setting,
         address _minipool
     ) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.setUseLatestDelegate(_setting);
-    }
-
-    /**
-     * @notice Validates if a signature has already been used to prevent replay attacks.
-     * @dev This function checks against a mapping to ensure that each signature is used only once,
-     *      adding an additional layer of security by preventing the reuse of signatures in unauthorized transactions.
-     * @param _sig The signature to validate.
-     */
-    function _validateSigUsed(bytes memory _sig) internal {
-        require(!sigsUsed[_sig], 'sig already used');
-        sigsUsed[_sig] = true;
     }
 
     /**
@@ -418,15 +404,22 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     /**
      * @return uint256 The amount of ETH bonded with this node from WETHVault deposits.
      */
-    function getTotalEthStaked() public view returns (uint256) {
+    function getEthStaked() public view returns (uint256) {
         return IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).getNodeETHProvided(address(this));
     }
 
     /**
      * @return uint256 The amount of ETH matched with this node from the rETH deposit pool
      */
-    function getTotalEthMatched() public view returns (uint256) {
+    function getEthMatched() public view returns (uint256) {
         return IRocketNodeStaking(getDirectory().getRocketNodeStakingAddress()).getNodeETHMatched(address(this));
+    }
+
+    /**
+     * @return uint256 The amount of RPL staked on this node
+     */
+    function getRplStaked() public view returns (uint256) {
+        return IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).getNodeRPLStake(address(this));
     }
 
     /**
@@ -444,7 +437,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         uint256 newEthBorrowed = IRocketDAOProtocolSettingsMinipool(_directory.getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() - _bond;
         uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(
             rplStaking,
-            getTotalEthMatched() + newEthBorrowed
+            this.getEthMatched() + newEthBorrowed
         );
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired && od.balance >= _bond;
     }
@@ -454,14 +447,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     function getNumMinipools() external view returns (uint256) {
         return minipools.length;
-    }
-
-    /**
-     * @notice Sets a new admin sig expiry time.
-     * @param _newExpiry The new sig expiry time in seconds.
-     */
-    function setAdminServerSigExpiry(uint256 _newExpiry) external onlyAdmin {
-        adminServerSigExpiry = _newExpiry;
     }
 
     /**
@@ -488,5 +473,27 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      */
     function setMaxValidators(uint256 _maxValidators) public onlyMediumTimelock {
         maxValidators = _maxValidators;
+    }
+
+    function invalidateAllOutstandingSigs() external onlyAdmin {
+        nonce++;
+    }
+
+    function invalidateSingleOustandingSig(address _nodeOperator) external onlyAdmin {
+        nonces[_nodeOperator]++;
+    }
+
+    // FOR OFFCHAIN USE ONLY - DO NOT USE IN CONTRACTS
+    /// @notice Get the complete minipool count for a sub-node operator, including removed minipools
+    /// @param _subNodeOperator The address of the sub-node operator
+    function getMinipoolCount(address _subNodeOperator) external view returns (uint256) {
+        return __subNodeOperatorMinipools__[_subNodeOperator].length;
+    }
+
+    // FOR OFFCHAIN USE ONLY - DO NOT USE IN CONTRACTS
+    /// @notice Get the complete minipool list for a sub-node operator, including removed minipools
+    /// @param _subNodeOperator The address of the sub-node operator
+    function getMinipools(address _subNodeOperator) external view returns (address[] memory) {
+        return __subNodeOperatorMinipools__[_subNodeOperator];
     }
 }

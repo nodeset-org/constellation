@@ -9,7 +9,7 @@ import { RocketDepositPool } from "./rocketpool/_utils/artifacts";
 
 describe("Operator Distributor", function () {
 
-	it("Processes minipool rewards correctly even when an external user calls distributeBalance", async function (){
+	it("Processes minipool rewards correctly even when nodeRefundBalance > 0 (no exit)", async function (){
 		const setupData = await loadFixture(protocolFixture);
 		const { protocol, signers, rocketPool } = setupData;
 		const { operatorDistributor } = protocol;
@@ -29,9 +29,50 @@ describe("Operator Distributor", function () {
 			to: minipools[0],
 			value: baconReward
 		  })
-		
+
 		// random person distributes the balance to increase nodeRefundBalance
-		await (await ethers.getContractAt("IMinipool", minipools[0])).connect(signers.random).distributeBalance(true);
+		const minipool = await ethers.getContractAt("IMinipool", minipools[0]);
+		await minipool.connect(signers.random).distributeBalance(true);
+		expect(await minipool.getNodeRefundBalance()).equals(constellationPortion);
+
+		// protocol sweeps in rewards
+		await protocol.operatorDistributor.connect(signers.random).processMinipool(minipools[0]);
+
+		expect(await protocol.vCWETH.totalAssets()).to.equal(priorAssets.add(xrETHPortion));
+	});
+
+	it("Processes minipool rewards correctly even when nodeRefundBalance > 0  (exit)", async function (){
+		const setupData = await loadFixture(protocolFixture);
+		const { protocol, signers, rocketPool } = setupData;
+		const { operatorDistributor } = protocol;
+
+		// create 1 minipool
+		await prepareOperatorDistributionContract(setupData, 1);
+		const minipools = await registerNewValidator(setupData, [signers.random]);
+
+		const priorAssets = await protocol.vCWETH.totalAssets();
+
+		// simulate rewards to minipool contract from beacon
+		const baconReward = ethers.utils.parseEther("1");
+		// assume a 15% rETH fee and LEB8 (36.25% of all rewards), which is default settings for RP
+		const constellationPortion = baconReward.mul(ethers.utils.parseEther(".3625")).div(ethers.utils.parseEther("1"));
+		const xrETHPortion = await protocol.vCWETH.getIncomeAfterFees(constellationPortion);
+		await signers.ethWhale.sendTransaction({
+			to: minipools[0],
+			value: baconReward
+		  })
+
+		// random person distributes the balance to increase nodeRefundBalance
+		const minipool = await ethers.getContractAt("IMinipool", minipools[0]);
+		await minipool.connect(signers.random).distributeBalance(true);
+		expect(await minipool.getNodeRefundBalance()).equals(constellationPortion);
+
+		// exit the minipool
+		const beaconBalance = ethers.utils.parseEther("32");
+		await signers.ethWhale.sendTransaction({
+			to: minipools[0],
+			value: beaconBalance
+		  })
 
 		// protocol sweeps in rewards
 		await protocol.operatorDistributor.connect(signers.random).processMinipool(minipools[0]);
@@ -50,7 +91,7 @@ describe("Operator Distributor", function () {
 
 		// set expectations for params
 		//expect(setupData.protocol.operatorDistributor.targetStakeRatio >= (await setupData.protocol.operatorDistributor.minimumStakeRatio()).mul(2));
-		
+
 		// add minimum assets for 2 minipools
 		await prepareOperatorDistributionContract(setupData, 2);
 

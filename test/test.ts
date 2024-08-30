@@ -3,8 +3,8 @@ import { ethers, upgrades } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
-import { Directory } from "../typechain-types/contracts/Directory";
-import { Whitelist } from "../typechain-types/contracts/Whitelist";
+import { Directory } from "../typechain-types/contracts/Constellation/Utils/Directory";
+import { Whitelist } from "../typechain-types/contracts/Constellation/Whitelist";
 import { WETHVault, RPLVault, OperatorDistributor, NodeSetOperatorRewardDistributor, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetworkInterface, IConstellationOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, RocketDepositPool, RocketNodeDeposit, RocketDAONodeTrusted, RocketTokenRETH, RocketClaimDAO, RocketRewardsPool, RocketDAONodeTrustedActions, SuperNodeAccount, PoAConstellationOracle, RocketStorage, RocketMinipoolDelegate, RocketMinipoolInterface, MerkleClaimStreamer, Treasury } from "../typechain-types";
 import { getNextContractAddress } from "./utils/utils";
 import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
@@ -19,6 +19,7 @@ import { IERC20 } from "../typechain-types/oz-contracts-3-4-0/token/ERC20";
 import { deployProtocol, fastDeployProtocol } from "../scripts/utils/deployment";
 import { BigNumber } from 'ethers';
 import { DepositData } from "@chainsafe/lodestar-types";
+
 
 export type SetupData = {
   protocol: Protocol;
@@ -209,6 +210,7 @@ export async function protocolFixture(): Promise<SetupData> {
     await loadFixture(setDefaultParameters);
 
     const signers = await createSigners();
+
     const deployedProtocol = await deployProtocol(signers);
     const rocketPool = await getRocketPool(deployedProtocol.directory);
 

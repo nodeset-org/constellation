@@ -2,7 +2,7 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import {
     RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsInflation,
     RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork,
-    RocketDAOProtocolSettingsNode,
+    RocketDAOProtocolSettingsNode, RocketNetworkBalances, RocketNetworkPrices,
 } from '../_utils/artifacts';
 
 export async function setDefaultParameters() {

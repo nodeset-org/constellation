@@ -2,7 +2,7 @@ import { expect, version } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { OperatorStruct } from "../typechain-types/contracts/Whitelist/Whitelist";
+import { OperatorStruct } from "../typechain-types/contracts/Constellation/Whitelist";
 import { protocolFixture } from "./test";
 import { BigNumber } from "ethers";
 import { keccak256 } from "ethereumjs-util";
@@ -22,7 +22,7 @@ describe("Whitelist (proxy)", function () {
             initialSlotValues.push(await ethers.provider.getStorageAt(initialAddress, i));
         }
 
-        const WhitelistV2Logic = await ethers.getContractFactory("WhitelistV2", signers.admin);
+        const WhitelistV2Logic = await ethers.getContractFactory("MockWhitelistV2", signers.admin);
 
         // upgrade protocol.whitelist to V2
         const newWhitelist = await upgrades.upgradeProxy(protocol.whitelist.address, WhitelistV2Logic, {
@@ -58,36 +58,15 @@ describe("Whitelist", function () {
         await time.setNextBlockTimestamp(timestamp);
 
         const operator = [
-            timestamp,
             0,
+            true,
+            1
         ];
 
         const {sig, timestamp: timestamp2} = await whitelistUserServerSig(setupData, signers.random);
 
-        await expect(protocol.whitelist.connect(signers.admin).addOperator(signers.random.address, timestamp2, sig))
+        await expect(protocol.whitelist.connect(signers.admin).addOperator(signers.random.address, sig))
             .to.emit(protocol.whitelist, 'OperatorAdded').withArgs(operator);
-    });
-
-    it("Admin cannot add address to whitelist due to expiry", async function () {
-        const setupData = await loadFixture(protocolFixture);
-        const { protocol, signers } = setupData;
-
-        const currentBlock = await ethers.provider.getBlockNumber();
-        const timestamp = (await ethers.provider.getBlock(currentBlock)).timestamp + (86400);
-
-        // set timestamp for next block to be timestamp + 1 day
-        await time.setNextBlockTimestamp(timestamp);
-
-        const operator = [
-            timestamp,
-            0,
-            0,
-        ];
-
-        const {sig, timestamp: timestamp2} = await whitelistUserServerSig(setupData, signers.random);
-
-        await expect(protocol.whitelist.connect(signers.admin).addOperator(signers.random.address, timestamp2, sig))
-            .to.be.revertedWith("wl sig expired")
     });
 
     it("Anyone can read from operator list", async function () {
@@ -96,7 +75,7 @@ describe("Whitelist", function () {
 
         const {sig, timestamp} = await whitelistUserServerSig(setupData, signers.random);
 
-        await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address, timestamp, sig);
+        await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address, sig);
 
         const operator: OperatorStruct = await protocol.whitelist.connect(signers.random)
             .getOperatorAtAddress(signers.random.address);
@@ -112,7 +91,6 @@ describe("Whitelist", function () {
         // Simple comparison on structs is not possible with HH chai matchers yet,
         // so we have to compare each field directly.
         // see https://github.com/NomicFoundation/hardhat/issues/3318
-        expect(operator.operationStartTime).equals(expected.operationStartTime);
         expect(operator.activeValidatorCount).equals(expected.currentValidatorCount);
     });
 
@@ -122,11 +100,10 @@ describe("Whitelist", function () {
 
         const {sig, timestamp} = await badAutWhitelistUserServerSig(setupData, signers.random);
 
-        await expect(protocol.whitelist.connect(signers.random).addOperator(signers.random.address, timestamp, sig))
-            .to.be.revertedWith("signer must be admin server role");
+        await expect(protocol.whitelist.connect(signers.random).addOperator(signers.random.address, sig))
+            .to.be.revertedWith("bad signature");
 
-        await expect(protocol.whitelist.getOperatorAtAddress(signers.random.address))
-            .to.be.revertedWith("Whitelist: Provided address is not an allowed operator!");
+        expect(await protocol.whitelist.getIsAddressInWhitelist(signers.random.address)).equals(false);
     });
 
     it("Admin can remove NO from whitelist", async function () {
@@ -135,13 +112,12 @@ describe("Whitelist", function () {
 
         const {sig, timestamp} = await whitelistUserServerSig(setupData, signers.random);
 
-        await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address, timestamp, sig);
+        await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address, sig);
 
         await expect(protocol.whitelist.connect(signers.admin).removeOperator(signers.random.address))
             .to.emit(protocol.whitelist, "OperatorRemoved").withArgs(signers.random.address);
 
-        await expect(protocol.whitelist.getOperatorAtAddress(signers.random.address))
-            .to.be.revertedWith("Whitelist: Provided address is not an allowed operator!");
+        expect(await protocol.whitelist.getIsAddressInWhitelist(signers.random.address)).equals(false);
     });
 
     it("Non-admin cannot remove NO from whitelist", async function () {
@@ -150,7 +126,7 @@ describe("Whitelist", function () {
 
         const {sig, timestamp} = await whitelistUserServerSig(setupData, signers.random);
 
-        await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address, timestamp, sig);
+        await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address, sig);
 
         await expect(protocol.whitelist.connect(signers.random).removeOperator(signers.random.address))
             .to.be.revertedWith("Can only be called by short timelock!");
@@ -162,9 +138,9 @@ describe("Whitelist", function () {
 
         const {sig, timestamp} = await whitelistUserServerSig(setupData, signers.random);
 
-        await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address, timestamp, sig);
+        await protocol.whitelist.connect(signers.admin).addOperator(signers.random.address, sig);
         await protocol.whitelist.connect(signers.admin).removeOperator(signers.random.address);
-        await expect(protocol.whitelist.connect(signers.admin).addOperator(signers.random.address,timestamp,  sig)).to.be.revertedWith("sig already used");
+        await expect(protocol.whitelist.connect(signers.admin).addOperator(signers.random.address,  sig)).to.be.revertedWith("bad signature");
     });
 
     it("Admin can batch add addresses to whitelist", async function () {
@@ -176,7 +152,6 @@ describe("Whitelist", function () {
 
         await expect(protocol.whitelist.connect(signers.admin).addOperators(
             [signers.random.address, signers.random2.address],
-            [timestamp1, timestamp2],
             [sig1, sig2]
         ))
             .to.emit(protocol.whitelist, 'OperatorsAdded').withArgs([signers.random.address, signers.random2.address]);
@@ -190,10 +165,9 @@ describe("Whitelist", function () {
 
         await expect(protocol.whitelist.connect(signers.random).addOperators(
             [signers.random.address, signers.random2.address],
-            [timestamp1, timestamp2],
             [sig1, sig2]
         ))
-            .to.be.revertedWith("signer must be admin server role");
+            .to.be.revertedWith("bad signature");
     });
 
     it("Admin can batch remove addresses from whitelist", async function () {
@@ -204,7 +178,6 @@ describe("Whitelist", function () {
 
         await protocol.whitelist.connect(signers.admin).addOperators(
             [signers.random.address, signers.random2.address],
-            [timestamp1, timestamp2],
             [sig1, sig2]);
 
         await expect(protocol.whitelist.connect(signers.admin).removeOperators([signers.random.address, signers.random2.address]))
@@ -219,7 +192,6 @@ describe("Whitelist", function () {
 
         await protocol.whitelist.connect(signers.admin).addOperators(
             [signers.random.address, signers.random2.address],
-            [timestamp1, timestamp2],
             [sig1, sig2]);
         await expect(protocol.whitelist.connect(signers.random).removeOperators([signers.random.address, signers.random2.address]))
             .to.be.revertedWith("Can only be called by short timelock!");
