@@ -36,7 +36,7 @@ task("setMaxValidators", "Sets max number of validators a user can make")
     const sna = await hre.ethers.getContractAt("SuperNodeAccount", address, admin);
 
     console.log("Trying to set...");
-    const tx = await sna.connect(deployer).setMaxValidators(ethers.utils.parseEther(maxValidators));
+    const tx = await sna.connect(deployer).setMaxValidators(maxValidators);
     console.log("Setting Max Validators to ", ethers.utils.parseEther(maxValidators));
     console.log(tx)
   });
