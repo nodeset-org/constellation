@@ -191,10 +191,10 @@ export async function fastDeployProtocol(
         }
     }
 
-    // await retryOperation(async () => {
-    //     console.log("trying to lazyInitialize superNodeProxy...")
-    //     await superNodeProxy.lazyInitialize();
-    // })
+    await retryOperation(async () => {
+        console.log("trying to lazyInitialize superNodeProxy...")
+        await superNodeProxy.lazyInitialize();
+    })
 
     return {
         whitelist: whitelistProxy as Whitelist,
