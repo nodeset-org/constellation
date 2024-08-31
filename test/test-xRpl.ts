@@ -59,6 +59,17 @@ describe("xRPL", function () {
     await expect(protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("1"), signers.rplWhale.address)).to.not.be.reverted;
   });
 
+  it("deposits and gets appropriate xRPL in return", async () => {
+    const setupData = await loadFixture(protocolFixture);
+    const { protocol, signers, rocketPool } = setupData;
+
+    await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, ethers.utils.parseEther("1"));
+    
+    await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("1"));
+    await protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("1"), signers.random.address);
+    expect(await protocol.vCRPL.balanceOf(signers.random.address)).equals(ethers.utils.parseEther("1"));
+  })
+
   it("fail - tries to deposit as 'bad actor' involved in AML or other flavors of bad", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;

@@ -81,7 +81,7 @@ describe("Yield Accrual", function () {
                                 const finalBalanceTreasury = await ethers.provider.getBalance(await protocol.directory.getTreasuryAddress(), block);
 
                                 expect(finalBalanceTreasury.sub(initialBalanceTreasury)).equals(expectedTreasuryPortion);
-                                expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).equals(expectedOperatorPortion);
+                                expect(await ethers.provider.getBalance(protocol.directory.getOperatorRewardAddress())).equals(expectedOperatorPortion);
                                 expect(await ethers.provider.getBalance(protocol.operatorDistributor.address)).equals(expectedCommunityPortion);
                                 expect(await protocol.operatorDistributor.oracleError()).equals(expectedCommunityPortion);
                             })

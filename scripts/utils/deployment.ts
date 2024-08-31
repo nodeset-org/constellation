@@ -54,7 +54,18 @@ export const generateBytes32Identifier = (identifier: string) => {
     return ethers.utils.solidityKeccak256(["string"], [`contract.address${identifier}`]);
 };
 
-export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer: SignerWithAddress, nodesetAdmin: SignerWithAddress, nodesetServerAdmin: SignerWithAddress, directoryDeployer: SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, admin: string, log: boolean, defaultOffset = 1) {
+export async function fastDeployProtocol(
+    treasurer: SignerWithAddress, 
+    deployer: SignerWithAddress, 
+    nodesetAdmin: SignerWithAddress, 
+    nodesetServerAdmin: SignerWithAddress, 
+    directoryDeployer: SignerWithAddress, 
+    rocketStorage: string, 
+    weth: string, 
+    sanctions: string, 
+    admin: string, 
+    log: boolean, 
+    defaultOffset = 1) {
     const directoryAddress = await getNextContractAddress(directoryDeployer, defaultOffset)
 
     const whitelistProxy = await retryOperation(async () => {
@@ -153,7 +164,6 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
                     vCRPLProxy.address,
                     operatorDistributorProxy.address,
                     merkleClaimStreamerProxy.address,
-                    yieldDistributorProxy.address,
                     oracleProxy.address,
                     priceFetcherProxy.address,
                     superNodeProxy.address,
@@ -161,6 +171,7 @@ export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer:
                     weth,
                     sanctions,
                 ],
+                yieldDistributorProxy.address,
                 treasuryProxy.address,
                 treasurer.address,
                 admin,
