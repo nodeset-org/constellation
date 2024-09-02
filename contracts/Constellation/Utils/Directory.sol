@@ -246,6 +246,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         AccessControlUpgradeable.__AccessControl_init();
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.TIMELOCK_SHORT, Constants.ADMIN_ROLE);
+        _setRoleAdmin(Constants.TIMELOCK_MED, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.TIMELOCK_LONG, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.ADMIN_ORACLE_ROLE, Constants.ADMIN_ROLE);
         // _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.ADMIN_ROLE);
