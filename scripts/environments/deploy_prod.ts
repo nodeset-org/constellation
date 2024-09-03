@@ -9,7 +9,9 @@ import { fastDeployProtocol, generateBytes32Identifier, retryOperation } from ".
 import { wEth } from "../../typechain-types/contracts/Testing";
 
 
-async function main() {}
+async function main() {
+    
+}
 
 main()
     .then(() => process.exit(0))

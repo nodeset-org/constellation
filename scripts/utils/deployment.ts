@@ -54,6 +54,67 @@ export const generateBytes32Identifier = (identifier: string) => {
     return ethers.utils.solidityKeccak256(["string"], [`contract.address${identifier}`]);
 };
 
+export async function fastParameterization(
+    directory: Directory, 
+    superNode: SuperNodeAccount, 
+    admin: SignerWithAddress, 
+    adminServer: SignerWithAddress,
+    adminOracle: SignerWithAddress,
+    timelockShortAddress: string,
+    timelockMediumAddress: string,
+    timelockLongAddress: string,
+) {
+     // set adminServer to be ADMIN_SERVER_ROLE
+     const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
+     await retryOperation(async () => {
+         await directory.connect(admin).grantRole(ethers.utils.arrayify(adminRole), adminServer.address);
+     });
+ 
+     // set adminOracle to be ADMIN_ORACLE_ROLE
+     const adminOracleRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ORACLE_ROLE"));
+     await retryOperation(async () => {
+         await directory.connect(admin).grantRole(ethers.utils.arrayify(adminOracleRole), adminOracle.address);
+     });
+ 
+     // set timelock to be TIMELOCK_ROLE
+     const timelockShortRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
+     await retryOperation(async () => {
+         await directory.connect(admin).grantRole(ethers.utils.arrayify(timelockShortRole), timelockShortAddress);
+     });
+     console.log("timelock short role set");
+ 
+     // set timelock to be TIMELOCK_ROLE
+     const timelockMedRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_MED"));
+     await retryOperation(async () => {
+         await directory.connect(admin).grantRole(ethers.utils.arrayify(timelockMedRole), timelockMediumAddress);
+     });
+     console.log("timelock med role set");
+ 
+     // set timelock to be TIMELOCK_ROLE
+     const timelockLongRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_LONG"));
+     await retryOperation(async () => {
+         await directory.connect(admin).grantRole(ethers.utils.arrayify(timelockLongRole), timelockLongAddress);
+     });
+     console.log("timelock long role set");
+ 
+     await retryOperation(async () => {
+         await superNode.connect(admin).setMinimumNodeFee("69420000000000000")
+     })
+}
+
+export async function devParameterization(    
+    directory: Directory, 
+    admin: SignerWithAddress, 
+    protocolSigner: SignerWithAddress,
+) {
+     // set protocolSigner to be PROTOCOL_ROLE
+     const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
+     await retryOperation(async () => {
+         await directory.connect(admin).grantRole(ethers.utils.arrayify(protocolRole), protocolSigner.address);
+     });
+     console.log("protocol role set");
+}
+
 export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer: SignerWithAddress, nodesetAdmin: SignerWithAddress, nodesetServerAdmin: SignerWithAddress, directoryDeployer: SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, admin: string, log: boolean, defaultOffset = 1) {
     const directoryAddress = await getNextContractAddress(directoryDeployer, defaultOffset)
 

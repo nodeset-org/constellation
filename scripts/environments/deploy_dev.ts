@@ -5,31 +5,23 @@ import { deployRocketPool } from "../../test/rocketpool/_helpers/deployment";
 import { getNextContractAddress } from "../../test/utils/utils";
 import { expect } from "chai";
 import readline from 'readline';
-import { fastDeployProtocol, generateBytes32Identifier, retryOperation } from "../utils/deployment";
+import { devParameterization, fastDeployProtocol, fastParameterization, generateBytes32Identifier, retryOperation } from "../utils/deployment";
 import { wEth } from "../../typechain-types/contracts/Testing";
 import findConfig from "find-config";
 import dotenv from "dotenv";
+import { Directory, SuperNodeAccount } from "../../typechain-types";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 const dotenvPath = findConfig('.env.dev');
 
 if (dotenvPath !== null) {
     dotenv.config({ path: dotenvPath });
-  } else {
+} else {
     // Handle the case where no .env file is found
     console.error('No .env.dev file found');
-  }
+}
 
-async function main() {
-    const [deployer, admin] = await ethers.getSigners();
-
-    const rocketStorage = await ethers.getContractAt('RocketStorage', process.env.RP_STORAGE_CONTRACT_ADDRESS as string);
-    const wETH =  await ethers.getContractAt('WETH', process.env.WETH_ADDRESS as string);
-    const sanctions =  await ethers.getContractAt('MockSanctions', process.env.SANCTIONS_LIST_ADDRESS as string);
-
-    upgrades.silenceWarnings()
-
-    const { directory, superNode } = await fastDeployProtocol(deployer, deployer, admin, admin, admin, rocketStorage.address, wETH.address, sanctions.address, admin.address, true, 0);
-
+async function parameterization(directory: Directory, superNode: SuperNodeAccount, admin: SignerWithAddress, deployer: SignerWithAddress) {
     // set adminServer to be ADMIN_SERVER_ROLE
     const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
     await retryOperation(async () => {
@@ -74,6 +66,24 @@ async function main() {
         await superNode.connect(admin).setMinimumNodeFee("69420000000000000")
     })
 }
+
+export async function deployDev(rocketStorageAddress: string, wETHAddress: string, sanctionsAddress: string) {
+    const [deployer, admin] = await ethers.getSigners();
+
+    const { directory, superNode } = await fastDeployProtocol(deployer, deployer, admin, admin, admin, rocketStorageAddress, wETHAddress, sanctionsAddress, admin.address, true, 0);
+
+    upgrades.silenceWarnings()
+
+    await devParameterization(directory, deployer, deployer);
+    await fastParameterization(directory, superNode, admin, deployer, deployer, deployer.address, deployer.address, deployer.address);
+
+}
+
+async function main() {
+    // validate env files
+    await deployDev(process.env.RP_STORAGE_CONTRACT_ADDRESS as string, process.env.WETH_ADDRESS as string, process.env.SANCTIONS_LIST_ADDRESS as string)
+}
+
 
 main()
     .then(() => process.exit(0))
