@@ -37,7 +37,7 @@ import './Utils/Errors.sol';
 contract SuperNodeAccount is UpgradeableBase, Errors {
     event MinipoolCreated(address indexed minipoolAddress, address indexed operatorAddress);
     event MinipoolDestroyed(address indexed minipoolAddress, address indexed operatorAddress);
-    
+
     // Mapping of minipool address to the amount of ETH locked
     mapping(address => uint256) public lockedEth;
 
@@ -149,7 +149,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), od, true);
         lockThreshold = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getPreLaunchValue();
         rnm.setSmoothingPoolRegistrationState(true);
-        
+
         lazyInit = true;
     }
 
@@ -328,7 +328,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         Whitelist(getDirectory().getWhitelistAddress()).removeValidator(minipoolData[minipoolAddress].subNodeOperator);
         this.removeMinipool(minipoolAddress);
         minipool.close();
-    }   
+    }
 
     /**
      * @notice Allows dmins to delegate an upgrade to the minipool's contract.
