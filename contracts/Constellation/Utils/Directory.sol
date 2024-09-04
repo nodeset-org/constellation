@@ -283,8 +283,6 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.priceFetcher);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.superNode);
 
-        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
-
         _treasury = treasury;
         _operatorReward = operatorReward;
         _protocol = newProtocol;
