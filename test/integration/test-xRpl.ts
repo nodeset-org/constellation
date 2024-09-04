@@ -4,8 +4,8 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./integration";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { assertAddOperator, assertMultipleTransfers } from "./utils/utils";
-import { deposit } from "./rocketpool/deposit/scenario-deposit";
+import { assertAddOperator, assertMultipleTransfers } from "../utils/utils";
+import { deposit } from "../rocketpool/deposit/scenario-deposit";
 
 describe("xRPL", function () {
 

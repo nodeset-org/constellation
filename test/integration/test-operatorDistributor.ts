@@ -3,9 +3,9 @@ import { ethers, upgrades } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { protocolFixture, SetupData } from "./integration";
 import { BigNumber as BN } from "ethers";
-import { computeKeccak256FromBytes32, prepareOperatorDistributionContract, printEventDetails, registerNewValidator, upgradePriceFetcherToMock} from "./utils/utils";
+import { computeKeccak256FromBytes32, prepareOperatorDistributionContract, printEventDetails, registerNewValidator, upgradePriceFetcherToMock} from "../utils/utils";
 import { IMinipool, MockMinipool } from "../../typechain-types";
-import { RocketDepositPool } from "./rocketpool/_utils/artifacts";
+import { RocketDepositPool } from "../rocketpool/_utils/artifacts";
 
 describe("Operator Distributor", function () {
 

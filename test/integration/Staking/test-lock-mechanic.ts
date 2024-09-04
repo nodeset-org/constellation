@@ -1,8 +1,8 @@
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "../integration";
-import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract } from "../utils/utils";
-import { generateDepositData, generateDepositDataForStake } from "../rocketpool/_helpers/minipool";
+import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract } from "../../utils/utils";
+import { generateDepositData, generateDepositDataForStake } from "../../rocketpool/_helpers/minipool";
 import { BigNumber } from "ethers";
 import { IMinipool } from "../../typechain-types";
 

@@ -1,8 +1,8 @@
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from "../integration";
-import { generateDepositData } from ".././rocketpool/_helpers/minipool";
-import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator } from ".././utils/utils";
+import { generateDepositData } from "../../rocketpool/_helpers/minipool";
+import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator } from "../../utils/utils";
 
 describe("Minimum Collateral", async function () {
     describe("when min collateral is not met", async function () {

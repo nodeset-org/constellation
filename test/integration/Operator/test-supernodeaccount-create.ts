@@ -1,9 +1,9 @@
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { Protocol, protocolFixture, RocketPool, SetupData, Signers } from "../integration";
-import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator } from "../utils/utils";
-import { generateDepositData } from "../rocketpool/_helpers/minipool";
-import { prepareOperatorDistributionContract } from "../utils/utils";
+import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator } from "../../utils/utils";
+import { generateDepositData } from "../../rocketpool/_helpers/minipool";
+import { prepareOperatorDistributionContract } from "../../utils/utils";
 
 const ethMintAmount = ethers.utils.parseEther("8");
 const rplMintAmount = ethers.utils.parseEther("360");

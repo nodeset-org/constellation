@@ -7,8 +7,8 @@ import { Protocol } from "../integration";
 import { Signers } from "../integration";
 import { RocketPool } from "../integration";
 import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault, IWETH, RocketMinipoolInterface } from "../../../typechain-types";
-import { deployRPMinipool, registerNewValidator, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances, assertAddOperator, deployMinipool, increaseEVMTime } from "../utils/utils";
-import { generateDepositDataForStake } from "../rocketpool/_helpers/minipool";
+import { deployRPMinipool, registerNewValidator, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances, assertAddOperator, deployMinipool, increaseEVMTime } from "../../utils/utils";
+import { generateDepositDataForStake } from "../../rocketpool/_helpers/minipool";
 
 
 describe("Node Operator Onboarding", function () {

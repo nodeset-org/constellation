@@ -5,7 +5,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { protocolFixture } from "../integration";
 import { BigNumber } from "ethers";
 import { keccak256 } from "ethereumjs-util";
-import { badAutWhitelistUserServerSig, whitelistUserServerSig } from "../utils/utils";
+import { badAutWhitelistUserServerSig, whitelistUserServerSig } from "../../utils/utils";
 
 describe("Test Add Operator Nonce", function () {
     describe("When sig isn't used", async () => {

@@ -2,8 +2,8 @@ import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { Protocol, protocolFixture, RocketPool, SetupData, Signers } from "../integration";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { generateDepositData } from "../rocketpool/_helpers/minipool";
-import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator } from "../utils/utils";
+import { generateDepositData } from "../../rocketpool/_helpers/minipool";
+import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator } from "../../utils/utils";
 
 const salt = 3;
 

@@ -1,8 +1,8 @@
 import { ethers, upgrades } from "hardhat";
 import { getRocketPool, protocolFixture } from "../test/integration/integration";
-import { setDefaultParameters } from "../test/integration/rocketpool/_helpers/defaults";
-import { deployRocketPool } from "../test/integration/rocketpool/_helpers/deployment";
-import { getNextContractAddress } from "../test/integration/utils/utils";
+import { setDefaultParameters } from "../test/rocketpool/_helpers/defaults";
+import { deployRocketPool } from "../test/rocketpool/_helpers/deployment";
+import { getNextContractAddress } from "../test/utils/utils";
 import { expect } from "chai";
 import readline from 'readline';
 import { fastDeployProtocol, generateBytes32Identifier, retryOperation } from "./utils/deployment";

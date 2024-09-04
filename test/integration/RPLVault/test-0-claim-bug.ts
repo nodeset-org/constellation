@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from "../integration";
-import { assertAddOperator } from "../utils/utils";
+import { assertAddOperator } from "../../utils/utils";
 
 describe("totalAssets() bug", function () {
 

@@ -2,8 +2,8 @@ import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from "./integration";
-import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator, increaseEVMTime, predictDeploymentAddress, prepareOperatorDistributionContract, whitelistUserServerSig } from "./utils/utils";
-import { generateDepositData } from "./rocketpool/_helpers/minipool";
+import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator, increaseEVMTime, predictDeploymentAddress, prepareOperatorDistributionContract, whitelistUserServerSig } from "../utils/utils";
+import { generateDepositData } from "../rocketpool/_helpers/minipool";
 
 describe("SuperNodeAccount", function () {
     describe("SuperNodeAccount Admin Setters", function () {

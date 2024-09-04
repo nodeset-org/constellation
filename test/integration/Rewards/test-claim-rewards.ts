@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers, upgrades, hardhatArguments } from "hardhat";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from "../integration";
-import { assertAddOperator, createClaimRewardBadChainIdSigWithNonce, createClaimRewardBadEncodedSigWithNonce, createClaimRewardBadSignerSigWithNonce, createClaimRewardBadTargetSigWithNonce, createClaimRewardSig, createClaimRewardSigWithNonce, createMockDid, deployMockToken, increaseEVMTime } from "../utils/utils";
+import { assertAddOperator, createClaimRewardBadChainIdSigWithNonce, createClaimRewardBadEncodedSigWithNonce, createClaimRewardBadSignerSigWithNonce, createClaimRewardBadTargetSigWithNonce, createClaimRewardSig, createClaimRewardSigWithNonce, createMockDid, deployMockToken, increaseEVMTime } from "../../utils/utils";
 import { BigNumber } from "ethers";
 import { directoryAbi } from "../..";
 

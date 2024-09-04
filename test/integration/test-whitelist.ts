@@ -6,7 +6,7 @@ import { OperatorStruct } from "../../typechain-types/contracts/Constellation/Wh
 import { protocolFixture } from "./integration";
 import { BigNumber } from "ethers";
 import { keccak256 } from "ethereumjs-util";
-import { badAutWhitelistUserServerSig, whitelistUserServerSig } from "./utils/utils";
+import { badAutWhitelistUserServerSig, whitelistUserServerSig } from "../utils/utils";
 
 describe("Whitelist (proxy)", function () {
     it("Admin can update contract", async function () {

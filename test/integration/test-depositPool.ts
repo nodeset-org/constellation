@@ -4,9 +4,9 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { protocolFixture, SetupData } from "./integration";
 import { BigNumber as BN } from "ethers";
-import { assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract, registerNewValidator } from "./utils/utils";
-import { parseRewardsMap } from "./utils/merkleClaim";
-import { submitRewards } from "./rocketpool/rewards/scenario-submit-rewards";
+import { assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract, registerNewValidator } from "../utils/utils";
+import { parseRewardsMap } from "../utils/merkleClaim";
+import { submitRewards } from "../rocketpool/rewards/scenario-submit-rewards";
 
 describe(`RPL staking`, () => {
 
