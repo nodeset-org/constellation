@@ -41,8 +41,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     bool public depositsEnabled;
 
-    constructor() initializer {}
-
     /**
      * @notice Initializes the vault with necessary parameters and settings.
      * @dev This function sets up the vault's token references, fee structures, and various configurations. 

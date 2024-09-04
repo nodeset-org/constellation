@@ -45,8 +45,6 @@ contract MerkleClaimStreamer is UpgradeableBase {
     // the current streamingInterval to be completely finished, lower the streamingInterval, and re-enable claims.
     bool public merkleClaimsEnabled;
     
-    constructor() initializer {}
-    
     function initialize(address _directory) public override initializer {
         super.initialize(_directory);
         streamingInterval = 28 days; // default RP rewards interval
