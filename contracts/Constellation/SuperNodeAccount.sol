@@ -37,7 +37,7 @@ import './Utils/Errors.sol';
 contract SuperNodeAccount is UpgradeableBase, Errors {
     event MinipoolCreated(address indexed minipoolAddress, address indexed operatorAddress);
     event MinipoolDestroyed(address indexed minipoolAddress, address indexed operatorAddress);
-
+    
     // Mapping of minipool address to the amount of ETH locked
     mapping(address => uint256) public lockedEth;
 
@@ -149,7 +149,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), od, true);
         lockThreshold = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getPreLaunchValue();
         rnm.setSmoothingPoolRegistrationState(true);
-
+        
         lazyInit = true;
     }
 
@@ -201,12 +201,12 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
 
         uint256 salt = uint256(keccak256(abi.encodePacked(_config.salt, subNodeOperator)));
-
         // move the necessary ETH to this contract for use
         OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(bond);
 
         // verify admin server signature if required
         if (adminServerCheck) {
+
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
                     keccak256(
@@ -328,7 +328,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         Whitelist(getDirectory().getWhitelistAddress()).removeValidator(minipoolData[minipoolAddress].subNodeOperator);
         this.removeMinipool(minipoolAddress);
         minipool.close();
-    }
+    }   
 
     /**
      * @notice Allows dmins to delegate an upgrade to the minipool's contract.
@@ -429,9 +429,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         address payable od = _directory.getOperatorDistributorAddress();
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
         uint256 rplStaking = rocketNodeStaking.getNodeRPLStake(address(this));
-
         uint256 newEthBorrowed = IRocketDAOProtocolSettingsMinipool(_directory.getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() - _bond;
-
         uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(
             rplStaking,
             this.getEthMatched() + newEthBorrowed
