@@ -3,6 +3,8 @@ import { ethers, upgrades } from "hardhat";
 import { Contract } from "ethers";
 import { approvedSalt } from "../../../utils/utils";
 
+const TimelockShortRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
+
 describe("SuperNodeAccount", function () {
     let superNodeAccount: Contract;
     let mockDirectory: Contract;
@@ -23,6 +25,7 @@ describe("SuperNodeAccount", function () {
         mockDirectory = await MockDirectory.deploy();
         await mockDirectory.deployed();
         await mockDirectory.setRocketMinipoolManagerAddress(mockRocketMinipoolManager.address);
+        await mockDirectory.setRole(TimelockShortRole, owner.address, true);
 
         // Deploy the SuperNodeAccount contract
         const SuperNodeAccountFactory = await ethers.getContractFactory("SuperNodeAccount");
@@ -33,10 +36,14 @@ describe("SuperNodeAccount", function () {
         });
 
         await superNodeAccount.deployed();
+
+        // Set the lock threshold
+        await superNodeAccount.connect(owner).setLockAmount(ethers.utils.parseEther('1'))
+
         blockchainId = await ethers.provider.getNetwork().then((n) => n.chainId);
     });
 
-    describe("when the message value is below the threshold", function () {
+    describe("when the message value is not equal to the lock threshold", function () {
         it.only("should revert", async function () {
             const salts  = await approvedSalt(3, subNodeOperator.address);
             const rawSalt = salts.rawSalt;
@@ -81,25 +88,22 @@ describe("SuperNodeAccount", function () {
             );
             const ethSignedMessageHash = ethers.utils.hashMessage(ethers.utils.arrayify(messageHash));
             const sig = await subNodeOperator.signMessage(ethers.utils.arrayify(messageHash));
-            // Set the lock threshold
-            const timelockShortRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
-            await expect(mockDirectory.connect(owner).setRole(timelockShortRole, owner.address, true)).to.not.be.reverted;
-            await expect(superNodeAccount.connect(owner).setLockAmount(ethers.utils.parseEther('1'))).to.not.be.reverted;
-            // await expect(
-            //     superNodeAccount
-            // .connect(subNodeOperator)
-            // .createMinipool({
-            //     validatorPubkey: config.validatorPubkey,
-            //     validatorSignature: config.validatorSignature,
-            //     depositDataRoot: config.depositDataRoot,
-            //     salt: rawSalt,
-            //     expectedMinipoolAddress: config.expectedMinipoolAddress,
-            //     sig: sig
-            //     }, { value: ethers.utils.parseEther('0') }
-            // )).to.be.revertedWith('SuperNode: must set the message value to lockThreshold');
+
+            await expect(
+                superNodeAccount
+            .connect(subNodeOperator)
+            .createMinipool({
+                validatorPubkey: config.validatorPubkey,
+                validatorSignature: config.validatorSignature,
+                depositDataRoot: config.depositDataRoot,
+                salt: rawSalt,
+                expectedMinipoolAddress: config.expectedMinipoolAddress,
+                sig: sig
+                }, { value: ethers.utils.parseEther('0') }
+            )).to.be.revertedWith('SuperNode: must set the message value to lockThreshold');
         });
     });
-    describe("when the message value is equal to the threshold", function () {
+    describe("when the message value is equal to the lock threshold", function () {
         describe("when the minipool address already exists", function () {
             it("should revert", async function () {
             });
@@ -127,6 +131,4 @@ describe("SuperNodeAccount", function () {
             });
         });
     });
-    // describe("when the message value is above the threshold", function () {
-    // });
 });
