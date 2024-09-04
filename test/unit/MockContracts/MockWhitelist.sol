@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import 'hardhat/console.sol';
-
 contract MockWhitelist {
     mapping(address => bool) private whitelist;
     mapping(address => uint256) private validatorCounts;
@@ -12,7 +10,6 @@ contract MockWhitelist {
     }
 
     function getIsAddressInWhitelist(address _address) public view returns (bool) {
-        console.log("WHITELISTED", whitelist[_address]);
         return whitelist[_address];
     }
 
@@ -22,5 +19,9 @@ contract MockWhitelist {
 
     function setActiveValidatorCountForOperator(address _address, uint256 _count) external {
         validatorCounts[_address] = _count;
+    }
+
+    function registerNewValidator(address) public {
+
     }
 }

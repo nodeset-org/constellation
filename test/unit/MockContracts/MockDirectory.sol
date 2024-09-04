@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import 'hardhat/console.sol';
 contract MockDirectory {
     address rocketMinipoolManager;
     address whitelist;
@@ -9,6 +8,8 @@ contract MockDirectory {
     address rocketNodeStaking;
     address rocketDAOProtocolSettingsMinipool;
     address rplAddress;
+    address wethVaultAddress;
+    address rocketNodeDepositAddress;
     mapping(bytes32 => mapping(address => bool)) private roles;
 
     function getRocketMinipoolManagerAddress() public view returns (address) {
@@ -20,7 +21,6 @@ contract MockDirectory {
     }
 
     function getWhitelistAddress() public view returns (address) {
-        console.log("GetWHiteliSTAddress");
         return whitelist;
     }
 
@@ -66,5 +66,22 @@ contract MockDirectory {
 
     function setRPLAddress(address _rplAddress) public {
         rplAddress = _rplAddress;
+    }
+
+    function getWETHVaultAddress() public view returns (address) {
+        return wethVaultAddress;
+    }
+
+    function setWETHVaultAddress(address _wethVaultAddress) public {
+        wethVaultAddress = _wethVaultAddress;
+    }
+
+
+    function getRocketNodeDepositAddress() public view returns (address) {
+        return rocketNodeDepositAddress;
+    }
+
+    function setRocketNodeDepositAddress(address _rocketNodeDepositAddress) public {
+        rocketNodeDepositAddress = _rocketNodeDepositAddress;
     }
 }
