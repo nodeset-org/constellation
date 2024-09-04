@@ -34,7 +34,6 @@ contract NodeSetOperatorRewardDistributorV1Storage {
 contract NodeSetOperatorRewardDistributor is
     UUPSUpgradeable,
     AccessControlUpgradeable,
-    ReentrancyGuard,
     NodeSetOperatorRewardDistributorV1Storage
 {
     constructor() initializer {}
@@ -42,11 +41,11 @@ contract NodeSetOperatorRewardDistributor is
     function initialize(address _admin, address _adminServer) public initializer {
         _grantRole(RewardDistributorConstants.NODESET_ADMIN_ROLE, _admin);
         _grantRole(RewardDistributorConstants.NODESET_ADMIN_SERVER_ROLE, _adminServer);
+        _setRoleAdmin(RewardDistributorConstants.NODESET_ADMIN_ROLE, RewardDistributorConstants.NODESET_ADMIN_ROLE);
         _setRoleAdmin(
             RewardDistributorConstants.NODESET_ADMIN_SERVER_ROLE,
             RewardDistributorConstants.NODESET_ADMIN_ROLE
         );
-        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /// @notice Internal function to authorize contract upgrades.
@@ -67,7 +66,7 @@ contract NodeSetOperatorRewardDistributor is
         bytes32 _did,
         address _rewardee,
         uint256 _amount
-    ) public nonReentrant {
+    ) public {
         require(_rewardee != address(0), 'rewardee cannot be zero address');
 
         address recoveredAddress = ECDSA.recover(
@@ -89,9 +88,11 @@ contract NodeSetOperatorRewardDistributor is
         );
 
         require(
-            this.hasRole(RewardDistributorConstants.NODESET_ADMIN_SERVER_ROLE, recoveredAddress),
+            hasRole(RewardDistributorConstants.NODESET_ADMIN_SERVER_ROLE, recoveredAddress),
             'bad signer role, params, or encoding'
         );
+
+        nonces[_did]++;
 
         // send eth to rewardee
         if (_token == address(0)) {
@@ -101,24 +102,16 @@ contract NodeSetOperatorRewardDistributor is
             SafeERC20.safeTransfer(IERC20(_token), _rewardee, _amount);
         }
 
-        nonces[_did]++;
-
         emit RewardDistributed(_did, _rewardee);
     }
 
     function invalidateAllOutstandingSigs() external {
-        require(
-            this.hasRole(RewardDistributorConstants.NODESET_ADMIN_ROLE, msg.sender),
-            'caller must be nodeset admin'
-        );
+        require(hasRole(RewardDistributorConstants.NODESET_ADMIN_ROLE, msg.sender), 'caller must be nodeset admin');
         nonce++;
     }
 
     function invalidateSingleOustandingSig(bytes32 _did) external {
-        require(
-            this.hasRole(RewardDistributorConstants.NODESET_ADMIN_ROLE, msg.sender),
-            'caller must be nodeset admin'
-        );
+        require(hasRole(RewardDistributorConstants.NODESET_ADMIN_ROLE, msg.sender), 'caller must be nodeset admin');
         nonces[_did]++;
     }
 
