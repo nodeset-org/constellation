@@ -11,11 +11,7 @@ import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol'
 /// @title Treasury
 /// @notice A contract that allows a Treasuerer to manage and execute transfers of ETH and ERC20 tokens.
 /// @dev Inherits from UpgradeableBase to allow for future upgrades.
-contract Treasury is     
-    UUPSUpgradeable,
-    AccessControlUpgradeable,
-    ReentrancyGuard
-{
+contract Treasury is UUPSUpgradeable, AccessControlUpgradeable, ReentrancyGuard {
     bytes32 public constant TREASURER_ROLE = keccak256('TREASURER_ROLE');
 
     string public constant BAD_TREASURY_EXECUTION_ERROR = 'Treasury: execution reverted.';
@@ -26,7 +22,9 @@ contract Treasury is
     event Executed(address indexed _target, bytes indexed _functionData);
 
     /// @notice Initializer that replaces constructor for upgradeable contracts.
-    constructor() initializer {}
+    constructor() {
+        _disableInitializers();
+    }
 
     /// @notice Initializes the contract by setting the directory address.
     /// @dev Overrides the initialize function of the UpgradeableBase.
