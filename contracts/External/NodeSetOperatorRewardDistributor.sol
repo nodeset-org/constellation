@@ -37,7 +37,9 @@ contract NodeSetOperatorRewardDistributor is
     ReentrancyGuard,
     NodeSetOperatorRewardDistributorV1Storage
 {
-    constructor() initializer {}
+    constructor() {
+        _disableInitializers();
+    }
 
     function initialize(address _admin, address _adminServer) public initializer {
         _grantRole(RewardDistributorConstants.NODESET_ADMIN_ROLE, _admin);
