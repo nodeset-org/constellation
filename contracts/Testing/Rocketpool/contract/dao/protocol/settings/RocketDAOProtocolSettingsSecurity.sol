@@ -1,48 +1,36 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import './RocketDAOProtocolSettings.sol';
-import '../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsSecurityInterface.sol';
+import "./RocketDAOProtocolSettings.sol";
+import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsSecurityInterface.sol";
 
 /// @notice Protocol parameters relating to the security council
 contract RocketDAOProtocolSettingsSecurity is RocketDAOProtocolSettings, RocketDAOProtocolSettingsSecurityInterface {
-    constructor(
-        RocketStorageInterface _rocketStorageAddress
-    ) RocketDAOProtocolSettings(_rocketStorageAddress, 'security') {
+
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "security") {
         version = 1;
-        // Initialise settings on deployment
-        if (!getBool(keccak256(abi.encodePacked(settingNameSpace, 'deployed')))) {
-            // Init settings
-            setSettingUint('members.quorum', 0.51 ether); // Member quorum threshold that must be met for proposals to pass (51%)
-            setSettingUint('members.leave.time', 4 weeks); // How long a member must give notice for before manually leaving the security council
-            setSettingUint('proposal.vote.time', 2 weeks); // How long a proposal can be voted on
-            setSettingUint('proposal.execute.time', 4 weeks); // How long a proposal can be executed after its voting period is finished
-            setSettingUint('proposal.action.time', 4 weeks); // Certain proposals require a secondary action to be run after the proposal is successful (joining, leaving etc). This is how long until that action expires
-            // Settings initialised
-            setBool(keccak256(abi.encodePacked(settingNameSpace, 'deployed')), true);
-        }
     }
 
     /// @dev Overrides inherited setting method with extra sanity checks for this contract
-    function setSettingUint(string memory _settingPath, uint256 _value) public override onlyDAOProtocolProposal {
+    function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
         // Some safety guards for certain settings
-        if (getBool(keccak256(abi.encodePacked(settingNameSpace, 'deployed')))) {
+        if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             bytes32 settingKey = keccak256(abi.encodePacked(_settingPath));
-            if (settingKey == keccak256(abi.encodePacked('members.quorum'))) {
+            if(settingKey == keccak256(abi.encodePacked("members.quorum"))) {
                 // >= 51% & < 75% (RPIP-33)
-                require(_value >= 0.51 ether && _value <= 0.75 ether, 'Quorum setting must be >= 51% & < 75%');
-            } else if (settingKey == keccak256(abi.encodePacked('members.leave.time'))) {
+                require(_value >= 0.51 ether && _value <= 0.75 ether, "Quorum setting must be >= 51% & <= 75%");
+            } else if(settingKey == keccak256(abi.encodePacked("members.leave.time"))) {
                 // < 14 days (RPIP-33)
-                require(_value < 14 days, 'Value must be < 14 days');
-            } else if (settingKey == keccak256(abi.encodePacked('proposal.vote.time'))) {
+                require(_value < 14 days, "Value must be < 14 days");
+            } else if(settingKey == keccak256(abi.encodePacked("proposal.vote.time"))) {
                 // >= 1 day (RPIP-33)
-                require(_value >= 1 days, 'Value must be >= 1 day');
-            } else if (settingKey == keccak256(abi.encodePacked('proposal.execute.time'))) {
+                require(_value >= 1 days, "Value must be >= 1 day");
+            } else if(settingKey == keccak256(abi.encodePacked("proposal.execute.time"))) {
                 // >= 1 day (RPIP-33)
-                require(_value >= 1 days, 'Value must be >= 1 day');
-            } else if (settingKey == keccak256(abi.encodePacked('proposal.action.time'))) {
+                require(_value >= 1 days, "Value must be >= 1 day");
+            } else if(settingKey == keccak256(abi.encodePacked("proposal.action.time"))) {
                 // >= 1 day (RPIP-33)
-                require(_value >= 1 days, 'Value must be >= 1 day');
+                require(_value >= 1 days, "Value must be >= 1 day");
             }
         }
         // Update setting now
@@ -50,27 +38,27 @@ contract RocketDAOProtocolSettingsSecurity is RocketDAOProtocolSettings, RocketD
     }
 
     /// @notice The member proposal quorum threshold for this DAO
-    function getQuorum() external view override returns (uint256) {
-        return getSettingUint('members.quorum');
+    function getQuorum() override external view returns (uint256) {
+        return getSettingUint("members.quorum");
     }
 
     /// @notice How long a member must give notice before leaving
-    function getLeaveTime() external view override returns (uint256) {
-        return getSettingUint('members.leave.time');
+    function getLeaveTime() override external view returns (uint256) {
+        return getSettingUint("members.leave.time");
     }
 
     /// @notice How long a proposal can be voted on
-    function getVoteTime() external view override returns (uint256) {
-        return getSettingUint('proposal.vote.time');
+    function getVoteTime() override external view returns (uint256) {
+        return getSettingUint("proposal.vote.time");
     }
 
     /// @notice How long a proposal can be executed after its voting period is finished
-    function getExecuteTime() external view override returns (uint256) {
-        return getSettingUint('proposal.execute.time');
+    function getExecuteTime() override external view returns (uint256) {
+        return getSettingUint("proposal.execute.time");
     }
 
     /// @notice Certain proposals require a secondary action to be run after the proposal is successful (joining, leaving etc). This is how long until that action expires
-    function getActionTime() external view override returns (uint256) {
-        return getSettingUint('proposal.action.time');
+    function getActionTime() override external view returns (uint256) {
+        return getSettingUint("proposal.action.time");
     }
 }

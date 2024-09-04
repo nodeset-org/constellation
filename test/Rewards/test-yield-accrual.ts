@@ -9,7 +9,7 @@ describe("Yield Accrual", function () {
 
             const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
 
-            await expect(protocol.operatorDistributor.connect(signers.random5).onEthRewardsReceived(6, 6, 6, true)).to.be.revertedWith("Can only be called by Protocol!");
+            await expect(protocol.operatorDistributor.connect(signers.random5).onEthBeaconRewardsReceived(6, 6, 6)).to.be.revertedWith("Can only be called by Protocol!");
         })
     })
 
@@ -22,7 +22,7 @@ describe("Yield Accrual", function () {
                         const reward = ethers.utils.parseEther("1")
                         const avgTreasuryFee = ethers.utils.parseEther("1")
                         const avgOperatorsFee = ethers.utils.parseEther("0")
-                        await expect(protocol.operatorDistributor.connect(signers.protocolSigner).onEthRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee, true)).to.be.revertedWith("Transfer to treasury failed");
+                        await expect(protocol.operatorDistributor.connect(signers.protocolSigner).onEthBeaconRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee)).to.be.revertedWith("Transfer to treasury failed");
                     })
                 })
 
@@ -32,7 +32,7 @@ describe("Yield Accrual", function () {
                         const reward = ethers.utils.parseEther("1")
                         const avgTreasuryFee = ethers.utils.parseEther("0")
                         const avgOperatorsFee = ethers.utils.parseEther("1")
-                        await expect(protocol.operatorDistributor.connect(signers.protocolSigner).onEthRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee, true)).to.be.revertedWith("Transfer to operator fee address failed");
+                        await expect(protocol.operatorDistributor.connect(signers.protocolSigner).onEthBeaconRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee)).to.be.revertedWith("Transfer to operator fee address failed");
                     })
                 })
             })
@@ -73,7 +73,7 @@ describe("Yield Accrual", function () {
                                 const expectedOperatorPortion = reward.mul(avgOperatorsFee).div(ethers.utils.parseEther("1"))
                                 const expectedCommunityPortion = reward.sub(expectedTreasuryPortion.add(expectedOperatorPortion));
 
-                                const tx = await protocol.operatorDistributor.connect(signers.protocolSigner).onEthRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee, true)
+                                const tx = await protocol.operatorDistributor.connect(signers.protocolSigner).onEthBeaconRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee)
                                 const receipt = await tx.wait();
                                 const block = receipt.blockNumber;
 
@@ -81,63 +81,9 @@ describe("Yield Accrual", function () {
                                 const finalBalanceTreasury = await ethers.provider.getBalance(await protocol.directory.getTreasuryAddress(), block);
 
                                 expect(finalBalanceTreasury.sub(initialBalanceTreasury)).equals(expectedTreasuryPortion);
-                                expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).equals(expectedOperatorPortion);
+                                expect(await ethers.provider.getBalance(protocol.directory.getOperatorRewardAddress())).equals(expectedOperatorPortion);
                                 expect(await ethers.provider.getBalance(protocol.operatorDistributor.address)).equals(expectedCommunityPortion);
-                                //expect(await protocol.wETH.balanceOf(protocol.operatorDistributor.address)).equals(expectedCommunityPortion);
                                 expect(await protocol.operatorDistributor.oracleError()).equals(expectedCommunityPortion);
-                            })
-                        })
-                    })
-
-                })
-
-                describe("When oracle error is false", async () => {
-                    describe("When community rewards are positive", async () => {
-                        type ParamsType = { avgTreasuryFeeRaw: number; avgOperatorsFeeRaw: number; };
-                        [
-                            { avgTreasuryFeeRaw: .6, avgOperatorsFeeRaw: .4, },
-                            { avgTreasuryFeeRaw: .1, avgOperatorsFeeRaw: .1, },
-                            { avgTreasuryFeeRaw: .5, avgOperatorsFeeRaw: .4, },
-                            { avgTreasuryFeeRaw: .99, avgOperatorsFeeRaw: .01, },
-                            { avgTreasuryFeeRaw: .99999, avgOperatorsFeeRaw: .00001, },
-                            { avgTreasuryFeeRaw: 1, avgOperatorsFeeRaw: 0, },
-                            { avgTreasuryFeeRaw: 0, avgOperatorsFeeRaw: 1, }
-                        ].forEach((params: ParamsType) => {
-                            it(`should increase balanceEthAndWeth & not call onIncreaseOracleError: avgTreasuryFee=${params.avgTreasuryFeeRaw}, avgOperatorsFee=${params.avgOperatorsFeeRaw}`, async () => {
-                                const { protocol, signers, rocketPool } = await loadFixture(protocolFixture);
-                                const reward = ethers.utils.parseEther("1")
-                                const avgTreasuryFee = ethers.utils.parseEther(`${params.avgTreasuryFeeRaw}`) // 50%
-                                const avgOperatorsFee = ethers.utils.parseEther(`${params.avgOperatorsFeeRaw}`) // 50%
-
-                                expect(await ethers.provider.getBalance(protocol.operatorDistributor.address)).equals(0);
-
-                                // simulate reward sent to asset router
-                                await signers.random.sendTransaction({
-                                    to: protocol.operatorDistributor.address,
-                                    value: reward
-                                })
-
-                                expect(await ethers.provider.getBalance(protocol.operatorDistributor.address)).equals(reward);
-                                expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).equals(0);
-
-                                const expectedTreasuryPortion = reward.mul(avgTreasuryFee).div(ethers.utils.parseEther("1"))
-                                const expectedOperatorPortion = reward.mul(avgOperatorsFee).div(ethers.utils.parseEther("1"))
-                                const expectedCommunityPortion = reward.sub(expectedTreasuryPortion.add(expectedOperatorPortion));
-
-                                const tx = await protocol.operatorDistributor.connect(signers.protocolSigner).onEthRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee, false)
-                                const receipt = await tx.wait();
-                                const block = receipt.blockNumber;
-
-                                const initialBalanceTreasury = await ethers.provider.getBalance(await protocol.directory.getTreasuryAddress(), block - 1);
-                                const finalBalanceTreasury = await ethers.provider.getBalance(await protocol.directory.getTreasuryAddress(), block);
-                                const initialOracleError = await protocol.operatorDistributor.oracleError({blockTag: block - 1});
-                                const finalOracleError = await protocol.operatorDistributor.oracleError({blockTag: block});
-
-
-                                expect(finalBalanceTreasury.sub(initialBalanceTreasury)).equals(expectedTreasuryPortion);
-                                expect(await ethers.provider.getBalance(protocol.yieldDistributor.address)).equals(expectedOperatorPortion);
-                                expect(await ethers.provider.getBalance(protocol.operatorDistributor.address)).equals(expectedCommunityPortion);
-                                expect(initialOracleError).equals(finalOracleError);
                             })
                         })
                     })
@@ -166,7 +112,7 @@ describe("Yield Accrual", function () {
                         const expectedOperatorPortion = reward.mul(avgOperatorsFee).div(ethers.utils.parseEther("1"))
 
                         // expect the community rewards underflow to cause revert 
-                        await expect(protocol.operatorDistributor.connect(signers.protocolSigner).onEthRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee, true)).to.be.revertedWithPanic('0x11')
+                        await expect(protocol.operatorDistributor.connect(signers.protocolSigner).onEthBeaconRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee)).to.be.revertedWithPanic('0x11')
 
                     })
                 })
@@ -197,7 +143,7 @@ describe("Yield Accrual", function () {
                 const expectedOperatorPortion = 0
                 const expectedCommunityPortion = 0
 
-                await protocol.operatorDistributor.connect(signers.protocolSigner).onEthRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee, true)
+                await protocol.operatorDistributor.connect(signers.protocolSigner).onEthBeaconRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee)
                 const finalBalanceTreasury = await ethers.provider.getBalance(await protocol.directory.getTreasuryAddress());
 
                 expect(finalBalanceTreasury.sub(initialBalanceTreasury)).equals(expectedTreasuryPortion);
@@ -223,7 +169,7 @@ describe("Yield Accrual", function () {
                 value: reward.mul(-1)
             })
 
-            await expect(protocol.operatorDistributor.connect(signers.protocolSigner).onEthRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee, true)).to.be.rejected;
+            await expect(protocol.operatorDistributor.connect(signers.protocolSigner).onEthBeaconRewardsReceived(reward, avgTreasuryFee, avgOperatorsFee)).to.be.rejected;
             })
         })
     })

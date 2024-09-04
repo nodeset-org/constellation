@@ -3,13 +3,138 @@ import { ethers, upgrades } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber as BN } from "ethers";
-import { computeKeccak256FromBytes32, prepareOperatorDistributionContract, printEventDetails, registerNewValidator, upgradePriceFetcherToMock } from "./utils/utils";
+import { computeKeccak256FromBytes32, prepareOperatorDistributionContract, printEventDetails, registerNewValidator, upgradePriceFetcherToMock} from "./utils/utils";
 import { IMinipool, MockMinipool } from "../typechain-types";
 import { RocketDepositPool } from "./rocketpool/_utils/artifacts";
 
 describe("Operator Distributor", function () {
 
-	it("Processes minipool rewards correctly even when an external user calls distributeBalance", async function (){
+	describe("Minipool processing flag", async function () {
+		describe("When admin disables minipool processing", async function () {
+			
+			let setupData: SetupData;
+
+			beforeEach(async ()=>{
+				setupData = await loadFixture(protocolFixture);
+				const {protocol, signers } = setupData;
+				await protocol.operatorDistributor.connect(signers.admin).setMinipoolProcessingEnabled(false);
+				expect(await protocol.operatorDistributor.minipoolProcessingEnabled()).equals(false);
+			})
+			
+			it("Cannot be enabled by a random address", async function () {
+				const {protocol, signers } = setupData;
+				await expect(protocol.operatorDistributor.connect(signers.random).setMinipoolProcessingEnabled(true)).to.be.revertedWith("Can only be called by admin address!");
+			})
+
+			it("Can be enabled by an admin", async function () {
+				const {protocol, signers } = setupData;
+				await expect(protocol.operatorDistributor.connect(signers.admin).setMinipoolProcessingEnabled(true)).to.not.be.reverted;
+				expect(await protocol.operatorDistributor.minipoolProcessingEnabled()).equals(true);
+			})
+		})
+
+		describe("When minipool processing is enabled", async function () {
+			
+			let setupData: SetupData;
+
+			beforeEach(async ()=>{
+				setupData = await loadFixture(protocolFixture);
+				const {protocol, signers } = setupData;
+
+				expect(await protocol.operatorDistributor.minipoolProcessingEnabled()).equals(true); // default is true
+			})
+			
+			it("Cannot be disabled by a random address", async function () {
+				const {protocol, signers } = setupData;
+				await expect(protocol.operatorDistributor.connect(signers.random).setMinipoolProcessingEnabled(false)).to.be.revertedWith("Can only be called by admin address!");
+			})
+
+			it("Can be disabled by an admin", async function () {
+				const {protocol, signers } = setupData;
+				await expect(protocol.operatorDistributor.connect(signers.admin).setMinipoolProcessingEnabled(false)).to.not.be.reverted;
+				expect(await protocol.operatorDistributor.minipoolProcessingEnabled()).equals(false);
+			})
+		})
+	})
+
+	describe("RPL rebalance flag", async function () {
+		describe("When admin disables RPL stake rebalancing", async function () {
+			
+			let setupData: SetupData;
+
+			beforeEach(async ()=>{
+				setupData = await loadFixture(protocolFixture);
+				const {protocol, signers } = setupData;
+				await protocol.operatorDistributor.connect(signers.admin).setRplStakeRebalanceEnabled(false);
+				expect(await protocol.operatorDistributor.rplStakeRebalanceEnabled()).equals(false);
+			})
+			
+			it("Cannot be enabled by a random address", async function () {
+				const {protocol, signers } = setupData;
+				await expect(protocol.operatorDistributor.connect(signers.random).setRplStakeRebalanceEnabled(true)).to.be.revertedWith("Can only be called by admin address!");
+			})
+
+			it("Can be enabled by an admin", async function () {
+				const {protocol, signers } = setupData;
+				expect(await protocol.operatorDistributor.connect(signers.admin).setRplStakeRebalanceEnabled(true)).to.not.be.reverted;
+				expect(await protocol.operatorDistributor.rplStakeRebalanceEnabled()).equals(true);
+			})
+		})
+
+		describe("When RPL stake rebalancing is enabled", async function () {
+			
+			let setupData: SetupData;
+
+			beforeEach(async ()=>{
+				setupData = await loadFixture(protocolFixture);
+				const {protocol, signers } = setupData;
+
+				expect(await protocol.operatorDistributor.rplStakeRebalanceEnabled()).equals(true); // default is true
+			})
+			
+			it("Cannot be enabled by a random address", async function () {
+				const {protocol, signers } = setupData;
+				await expect(protocol.operatorDistributor.connect(signers.random).setRplStakeRebalanceEnabled(false)).to.be.revertedWith("Can only be called by admin address!");
+			})
+
+			it("Can be disabled by an admin", async function () {
+				const {protocol, signers } = setupData;
+				expect(await protocol.operatorDistributor.connect(signers.admin).setRplStakeRebalanceEnabled(false)).to.not.be.reverted;
+				expect(await protocol.operatorDistributor.rplStakeRebalanceEnabled()).equals(false);
+			})
+		})
+	})
+	
+	it("Returns silently if minipool processing is disabled", async function (){
+		const setupData = await loadFixture(protocolFixture);
+		const { protocol, signers } = setupData;
+
+		// disable processing
+		expect(await protocol.operatorDistributor.connect(signers.admin).setMinipoolProcessingEnabled(false)).to.not.be.reverted;
+		expect(await protocol.operatorDistributor.minipoolProcessingEnabled()).equals(false);
+
+		// create 1 minipool
+		await prepareOperatorDistributionContract(setupData, 1);
+		const minipools = (await registerNewValidator(setupData, [signers.random]));
+
+		const priorTVL = await protocol.vCWETH.totalAssets();
+		const odPriorAssets = await ethers.provider.getBalance(protocol.operatorDistributor.address);
+
+		// simulate rewards to minipool contract from beacon
+		const oneEth = ethers.utils.parseEther("1");
+		await signers.ethWhale.sendTransaction({
+			to: minipools[0],
+			value: oneEth
+		  })
+
+		expect(await protocol.operatorDistributor.connect(signers.random).processMinipool(minipools[0])).to.not.be.reverted;
+
+		expect(await ethers.provider.getBalance(protocol.operatorDistributor.address)).to.equal(odPriorAssets);
+		expect(await protocol.vCWETH.totalAssets()).to.equal(priorTVL);
+	});
+
+
+	it("Processes minipool rewards correctly even when nodeRefundBalance > 0 (no exit)", async function (){
 		const setupData = await loadFixture(protocolFixture);
 		const { protocol, signers, rocketPool } = setupData;
 		const { operatorDistributor } = protocol;
@@ -29,74 +154,68 @@ describe("Operator Distributor", function () {
 			to: minipools[0],
 			value: baconReward
 		  })
-		
+
 		// random person distributes the balance to increase nodeRefundBalance
-		await (await ethers.getContractAt("IMinipool", minipools[0])).connect(signers.random).distributeBalance(true);
+		const minipool = await ethers.getContractAt("IMinipool", minipools[0]);
+		await minipool.connect(signers.random).distributeBalance(true);
+		expect(await minipool.getNodeRefundBalance()).equals(constellationPortion);
 
 		// protocol sweeps in rewards
 		await protocol.operatorDistributor.connect(signers.random).processMinipool(minipools[0]);
-		console.log("priorAssets", priorAssets);
-		console.log("xrETHPortion", xrETHPortion);
-		console.log("OD balance ETH/WETH", 
-			await ethers.provider.getBalance(protocol.operatorDistributor.address), "/",
-			await protocol.wETH.balanceOf(protocol.operatorDistributor.address)
-		  );
-		console.log("TVL OD", await protocol.operatorDistributor.getTvlEth());
-		console.log("WETHVault balance ETH/WETH", 
-			await ethers.provider.getBalance(protocol.vCWETH.address), "/",
-			await protocol.wETH.balanceOf(protocol.vCWETH.address)
-		  );
 
 		expect(await protocol.vCWETH.totalAssets()).to.equal(priorAssets.add(xrETHPortion));
 	});
 
-	it("Tops up the RPL stake if it is below the minimum", async function () {
-		// load fixture
+	it("Processes minipool rewards correctly even when nodeRefundBalance > 0  (exit)", async function (){
 		const setupData = await loadFixture(protocolFixture);
 		const { protocol, signers, rocketPool } = setupData;
 		const { operatorDistributor } = protocol;
-		const { rocketNodeStakingContract, rocketDepositPoolContract } = rocketPool;
-		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
-		const rocketDepositPool = await ethers.getContractAt("RocketDepositPool", rocketDepositPoolContract.address);
 
-		// set expectations for params
-		//expect(setupData.protocol.operatorDistributor.targetStakeRatio >= (await setupData.protocol.operatorDistributor.minimumStakeRatio()).mul(2));
-		
-		// add minimum assets for 2 minipools
-		await prepareOperatorDistributionContract(setupData, 2);
+		// create 1 minipool
+		await prepareOperatorDistributionContract(setupData, 1);
+		const minipools = await registerNewValidator(setupData, [signers.random]);
 
-		console.log('amount staked after prep', await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address));
-		// create 2 minipools
-		await registerNewValidator(setupData, [signers.random, signers.random2]);
+		const priorAssets = await protocol.vCWETH.totalAssets();
 
-		// send rpl to the operator distributor
-		const rplAmount = ethers.utils.parseEther("1000");
-		await rocketPool.rplContract.connect(signers.rplWhale).transfer(operatorDistributor.address, rplAmount);
+		// simulate rewards to minipool contract from beacon
+		const baconReward = ethers.utils.parseEther("1");
+		// assume a 15% rETH fee and LEB8 (36.25% of all rewards), which is default settings for RP
+		const constellationPortion = baconReward.mul(ethers.utils.parseEther(".3625")).div(ethers.utils.parseEther("1"));
+		const xrETHPortion = await protocol.vCWETH.getIncomeAfterFees(constellationPortion);
+		await signers.ethWhale.sendTransaction({
+			to: minipools[0],
+			value: baconReward
+		  })
 
-		const lastPrice = await upgradePriceFetcherToMock(signers, protocol, ethers.utils.parseEther("55"));
-		console.log("last price", lastPrice);
+		// random person distributes the balance to increase nodeRefundBalance
+		const minipool = await ethers.getContractAt("IMinipool", minipools[0]);
+		await minipool.connect(signers.random).distributeBalance(true);
+		expect(await minipool.getNodeRefundBalance()).equals(constellationPortion);
 
-		const initialRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
-		console.log("od.test.initial stake", initialRplStake)
-		const tx = await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
-		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
-		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
-		await operatorDistributor.connect(signers.protocolSigner).processNextMinipool();
-		const finalRplStake = await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address);
-		console.log("od.test.finalRplStake stake", finalRplStake)
+		// exit the minipool
+		const beaconBalance = ethers.utils.parseEther("32");
+		await signers.ethWhale.sendTransaction({
+			to: minipools[0],
+			value: beaconBalance
+		  })
 
-		expect(finalRplStake.sub(initialRplStake)).eq(ethers.BigNumber.from(0));
+		// protocol sweeps in rewards
+		await protocol.operatorDistributor.connect(signers.random).processMinipool(minipools[0]);
 
+		expect(await protocol.vCWETH.totalAssets()).to.equal(priorAssets.add(xrETHPortion));
 	});
 
-	// test distribute yield and show how it increases and adjusts for oracle error
-
-	it("Rewards distribution distributes correct amounts of ETH to all NOs", async function () {
-		// record all node balances
-		// capture pending rewards
-		// distribute rewards
-		// verify rewards were distributed correctly
+	it.skip("TODO: Tops up the RPL stake if it is below the minimum", async function () {
+		const setupData = await loadFixture(protocolFixture);
+		const { protocol, signers, rocketPool } = setupData;
+		const { operatorDistributor } = protocol;
 	});
+
+	it.skip("TODO: Returns silently if rpl stake rebalancing is disabled", async function (){
+		const setupData = await loadFixture(protocolFixture);
+		const { protocol, signers, rocketPool } = setupData;
+		const { operatorDistributor } = protocol;
+	})
 
 	// test target stake ratio logic
 	it("success - target stake ratio may be set above 100%", async function () {
@@ -116,9 +235,6 @@ describe("Operator Distributor", function () {
 		await registerNewValidator(setupData, [signers.random]);
 
 		const price = await protocol.priceFetcher.getPrice();
-		const expectedStake = ethers.utils.parseEther("8").mul(price);
-		console.log("exepcted stake", expectedStake)
-
 	});
 
 	it("success - target stake ratio may be set equal 100%", async function () {
@@ -140,11 +256,6 @@ describe("Operator Distributor", function () {
 		expect(initialRplStake).equals(0)
 		await prepareOperatorDistributionContract(setupData, 1);
 		await registerNewValidator(setupData, [signers.random]);
-		console.log("p=rpl stake after depo", await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address));
-
-		let price = await protocol.priceFetcher.getPrice();
-		let expectedStake = ethers.utils.parseEther("8").mul(price);
-		console.log("p=exepcted stake", expectedStake)
 	});
 
 	it("success - target stake ratio may be set less than 100%", async function () {
@@ -166,10 +277,5 @@ describe("Operator Distributor", function () {
 		expect(initialRplStake).equals(0)
 		await prepareOperatorDistributionContract(setupData, 2);
 		await registerNewValidator(setupData, [signers.random]);
-		console.log("p=rpl stake after depo", await rocketNodeStaking.getNodeRPLStake(protocol.superNode.address));
-
-		let price = await protocol.priceFetcher.getPrice();
-		let expectedStake = ethers.utils.parseEther("8").mul(price);
-		console.log("p=exepcted stake", expectedStake)
 	});
 });

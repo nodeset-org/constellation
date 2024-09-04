@@ -17,16 +17,6 @@ describe("SuperNodeAccount", function () {
             expect(await superNode.lockThreshold()).to.equal(newLockThreshold);
         });
 
-
-        it("Admin can set admin server signature expiry", async function () {
-            const { protocol, signers } = await loadFixture(protocolFixture);
-            const { superNode } = protocol;
-            const { admin } = signers;
-            const newExpiry = 2 * 24 * 60 * 60; // 2 days in seconds
-            await superNode.connect(admin).setAdminServerSigExpiry(newExpiry);
-            expect(await superNode.adminServerSigExpiry()).to.equal(newExpiry);
-        });
-
         it("Admin can set bond amount", async function () {
             const { protocol, signers } = await loadFixture(protocolFixture);
             const { superNode } = protocol;
@@ -52,16 +42,6 @@ describe("SuperNodeAccount", function () {
             const newLockThreshold = ethers.utils.parseEther("2");
             await expect(superNode.connect(random).setLockAmount(newLockThreshold)).to.be.revertedWith(
                 "Can only be called by short timelock!"
-            );
-        });
-
-        it("Non-admin cannot set admin server signature expiry", async function () {
-            const { protocol, signers } = await loadFixture(protocolFixture);
-            const { superNode } = protocol;
-            const { random } = signers;
-            const newExpiry = 2 * 24 * 60 * 60; // 2 days in seconds
-            await expect(superNode.connect(random).setAdminServerSigExpiry(newExpiry)).to.be.revertedWith(
-                "Can only be called by admin address!"
             );
         });
 
@@ -147,7 +127,7 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         };
 
-        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, signers.hyperdriver.address, '0x' + config.expectedMinipoolAddress, config.salt);
 
         await protocol.superNode.connect(signers.hyperdriver).createMinipool(
             {
@@ -156,7 +136,6 @@ describe("SuperNodeAccount", function () {
                 depositDataRoot: config.depositDataRoot,
                 salt: rawSalt,
                 expectedMinipoolAddress: config.expectedMinipoolAddress,
-                sigGenesisTime: timestamp,
                 sig: sig,
             },
             {
@@ -165,12 +144,12 @@ describe("SuperNodeAccount", function () {
 
         const lockedEth = await protocol.superNode.lockedEth(config.expectedMinipoolAddress);
         expect(lockedEth).to.equal(ethers.utils.parseEther("1"));
-
-        const totalEthLocked = await protocol.superNode.totalEthLocked();
-        expect(totalEthLocked).to.equal(ethers.utils.parseEther("1"));
-
-        const subNodeOperator = await protocol.superNode.subNodeOperatorMinipools(signers.hyperdriver.address, 0);
-        expect(subNodeOperator).to.equal('0x' + config.expectedMinipoolAddress);
+        
+        const minipoolData = await protocol.superNode.minipoolData('0x' + config.expectedMinipoolAddress);
+        expect(minipoolData.subNodeOperator).to.equal(signers.hyperdriver.address);
+        expect(minipoolData.ethTreasuryFee).to.equal(await protocol.vCWETH.treasuryFee());
+        expect(minipoolData.noFee).to.equal(await protocol.vCWETH.nodeOperatorFee());
+        expect(minipoolData.index).to.equal(ethers.BigNumber.from(0));
 
     });
 
@@ -221,8 +200,8 @@ describe("SuperNodeAccount", function () {
 
         expect(config0.expectedMinipoolAddress).not.equal(config1.expectedMinipoolAddress);
 
-        const { sig: sig0, timestamp: timestamp0 } = await approveHasSignedExitMessageSig(setupData, '0x' + config0.expectedMinipoolAddress, config0.salt);
-        const { sig: sig1, timestamp: timestamp1 } = await approveHasSignedExitMessageSig(setupData, '0x' + config1.expectedMinipoolAddress, config1.salt);
+        const { sig: sig0, timestamp: timestamp0 } = await approveHasSignedExitMessageSig(setupData, signers.random.address, '0x' + config0.expectedMinipoolAddress, config0.salt);
+        const { sig: sig1, timestamp: timestamp1 } = await approveHasSignedExitMessageSig(setupData, signers.random2.address, '0x' + config1.expectedMinipoolAddress, config1.salt);
 
         await expect(protocol.superNode.connect(signers.random).createMinipool({
             validatorPubkey: config0.validatorPubkey,
@@ -230,7 +209,6 @@ describe("SuperNodeAccount", function () {
             depositDataRoot: config0.depositDataRoot,
             salt: rawSalt0,
             expectedMinipoolAddress: config0.expectedMinipoolAddress,
-            sigGenesisTime: timestamp0,
             sig: sig0
         }, {
             value: ethers.utils.parseEther("1")
@@ -242,7 +220,6 @@ describe("SuperNodeAccount", function () {
             depositDataRoot: config1.depositDataRoot,
             salt: rawSalt1,
             expectedMinipoolAddress: config1.expectedMinipoolAddress,
-            sigGenesisTime: timestamp1,
             sig: sig1
         }, {
             value: ethers.utils.parseEther("1")
@@ -272,7 +249,7 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         };
 
-        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, signers.hyperdriver.address, '0x' + config.expectedMinipoolAddress, config.salt);
 
         await protocol.superNode.connect(signers.hyperdriver).createMinipool({
             validatorPubkey: config.validatorPubkey,
@@ -280,7 +257,6 @@ describe("SuperNodeAccount", function () {
             depositDataRoot: config.depositDataRoot,
             salt: rawSalt,
             expectedMinipoolAddress: config.expectedMinipoolAddress,
-            sigGenesisTime: timestamp,
             sig: sig
         }, {
             value: ethers.utils.parseEther("1")
@@ -292,7 +268,6 @@ describe("SuperNodeAccount", function () {
             depositDataRoot: config.depositDataRoot,
             salt: rawSalt,
             expectedMinipoolAddress: config.expectedMinipoolAddress,
-            sigGenesisTime: timestamp,
             sig: sig
         }, {
             value: ethers.utils.parseEther("1")
@@ -320,7 +295,7 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         };
 
-        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, signers.hyperdriver.address, '0x' + config.expectedMinipoolAddress, config.salt);
 
         await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool({
             validatorPubkey: config.validatorPubkey,
@@ -328,7 +303,6 @@ describe("SuperNodeAccount", function () {
             depositDataRoot: config.depositDataRoot,
             salt: rawSalt,
             expectedMinipoolAddress: config.expectedMinipoolAddress,
-            sigGenesisTime: timestamp,
             sig: sig
         }, {
             value: ethers.utils.parseEther("1")
@@ -370,7 +344,7 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: badDepositData.minipoolAddress
         };
 
-        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, signers.hyperdriver.address, '0x' + config.expectedMinipoolAddress, config.salt);
 
         // this is not an intuitive fail message, but it is correct as it we sign invalid param data so it fails for bad sig
         // because the predicted address is incorrect. This may make increase future cli debugging times
@@ -380,7 +354,6 @@ describe("SuperNodeAccount", function () {
             depositDataRoot: badConfig.depositDataRoot,
             salt: rawSalt,
             expectedMinipoolAddress: badConfig.expectedMinipoolAddress,
-            sigGenesisTime: timestamp,
             sig: sig
         }, {
             value: ethers.utils.parseEther("1")
@@ -410,7 +383,7 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         };
 
-        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, signers.hyperdriver.address, '0x' + config.expectedMinipoolAddress, config.salt);
 
         await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool({
             validatorPubkey: config.validatorPubkey,
@@ -418,7 +391,6 @@ describe("SuperNodeAccount", function () {
             depositDataRoot: config.depositDataRoot,
             salt: rawSalt,
             expectedMinipoolAddress: config.expectedMinipoolAddress,
-            sigGenesisTime: timestamp,
             sig: sig
         }, {
             value: ethers.utils.parseEther("0")
@@ -442,11 +414,11 @@ describe("SuperNodeAccount", function () {
             expectedMinipoolAddress: depositData.minipoolAddress
         };
 
-        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, '0x' + config.expectedMinipoolAddress, config.salt);
+        const { sig, timestamp } = await approveHasSignedExitMessageSig(setupData, signers.hyperdriver.address, '0x' + config.expectedMinipoolAddress, config.salt);
 
         const { sig: sig2, timestamp: timestamp2 } = await whitelistUserServerSig(setupData, signers.hyperdriver);
 
-        await protocol.whitelist.connect(signers.admin).addOperator(signers.hyperdriver.address, timestamp2, sig2)
+        await protocol.whitelist.connect(signers.admin).addOperator(signers.hyperdriver.address, sig2)
 
         await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool({
             validatorPubkey: config.validatorPubkey,
@@ -454,7 +426,6 @@ describe("SuperNodeAccount", function () {
             depositDataRoot: config.depositDataRoot,
             salt: rawSalt,
             expectedMinipoolAddress: config.expectedMinipoolAddress,
-            sigGenesisTime: timestamp,
             sig: sig
         }, {
             value: ethers.utils.parseEther("1")
@@ -530,7 +501,7 @@ describe("SuperNodeAccount", function () {
 
                         expect(await rocketPool.rocketNodeManagerContract.callStatic.getSmoothingPoolRegistrationState(protocol.superNode.address)).equals(true)
                         await protocol.superNode.connect(signers.admin).setSmoothingPoolParticipation(false);
-                        
+
                         expect(await rocketPool.rocketNodeManagerContract.callStatic.getSmoothingPoolRegistrationState(protocol.superNode.address)).equals(false)
                         await expect(protocol.superNode.connect(signers.admin).setSmoothingPoolParticipation(true)).to.revertedWith("Not enough time has passed since changing state");
                     })

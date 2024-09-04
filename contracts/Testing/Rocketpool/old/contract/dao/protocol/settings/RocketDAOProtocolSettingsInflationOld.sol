@@ -2,51 +2,49 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import '../../../../../contract/dao/protocol/settings/RocketDAOProtocolSettings.sol';
-import '../../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsInflationInterface.sol';
-import '../../../../../interface/token/RocketTokenRPLInterface.sol';
+import "../../../../../contract/dao/protocol/settings/RocketDAOProtocolSettings.sol";
+import "../../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsInflationInterface.sol";
+import "../../../../../interface/token/RocketTokenRPLInterface.sol";
 
 import 'oz-contracts-3-4-0/math/SafeMath.sol';
 
 // RPL Inflation settings in RP which the DAO will have full control over
-contract RocketDAOProtocolSettingsInflationOld is
-    RocketDAOProtocolSettings,
-    RocketDAOProtocolSettingsInflationInterface
-{
+contract RocketDAOProtocolSettingsInflationOld is RocketDAOProtocolSettings, RocketDAOProtocolSettingsInflationInterface {
+
     // Construct
-    constructor(
-        RocketStorageInterface _rocketStorageAddress
-    ) RocketDAOProtocolSettings(_rocketStorageAddress, 'inflation') {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "inflation") {
         // Set version
         version = 1;
         // Set some initial settings on first deployment
-        if (!getBool(keccak256(abi.encodePacked(settingNameSpace, 'deployed')))) {
+        if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // RPL Inflation settings
-            setSettingUint('rpl.inflation.interval.rate', 1000133680617113500); // 5% annual calculated on a daily interval - Calculate in js example: let dailyInflation = web3.utils.toBN((1 + 0.05) ** (1 / (365)) * 1e18);
-            setSettingUint('rpl.inflation.interval.start', block.timestamp + 1 days); // Set the default start date for inflation to begin as 1 day after deployment
+            setSettingUint("rpl.inflation.interval.rate", 1000133680617113500);                                 // 5% annual calculated on a daily interval - Calculate in js example: let dailyInflation = web3.utils.toBN((1 + 0.05) ** (1 / (365)) * 1e18);
+            setSettingUint("rpl.inflation.interval.start", block.timestamp + 1 days);                           // Set the default start date for inflation to begin as 1 day after deployment
             // Deployment check
-            setBool(keccak256(abi.encodePacked(settingNameSpace, 'deployed')), true); // Flag that this contract has been deployed, so default settings don't get reapplied on a contract upgrade
+            setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);                           // Flag that this contract has been deployed, so default settings don't get reapplied on a contract upgrade
         }
     }
+
+
 
     /*** Set Uint *****************************************/
 
     // Update a setting, overrides inherited setting method with extra checks for this contract
-    function setSettingUint(string memory _settingPath, uint256 _value) public override onlyDAOProtocolProposal {
+    function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
         // Some safety guards for certain settings
         // The start time for inflation must be in the future and cannot be set again once started
         bytes32 settingKey = keccak256(bytes(_settingPath));
-        if (settingKey == keccak256(bytes('rpl.inflation.interval.start'))) {
+        if(settingKey == keccak256(bytes("rpl.inflation.interval.start"))) {
             // Must be a future timestamp
-            require(_value > block.timestamp, 'Inflation interval start time must be in the future');
+            require(_value > block.timestamp, "Inflation interval start time must be in the future");
             // If it's already set and started, a new start block cannot be set
-            if (getInflationIntervalStartTime() > 0) {
-                require(getInflationIntervalStartTime() > block.timestamp, 'Inflation has already started');
+            if(getInflationIntervalStartTime() > 0) {
+                require(getInflationIntervalStartTime() > block.timestamp, "Inflation has already started");
             }
-        } else if (settingKey == keccak256(bytes('rpl.inflation.interval.rate'))) {
+        } else if(settingKey == keccak256(bytes("rpl.inflation.interval.rate"))) {
             // RPL contract address
-            address rplContractAddress = getContractAddressUnsafe('rocketTokenRPL');
-            if (rplContractAddress != address(0x0)) {
+            address rplContractAddress = getContractAddressUnsafe("rocketTokenRPL");
+            if(rplContractAddress != address(0x0)) {
                 // Force inflation at old rate before updating inflation rate
                 RocketTokenRPLInterface rplContract = RocketTokenRPLInterface(rplContractAddress);
                 // Mint any new tokens from the RPL inflation
@@ -60,12 +58,13 @@ contract RocketDAOProtocolSettingsInflationOld is
     /*** RPL Contract Settings *****************************************/
 
     // RPL yearly inflation rate per interval (daily by default)
-    function getInflationIntervalRate() external view override returns (uint256) {
-        return getSettingUint('rpl.inflation.interval.rate');
+    function getInflationIntervalRate() override external view returns (uint256) {
+        return getSettingUint("rpl.inflation.interval.rate");
     }
 
     // The block to start inflation at
-    function getInflationIntervalStartTime() public view override returns (uint256) {
-        return getSettingUint('rpl.inflation.interval.start');
+    function getInflationIntervalStartTime() override public view returns (uint256) {
+        return getSettingUint("rpl.inflation.interval.start");
     }
+
 }

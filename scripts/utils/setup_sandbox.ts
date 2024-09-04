@@ -11,7 +11,6 @@ export const setupSandbox = async () => {
   const [deployer, admin] = await ethers.getSigners();
 
   console.log('deploying RP...');
-
   const rocketStorage = await deployRocketPool();
   await setDefaultParameters();
 
@@ -35,6 +34,8 @@ export const setupSandbox = async () => {
   console.log('sanctions address', sanctions.address);
 
   const { directory } = await fastDeployProtocol(
+    admin,
+    deployer,
     admin,
     deployer,
     admin,

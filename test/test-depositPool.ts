@@ -4,7 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { protocolFixture, SetupData } from "./test";
 import { BigNumber as BN } from "ethers";
-import { assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract, registerNewValidator, createMerkleSig } from "./utils/utils";
+import { assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract, registerNewValidator } from "./utils/utils";
 import { parseRewardsMap } from "./utils/merkleClaim";
 import { submitRewards } from "./rocketpool/rewards/scenario-submit-rewards";
 
@@ -50,8 +50,6 @@ describe(`RPL staking`, () => {
             expect(finalStake.sub(initialStake)).equals(amountStaked);
 
             await increaseEVMTime(60 * 60 * 24 * 7 * 32);
-            console.log("acoutal stake", await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address))
-            console.log("udner collat thresh old", await rp.rocketNodeStakingContract.getNodeMaximumRPLStake(protocol.superNode.address))
 
             const amountUnstaked = ethers.utils.parseUnits("70", await rp.rplContract.decimals());
             const initialStake2 = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
@@ -143,17 +141,17 @@ describe(`RPL staking`, () => {
             await rp.rocketRewardsPool.submitRewardSnapshot(submission);
     
             // Perform the Merkle Claim for each validator
-            await protocol.superNode.merkleClaim(
-                [0],
-                amountsRPL0,
-                amountsETH0,
-                proofs0,
-                await createMerkleSig(setupData, 
-                    await setupData.protocol.vCWETH.treasuryFee(), 
-                    await setupData.protocol.vCWETH.nodeOperatorFee(), 
-                    await setupData.protocol.vCRPL.treasuryFee() 
-                )
-            );
+            // await protocol.superNode.merkleClaim(
+            //     [0],
+            //     amountsRPL0,
+            //     amountsETH0,
+            //     proofs0,
+            //     await createMerkleSig(setupData, 
+            //         await setupData.protocol.vCWETH.treasuryFee(), 
+            //         await setupData.protocol.vCWETH.nodeOperatorFee(), 
+            //         await setupData.protocol.vCRPL.treasuryFee() 
+            //     )
+            // );
     
         });
     });

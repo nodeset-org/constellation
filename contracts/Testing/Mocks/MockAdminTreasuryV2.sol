@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.17;
 
-import '../../Treasury.sol';
+import '../../External/Treasury.sol';
 
 contract MockTreasuryV2 is Treasury {
 

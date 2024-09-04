@@ -1,5 +1,5 @@
 import { ethers, upgrades } from "hardhat";
-import { getRocketPool, protocolFixture, protocolParams } from "../test/test";
+import { getRocketPool, protocolFixture } from "../test/test";
 import { setDefaultParameters } from "../test/rocketpool/_helpers/defaults";
 import { deployRocketPool } from "../test/rocketpool/_helpers/deployment";
 import { getNextContractAddress } from "../test/utils/utils";
@@ -33,7 +33,7 @@ async function main() {
     });
     console.log("sanctions address", sanctions.address);
 
-    const { directory } = await fastDeployProtocol(admin, deployer, admin, rocketStorage.address, wETH.address, sanctions.address, admin.address, true, 0);
+    const { directory, superNode } = await fastDeployProtocol(deployer, deployer, admin, admin, admin, rocketStorage.address, wETH.address, sanctions.address, admin.address, true, 0);
 
     // set adminServer to be ADMIN_SERVER_ROLE
     const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
@@ -74,6 +74,10 @@ async function main() {
         await directory.connect(admin).grantRole(ethers.utils.arrayify(protocolRole), deployer.address);
     });
     console.log("protocol role set");
+
+    await retryOperation(async () => {
+        await superNode.connect(admin).setMinimumNodeFee("69420000000000000")
+    })
 }
 
 main()

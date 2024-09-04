@@ -1,4 +1,12 @@
-import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettingsMembers } from '../_utils/artifacts';
+import {
+    RocketDAONodeTrusted,
+    RocketDAONodeTrustedActions,
+    RocketDAONodeTrustedSettingsMembers,
+    RocketDAOProtocolProposals,
+    RocketDAOProtocolSettingsProposals,
+    RocketDAOProtocolSettingsSecurity,
+    RocketDAOProtocolVerifier,
+} from '../_utils/artifacts';
 import { mintRPL, approveRPL } from './tokens';
 
 
@@ -34,3 +42,56 @@ export async function memberJoin(txOptions) {
     await rocketDAONodeTrustedActions.actionJoin(txOptions);
 }
 
+export async function getDaoProtocolChallenge(proposalID, challengeID) {
+    // Load contracts
+    const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
+    return rocketDAOProtocolVerifier.getChallenge(proposalID, challengeID);
+}
+
+export async function getDaoProtocolVotePhase1Time() {
+    // Load contracts
+    const rocketDAOProtocolSettingsProposals = await RocketDAOProtocolSettingsProposals.deployed();
+    return Number(await rocketDAOProtocolSettingsProposals.getVotePhase1Time());
+}
+
+export async function getDaoProtocolVotePhase2Time() {
+    // Load contracts
+    const rocketDAOProtocolSettingsProposals = await RocketDAOProtocolSettingsProposals.deployed();
+    return Number(await rocketDAOProtocolSettingsProposals.getVotePhase2Time());
+}
+
+export async function getDaoProtocolVoteDelayTime() {
+    // Load contracts
+    const rocketDAOProtocolSettingsProposals = await RocketDAOProtocolSettingsProposals.deployed();
+    return Number(await rocketDAOProtocolSettingsProposals.getVoteDelayTime());
+}
+
+export async function getDaoProtocolSecurityLeaveTime() {
+    // Load contracts
+    const rocketDAOProtocolSettingsSecurity = await RocketDAOProtocolSettingsSecurity.deployed();
+    return Number(await rocketDAOProtocolSettingsSecurity.getLeaveTime());
+}
+
+export async function getDaoProtocolDepthPerRound() {
+    // Load contracts
+    const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
+    return Number(await rocketDAOProtocolVerifier.getDepthPerRound());
+}
+
+export async function getDaoProtocolChallengeBond() {
+    // Load contracts
+    const rocketDAOProtocolSettingsProposals = await RocketDAOProtocolSettingsProposals.deployed();
+    return await rocketDAOProtocolSettingsProposals.getChallengeBond();
+}
+
+export async function getDaoProtocolProposalBond() {
+    // Load contracts
+    const rocketDAOProtocolSettingsProposals = await RocketDAOProtocolSettingsProposals.deployed();
+    return await rocketDAOProtocolSettingsProposals.getProposalBond();
+}
+
+export async function getDaoProtocolChallengePeriod() {
+    // Load contracts
+    const rocketDAOProtocolSettingsProposals = await RocketDAOProtocolSettingsProposals.deployed();
+    return Number(await rocketDAOProtocolSettingsProposals.getChallengePeriod());
+}
