@@ -30,8 +30,6 @@ contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
     int256 internal _totalYieldAccrued;
     uint256 internal _lastUpdatedTotalYieldAccrued;
 
-    constructor() initializer {}
-
     /**
      * @notice Initializes the oracle with the specified directory address.
      * @param _directoryAddress The address of the directory contract.
