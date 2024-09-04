@@ -190,16 +190,20 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             ) == false,
             'minipool already initialized'
         );
+        console.log("!!! createMinipool 3");
         address subNodeOperator = msg.sender;
         require(
             Whitelist(_directory.getWhitelistAddress()).getIsAddressInWhitelist(subNodeOperator),
             'sub node operator must be whitelisted'
         );
+        console.log("!!! createMinipool 4", Whitelist(_directory.getWhitelistAddress()).getActiveValidatorCountForOperator(subNodeOperator), maxValidators);
         require(
             Whitelist(_directory.getWhitelistAddress()).getActiveValidatorCountForOperator(subNodeOperator) < maxValidators,
             'Sub node operator has created too many minipools already'
         );
+        console.log("!!! createMinipool 5");
         require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
+        console.log("!!! createMinipool 6");
 
         uint256 salt = uint256(keccak256(abi.encodePacked(_config.salt, subNodeOperator)));
         // move the necessary ETH to this contract for use
@@ -427,9 +431,14 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @return bool Returns true if there is sufficient liquidity to cover the bond; false otherwise.
      */
     function hasSufficientLiquidity(uint256 _bond) public view returns (bool) {
+        console.log("!!!HSL 1");
         address payable od = _directory.getOperatorDistributorAddress();
+        console.log("!!!HSL 2");
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
+        console.log("!!!HSL 3");
         uint256 rplStaking = rocketNodeStaking.getNodeRPLStake(address(this));
+        console.log("!!!HSL 4");
+
         uint256 newEthBorrowed = IRocketDAOProtocolSettingsMinipool(_directory.getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() - _bond;
         uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(
             rplStaking,
