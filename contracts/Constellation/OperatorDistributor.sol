@@ -78,8 +78,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         minimumStakeRatio = _minimumStakeRatio;
     }
 
-    constructor() initializer {}
-
     /**
      * @notice Initializes the contract with the provided storage address.
      * @dev This function should only be called once, during contract creation or proxy initialization.

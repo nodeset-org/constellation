@@ -22,7 +22,9 @@ contract Treasury is UUPSUpgradeable, AccessControlUpgradeable, ReentrancyGuard 
     event Executed(address indexed _target, bytes indexed _functionData);
 
     /// @notice Initializer that replaces constructor for upgradeable contracts.
-    constructor() initializer {}
+    constructor() {
+        _disableInitializers();
+    }
 
     /// @notice Initializes the contract by setting the directory address.
     /// @dev Overrides the initialize function of the UpgradeableBase.
