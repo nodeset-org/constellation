@@ -30,7 +30,7 @@ describe("xrETH", function () {
     const { protocol, signers, rocketPool } = setupData;
 
     await protocol.sanctions.addBlacklist(signers.ethWhale.address);
-    await protocol.directory.connect(signers.admin).enableSanctions();
+    await protocol.directory.connect(signers.admin).setSanctionsEnabled(true);
     expect(await protocol.sanctions.isSanctioned(signers.ethWhale.address)).equals(true);
 
     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
