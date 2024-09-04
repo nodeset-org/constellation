@@ -15,7 +15,9 @@ abstract contract UpgradeableBase is UUPSUpgradeable, ReentrancyGuard {
         __UUPSUpgradeable_init();
     }
 
-    constructor() initializer {}
+    constructor() {
+        _disableInitializers();
+    }
 
     modifier onlyAdmin() {
         require(_directory.hasRole(Constants.ADMIN_ROLE, msg.sender), 'Can only be called by admin address!');

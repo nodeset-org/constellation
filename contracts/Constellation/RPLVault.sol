@@ -41,9 +41,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public minWethRplRatio;
 
     bool public depositsEnabled;
-
-    constructor() initializer {}
-
+    
     /**
      * @notice Initializes the vault with necessary parameters and settings.
      * @dev This function sets up the vault's token references, fee structures, and various configurations. It's intended to be called once after deployment.

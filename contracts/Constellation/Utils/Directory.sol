@@ -61,7 +61,9 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     address payable private _operatorReward;
     bool private _enabledSanctions;
 
-    constructor() initializer {}
+    constructor() {
+        _disableInitializers();
+    }
 
     /// @notice Retrieves the address of the current implementation of the contract.
     /// @return The address of the current implementation contract.
