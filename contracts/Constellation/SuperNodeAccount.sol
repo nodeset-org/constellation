@@ -206,11 +206,15 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         console.log("!!! createMinipool 6");
 
         uint256 salt = uint256(keccak256(abi.encodePacked(_config.salt, subNodeOperator)));
+        console.log("!!! createMinipool 7");
+
         // move the necessary ETH to this contract for use
         OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(bond);
+        console.log("!!! createMinipool 8");
 
         // verify admin server signature if required
         if (adminServerCheck) {
+            console.log("!!! createMinipool adminServerCheck");
 
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
@@ -431,19 +435,22 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @return bool Returns true if there is sufficient liquidity to cover the bond; false otherwise.
      */
     function hasSufficientLiquidity(uint256 _bond) public view returns (bool) {
-        console.log("!!!HSL 1");
+        console.log("!!!HSL 1", _bond);
         address payable od = _directory.getOperatorDistributorAddress();
         console.log("!!!HSL 2");
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
         console.log("!!!HSL 3");
         uint256 rplStaking = rocketNodeStaking.getNodeRPLStake(address(this));
-        console.log("!!!HSL 4");
+        console.log("!!!HSL 4", IRocketDAOProtocolSettingsMinipool(_directory.getRocketDAOProtocolSettingsMinipool()).getLaunchBalance());
 
         uint256 newEthBorrowed = IRocketDAOProtocolSettingsMinipool(_directory.getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() - _bond;
+        console.log("!!!HSL 5");
+
         uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(
             rplStaking,
             this.getEthMatched() + newEthBorrowed
         );
+        console.log("!!!HSL 6", od.balance, _bond);
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired && od.balance >= _bond;
     }
 

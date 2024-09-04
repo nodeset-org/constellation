@@ -7,6 +7,8 @@ contract MockDirectory {
     address whitelist;
     address operatorDistributor;
     address rocketNodeStaking;
+    address rocketDAOProtocolSettingsMinipool;
+    address rplAddress;
     mapping(bytes32 => mapping(address => bool)) private roles;
 
     function getRocketMinipoolManagerAddress() public view returns (address) {
@@ -48,5 +50,21 @@ contract MockDirectory {
 
     function setRocketNodeStakingAddress(address _rocketNodeStaking) public {
         rocketNodeStaking = _rocketNodeStaking;
+    }
+
+    function getRocketDAOProtocolSettingsMinipool() public view returns (address) {
+        return rocketDAOProtocolSettingsMinipool;
+    }
+
+    function setRocketDAOProtocolSettingsMinipoolAddress(address _rocketDAOProtocolSettingsMinipool) public {
+        rocketDAOProtocolSettingsMinipool = _rocketDAOProtocolSettingsMinipool;
+    }
+
+    function getRPLAddress() public view returns (address) {
+        return rplAddress;
+    }
+
+    function setRPLAddress(address _rplAddress) public {
+        rplAddress = _rplAddress;
     }
 }
