@@ -22,6 +22,5 @@ contract MockWhitelist {
     }
 
     function registerNewValidator(address) public {
-
     }
 }
