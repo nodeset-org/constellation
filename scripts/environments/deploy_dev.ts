@@ -12,15 +12,6 @@ import dotenv from "dotenv";
 import { Directory, SuperNodeAccount } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-const dotenvPath = findConfig('.env.dev');
-
-if (dotenvPath !== null) {
-    dotenv.config({ path: dotenvPath });
-} else {
-    // Handle the case where no .env file is found
-    console.error('No .env.dev file found');
-}
-
 async function parameterization(directory: Directory, superNode: SuperNodeAccount, admin: SignerWithAddress, deployer: SignerWithAddress) {
     // set adminServer to be ADMIN_SERVER_ROLE
     const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
@@ -80,6 +71,15 @@ export async function deployDev(rocketStorageAddress: string, wETHAddress: strin
 }
 
 async function main() {
+    const dotenvPath = findConfig('.env.dev');
+
+    if (dotenvPath !== null) {
+        dotenv.config({ path: dotenvPath });
+    } else {
+        // Handle the case where no .env file is found
+        console.error('No .env.dev file found');
+    }
+
     // validate env files
     await deployDev(process.env.RP_STORAGE_CONTRACT_ADDRESS as string, process.env.WETH_ADDRESS as string, process.env.SANCTIONS_LIST_ADDRESS as string)
 }
