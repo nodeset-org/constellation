@@ -14,6 +14,8 @@ import './UpgradeableBase.sol';
 import '../Utils/RocketPoolEncoder.sol';
 import '../Utils/Constants.sol';
 
+import 'hardhat/console.sol';
+
 struct Protocol {
     address whitelist;
     address payable wethVault;

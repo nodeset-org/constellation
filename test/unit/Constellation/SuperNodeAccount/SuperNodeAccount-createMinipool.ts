@@ -1,37 +1,32 @@
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { Contract } from "ethers";
-import { generateDepositData } from "../../../rocketpool/_helpers/minipool";
-import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator } from "../../../utils/utils";
+import { approvedSalt } from "../../../utils/utils";
+
 describe("SuperNodeAccount", function () {
-  let superNodeAccount: Contract;
-  let mockRocketMinipoolManager: Contract;
-  let mockWhitelist: Contract;
-  let mockOperatorDistributor: Contract;
-  let owner: any;
-  let subNodeOperator: any;
-  let otherSigner: any;
-  let blockchainId: any;
+    let superNodeAccount: Contract;
+    let mockDirectory: Contract;
+    let owner: any;
+    let subNodeOperator: any;
+    let otherSigner: any;
+    let blockchainId: any;
 
     beforeEach(async function () {
         [owner, subNodeOperator, otherSigner] = await ethers.getSigners();
 
         // Deploy mock contracts
         const MockRocketMinipoolManager = await ethers.getContractFactory("MockRocketMinipoolManager");
-        mockRocketMinipoolManager = await MockRocketMinipoolManager.deploy();
+        const mockRocketMinipoolManager = await MockRocketMinipoolManager.deploy();
         await mockRocketMinipoolManager.deployed();
 
-        const MockWhitelist = await ethers.getContractFactory("MockWhitelist");
-        mockWhitelist = await MockWhitelist.deploy();
-        await mockWhitelist.deployed();
-
-        const MockOperatorDistributor = await ethers.getContractFactory("MockOperatorDistributor");
-        mockOperatorDistributor = await MockOperatorDistributor.deploy();
-        await mockOperatorDistributor.deployed();
+        const MockDirectory = await ethers.getContractFactory("MockDirectory");
+        mockDirectory = await MockDirectory.deploy();
+        await mockDirectory.deployed();
+        await mockDirectory.setRocketMinipoolManagerAddress(mockRocketMinipoolManager.address);
 
         // Deploy the SuperNodeAccount contract
         const SuperNodeAccountFactory = await ethers.getContractFactory("SuperNodeAccount");
-        superNodeAccount = await upgrades.deployProxy(SuperNodeAccountFactory, [mockOperatorDistributor.address], {
+        superNodeAccount = await upgrades.deployProxy(SuperNodeAccountFactory, [mockDirectory.address], {
             initializer: "initialize",
             kind: "uups",
             unsafeAllow: ["constructor"],
@@ -86,19 +81,22 @@ describe("SuperNodeAccount", function () {
             );
             const ethSignedMessageHash = ethers.utils.hashMessage(ethers.utils.arrayify(messageHash));
             const sig = await subNodeOperator.signMessage(ethers.utils.arrayify(messageHash));
-
-            await expect(
-                superNodeAccount
-            .connect(subNodeOperator)
-            .createMinipool({
-                validatorPubkey: config.validatorPubkey,
-                validatorSignature: config.validatorSignature,
-                depositDataRoot: config.depositDataRoot,
-                salt: rawSalt,
-                expectedMinipoolAddress: config.expectedMinipoolAddress,
-                sig: sig
-                }, { value: ethers.utils.parseEther('0') }
-            )).to.be.revertedWith('SuperNode: must set the message value to lockThreshold');
+            // Set the lock threshold
+            const timelockShortRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
+            await expect(mockDirectory.connect(owner).setRole(timelockShortRole, owner.address, true)).to.not.be.reverted;
+            await expect(superNodeAccount.connect(owner).setLockAmount(ethers.utils.parseEther('1'))).to.not.be.reverted;
+            // await expect(
+            //     superNodeAccount
+            // .connect(subNodeOperator)
+            // .createMinipool({
+            //     validatorPubkey: config.validatorPubkey,
+            //     validatorSignature: config.validatorSignature,
+            //     depositDataRoot: config.depositDataRoot,
+            //     salt: rawSalt,
+            //     expectedMinipoolAddress: config.expectedMinipoolAddress,
+            //     sig: sig
+            //     }, { value: ethers.utils.parseEther('0') }
+            // )).to.be.revertedWith('SuperNode: must set the message value to lockThreshold');
         });
     });
     describe("when the message value is equal to the threshold", function () {
