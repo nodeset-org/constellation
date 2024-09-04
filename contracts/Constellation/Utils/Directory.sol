@@ -85,6 +85,10 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     // GETTERS
     //----
 
+    function getSanctionsEnabled() public view returns (bool) {
+        return _enabledSanctions;
+    }
+    
     function getWhitelistAddress() public view returns (address) {
         return _protocol.whitelist;
     }

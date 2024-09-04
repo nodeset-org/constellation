@@ -75,7 +75,7 @@ describe("xRPL", function () {
     const { protocol, signers, rocketPool } = setupData;
 
     await protocol.sanctions.addBlacklist(signers.random.address);
-    await protocol.directory.connect(signers.admin).setSanctionsEnabled(true);
+    expect(await protocol.directory.getSanctionsEnabled()).equals(true);
     expect(await protocol.sanctions.isSanctioned(signers.random.address)).equals(true);
 
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, ethers.utils.parseEther("100"));
