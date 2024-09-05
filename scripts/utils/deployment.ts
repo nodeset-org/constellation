@@ -10,6 +10,7 @@ import { Protocol, Signers } from "../../test/test";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
 import { ERC20 } from "../../typechain-types/contracts/Testing/Rocketpool/contract/util";
 import { expect } from "chai";
+import { Wallet } from 'ethers';
 
 // Function to prompt user for input
 function askQuestion(query: string): Promise<string> {
@@ -57,9 +58,9 @@ export const generateBytes32Identifier = (identifier: string) => {
 export async function fastParameterization(
     directory: Directory, 
     superNode: SuperNodeAccount, 
-    admin: SignerWithAddress, 
-    adminServer: SignerWithAddress,
-    adminOracle: SignerWithAddress,
+    admin: Wallet | SignerWithAddress, 
+    adminServer: Wallet | SignerWithAddress,
+    adminOracle: Wallet | SignerWithAddress,
     timelockShortAddress: string,
     timelockMediumAddress: string,
     timelockLongAddress: string,
@@ -104,8 +105,8 @@ export async function fastParameterization(
 
 export async function devParameterization(    
     directory: Directory, 
-    admin: SignerWithAddress, 
-    protocolSigner: SignerWithAddress,
+    admin: Wallet | SignerWithAddress, 
+    protocolSigner: Wallet | SignerWithAddress,
 ) {
      // set protocolSigner to be PROTOCOL_ROLE
      const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
@@ -115,7 +116,7 @@ export async function devParameterization(
      console.log("protocol role set");
 }
 
-export async function fastDeployProtocol(treasurer: SignerWithAddress, deployer: SignerWithAddress, nodesetAdmin: SignerWithAddress, nodesetServerAdmin: SignerWithAddress, directoryDeployer: SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, admin: string, log: boolean, defaultOffset = 1) {
+export async function fastDeployProtocol(treasurer: Wallet | SignerWithAddress, deployer: Wallet | SignerWithAddress, nodesetAdmin: Wallet | SignerWithAddress, nodesetServerAdmin: Wallet | SignerWithAddress, directoryDeployer: Wallet | SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, admin: string, log: boolean, defaultOffset = 1) {
     const directoryAddress = await getNextContractAddress(directoryDeployer, defaultOffset)
 
     const whitelistProxy = await retryOperation(async () => {

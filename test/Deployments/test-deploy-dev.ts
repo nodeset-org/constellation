@@ -7,9 +7,9 @@ import { deployRocketPool } from "../rocketpool/_helpers/deployment";
 import { setDefaultParameters } from "../rocketpool/_helpers/defaults";
 import { RocketStorage } from "../rocketpool/_utils/artifacts";
 import { IRocketStorage } from "../../typechain-types";
+import { deployDev, deployDevUsingEnv } from "../../scripts/environments/deploy_dev";
 
-describe(`Test Deploy Dev Env`, () => {
-
+describe.skip(`Test Deploy Dev Env`, () => {
     beforeEach(async function () {
         await network.provider.request({
           method: "hardhat_reset",
@@ -22,7 +22,7 @@ describe(`Test Deploy Dev Env`, () => {
       });
 
     it("Should pass", async () => {
-        console.log("SDFJSDLF:JL")
+        await deployDevUsingEnv();
     })
 
 })

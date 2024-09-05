@@ -14,6 +14,7 @@ import { Contract, EventFilter, utils } from 'ethers';
 import seedrandom from 'seedrandom';
 import { deposit } from '../rocketpool/deposit/scenario-deposit';
 import {  ContractReceipt } from "ethers";
+import { Wallet } from 'ethers';
 
 interface TransferEvent {
   address: string;
@@ -841,7 +842,7 @@ export async function createClaimRewardBadEncodedSigWithNonce(setupData: SetupDa
   return sig;
 }
 
-export async function getNextContractAddress(signer: SignerWithAddress, offset = 0) {
+export async function getNextContractAddress(signer: Wallet | SignerWithAddress, offset = 0) {
   // Get current nonce of the signer
   const nonce = (await signer.getTransactionCount()) + offset;
 
