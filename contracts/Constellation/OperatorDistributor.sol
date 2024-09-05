@@ -17,7 +17,6 @@ import '../Interfaces/RocketPool/IRocketNodeManager.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
-import 'hardhat/console.sol';
 /**
  * @title OperatorDistributor
  * @author Theodore Clapp, Mike Leach
@@ -146,7 +145,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         } else {
             requiredStakeRpl = 0;
         }
-        console.log("!!!", requiredStakeRpl);
     }
 
     /**
