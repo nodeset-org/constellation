@@ -288,6 +288,7 @@ describe("Operator Distributor", function () {
 	
 		expect(await operatorDistributor.minimumStakeRatio()).equals(ethers.utils.parseEther('0.15'));
 		let price = await protocol.priceFetcher.getPrice();
+		expect(price).equals(ethers.utils.parseEther('100'));
 		console.log("price of RPL/ETH", ethers.utils.formatEther(price));
 		
 		console.log('0, 0', ethers.utils.formatEther(await operatorDistributor.calculateRplStakeShortfall(0, 0)), " RPL");
