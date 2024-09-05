@@ -278,4 +278,67 @@ describe("Operator Distributor", function () {
 		await prepareOperatorDistributionContract(setupData, 2);
 		await registerNewValidator(setupData, [signers.random]);
 	});
+
+	it("calculateRplStakeShortfall", async function () {
+		// load fixture
+		const setupData = await loadFixture(protocolFixture);
+		const { protocol, signers, rocketPool } = setupData;
+		const { admin, rplWhale } = signers;
+		const { operatorDistributor } = protocol;
+	
+		expect(await operatorDistributor.minimumStakeRatio()).equals(ethers.utils.parseEther('0.15'));
+		let price = await protocol.priceFetcher.getPrice();
+		console.log("price of RPL/ETH", ethers.utils.formatEther(price));
+		
+		console.log('0, 0', ethers.utils.formatEther(await operatorDistributor.calculateRplStakeShortfall(0, 0)), " RPL");
+		
+		let rplString = "100";
+		let ethString = "0";
+		let rpl = ethers.utils.parseEther(rplString);
+		let eth = ethers.utils.parseEther(ethString);
+		let ratio
+		console.log(rplString +" RPL,", ethString + " ETH,", "ratio: infinite" + "%", ethers.utils.formatEther(await operatorDistributor.calculateRplStakeShortfall(rpl, eth)));
+
+		rplString = "0";
+		ethString = "100";
+		rpl = ethers.utils.parseEther(rplString);
+		eth = ethers.utils.parseEther(ethString);
+		ratio = rpl.div(price).div(eth)
+		console.log(rplString +" RPL,", ethString + " ETH,", "ratio: " + ratio + "%", ethers.utils.formatEther(await operatorDistributor.calculateRplStakeShortfall(rpl, eth)));
+		
+		rplString = "100";
+		ethString = "100";
+		rpl = ethers.utils.parseEther(rplString);
+		eth = ethers.utils.parseEther(ethString);
+		ratio = rpl.div(price).div(eth)
+		console.log(rplString +" RPL,", ethString + " ETH,", "ratio: " + ratio + "%", ethers.utils.formatEther(await operatorDistributor.calculateRplStakeShortfall(rpl, eth)));
+		
+		rplString = "1000";
+		ethString = "100";
+		rpl = ethers.utils.parseEther(rplString);
+		eth = ethers.utils.parseEther(ethString);
+		ratio = rpl.div(price).div(eth)
+		console.log(rplString +" RPL,", ethString + " ETH,", "ratio: " + ratio + "%", ethers.utils.formatEther(await operatorDistributor.calculateRplStakeShortfall(rpl, eth)));
+
+		rplString = "100";
+		ethString = "1000";
+		rpl = ethers.utils.parseEther(rplString);
+		eth = ethers.utils.parseEther(ethString);
+		ratio = rpl.div(price).div(eth)
+		console.log(rplString +" RPL,", ethString + " ETH,", "ratio: " + ratio + "%", ethers.utils.formatEther(await operatorDistributor.calculateRplStakeShortfall(rpl, eth)));
+
+		rplString = "10000";
+		ethString = "100";
+		rpl = ethers.utils.parseEther(rplString);
+		eth = ethers.utils.parseEther(ethString);
+		ratio = rpl.div(price).div(eth)
+		console.log(rplString +" RPL,", ethString + " ETH,", "ratio: " + ratio + "%", ethers.utils.formatEther(await operatorDistributor.calculateRplStakeShortfall(rpl, eth)));
+
+		rplString = "100";
+		ethString = "10000";
+		rpl = ethers.utils.parseEther(rplString);
+		eth = ethers.utils.parseEther(ethString);
+		ratio = rpl.div(price).div(eth)
+		console.log(rplString +" RPL,", ethString + " ETH,", "ratio: " + ratio + "%", ethers.utils.formatEther(await operatorDistributor.calculateRplStakeShortfall(rpl, eth)));
+	});
 });
