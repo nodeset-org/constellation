@@ -53,7 +53,11 @@ struct RocketIntegrations {
 contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     event SanctionViolation(address account, address eoa_origin);
     event SanctionViolation(address eoa_origin);
-    event SanctionsDisabled();
+    event SanctionsSettingChanged(bool oldValue, bool newValue);
+    event TreasuryAddressChanged(address oldAddress, address newAddress);
+    event OperatorRewardAddressChanged(address oldAddress, address newAddress);
+    event OracleAddressChanged(address oldAddress, address newAddress);
+    event AllContractAddressesChanged(Protocol oldProtocol, Protocol newProtocol);
 
     Protocol private _protocol;
     RocketIntegrations private _integrations;
@@ -83,6 +87,10 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     // GETTERS
     //----
 
+    function getSanctionsEnabled() public view returns (bool) {
+        return _enabledSanctions;
+    }
+    
     function getWhitelistAddress() public view returns (address) {
         return _protocol.whitelist;
     }
@@ -143,7 +151,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol.superNode;
     }
 
-    function getProtocol() public view returns(Protocol memory) {
+    function getProtocol() public view returns (Protocol memory) {
         return _protocol;
     }
 
@@ -161,6 +169,10 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     function getTreasuryAddress() public view returns (address payable) {
         return _treasury;
+    }
+
+    function getSanctionsAddress() public view returns (address) {
+        return _protocol.sanctions;
     }
 
     function getRocketNetworkPenalties() public view returns (IRocketNetworkPenalties) {
@@ -213,17 +225,20 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
             Constants.INITIALIZATION_ERROR
         );
         require(_protocol.rplVault == address(0) && newProtocol.rplVault != address(0), Constants.INITIALIZATION_ERROR);
-        require(_protocol.merkleClaimStreamer == address(0) && newProtocol.merkleClaimStreamer != address(0), Constants.INITIALIZATION_ERROR);
-        require(_protocol.superNode == address(0) && newProtocol.superNode != address(0), Constants.INITIALIZATION_ERROR);
+        require(
+            _protocol.merkleClaimStreamer == address(0) && newProtocol.merkleClaimStreamer != address(0),
+            Constants.INITIALIZATION_ERROR
+        );
+        require(
+            _protocol.superNode == address(0) && newProtocol.superNode != address(0),
+            Constants.INITIALIZATION_ERROR
+        );
         require(_protocol.oracle == address(0) && newProtocol.oracle != address(0), Constants.INITIALIZATION_ERROR);
         require(
             _protocol.operatorDistributor == address(0) && newProtocol.operatorDistributor != address(0),
             Constants.INITIALIZATION_ERROR
         );
-        require(
-            _operatorReward == address(0) && operatorReward != address(0),
-            Constants.INITIALIZATION_ERROR
-        );
+        require(_operatorReward == address(0) && operatorReward != address(0), Constants.INITIALIZATION_ERROR);
         require(_protocol.oracle == address(0) && newProtocol.oracle != address(0), Constants.INITIALIZATION_ERROR);
         require(
             _protocol.priceFetcher == address(0) && newProtocol.priceFetcher != address(0),
@@ -241,7 +256,6 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         require(_treasury == address(0) && treasury != address(0), Constants.INITIALIZATION_ERROR);
         require(treasurer != address(0), Constants.INITIALIZATION_ERROR);
         require(admin != address(0), Constants.INITIALIZATION_ERROR);
-
 
         AccessControlUpgradeable.__AccessControl_init();
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
@@ -268,8 +282,6 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.oracle);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.priceFetcher);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.superNode);
-
-        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
         _treasury = treasury;
         _operatorReward = operatorReward;
@@ -366,41 +378,46 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     /// @param newTreasury The new treasury address.
     function setTreasury(address payable newTreasury) public {
         require(hasRole(Constants.TREASURER_ROLE, msg.sender), Constants.TREASURER_ONLY_ERROR);
+        emit TreasuryAddressChanged(_treasury, newTreasury);
         _treasury = newTreasury;
     }
 
     /// @notice Sets the operator rewards contract address.
     /// @param newOperatorRewards The new operator rewards contract address.
     function setOperatorRewards(address payable newOperatorRewards) public {
-        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
+        require(hasRole(Constants.TIMELOCK_LONG, msg.sender), Constants.TIMELOCK_LONG_ONLY_ERROR);
+        emit OperatorRewardAddressChanged(_operatorReward, newOperatorRewards);
         _operatorReward = newOperatorRewards;
     }
 
-    /// @notice Sets the oracle contract address.
+    /// @notice Convenience function to set the oracle contract address specifically.
+    /// @dev Will enforce that the new address implements the IConstellationOracle interface
     /// @param newOracle The new oracle contract address.
-    function setOracle(address newOracle) public {
-        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
-        _protocol.oracle = newOracle;
+    function setOracle(IConstellationOracle newOracle) public {
+        require(hasRole(Constants.TIMELOCK_LONG, msg.sender), Constants.TIMELOCK_LONG_ONLY_ERROR);
+        address newAddress = address(newOracle);
+        emit OracleAddressChanged(_protocol.oracle, newAddress);
+        _protocol.oracle = newAddress;
     }
 
     /// @notice Updates all protocol contract addresses in a single call.
     /// @param newProtocol A Protocol struct containing updated addresses of protocol contracts.
     /// @dev This function allows an administrator to update all protocol contract addresses simultaneously.
+    /// Typically, it's better to upgrade a contract specifically, but this is useful for a fallback in emergencies
+    /// Note that this function does NOT validate that the addresses provided differ from the current addresses at all.
+    /// You will waste gas if you call this with the same addresses already used!
     function setAll(Protocol memory newProtocol) public {
-        require(hasRole(Constants.TIMELOCK_SHORT, msg.sender), Constants.ADMIN_ONLY_ERROR);
+        require(hasRole(Constants.TIMELOCK_LONG, msg.sender), Constants.TIMELOCK_LONG_ONLY_ERROR);
+        emit AllContractAddressesChanged(_protocol, newProtocol);
         _protocol = newProtocol;
     }
 
-    /// @notice Disables sanctions enforcement.
-    function disableSanctions() public {
+    /// @notice Enables or disables sanctions enforcement.
+    function setSanctionsEnabled(bool newValue) public {
+        require(newValue != _enabledSanctions, '_enabledSanctions already set to this value');
         require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
-        _enabledSanctions = false;
-    }
-
-    /// @notice Enables sanctions enforcement.
-    function enableSanctions() public {
-        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
-        _enabledSanctions = true;
+        emit SanctionsSettingChanged(_enabledSanctions, newValue);
+        _enabledSanctions = newValue;
     }
 
     /// @notice Checks if a single account is sanctioned.
@@ -435,7 +452,6 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     /// @return bool indicating if any of the accounts are sanctioned.
     function _checkSanctions(address[] memory _accounts) internal returns (bool) {
         if (!_enabledSanctions) {
-            emit SanctionsDisabled();
             return false;
         }
         bool sanctioned = false;
