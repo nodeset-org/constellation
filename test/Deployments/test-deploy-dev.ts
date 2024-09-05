@@ -8,6 +8,7 @@ import { setDefaultParameters } from "../rocketpool/_helpers/defaults";
 import { RocketStorage } from "../rocketpool/_utils/artifacts";
 import { IRocketStorage } from "../../typechain-types";
 import { deployDev, deployDevUsingEnv } from "../../scripts/environments/deploy_dev";
+import { getWalletFromPath } from "../../scripts/environments/keyReader";
 
 describe(`Test Deploy Dev Env`, () => {
     beforeEach(async function () {
@@ -63,5 +64,13 @@ describe(`Test Deploy Dev Env`, () => {
             console.log(integrations![i])
             expect(integrations![i]).not.equals(ethers.constants.AddressZero);
         }
+
+        const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
+        const expectedProtocolSigner = await getWalletFromPath(process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH as string)
+        expect(await directory?.hasRole(protocolRole, expectedProtocolSigner.address)).equals(true)
+
+        const treasurerRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TREASURER_ROLE"));
+        const expectedTreasurerAddress = await getWalletFromPath(process.env.DEPLOYER_PRIVATE_KEY_PATH as string)
+        expect(await directory?.hasRole(treasurerRole, expectedTreasurerAddress.address)).equals(true)
     })
 })

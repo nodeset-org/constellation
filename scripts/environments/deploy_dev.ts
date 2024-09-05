@@ -13,6 +13,7 @@ import { Directory, SuperNodeAccount } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Wallet } from 'ethers';
 import { readFileSync } from 'fs';
+import {  getWalletFromPath } from "./keyReader";
 
 export async function deployDev(rocketStorageAddress: string, wETHAddress: string, sanctionsAddress: string, deployer: Wallet | SignerWithAddress, admin: Wallet | SignerWithAddress) {
     const { directory, superNode } = await fastDeployProtocol(deployer, deployer, admin, admin, admin, rocketStorageAddress, wETHAddress, sanctionsAddress, admin.address, true, 1);
@@ -42,30 +43,8 @@ export async function deployDevUsingEnv() {
     }
 
     try {
-        let deployerPrivateKey = readFileSync(deployerPath, 'utf8').trim();
-        let directoryDeployerPrivateKey = readFileSync(directoryDeployerPath, 'utf8').trim();
-
-        function validatePrivateKey(key: string) {
-            if (!key.startsWith('0x')) {
-                key = `0x${key}`;
-            }
-
-            if (key.length !== 66) {
-                throw new Error(`Private key must be 64 hex characters long. Got: ${key.length - 2}`);
-            }
-
-            if (!/^0x[0-9a-fA-F]{64}$/.test(key)) {
-                throw new Error('Invalid characters in private key. Expected a 64-character hex string.');
-            }
-
-            return key;
-        }
-
-        deployerPrivateKey = validatePrivateKey(deployerPrivateKey);
-        directoryDeployerPrivateKey = validatePrivateKey(directoryDeployerPrivateKey);
-
-        const deployerWallet = new Wallet(deployerPrivateKey, ethers.provider);
-        const directoryDeployerWallet = new Wallet(directoryDeployerPrivateKey, ethers.provider);
+        const deployerWallet = await getWalletFromPath(deployerPath);
+        const directoryDeployerWallet = await getWalletFromPath(directoryDeployerPath)
 
         return await deployDev(
             process.env.RP_STORAGE_CONTRACT_ADDRESS as string,

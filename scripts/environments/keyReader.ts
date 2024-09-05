@@ -14,9 +14,22 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Wallet } from 'ethers';
 import { readFileSync } from 'fs';
 
-export async function deployDev(rocketStorageAddress: string, wETHAddress: string, sanctionsAddress: string, deployer: Wallet | SignerWithAddress, admin: Wallet | SignerWithAddress) {
-    const { directory, superNode } = await fastDeployProtocol(deployer, deployer, admin, admin, admin, rocketStorageAddress, wETHAddress, sanctionsAddress, admin.address, true, 1);
-    upgrades.silenceWarnings()
-    await fastParameterization(directory, superNode, admin, deployer, deployer, deployer.address, deployer.address, deployer.address);
-    return directory
+export async function getWalletFromPath(path: string) {
+
+    let key = readFileSync(path, 'utf8').trim();
+
+    if (!key.startsWith('0x')) {
+        key = `0x${key}`;
+    }
+
+    if (key.length !== 66) {
+        throw new Error(`Private key must be 64 hex characters long. Got: ${key.length - 2}`);
+    }
+
+    if (!/^0x[0-9a-fA-F]{64}$/.test(key)) {
+        throw new Error('Invalid characters in private key. Expected a 64-character hex string.');
+    }
+
+    return new Wallet(key, ethers.provider);
+
 }
