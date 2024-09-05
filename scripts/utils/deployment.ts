@@ -6,7 +6,7 @@ import { getInitializerData } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import readline from 'readline';
 import { Treasury, Directory, IRocketStorage, IConstellationOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, NodeSetOperatorRewardDistributor, PoAConstellationOracle, MerkleClaimStreamer } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Protocol, Signers } from "../../test/test";
+import { Protocol, Signers } from "../../test/integration/integration";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
 import { ERC20 } from "../../typechain-types/contracts/Testing/Rocketpool/contract/util";
 import { expect } from "chai";
@@ -55,16 +55,16 @@ export const generateBytes32Identifier = (identifier: string) => {
 };
 
 export async function fastDeployProtocol(
-    treasurer: SignerWithAddress, 
-    deployer: SignerWithAddress, 
-    nodesetAdmin: SignerWithAddress, 
-    nodesetServerAdmin: SignerWithAddress, 
-    directoryDeployer: SignerWithAddress, 
-    rocketStorage: string, 
-    weth: string, 
-    sanctions: string, 
-    admin: string, 
-    log: boolean, 
+    treasurer: SignerWithAddress,
+    deployer: SignerWithAddress,
+    nodesetAdmin: SignerWithAddress,
+    nodesetServerAdmin: SignerWithAddress,
+    directoryDeployer: SignerWithAddress,
+    rocketStorage: string,
+    weth: string,
+    sanctions: string,
+    admin: string,
+    log: boolean,
     defaultOffset = 1) {
     const directoryAddress = await getNextContractAddress(directoryDeployer, defaultOffset)
 

@@ -3,7 +3,7 @@ import { setDefaultParameters } from '../../test/rocketpool/_helpers/defaults';
 import { deployRocketPool } from '../../test/rocketpool/_helpers/deployment';
 import { MockSanctions, WETH } from '../../typechain-types';
 import { fastDeployProtocol, retryOperation } from '../utils/deployment';
-import { createSigners, Protocol } from '../../test/test';
+import { createSigners, Protocol } from '../../test/integration/integration';
 
 export type SandboxDeployments = Protocol;
 
