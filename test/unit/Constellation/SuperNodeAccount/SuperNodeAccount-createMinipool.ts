@@ -198,7 +198,7 @@ describe("SuperNodeAccount", function () {
                 const sig = await subNodeOperator.signMessage(ethers.utils.arrayify(messageHash));
 
                 // Mock minipool address to already exist
-                mockRocketMinipoolManager.setMinipoolExists(config.expectedMinipoolAddress, true);
+                await mockRocketMinipoolManager.setMinipoolExists(config.expectedMinipoolAddress, true);
 
                 await expect(
                     superNodeAccount
