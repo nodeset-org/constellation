@@ -140,11 +140,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 _rpEthMatched
     ) public view returns (uint256 requiredStakeRpl) {
         uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
-        uint256 matchedStakeRatio = _existingRplStake == 0
+        uint256 matchedStakeRatio = _rpEthMatched == 0 || ethPriceInRpl == 0
             ? 0
-            : ((_rpEthMatched * ethPriceInRpl * 1e18) / _existingRplStake) / 1e18;
+            : (_existingRplStake * 1e18 * 1e18) / (_rpEthMatched * ethPriceInRpl);
         if (matchedStakeRatio < minimumStakeRatio) {
-            uint256 minuend = minimumStakeRatio.mulDiv(_rpEthMatched * ethPriceInRpl, 1e18 * 10 ** 18);
+            uint256 minuend = minimumStakeRatio.mulDiv(_rpEthMatched * ethPriceInRpl, 1e18 * 1e18);
             requiredStakeRpl = minuend < _existingRplStake ? 0 : minuend - _existingRplStake;
         } else {
             requiredStakeRpl = 0;
