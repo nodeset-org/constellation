@@ -108,6 +108,7 @@ export async function devParameterization(
     admin: Wallet | SignerWithAddress, 
     protocolSigner: Wallet | SignerWithAddress,
 ) {
+    console.log("trying to set protocol role...")
      // set protocolSigner to be PROTOCOL_ROLE
      const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
      await retryOperation(async () => {

@@ -145,6 +145,10 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol;
     }
 
+    function getRocketIntegrations() public view returns(RocketIntegrations memory) {
+        return _integrations;
+    }
+
     function getRocketDAOProtocolSettingsRewardsAddress() public view returns (address) {
         return _integrations.rocketDAOProtocolSettingsRewards;
     }

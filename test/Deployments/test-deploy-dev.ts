@@ -9,7 +9,7 @@ import { RocketStorage } from "../rocketpool/_utils/artifacts";
 import { IRocketStorage } from "../../typechain-types";
 import { deployDev, deployDevUsingEnv } from "../../scripts/environments/deploy_dev";
 
-describe.skip(`Test Deploy Dev Env`, () => {
+describe(`Test Deploy Dev Env`, () => {
     beforeEach(async function () {
         await network.provider.request({
           method: "hardhat_reset",
@@ -22,7 +22,46 @@ describe.skip(`Test Deploy Dev Env`, () => {
       });
 
     it("Should pass", async () => {
-        await deployDevUsingEnv();
-    })
+        const directory = await deployDevUsingEnv();
 
+        expect(await directory?.getMerkleClaimStreamerAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getOperatorDistributorAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getOperatorDistributorAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getOperatorRewardAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getOracleAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getPriceFetcherAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getRPLAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getRPLVaultAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getRocketDAOProtocolProposalAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getRocketDAOProtocolSettingsMinipool()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getRocketDAOProtocolSettingsRewardsAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getRocketDepositPoolAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getRocketMerkleDistributorMainnetAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getRocketMinipoolManagerAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getRocketNetworkPenalties()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getRocketNetworkPrices()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getRocketNetworkVotingAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getRocketNodeDepositAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getRocketNodeManagerAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getRocketNodeStakingAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getRocketStorageAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getSuperNodeAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getTreasuryAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getWETHAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getWETHVaultAddress()).not.equals(ethers.constants.AddressZero);
+        expect(await directory?.getWhitelistAddress()).not.equals(ethers.constants.AddressZero);
+
+        const protocol = await directory?.getProtocol();
+
+        for(let i = 0; i < protocol!.length; i++) {
+            console.log(protocol![i])
+            expect(protocol![i]).not.equals(ethers.constants.AddressZero);
+        }
+
+        const integrations = await directory?.getRocketIntegrations();
+        for(let i = 0; i < integrations!.length; i++) {
+            console.log(integrations![i])
+            expect(integrations![i]).not.equals(ethers.constants.AddressZero);
+        }
+    })
 })

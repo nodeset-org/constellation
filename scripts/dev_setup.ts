@@ -12,6 +12,9 @@ import { wEth } from "../typechain-types/contracts/Testing";
 async function main() {
     const [deployer, admin] = await ethers.getSigners();
 
+    console.log("Deployer Address", deployer.address)
+    console.log("admin Address", admin.address)
+
     const rocketStorage = await ethers.getContractAt('RocketStorage', '0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1'); // holesky addr
 
     upgrades.silenceWarnings()
