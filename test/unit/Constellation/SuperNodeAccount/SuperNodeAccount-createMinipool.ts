@@ -162,8 +162,7 @@ describe("SuperNodeAccount", function () {
     });
     describe("when the message value is equal to the lock threshold", function () {
         describe("when the minipool address already exists", function () {
-            // TODO: UNSKIP and figure out why test is failing when ran with other tests
-            it.skip("should revert", async function () {
+            it("should revert", async function () {
                 // Mock minipool address to already exist
                 const tx = await mockRocketMinipoolManager.setMinipoolExists(config.expectedMinipoolAddress, true);
 
