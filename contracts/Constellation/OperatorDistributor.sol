@@ -144,8 +144,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             ? 0
             : (_existingRplStake * 1e18 * 1e18) / (_rpEthMatched * ethPriceInRpl);
         if (matchedStakeRatio < minimumStakeRatio) {
-            uint256 minuend = minimumStakeRatio.mulDiv(_rpEthMatched * ethPriceInRpl, 1e18 * 1e18);
-            requiredStakeRpl = minuend < _existingRplStake ? 0 : minuend - _existingRplStake;
+            uint256 minRplStake = minimumStakeRatio.mulDiv(_rpEthMatched * ethPriceInRpl, 1e18 * 1e18);
+            requiredStakeRpl = minRplStake < _existingRplStake ? 0 : minRplStake - _existingRplStake;
         } else {
             requiredStakeRpl = 0;
         }
@@ -166,7 +166,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         uint256 stakeRatio = _existingRplStake == 0 ? 1e18 : (_ethStaked * ethPriceInRpl * 1e18) / _existingRplStake;
         if (stakeRatio > targetStakeRatio) {
-            uint256 maxRplStake = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
+            uint256 maxRplStake = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 1e18);
             withdrawableStakeRpl = _existingRplStake > maxRplStake ? _existingRplStake - maxRplStake : 0;
         } else {
             withdrawableStakeRpl = 0;
