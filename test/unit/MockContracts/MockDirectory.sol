@@ -10,6 +10,7 @@ contract MockDirectory {
     address rplAddress;
     address wethVaultAddress;
     address rocketNodeDepositAddress;
+    address priceFetcherAddress;
     mapping(bytes32 => mapping(address => bool)) private roles;
 
     function getRocketMinipoolManagerAddress() public view returns (address) {
@@ -83,5 +84,14 @@ contract MockDirectory {
 
     function setRocketNodeDepositAddress(address _rocketNodeDepositAddress) public {
         rocketNodeDepositAddress = _rocketNodeDepositAddress;
+    }
+
+    function getPriceFetcherAddress() public view returns (address) {
+        return priceFetcherAddress;
+    }
+
+    function setPriceFetcherAddress(address _priceFetcherAddress) public {
+        priceFetcherAddress = _priceFetcherAddress;
+
     }
 }

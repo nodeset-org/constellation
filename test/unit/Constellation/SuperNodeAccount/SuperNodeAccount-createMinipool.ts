@@ -8,7 +8,7 @@ const TimelockShortRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMEL
 const AdminServerRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
 const CoreProtocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
 
-describe("SuperNodeAccount", function () {
+describe("SuperNodeAccount.createMinipool", function () {
     let superNodeAccount: Contract;
     let mockDirectory: Contract;
     let mockRocketMinipoolManager: Contract;
