@@ -103,6 +103,16 @@ export async function fastParameterization(
      })
 }
 
+export async function revokeTemporalAdmin(directory: Directory, temporalAdmin: Wallet | SignerWithAddress, newAdmin: string) {
+     // set newAdmin to be ADMIN_ROLE
+     console.log("Trying to remove temporal admin privlages...")
+     const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ROLE"));
+     await retryOperation(async () => {
+         await directory.connect(temporalAdmin).grantRole(ethers.utils.arrayify(adminRole), newAdmin);
+     });
+     console.log("Completed revokation");
+}
+
 export async function devParameterization(    
     directory: Directory, 
     admin: Wallet | SignerWithAddress, 
@@ -117,7 +127,7 @@ export async function devParameterization(
      console.log("protocol role set");
 }
 
-export async function fastDeployProtocol(treasurer: Wallet | SignerWithAddress, deployer: Wallet | SignerWithAddress, nodesetAdmin: Wallet | SignerWithAddress, nodesetServerAdmin: Wallet | SignerWithAddress, directoryDeployer: Wallet | SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, admin: string, log: boolean, defaultOffset = 1) {
+export async function fastDeployProtocol(treasurerAddress: string, deployer: Wallet | SignerWithAddress, nodesetAdmin: Wallet | SignerWithAddress, nodesetServerAdmin: Wallet | SignerWithAddress, directoryDeployer: Wallet | SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, admin: string, log: boolean, defaultOffset = 1) {
     const directoryAddress = await getNextContractAddress(directoryDeployer, defaultOffset)
 
     const whitelistProxy = await retryOperation(async () => {
@@ -180,7 +190,7 @@ export async function fastDeployProtocol(treasurer: Wallet | SignerWithAddress, 
     })
 
     const treasuryProxy = await retryOperation(async function () {
-        const at = await upgrades.deployProxy(await ethers.getContractFactory("Treasury", deployer), [treasurer.address], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+        const at = await upgrades.deployProxy(await ethers.getContractFactory("Treasury", deployer), [treasurerAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
         if (log) console.log("admin treasury deployed to", at.address)
         return at
     })
@@ -225,7 +235,7 @@ export async function fastDeployProtocol(treasurer: Wallet | SignerWithAddress, 
                     sanctions,
                 ],
                 treasuryProxy.address,
-                treasurer.address,
+                treasurerAddress,
                 admin,
             ], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 
@@ -290,7 +300,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     const deployer = (await ethers.getSigners())[0];
 
     const { whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury } = await fastDeployProtocol(
-        signers.treasurer,
+        signers.treasurer.address,
         signers.deployer,
         signers.nodesetAdmin,
         signers.nodesetServerAdmin,

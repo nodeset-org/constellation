@@ -16,7 +16,7 @@ import { readFileSync } from 'fs';
 import {  getWalletFromPath } from "./keyReader";
 
 export async function deployDev(rocketStorageAddress: string, wETHAddress: string, sanctionsAddress: string, deployer: Wallet | SignerWithAddress, admin: Wallet | SignerWithAddress) {
-    const { directory, superNode } = await fastDeployProtocol(deployer, deployer, admin, admin, admin, rocketStorageAddress, wETHAddress, sanctionsAddress, admin.address, true, 1);
+    const { directory, superNode } = await fastDeployProtocol(deployer.address, deployer, admin, admin, admin, rocketStorageAddress, wETHAddress, sanctionsAddress, admin.address, true, 1);
     upgrades.silenceWarnings()
     await devParameterization(directory, admin, deployer);
     await fastParameterization(directory, superNode, admin, deployer, deployer, deployer.address, deployer.address, deployer.address);
