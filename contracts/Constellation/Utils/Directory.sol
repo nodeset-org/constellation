@@ -258,6 +258,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         require(admin != address(0), Constants.INITIALIZATION_ERROR);
 
         AccessControlUpgradeable.__AccessControl_init();
+        _setRoleAdmin(Constants.ADMIN_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.TIMELOCK_SHORT, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.TIMELOCK_MED, Constants.ADMIN_ROLE);
