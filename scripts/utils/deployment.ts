@@ -127,7 +127,7 @@ export async function devParameterization(
      console.log("protocol role set");
 }
 
-export async function fastDeployProtocol(treasurerAddress: string, deployer: Wallet | SignerWithAddress, nodesetAdmin: Wallet | SignerWithAddress, nodesetServerAdmin: Wallet | SignerWithAddress, directoryDeployer: Wallet | SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, admin: string, log: boolean, defaultOffset = 1) {
+export async function fastDeployProtocol(treasurerAddress: string, deployer: Wallet | SignerWithAddress, nodesetAdminAddress: string, nodesetServerAdminAddress: string, directoryDeployer: Wallet | SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, admin: string, log: boolean, defaultOffset = 1) {
     const directoryAddress = await getNextContractAddress(directoryDeployer, defaultOffset)
 
     const whitelistProxy = await retryOperation(async () => {
@@ -178,7 +178,7 @@ export async function fastDeployProtocol(treasurerAddress: string, deployer: Wal
     })
 
     const yieldDistributorProxy = await retryOperation(async function () {
-        const yd = await upgrades.deployProxy(await ethers.getContractFactory("NodeSetOperatorRewardDistributor", deployer), [nodesetAdmin.address, nodesetServerAdmin.address], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        const yd = await upgrades.deployProxy(await ethers.getContractFactory("NodeSetOperatorRewardDistributor", deployer), [nodesetAdminAddress, nodesetServerAdminAddress], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         if (log) console.log("yield distributor deployed to", yd.address)
         return yd
     })
@@ -302,8 +302,8 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     const { whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury } = await fastDeployProtocol(
         signers.treasurer.address,
         signers.deployer,
-        signers.nodesetAdmin,
-        signers.nodesetServerAdmin,
+        signers.nodesetAdmin.address,
+        signers.nodesetServerAdmin.address,
         signers.random5,
         rockStorageContract.address,
         wETH.address,

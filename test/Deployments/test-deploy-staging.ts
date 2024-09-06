@@ -9,6 +9,7 @@ import { RocketStorage } from "../rocketpool/_utils/artifacts";
 import { IRocketStorage } from "../../typechain-types";
 import { deployDev, deployDevUsingEnv } from "../../scripts/environments/deploy_dev";
 import { getWalletFromPath } from "../../scripts/environments/keyReader";
+import { deployStagingUsingEnv } from "../../scripts/environments/deploy_staging";
 
 describe(`Test Deploy Dev Env`, () => {
     beforeEach(async function () {
@@ -23,6 +24,6 @@ describe(`Test Deploy Dev Env`, () => {
     });
 
     it("Should pass", async () => {
-        const directory = await deployDevUsingEnv();
+        const directory = await deployStagingUsingEnv();
     })
 });

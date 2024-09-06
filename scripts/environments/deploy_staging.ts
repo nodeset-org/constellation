@@ -15,7 +15,7 @@ import { Wallet } from 'ethers';
 import { readFileSync } from 'fs';
 import { getWalletFromPath } from "./keyReader";
 
-export async function deployStaging(treasurerAddress: string, deployer: Wallet | SignerWithAddress, nodesetAdmin: Wallet | SignerWithAddress, nodesetServerAdmin: Wallet | SignerWithAddress, directoryDeployer: Wallet | SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, temporalAdmin: Wallet | SignerWithAddress, multiSigAdmin: string) {
+export async function deployStaging(treasurerAddress: string, deployer: Wallet | SignerWithAddress, nodesetAdmin: string, nodesetServerAdmin: string, directoryDeployer: Wallet | SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, temporalAdmin: Wallet | SignerWithAddress, multiSigAdmin: string) {
     const { directory, superNode } = await fastDeployProtocol(treasurerAddress, deployer, nodesetAdmin, nodesetServerAdmin, directoryDeployer, rocketStorage, weth, sanctions, multiSigAdmin, true, 1);
     upgrades.silenceWarnings()
     await fastParameterization(directory, superNode, temporalAdmin, deployer, deployer, deployer.address, deployer.address, deployer.address);
@@ -42,9 +42,19 @@ export async function deployStagingUsingEnv() {
     try {
         const deployerWallet = await getWalletFromPath(process.env.DEPLOYER_PRIVATE_KEY_PATH as string);
         const directoryDeployerWallet = await getWalletFromPath(process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH as string)
+        const temporalAdminWallet = await getWalletFromPath(process.env.TEMPORAL_ADMIN_KEY_PATH as string)
 
         return await deployStaging(
-            
+            process.env.TREASURER_ADDRESS as string,
+            deployerWallet,
+            process.env.NODESET_ADMIN as string,
+            process.env.NODESET_SERVER_ADMIN as string,
+            directoryDeployerWallet,
+            process.env.RP_STORAGE_CONTRACT_ADDRESS as string,
+            process.env.WETH_ADDRESS as string,
+            process.env.SANCTIONS_LIST_ADDRESS as string,
+            temporalAdminWallet,
+            process.env.ADMIN_MULTISIG as string
         );
     } catch (err) {
         console.error('Error reading private keys or deploying:', err);
