@@ -136,7 +136,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     /// @dev Preview taking an entry fee on deposit. See {IERC4626-previewDeposit}.
     /// @return The amount of shares that will be received with the deposit amount specified.
     function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
-        uint256 fee = getMintFeeFor(assets);
+        uint256 fee = getMintFeePortion(assets);
         return super.previewDeposit(assets - fee);
     }
 
@@ -144,7 +144,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     /// @return The amount of assets that must be deposited to receive the shares specified.
     function previewMint(uint256 shares) public view virtual override returns (uint256) {
         uint256 assets = super.previewMint(shares);
-        return assets + getMintFeePortion(assets);
+        return assets + getAdditionalMintFeeToReceive(assets);
     }
 
     /**
@@ -278,15 +278,16 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         return income - income.mulDiv((treasuryFee + nodeOperatorFee), 1e18);
     }
 
+    /// @notice Calculates the fee assets that must be added to make a deposit of `_amount` size.
     /// @notice Calculates the mint fee portion of a specific deposit amount.
     /// @param _amount The deposit expected
-    function getMintFeePortion(uint256 _amount) public view returns (uint256) {
+    function getAdditionalMintFeeToReceive(uint256 _amount) public view returns (uint256) {
         return _amount.mulDiv(mintFee, 1e18, Math.Rounding.Up);
     }
 
-    /// @notice Calculates the additional assets that must be added to make a deposit of `_amount` size.
+    /// @notice Calculates the mint fee portion of a specific deposit amount.
     /// @param _amount The desired deposit amount
-    function getMintFeeFor(uint256 _amount) public view returns (uint256) {
+    function getMintFeePortion(uint256 _amount) public view returns (uint256) {
         return _amount.mulDiv(mintFee, mintFee + 1e18, Math.Rounding.Up);
     }
 
