@@ -4,7 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { Protocol, protocolFixture, RocketPool, SetupData, Signers } from "../integration";
 import { prepareOperatorDistributionContract, registerNewValidator } from "../../utils/utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { RocketMinipoolDelegate } from "../../typechain-types";
+import { RocketMinipoolDelegate } from "../../../typechain-types";
 import { BigNumber } from "ethers";
 
 describe("Exiting Minipools", function () {
