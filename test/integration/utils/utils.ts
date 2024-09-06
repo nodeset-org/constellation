@@ -1,18 +1,18 @@
 import { ethers } from 'hardhat';
 import { BigNumber } from 'ethers';
 import { expect } from 'chai';
-import { Protocol, SetupData, Signers } from '../integration/integration';
+import { Protocol, SetupData, Signers } from '../../integration/integration';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { RocketPool } from '../integration/integration';
-import { IMinipool, MockMinipool } from '../../typechain-types';
-import { createMinipool, generateDepositData, generateDepositDataForStake, getMinipoolMinimumRPLStake } from '../rocketpool/_helpers/minipool';
-import { nodeStakeRPL, registerNode } from '../rocketpool/_helpers/node';
-import { mintRPL } from '../rocketpool/_helpers/tokens';
-import { userDeposit } from '../rocketpool/_helpers/deposit';
+import { RocketPool } from '../../integration/integration';
+import { IMinipool, MockMinipool } from '../../../typechain-types';
+import { createMinipool, generateDepositData, generateDepositDataForStake, getMinipoolMinimumRPLStake } from '../../rocketpool/_helpers/minipool';
+import { nodeStakeRPL, registerNode } from '../../rocketpool/_helpers/node';
+import { mintRPL } from '../../rocketpool/_helpers/tokens';
+import { userDeposit } from '../../rocketpool/_helpers/deposit';
 import { ContractTransaction } from '@ethersproject/contracts';
 import { Contract, EventFilter, utils } from 'ethers';
 import seedrandom from 'seedrandom';
-import { deposit } from '../rocketpool/deposit/scenario-deposit';
+import { deposit } from '../../rocketpool/deposit/scenario-deposit';
 import {  ContractReceipt } from "ethers";
 
 interface TransferEvent {
