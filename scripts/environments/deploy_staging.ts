@@ -18,15 +18,13 @@ import { getWalletFromPath } from "./keyReader";
 export async function deployStaging(treasurerAddress: string, deployer: Wallet | SignerWithAddress, nodesetAdmin: string, nodesetServerAdmin: string, directoryDeployer: Wallet | SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, temporalAdmin: Wallet | SignerWithAddress, multiSigAdmin: string) {
     const { directory, superNode } = await fastDeployProtocol(treasurerAddress, deployer, nodesetAdmin, nodesetServerAdmin, directoryDeployer, rocketStorage, weth, sanctions, temporalAdmin.address, true, 1);
     upgrades.silenceWarnings()
-    console.log("Starting parameterization")
     await fastParameterization(directory, superNode, temporalAdmin, deployer, deployer, deployer.address, deployer.address, deployer.address);
-    console.log("Finished parameterization")
     await revokeTemporalAdmin(directory, temporalAdmin, multiSigAdmin)
     return directory
 }
 
-export async function deployStagingUsingEnv() {
-    const dotenvPath = findConfig('.env.staging');
+export async function deployStagingUsingEnv(mode=0) {
+    const dotenvPath = findConfig(`.env.${mode === 0 ? 'staging' : 'prod'}`);
 
     if (dotenvPath !== null) {
         dotenv.config({ path: dotenvPath });

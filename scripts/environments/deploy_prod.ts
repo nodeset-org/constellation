@@ -7,10 +7,11 @@ import { expect } from "chai";
 import readline from 'readline';
 import { fastDeployProtocol, generateBytes32Identifier, retryOperation } from "../utils/deployment";
 import { wEth } from "../../typechain-types/contracts/Testing";
+import { deployStagingUsingEnv } from "./deploy_staging";
 
 
 async function main() {
-    
+    await deployStagingUsingEnv(1);
 }
 
 main()
