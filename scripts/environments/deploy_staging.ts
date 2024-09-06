@@ -16,9 +16,11 @@ import { readFileSync } from 'fs';
 import { getWalletFromPath } from "./keyReader";
 
 export async function deployStaging(treasurerAddress: string, deployer: Wallet | SignerWithAddress, nodesetAdmin: string, nodesetServerAdmin: string, directoryDeployer: Wallet | SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, temporalAdmin: Wallet | SignerWithAddress, multiSigAdmin: string) {
-    const { directory, superNode } = await fastDeployProtocol(treasurerAddress, deployer, nodesetAdmin, nodesetServerAdmin, directoryDeployer, rocketStorage, weth, sanctions, multiSigAdmin, true, 1);
+    const { directory, superNode } = await fastDeployProtocol(treasurerAddress, deployer, nodesetAdmin, nodesetServerAdmin, directoryDeployer, rocketStorage, weth, sanctions, temporalAdmin.address, true, 1);
     upgrades.silenceWarnings()
+    console.log("Starting parameterization")
     await fastParameterization(directory, superNode, temporalAdmin, deployer, deployer, deployer.address, deployer.address, deployer.address);
+    console.log("Finished parameterization")
     await revokeTemporalAdmin(directory, temporalAdmin, multiSigAdmin)
     return directory
 }
