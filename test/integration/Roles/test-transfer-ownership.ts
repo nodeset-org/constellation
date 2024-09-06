@@ -8,7 +8,7 @@ const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ROLE"))
 
 describe("Admin Rights Transfer", function () {
 
-    it("Treasurer is not admin, deployer, or treasury", async function () {
+    it("enables admins to add other admins if they wish to be removed", async function () {
 
         const { protocol, signers } = await loadFixture(protocolFixture);
 
