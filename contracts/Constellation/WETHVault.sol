@@ -134,12 +134,14 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /// @dev Preview taking an entry fee on deposit. See {IERC4626-previewDeposit}.
+    /// @return The amount of shares that will be received with the deposit amount specified.
     function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
         uint256 fee = getMintFeeFor(assets);
         return super.previewDeposit(assets - fee);
     }
 
     /// @dev Preview adding an entry fee on mint. See {IERC4626-previewMint}.
+    /// @return The amount of assets that must be deposited to receive the shares specified.
     function previewMint(uint256 shares) public view virtual override returns (uint256) {
         uint256 assets = super.previewMint(shares);
         return assets + getMintFeePortion(assets);
