@@ -87,7 +87,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         
         require(tvlRatioEthRpl(assets, true) <= maxWethRplRatio, 'insufficient RPL coverage');
 
-        uint256 mintFeePortion = this.getMintFeePortion(assets);
+        uint256 mintFeePortion = getMintFeePortion(assets);
 
         super._deposit(caller, receiver, assets, shares);
         
@@ -135,14 +135,14 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /// @dev Preview taking an entry fee on deposit. See {IERC4626-previewDeposit}.
     function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
-        uint256 fee = this.getMintFeePortion(assets);
+        uint256 fee = getMintFeeFor(assets);
         return super.previewDeposit(assets - fee);
     }
 
     /// @dev Preview adding an entry fee on mint. See {IERC4626-previewMint}.
     function previewMint(uint256 shares) public view virtual override returns (uint256) {
         uint256 assets = super.previewMint(shares);
-        return assets + this.getMintFeePortion(assets);
+        return assets + getMintFeePortion(assets);
     }
 
     /**
@@ -177,7 +177,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function totalAssets() public view override returns (uint256) {
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
-        (uint256 distributableYield, bool signed) = this.getDistributableYield();
+        (uint256 distributableYield, bool signed) = getDistributableYield();
         uint256 merkleRewards = MerkleClaimStreamer(getDirectory().getMerkleClaimStreamerAddress()).getStreamedTvlEth();
         return (
             uint256(
@@ -245,7 +245,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @return The amount of liquidity required after the specified deposit.
      */
     function getMissingLiquidityAfterDeposit(uint256 deposit) public view returns (uint256) {
-        uint256 fullBalance = totalAssets() + deposit - this.getMintFeePortion(deposit);
+        uint256 fullBalance = totalAssets() + deposit - getMintFeePortion(deposit);
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
         return requiredBalance > currentBalance ? requiredBalance - currentBalance: 0;
@@ -278,10 +278,15 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /// @notice Calculates the mint fee portion of a specific deposit amount.
     /// @param _amount The deposit expected
-    function getMintFeePortion(uint256 _amount) external view returns (uint256) {
+    function getMintFeePortion(uint256 _amount) public view returns (uint256) {
         return _amount.mulDiv(mintFee, 1e18, Math.Rounding.Up);
     }
 
+    /// @notice Calculates the additional assets that must be added to make a deposit of `_amount` size.
+    /// @param _amount The desired deposit amount
+    function getMintFeeFor(uint256 _amount) public view returns (uint256) {
+        return _amount.mulDiv(mintFee, mintFee + 1e18, Math.Rounding.Up);
+    }
 
     /// Calculates the treasury portion of a specific RPL reward amount.
     /// @param _amount The RPL reward expected
