@@ -6,7 +6,7 @@ import { getInitializerData } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import readline from 'readline';
 import { Treasury, Directory, IRocketStorage, IConstellationOracle, OperatorDistributor, PriceFetcher, RPLVault, SuperNodeAccount, WETHVault, Whitelist, NodeSetOperatorRewardDistributor, PoAConstellationOracle, MerkleClaimStreamer } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Protocol, Signers } from "../../test/test";
+import { Protocol, Signers } from "../../test/integration/integration";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
 import { ERC20 } from "../../typechain-types/contracts/Testing/Rocketpool/contract/util";
 import { expect } from "chai";
@@ -226,7 +226,6 @@ export async function fastDeployProtocol(treasurerAddress: string, deployer: Wal
                     vCRPLProxy.address,
                     operatorDistributorProxy.address,
                     merkleClaimStreamerProxy.address,
-                    yieldDistributorProxy.address,
                     oracleProxy.address,
                     priceFetcherProxy.address,
                     superNodeProxy.address,
@@ -234,6 +233,7 @@ export async function fastDeployProtocol(treasurerAddress: string, deployer: Wal
                     weth,
                     sanctions,
                 ],
+                yieldDistributorProxy.address,
                 treasuryProxy.address,
                 treasurerAddress,
                 admin,

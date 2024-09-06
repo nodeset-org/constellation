@@ -39,7 +39,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     // see the original issue for RP for more details: https://consensys.io/diligence/audits/2021/04/rocketpool/#rockettokenreth---sandwiching-opportunity-on-price-updates
     uint256 public mintFee;
 
-    constructor() initializer {}
+    bool public depositsEnabled;
 
     /**
      * @notice Initializes the vault with necessary parameters and settings.
@@ -60,6 +60,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         treasuryFee = 0.14788e18; 
         nodeOperatorFee = 0.14788e18;
         mintFee = 0.0003e18; // .03% by default
+        depositsEnabled = true;
     }
 
     /**
@@ -77,6 +78,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 assets,
         uint256 shares
     ) internal virtual override nonReentrant {
+        require(depositsEnabled, "deposits are disabled"); // emergency switch for deposits
         require(caller == receiver, 'caller must be receiver');
         if (_directory.isSanctioned(caller, receiver)) {
             return;
@@ -202,6 +204,38 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
 
         return isWeth ? ((tvlEth + newDeposit) * rplPerEth) / tvlRpl : (tvlEth * rplPerEth) / (tvlRpl + newDeposit);
+    }
+
+    /**
+     * @notice Convenience function for determining if a particular deposit amount will be allowed or rejected
+     */
+    function getIsDepositAllowed(uint256 amount) public view returns (bool) {
+        return tvlRatioEthRpl(amount, true) <= maxWethRplRatio;
+    }
+
+    /**
+     * @notice Convenience function for determining if a particular withdraw amount will be allowed or rejected
+     */
+    function getIsWithdrawAllowed(uint256 amount) public view returns (bool) {
+        return IERC20(asset()).balanceOf(address(this)) >= amount;
+    }
+
+    /**
+     * @notice Convenience function for viewing the maximum withdrawal allowed
+     */
+    function getMaximumWithdrawAmount() public view returns (uint256) {
+        return IERC20(asset()).balanceOf(address(this));
+    }
+
+    /**
+     * @notice Convenience function for viewing the maximum depoosit allowed
+     */
+    function getMaximumDeposit() public view returns (uint256) {
+        uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress()).totalAssets();
+        uint256 tvlEth = totalAssets();
+        uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+
+        return ((maxWethRplRatio * tvlRpl) / rplPerEth) - tvlEth ;
     }
 
     /**
@@ -337,5 +371,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function setMintFee(uint256 newMintFee) external onlyMediumTimelock() {
         require(newMintFee >= 0 && newMintFee <= 1e18, "new mint fee must be between 0 and 100%");
         mintFee = newMintFee;
+    }
+
+    function setDepositsEnabled(bool _newValue) external onlyAdmin {
+        depositsEnabled = _newValue;
     }
 }

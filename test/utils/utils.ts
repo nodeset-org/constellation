@@ -1,9 +1,9 @@
 import { ethers } from 'hardhat';
 import { BigNumber } from 'ethers';
 import { expect } from 'chai';
-import { Protocol, SetupData, Signers } from '../test';
+import { Protocol, SetupData, Signers } from '../integration/integration';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { RocketPool } from '../test';
+import { RocketPool } from '../integration/integration';
 import { IMinipool, MockMinipool } from '../../typechain-types';
 import { createMinipool, generateDepositData, generateDepositDataForStake, getMinipoolMinimumRPLStake } from '../rocketpool/_helpers/minipool';
 import { nodeStakeRPL, registerNode } from '../rocketpool/_helpers/node';
@@ -54,7 +54,7 @@ export function assertTransferEvents(receipt: ContractReceipt, expectedEvents: T
       const from = ethers.utils.defaultAbiCoder.decode(["address"], event.topics[1])[0];
       const to = ethers.utils.defaultAbiCoder.decode(["address"], event.topics[2])[0];
 
-      if (from.toLowerCase() !== expectedEvent.from.toLowerCase() || 
+      if (from.toLowerCase() !== expectedEvent.from.toLowerCase() ||
           to.toLowerCase() !== expectedEvent.to.toLowerCase()) {
           throw new Error(`Transfer event details do not match: expected ${JSON.stringify(expectedEvent)}, got { from: ${from}, to: ${to} }`);
       }
@@ -329,17 +329,14 @@ export async function predictDeploymentAddress(address: string, factoryNonceOffs
 }
 
 export async function increaseEVMTime(seconds: number) {
-  // Sending the evm_increaseTime request
-  await ethers.provider.send('evm_increaseTime', [seconds]);
-
-  // Mining a new block to apply the EVM time change
-  await ethers.provider.send('evm_mine', []);
+  let latestTimestamp = (await ethers.provider.getBlock("latest")).timestamp
+  await ethers.provider.send("evm_mine", [latestTimestamp + seconds]);
 }
 
 /**
  * Automatically registers new operators, adds the minimum necessary assets to the operator distributor,
  * then creates and stakes one minipool for each of them.
- * @param setupData 
+ * @param setupData
  * @param subNodeOperators
  */
 export const registerNewValidator = async (setupData: SetupData, subNodeOperators: SignerWithAddress[]) => {
@@ -386,8 +383,6 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
     await setupData.rocketPool.rocketDepositPoolContract.deposit({
       value: ethers.utils.parseEther('32'),
     });
-    await setupData.rocketPool.rocketDepositPoolContract.assignDeposits();
-
 
     const { sig, timestamp } = await approveHasSignedExitMessageSig(
       setupData,
@@ -692,7 +687,7 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
       error = 5;
       break;
   }
-  // the real math is probably some weird function of the fee amount and liquidity reserve, 
+  // the real math is probably some weird function of the fee amount and liquidity reserve,
   // but we only use a param value of up to 5 in our tests and 3 is the only weird case
   requiredEth = requiredEth.add(error);
 

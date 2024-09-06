@@ -12,6 +12,8 @@ import './MerkleClaimStreamer.sol';
 import './Utils/UpgradeableBase.sol';
 import './OperatorDistributor.sol';
 
+import './Utils/PriceFetcher.sol';
+
 /**
  * @title RPLVault
  * @author Theodore Clapp, Mike Leach
@@ -40,8 +42,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     uint256 public minWethRplRatio;
 
-    constructor() initializer {}
-
+    bool public depositsEnabled;
+    
     /**
      * @notice Initializes the vault with necessary parameters and settings.
      * @dev This function sets up the vault's token references, fee structures, and various configurations. It's intended to be called once after deployment.
@@ -56,6 +58,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         liquidityReservePercent = 0.02e18;
         minWethRplRatio = 0; // 0% by default
         treasuryFee = 0.01e18;
+        depositsEnabled = true;
     }
 
     /**
@@ -70,6 +73,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param shares The number of shares to be exchanged for the deposit.
      */
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
+        require(depositsEnabled, "deposits are disabled"); // emergency switch for deposits
         require(caller == receiver, 'caller must be receiver');
         if (_directory.isSanctioned(caller, receiver)) {
             return;
@@ -152,6 +156,44 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         return getMissingLiquidityAfterDeposit(0);
     }
 
+    /// Calculates the treasury portion of a specific RPL reward amount.
+    /// @param _amount The RPL reward expected
+    function getTreasuryPortion(uint256 _amount) external view returns (uint256) {
+        return _amount.mulDiv(treasuryFee, 1e18);
+    }
+
+    /**
+     * @notice Convenience function for determining if a particular deposit amount will be allowed or rejected
+     */
+    function getIsDepositAllowed(uint256 amount) public view returns (bool) {
+        return WETHVault(_directory.getWETHVaultAddress()).tvlRatioEthRpl(amount, false) >= minWethRplRatio;
+    }
+
+    /**
+     * @notice Convenience function for determining if a particular withdraw amount will be allowed or rejected
+     */
+    function getIsWithdrawAllowed(uint256 amount) public view returns (bool) {
+        return IERC20(asset()).balanceOf(address(this)) >= amount;
+    }
+
+    /**
+     * @notice Convenience function for viewing the maximum withdrawal allowed
+     */
+    function getMaximumWithdrawAmount() public view returns (uint256) {
+        return IERC20(asset()).balanceOf(address(this));
+    }
+
+    /**
+     * @notice Convenience function for viewing the maximum depoosit allowed
+     */
+    function getMaximumDeposit() public view returns (uint256) {
+        uint256 tvlRpl = totalAssets();
+        uint256 tvlEth = WETHVault(getDirectory().getWETHVaultAddress()).totalAssets();
+        uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+
+        return ((tvlEth * rplPerEth) / minWethRplRatio) - tvlRpl;
+    }
+
     /**ADMIN FUNCTIONS */
 
     /**
@@ -199,9 +241,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         od.rebalanceRplStake(SuperNodeAccount(getDirectory().getSuperNodeAddress()).getEthStaked());
     }
 
-    /// Calculates the treasury portion of a specific RPL reward amount.
-    /// @param _amount The RPL reward expected
-    function getTreasuryPortion(uint256 _amount) external view returns (uint256) {
-        return _amount.mulDiv(treasuryFee, 1e18);
+    function setDepositsEnabled(bool _newValue) external onlyAdmin {
+        depositsEnabled = _newValue;
     }
 }
