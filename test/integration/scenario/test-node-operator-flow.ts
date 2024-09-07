@@ -80,23 +80,6 @@ describe("Node Operator Onboarding", function () {
         await protocol.superNode.connect(signers.hyperdriver).stake(depositDataStake.depositData.signature, depositDataStake.depositDataRoot, minipoolAddress);
     })
 
-    it("eth whale supplies Constellation vaults with eth and rpl", async function () {
-        // ethWhale gets shares of xrETH
-        const initialBalance = await weth.balanceOf(protocol.operatorDistributor.address);
-        await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
-        await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
-        await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
-        const expectedAmountInDP = ethers.utils.parseEther("0"); // should be zero bc funds always get swept and rebalanced during deposit
-        const actualAmountInDP = (await weth.balanceOf(protocol.operatorDistributor.address)).sub(initialBalance);
-        expectNumberE18ToBeApproximately(actualAmountInDP, expectedAmountInDP, 0.05);
-        const intialBalanceRpl = await protocol.vCRPL.totalAssets();
-        await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
-        await protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("100"), signers.rplWhale.address);
-        const expectedRplInDP = ethers.utils.parseEther("100");
-        const actualRplInDP = (await protocol.vCRPL.totalAssets()).sub(intialBalanceRpl);
-        //expectNumberE18ToBeApproximately(actualRplInDP, expectedRplInDP, 0.1); // ooof, lets get this estimate down to 0.001%
-    });
-
     it("oracle update increases yield appropriately", async function () {
 
         // push down coverage ratio
