@@ -63,10 +63,12 @@ describe("xrETH", function () {
 
     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
+    console.log('total assets before deposit', await protocol.vCWETH.totalAssets());
     await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
-
-    const expectedxrETHInSystem = ethers.utils.parseEther("99.97"); // with 0.03% mint fee
+    console.log('total assets after deposit', await protocol.vCWETH.totalAssets());
+    const expectedxrETHInSystem = ethers.utils.parseEther("100").sub(await protocol.vCWETH.getMintFeePortion(ethers.utils.parseEther("100")));
     const actualxrETHInSystem = await protocol.vCWETH.totalAssets();
+    console.log('actualxrETHInSystem', actualxrETHInSystem.toString());
     expect(expectedxrETHInSystem).equals(actualxrETHInSystem)
   })
 
@@ -133,6 +135,9 @@ describe("xrETH", function () {
 
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
+
+    // set the max weth rpl ratio to 10000% to allow for large ETH deposits
+    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("100"));
 
     const initialDeposit = await prepareOperatorDistributionContract(setupData, 1);
 		const minipools = await registerNewValidator(setupData, [signers.random]);
@@ -202,6 +207,9 @@ describe("xrETH", function () {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
 
+    // set the max weth rpl ratio to 10000% to allow for large ETH deposits
+    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("100"));
+
     expect(await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).equals(0);
     const initialDeposit = await prepareOperatorDistributionContract(setupData, 1);
     expect(await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).equals(await protocol.vCWETH.getMintFeePortion(initialDeposit));
@@ -218,7 +226,7 @@ describe("xrETH", function () {
 
     await protocol.vCWETH.connect(signers.random).deposit(depositAmount, signers.random.address);
     // sub 1 for rounding error
-    expect((await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).sub(1)).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit));
+    expect((await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress()))).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit));
 
     expect(await protocol.vCWETH.totalAssets()).equals(totalDepositAfterMintFee)
 
@@ -233,9 +241,9 @@ describe("xrETH", function () {
     })
 
     await protocol.operatorDistributor.connect(signers.random).processNextMinipool();
-    expect((await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).sub(1)).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit));
+    expect((await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress()))).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit));
     await protocol.operatorDistributor.connect(signers.admin).distributeExitedMinipool(minipools[0])
-    expect((await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).sub(1)).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit));
+    expect((await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress()))).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit));
     const expectedRedeemValue = await protocol.vCWETH.previewRedeem(shareValue);
 
     expect(await protocol.vCWETH.totalAssets()).equals(totalDepositAfterMintFee.sub(penalty));
@@ -260,13 +268,16 @@ describe("xrETH", function () {
     expectNumberE18ToBeApproximately(fullPreviewRedeem, (await protocol.vCWETH.totalAssets()), .00000001);
 
     expect(await ethers.provider.getBalance(protocol.directory.getOperatorRewardAddress())).equals(0);
-    expect((await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).sub(1)).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit));
+    expect((await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress()))).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit));
   })
 
   it("success - tries to deposit and redeem from weth vault multiple times with a minipool reward claim, simulating an exit with rewards", async () => {
 
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
+
+    // set the max weth rpl ratio to 10000% to allow for large ETH deposits
+    await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("100"));
 
     const initialDeposit = await prepareOperatorDistributionContract(setupData, 1);
     expect(await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).equals(await protocol.vCWETH.getMintFeePortion(initialDeposit));
@@ -281,7 +292,7 @@ describe("xrETH", function () {
     await protocol.wETH.connect(signers.random).deposit({ value: depositAmount });
     await protocol.wETH.connect(signers.random).approve(protocol.vCWETH.address, depositAmount);
     await protocol.vCWETH.connect(signers.random).deposit(depositAmount, signers.random.address);
-    expect((await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).sub(1)).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit))
+    expect(await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit))
 
     expect(await protocol.vCWETH.totalAssets()).equals(totalDepositAfterMintFee);
 
@@ -307,7 +318,7 @@ describe("xrETH", function () {
 
     await protocol.operatorDistributor.connect(signers.random).processNextMinipool();
     const treasuryFee = (await protocol.vCWETH.getMintFeePortion(totalDeposit));
-    expect((await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).sub(1)).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit))
+    expect(await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit))
     expect(await ethers.provider.getBalance(protocol.directory.getTreasuryAddress())).equals(expectedTreasuryPortion)
 
     // expect the minipool to be removed from the SNA accounting
@@ -336,7 +347,7 @@ describe("xrETH", function () {
     expectNumberE18ToBeApproximately(fullPreviewRedeem, (await protocol.vCWETH.totalAssets()), .00000001);
 
     expect(await ethers.provider.getBalance(protocol.directory.getOperatorRewardAddress())).equals(expectedNodeOperatorPortion);
-    expect((await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).sub(1)).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit))
+    expect(await protocol.wETH.balanceOf(protocol.directory.getTreasuryAddress())).equals(await protocol.vCWETH.getMintFeePortion(totalDeposit))
     expect(await ethers.provider.getBalance(protocol.directory.getTreasuryAddress())).equals(expectedTreasuryPortion)
   })
 

@@ -9,7 +9,7 @@ describe('xrETH Mint Fee', async function () {
     const { protocol, signers } = setupData;
 
     // add between 1 and 10 random amount of ETH to total supply so it's not 0
-    let randValue = Math.floor(Math.random() * 9 + 1);
+      let randValue = Math.floor(Math.random() * 9 + 1);
     console.log('adding', randValue.toString(), 'ETH to supply');
     let depositAmount = ethers.utils.parseEther(randValue.toString());
     protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmount });
@@ -20,7 +20,7 @@ describe('xrETH Mint Fee', async function () {
     const startingShares = await protocol.vCWETH.balanceOf(signers.ethWhale.address);
 
     // add between 1 and 10 random amount of ETH to TVL
-    randValue = Math.floor(Math.random() * 9 + 1);
+      randValue = Math.floor(Math.random() * 9 + 1);
     console.log('adding', randValue.toString(), 'ETH to TVL');
     const tx = {
       to: protocol.operatorDistributor.address,

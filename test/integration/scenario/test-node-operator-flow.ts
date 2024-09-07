@@ -82,6 +82,8 @@ describe("Node Operator Onboarding", function () {
 
     it("oracle update increases yield appropriately", async function () {
 
+        await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther('100')); // set max ratio to 10000% to allow for large ETH deposits
+
         // push down coverage ratio
         await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.hyperdriver.address, ethers.utils.parseEther("200"));
         await rocketPool.rplContract.connect(signers.hyperdriver).approve(protocol.vCRPL.address, ethers.utils.parseEther("200"));
