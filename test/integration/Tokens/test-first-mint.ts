@@ -3,6 +3,16 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { protocolFixture } from '../integration';
 import { ethers } from 'hardhat';
 
+
+// NOTE: these tests prove that the previewMint() and previewDeposit() functions work correctly when TVL > 0 and totalSupply() == 0
+// i.e. when someone deposits ETH, WETH, or RPL into the operator distributor before any shares are minted
+// However, this is currently broken.
+// To fix this and make these tests pass, we would need to use different logic for previewMint() and previewDeposit() 
+// in the special case where totalSupply() is 0:
+// - in previewMint(), use shares.mulDiv(totalAssets(), 1e18) instead of the parent function
+// - in previewDeposit(), use assets.mulDiv(1e18, totalAssets()) instead of the parent function
+
+
 describe('xrETH First Mint', async function () {
   it.skip('previewMint() and previewDeposit() work correctly when TVL > 0 and totalSupply() == 0', async function () {
     const setupData = await loadFixture(protocolFixture);
