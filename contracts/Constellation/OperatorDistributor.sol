@@ -18,8 +18,6 @@ import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
 
-import 'hardhat/console.sol';
-
 /**
  * @title OperatorDistributor
  * @author Theodore Clapp, Mike Leach
@@ -515,13 +513,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @notice Allocates the necessary liquidity for the creation of a new minipool.
      */
     function sendEthForMinipool() external onlyProtocol {
-        console.log("getting bond");
         uint256 bond = SuperNodeAccount(getDirectory().getSuperNodeAddress()).bond();
 
-        console.log("Balance before transfer is ", address(this).balance);
         (bool success, bytes memory data) = getDirectory().getSuperNodeAddress().call{value: bond}('');
         if (!success) {
-            console.log("failed to send ETH. Balance is ", address(this).balance);
             revert LowLevelEthTransfer(success, data);
         }
     }
