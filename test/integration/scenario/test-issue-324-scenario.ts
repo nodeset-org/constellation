@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from "../integration";
-import { Contract } from 'ethers';
+import { Contract } from "ethers";
 
 describe("Upgrade Protocol", function () {
     it("Issue #324 flow", async () => {
@@ -23,7 +23,7 @@ describe("Upgrade Protocol", function () {
             return item;
         });
 
-        let odProxy: Contract = await ethers.getContractAt("OperatorDistributor", await directory.getOperatorDistributorAddress());
+        let odProxy = await ethers.getContractAt("OperatorDistributor", await directory.getOperatorDistributorAddress());
         expect(await odProxy.targetStakeRatio()).to.not.be.reverted;
 
         await directory.connect(signers.admin).setAll(protocolConfigWithRandomAddresses);
@@ -34,11 +34,11 @@ describe("Upgrade Protocol", function () {
         odProxy = await ethers.getContractAt("OperatorDistributor", await directory.getOperatorDistributorAddress());
         expect(await odProxy.targetStakeRatio()).to.not.be.reverted;
 
-        const ODV2 = await ethers.getContractFactory("MockOperatorDistributor");
+        const ODV2 = await ethers.getContractFactory("MockOperatorDistributorV2");
         const odV2 = await ODV2.deploy();
         await odV2.deployed();
 
-        odProxy = await ethers.getContractAt("MockOperatorDistributor", await directory.getOperatorDistributorAddress());
+        odProxy = await ethers.getContractAt("MockOperatorDistributorV2", await directory.getOperatorDistributorAddress());
         await expect((odProxy as Contract).testUpgrade()).to.be.rejectedWith("CALL_EXCEPTION");
 
         await odProxy.connect(signers.admin).upgradeTo(odV2.address);
