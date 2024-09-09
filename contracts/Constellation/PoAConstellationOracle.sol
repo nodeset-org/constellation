@@ -72,6 +72,7 @@ contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
             'signer must have permission from admin oracle role'
         );
         require(sigData.timeStamp > _lastUpdatedTotalYieldAccrued, 'cannot update oracle using old data');
+        require(sigData.timeStamp <= block.timestamp, 'cannot update oracle using future data');
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
 
