@@ -17,7 +17,6 @@ import '../Interfaces/RocketPool/IRocketNodeManager.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
-
 /**
  * @title OperatorDistributor
  * @author Theodore Clapp, Mike Leach
@@ -317,9 +316,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         address _nodeAccount = _directory.getSuperNodeAddress();
 
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
-
         uint256 rplStaked = rocketNodeStaking.getNodeRPLStake(_nodeAccount);
-
         uint256 lockedStake = rocketNodeStaking.getNodeRPLLocked(_nodeAccount);
 
         uint256 ethPriceInRpl = PriceFetcher(_directory.getPriceFetcherAddress()).getPrice();
