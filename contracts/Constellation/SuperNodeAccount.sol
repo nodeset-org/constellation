@@ -248,8 +248,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         // stake additional RPL to cover the new minipool
         od.rebalanceRplStake(this.getEthStaked() + bond);
 
-console.log("before rebalance");
-
         // do the deposit!
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: bond}(
             bond,
@@ -260,12 +258,8 @@ console.log("before rebalance");
             salt,
             _config.expectedMinipoolAddress
         );
-        
-        console.log("before rebalance");
 
         __subNodeOperatorMinipools__[subNodeOperator].push(_config.expectedMinipoolAddress);
-
-        console.log("before rebalance");
 
         od.rebalanceWethVault();
         od.rebalanceRplVault();

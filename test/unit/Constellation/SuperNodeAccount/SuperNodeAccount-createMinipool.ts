@@ -297,6 +297,13 @@ describe("SuperNodeAccount.createMinipool", function () {
                                 });
                                 await tx.wait();
 
+                                // Mock sending ETH to SuperNodeAccount contract
+                                const tx2 = await owner.sendTransaction({
+                                    to: superNodeAccount.address,
+                                    value: ethers.utils.parseEther("8"),
+                                });
+                                await tx2.wait();
+
                                 await expect(
                                     superNodeAccount
                                 .connect(subNodeOperator)
