@@ -198,11 +198,15 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             Whitelist(_directory.getWhitelistAddress()).getActiveValidatorCountForOperator(subNodeOperator) < maxValidators,
             'Sub node operator has created too many minipools already'
         );
+        console.log("hassufficientliquidity");
         require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
 
         uint256 salt = uint256(keccak256(abi.encodePacked(_config.salt, subNodeOperator)));
+        console.log("sendEthForMinipool");
         // move the necessary ETH to this contract for use
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(bond);
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).sendEthForMinipool();
+
+        console.log("checking sig");
 
         // verify admin server signature if required
         if (adminServerCheck) {
@@ -244,8 +248,13 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         // register minipool with node operator
         Whitelist(getDirectory().getWhitelistAddress()).registerNewValidator(subNodeOperator);
 
+        console.log("staking");
+
         // stake additional RPL to cover the new minipool
         od.rebalanceRplStake(this.getEthStaked() + bond);
+
+        console.log("depositing");
+
 
         // do the deposit!
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: bond}(
@@ -259,6 +268,11 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         );
 
         __subNodeOperatorMinipools__[subNodeOperator].push(_config.expectedMinipoolAddress);
+
+        console.log("rebalancing");
+
+        od.rebalanceWethVault();
+        od.rebalanceRplVault();
 
         emit MinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator);
     }
