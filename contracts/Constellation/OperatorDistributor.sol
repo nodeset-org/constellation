@@ -17,6 +17,7 @@ import '../Interfaces/RocketPool/IRocketNodeManager.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
+
 /**
  * @title OperatorDistributor
  * @author Theodore Clapp, Mike Leach
@@ -510,20 +511,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     /**
      * @notice Allocates the necessary liquidity for the creation of a new minipool.
-     * @param _bond The amount of ETH required to be staked for the minipool.
      */
-    function provisionLiquiditiesForMinipoolCreation(uint256 _bond) external onlyProtocol {
-        rebalanceWethVault();
-        rebalanceRplVault();
+    function sendEthForMinipool() external onlyProtocol {
+        uint256 bond = SuperNodeAccount(getDirectory().getSuperNodeAddress()).bond();
 
-        require(
-            _bond == SuperNodeAccount(getDirectory().getSuperNodeAddress()).bond(),
-            'OperatorDistributor: Bad _bond amount, should be `SuperNodeAccount.bond`'
-        );
-
-        address superNode = _directory.getSuperNodeAddress();
-
-        (bool success, bytes memory data) = superNode.call{value: _bond}('');
+        (bool success, bytes memory data) = getDirectory().getSuperNodeAddress().call{value: bond}('');
         if (!success) {
             revert LowLevelEthTransfer(success, data);
         }

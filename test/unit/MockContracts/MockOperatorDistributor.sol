@@ -14,9 +14,11 @@ contract MockOperatorDistributor {
         return rplStakeShortfall;
     }
 
-    function provisionLiquiditiesForMinipoolCreation(uint256) public pure {
-    }
+    function sendEthForMinipool() public pure {}
 
-    function rebalanceRplStake(uint256) public {
-    }
+    function rebalanceRplStake(uint256) public pure {}
+
+    function rebalanceWethVault() public pure {}
+
+    function rebalanceRplVault() public pure {}
 }
