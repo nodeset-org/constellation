@@ -75,7 +75,7 @@ describe(`Test Deploy Dev Env`, () => {
         }
 
         const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
-        const expectedProtocolSigner = await getWalletFromPath(process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH as string)
+        const expectedProtocolSigner = await getWalletFromPath(ethers, process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH as string)
         expect(await directory?.hasRole(protocolRole, expectedProtocolSigner.address)).equals(false)
 
         const treasurerRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TREASURER_ROLE"));
@@ -83,7 +83,7 @@ describe(`Test Deploy Dev Env`, () => {
 
         const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ROLE"));
         expect(await directory?.hasRole(adminRole, process.env.ADMIN_MULTISIG as string)).equals(true)
-        expect(await directory?.hasRole(adminRole, (await getWalletFromPath(process.env.TEMPORAL_ADMIN_KEY_PATH as string)).address)).equals(false)
+        expect(await directory?.hasRole(adminRole, (await getWalletFromPath(ethers, process.env.TEMPORAL_ADMIN_KEY_PATH as string)).address)).equals(false)
 
         const nodeSetServerAdminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("NODESET_ADMIN_SERVER_ROLE"));
         const nodeSetAdminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("NODESET_ADMIN_ROLE"));

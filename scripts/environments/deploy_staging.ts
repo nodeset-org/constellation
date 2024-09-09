@@ -40,9 +40,9 @@ export async function deployStagingUsingEnv(mode=0) {
     }
 
     try {
-        const deployerWallet = await getWalletFromPath(process.env.DEPLOYER_PRIVATE_KEY_PATH as string);
-        const directoryDeployerWallet = await getWalletFromPath(process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH as string)
-        const temporalAdminWallet = await getWalletFromPath(process.env.TEMPORAL_ADMIN_KEY_PATH as string)
+        const deployerWallet = await getWalletFromPath(ethers, process.env.DEPLOYER_PRIVATE_KEY_PATH as string);
+        const directoryDeployerWallet = await getWalletFromPath(ethers, process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH as string)
+        const temporalAdminWallet = await getWalletFromPath(ethers, process.env.TEMPORAL_ADMIN_KEY_PATH as string)
 
         return await deployStaging(
             process.env.TREASURER_ADDRESS as string,

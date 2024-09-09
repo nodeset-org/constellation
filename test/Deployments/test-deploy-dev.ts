@@ -74,11 +74,11 @@ describe(`Test Deploy Dev Env`, () => {
     }
 
     const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
-    const expectedProtocolSigner = await getWalletFromPath(process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH as string)
+    const expectedProtocolSigner = await getWalletFromPath(ethers, process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH as string)
     expect(await directory?.hasRole(protocolRole, expectedProtocolSigner.address)).equals(true)
 
     const treasurerRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TREASURER_ROLE"));
-    const expectedTreasurerAddress = await getWalletFromPath(process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH as string)
+    const expectedTreasurerAddress = await getWalletFromPath(ethers, process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH as string)
     expect(await directory?.hasRole(treasurerRole, expectedTreasurerAddress.address)).equals(true)
 
   })

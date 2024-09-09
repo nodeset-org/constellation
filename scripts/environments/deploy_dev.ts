@@ -43,8 +43,8 @@ export async function deployDevUsingEnv() {
     }
 
     try {
-        const deployerWallet = await getWalletFromPath(deployerPath);
-        const directoryDeployerWallet = await getWalletFromPath(directoryDeployerPath)
+        const deployerWallet = await getWalletFromPath(ethers, deployerPath);
+        const directoryDeployerWallet = await getWalletFromPath(ethers, directoryDeployerPath)
 
         return await deployDev(
             process.env.RP_STORAGE_CONTRACT_ADDRESS as string,

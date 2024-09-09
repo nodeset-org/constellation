@@ -1,20 +1,6 @@
-import { ethers, upgrades } from "hardhat";
-import { getRocketPool, protocolFixture } from "../../test/test";
-import { setDefaultParameters } from "../../test/rocketpool/_helpers/defaults";
-import { deployRocketPool } from "../../test/rocketpool/_helpers/deployment";
-import { getNextContractAddress } from "../../test/utils/utils";
-import { expect } from "chai";
-import readline from 'readline';
-import { devParameterization, fastDeployProtocol, fastParameterization, generateBytes32Identifier, retryOperation } from "../utils/deployment";
-import { wEth } from "../../typechain-types/contracts/Testing";
-import findConfig from "find-config";
-import dotenv from "dotenv";
-import { Directory, SuperNodeAccount } from "../../typechain-types";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Wallet } from 'ethers';
 import { readFileSync } from 'fs';
 
-export async function getWalletFromPath(path: string) {
+export async function getWalletFromPath(ethers: any, path: string) {
 
     let key = readFileSync(path, 'utf8').trim();
 
@@ -30,6 +16,6 @@ export async function getWalletFromPath(path: string) {
         throw new Error('Invalid characters in private key. Expected a 64-character hex string.');
     }
 
-    return new Wallet(key, ethers.provider);
+    return new ethers.Wallet(key, ethers.provider);
 
 }
