@@ -206,7 +206,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         // verify admin server signature if required
         if (adminServerCheck) {
-
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
                     keccak256(
@@ -241,8 +240,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         );
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        
         // register minipool with node operator
-
         Whitelist(getDirectory().getWhitelistAddress()).registerNewValidator(subNodeOperator);
 
         // stake additional RPL to cover the new minipool
