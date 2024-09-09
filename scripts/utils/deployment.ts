@@ -59,8 +59,8 @@ export async function fastParameterization(
     directory: Directory,
     superNode: SuperNodeAccount,
     admin: Wallet | SignerWithAddress,
-    adminServer: Wallet | SignerWithAddress,
-    adminOracle: Wallet | SignerWithAddress,
+    adminServer: string,
+    adminOracle: string,
     timelockShortAddress: string,
     timelockMediumAddress: string,
     timelockLongAddress: string,
@@ -68,13 +68,13 @@ export async function fastParameterization(
     // set adminServer to be ADMIN_SERVER_ROLE
     const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
     await retryOperation(async () => {
-        await directory.connect(admin).grantRole(ethers.utils.arrayify(adminRole), adminServer.address);
+        await directory.connect(admin).grantRole(ethers.utils.arrayify(adminRole), adminServer);
     });
 
     // set adminOracle to be ADMIN_ORACLE_ROLE
     const adminOracleRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ORACLE_ROLE"));
     await retryOperation(async () => {
-        await directory.connect(admin).grantRole(ethers.utils.arrayify(adminOracleRole), adminOracle.address);
+        await directory.connect(admin).grantRole(ethers.utils.arrayify(adminOracleRole), adminOracle);
     });
 
     // set timelock to be TIMELOCK_ROLE

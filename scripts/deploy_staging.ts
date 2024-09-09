@@ -1,7 +1,11 @@
 import { deployStagingUsingEnv } from "./environments/deploy_staging";
 
 async function main() {
-    await deployStagingUsingEnv(0);
+    const directory = await deployStagingUsingEnv(0);
+    console.log("Successfully deployed staging...");
+    console.log("Directory address", directory?.address);
+    console.log(await directory?.getProtocol())
+    console.log(await directory?.getRocketIntegrations())
 }
 
 main()
