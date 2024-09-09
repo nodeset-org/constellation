@@ -4,7 +4,8 @@ import { protocolFixture, SetupData } from "../integration";
 import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract } from "../../utils/utils";
 import { generateDepositData, generateDepositDataForStake } from "../../rocketpool/_helpers/minipool";
 import { BigNumber } from "ethers";
-import { IMinipool } from "../../typechain-types";
+import { IMinipool } from "../../../typechain-types";
+import { ethers } from 'hardhat';
 
 const prepareStakeWithLockAmount = async (setupData: SetupData, lockAmount: BigNumber) => {
     const { protocol, signers } = setupData;
