@@ -335,7 +335,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
             if (currentRplBalance >= stakeIncrease) {
                 this.stakeRpl(stakeIncrease);
-
             } else {
                 // stake what we have
                 if (currentRplBalance == 0) return;
@@ -383,7 +382,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     function stakeRpl(uint256 _amount) external onlyProtocol {
         SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), 0);
         SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), _amount);
-
         IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(
             getDirectory().getSuperNodeAddress(),
             _amount
