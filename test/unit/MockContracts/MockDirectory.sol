@@ -12,6 +12,7 @@ contract MockDirectory {
     address rocketNodeDepositAddress;
     address priceFetcherAddress;
     address superNodeAddress;
+    address rocketDAOProtocolSettingsRewardsAddress;
     mapping(bytes32 => mapping(address => bool)) private roles;
 
     function getRocketMinipoolManagerAddress() public view returns (address) {
@@ -101,5 +102,13 @@ contract MockDirectory {
 
     function setSuperNodeAddress(address _superNodeAddress) public {
         superNodeAddress = _superNodeAddress;
+    }
+
+    function getRocketDAOProtocolSettingsRewardsAddress() public view returns (address) {
+        return rocketDAOProtocolSettingsRewardsAddress;
+    }
+
+    function setRocketDAOProtocolSettingRewardsAddress(address _rocketDAOProtocolSettingsRewardsAddress) public {
+        rocketDAOProtocolSettingsRewardsAddress = _rocketDAOProtocolSettingsRewardsAddress;
     }
 }

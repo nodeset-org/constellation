@@ -18,8 +18,6 @@ import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
 
-import 'hardhat/console.sol';
-
 /**
  * @title OperatorDistributor
  * @author Theodore Clapp, Mike Leach
@@ -316,45 +314,31 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      */
     function rebalanceRplStake(uint256 _ethStaked) public onlyProtocol {
         if (!rplStakeRebalanceEnabled) return;
-        console.log("!! hello 1", _ethStaked);
         address _nodeAccount = _directory.getSuperNodeAddress();
-        console.log("!! hello 2");
 
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
-                console.log("!! hello 3");
 
         uint256 rplStaked = rocketNodeStaking.getNodeRPLStake(_nodeAccount);
-                console.log("!! hello 4");
 
         uint256 lockedStake = rocketNodeStaking.getNodeRPLLocked(_nodeAccount);
-                console.log("!! hello 5");
 
         uint256 ethPriceInRpl = PriceFetcher(_directory.getPriceFetcherAddress()).getPrice();
-                console.log("!! hello 6");
 
         uint256 targetStake = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
-                console.log("!! hello 7", targetStake, rplStaked);
 
         // need to stake more
         if (targetStake > rplStaked) {
-            console.log("!! hello 8");
             uint256 stakeIncrease = targetStake - rplStaked;
             if (stakeIncrease == 0) return;
-            console.log("!! hello 9");
 
             uint256 currentRplBalance = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
-            console.log("!! hello 10", currentRplBalance, stakeIncrease);
 
             if (currentRplBalance >= stakeIncrease) {
-                console.log("!! hello 11");
                 this.stakeRpl(stakeIncrease);
-                console.log("!! hello 12");
 
             } else {
                 // stake what we have
-                console.log("!! hello 13");
                 if (currentRplBalance == 0) return;
-                console.log("!! hello 14", currentRplBalance);
                 this.stakeRpl(currentRplBalance);
             }
         }
