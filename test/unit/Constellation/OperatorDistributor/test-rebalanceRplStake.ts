@@ -107,7 +107,18 @@ describe("OperatorDistributor.rebalanceRplStake", function () {
                 mockRocketNodeStaking.setNodeRPLLocked(subNodeOperator.address, ethers.utils.parseEther("10000000000"));
             });
             describe("when not enough time has passed to meet rewards claim interval", function () {
-                it("does nothing", async function () {
+                it.only("does nothing", async function () {
+                    // mockRocketNodeStaking.setNodeRplStake(subNodeOperator.address, ethers.utils.parseEther("0"));
+                    // mockRplToken.setBalance(operatorDistributor.address, ethers.utils.parseEther("0.01"));
+
+                    let beforeStakeAmount = await mockRocketNodeStaking.getNodeRPLStake(subNodeOperator.address);
+                    await expect(
+                        operatorDistributor
+                    .connect(owner)
+                    .rebalanceRplStake(ethers.utils.parseEther("1"))).to.not.be.reverted;
+
+                    let afterStakeAmount = await mockRocketNodeStaking.getNodeRPLStake(subNodeOperator.address);
+                    expect(afterStakeAmount.toBigInt() - beforeStakeAmount.toBigInt()).to.be.equal(ethers.utils.parseEther("0").toBigInt());
                 });
             });
             describe("when there is shortfall", function () {
