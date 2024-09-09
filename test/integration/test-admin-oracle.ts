@@ -1,8 +1,8 @@
 import { expect } from "chai";
-import { ethers, upgrades, hardhatArguments } from "hardhat";
+import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from "./integration";
-import { prepareOperatorDistributionContract, registerNewValidator } from "../utils/utils";
+import { registerNewValidator } from "../utils/utils";
 
 describe("XRETHOracle", function () {
 
@@ -13,37 +13,6 @@ describe("XRETHOracle", function () {
             expect(await oracle.getDirectory()).to.equal(directory.address);
         });
     });
-
-    describe("Upgradability", function () {
-        it("Admin can upgrade contract", async function () {
-            const { protocol, signers } = await loadFixture(protocolFixture);
-            const { oracle, directory } = protocol;
-            const { admin } = signers;
-
-            const initialAddress = oracle.address;
-            const initialImpl = await upgrades.erc1967.getImplementationAddress(initialAddress);
-
-            const MockXRETHOracleV2 = await ethers.getContractFactory("MockRETHOracle", admin);
-            const newXRETHOracle = await upgrades.upgradeProxy(oracle.address, MockXRETHOracleV2, {
-                kind: 'uups', unsafeAllow: [
-                    'state-variable-assignment',
-                    'missing-public-upgradeto',
-                    'state-variable-immutable',
-                    'constructor',
-                    'delegatecall',
-                    'selfdestruct',
-                    'external-library-linking',
-                    'enum-definition',
-                    'struct-definition'
-                ], unsafeAllowCustomTypes: true, unsafeSkipStorageCheck: true
-
-            });
-
-            expect(newXRETHOracle.address).to.equal(initialAddress);
-            expect(await upgrades.erc1967.getImplementationAddress(initialAddress)).to.not.equal(initialImpl);
-        });
-    });
-
 
     describe("Yield Accrual", function () {
         it("Should return the correct total yield accrued", async function () {

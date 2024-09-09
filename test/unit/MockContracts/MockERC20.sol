@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-contract MockErc20Constellation {
+contract MockErc20 {
     mapping(address => uint256) public balances;
 
     function balanceOf(address _addr) public view returns (uint256) {

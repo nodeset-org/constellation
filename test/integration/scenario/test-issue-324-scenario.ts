@@ -1,9 +1,8 @@
 import { expect } from "chai";
-import { ethers, upgrades, hardhatArguments } from "hardhat";
+import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from "../integration";
-import { prepareOperatorDistributionContract, registerNewValidator } from "../../utils/utils";
-import { MockOperatorDistributorV2, OperatorDistributor } from "../../../typechain-types";
+import { Contract } from 'ethers';
 
 describe("Upgrade Protocol", function () {
     it("Issue #324 flow", async () => {
@@ -24,7 +23,7 @@ describe("Upgrade Protocol", function () {
             return item;
         });
 
-        let odProxy: MockOperatorDistributorV2 | OperatorDistributor = await ethers.getContractAt("OperatorDistributor", await directory.getOperatorDistributorAddress());
+        let odProxy: Contract = await ethers.getContractAt("OperatorDistributor", await directory.getOperatorDistributorAddress());
         expect(await odProxy.targetStakeRatio()).to.not.be.reverted;
 
         await directory.connect(signers.admin).setAll(protocolConfigWithRandomAddresses);
@@ -35,15 +34,15 @@ describe("Upgrade Protocol", function () {
         odProxy = await ethers.getContractAt("OperatorDistributor", await directory.getOperatorDistributorAddress());
         expect(await odProxy.targetStakeRatio()).to.not.be.reverted;
 
-        const ODV2 = await ethers.getContractFactory("MockOperatorDistributorV2");
+        const ODV2 = await ethers.getContractFactory("MockOperatorDistributor");
         const odV2 = await ODV2.deploy();
         await odV2.deployed();
 
-        odProxy = await ethers.getContractAt("MockOperatorDistributorV2", await directory.getOperatorDistributorAddress());
-        await expect((odProxy as MockOperatorDistributorV2).testUpgrade()).to.be.rejectedWith("CALL_EXCEPTION");
+        odProxy = await ethers.getContractAt("MockOperatorDistributor", await directory.getOperatorDistributorAddress());
+        await expect((odProxy as Contract).testUpgrade()).to.be.rejectedWith("CALL_EXCEPTION");
 
         await odProxy.connect(signers.admin).upgradeTo(odV2.address);
 
-        await expect((odProxy as MockOperatorDistributorV2).testUpgrade()).to.not.be.reverted;
+        await expect((odProxy as Contract).testUpgrade()).to.not.be.reverted;
     })
 })

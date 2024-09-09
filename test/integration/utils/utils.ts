@@ -4,15 +4,11 @@ import { expect } from 'chai';
 import { Protocol, SetupData, Signers } from '../../integration/integration';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { RocketPool } from '../../integration/integration';
-import { IMinipool, MockMinipool } from '../../../typechain-types';
 import { createMinipool, generateDepositData, generateDepositDataForStake, getMinipoolMinimumRPLStake } from '../../rocketpool/_helpers/minipool';
 import { nodeStakeRPL, registerNode } from '../../rocketpool/_helpers/node';
-import { mintRPL } from '../../rocketpool/_helpers/tokens';
 import { userDeposit } from '../../rocketpool/_helpers/deposit';
 import { ContractTransaction } from '@ethersproject/contracts';
-import { Contract, EventFilter, utils } from 'ethers';
-import seedrandom from 'seedrandom';
-import { deposit } from '../../rocketpool/deposit/scenario-deposit';
+import { Contract } from 'ethers';
 import {  ContractReceipt } from "ethers";
 
 interface TransferEvent {
@@ -264,8 +260,6 @@ export async function deployRPMinipool(
   });
 
   await userDeposit({ from: signer.address, value: bondValue });
-
-  let scrubPeriod = 60 * 60 * 24; // 24 hours
 
   return await ethers.getContractAt('RocketMinipoolInterface', mockMinipool.address);
 }
@@ -607,7 +601,7 @@ export const assertAddOperator = async (setupData: SetupData, nodeOperator: Sign
 };
 
 export const deployMockToken = async (amount: BigNumber) => {
-  const Token = await ethers.getContractFactory("MockERC20");
+  const Token = await ethers.getContractFactory("MockErc20");
   const token = await Token.deploy("Mock Token", "MT", amount)
   return token;
 }
