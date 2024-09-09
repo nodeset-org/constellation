@@ -54,6 +54,28 @@ describe("XRETHOracle", function () {
             expect(await oracle.getTotalYieldAccrued()).to.equal(0);
         });
 
+        it("Cannot update yield with future timestamp", async function () {
+            const { protocol, signers } = await loadFixture(protocolFixture);
+            const { oracle, directory } = protocol;
+            const { admin, random } = signers;
+            
+            const adminOracleRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ORACLE_ROLE"));
+
+            await directory.connect(admin).grantRole(adminOracleRole, random.address);
+
+            const timestamp = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp+10000
+            const network = await ethers.provider.getNetwork();
+            const chainId = network.chainId;
+
+            const newTotalYield = ethers.utils.parseEther("100");
+            const currentOracleError = await protocol.operatorDistributor.oracleError();
+            const sigData = { newTotalYieldAccrued: newTotalYield, expectedOracleError: currentOracleError, timeStamp: timestamp };
+            const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, oracle.address, chainId]);
+            const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
+
+            await expect(oracle.connect(admin).setTotalYieldAccrued(signature, sigData)).to.be.revertedWith("cannot update oracle using future data");            
+        })
+
         it("Should set total yield accrued with valid signature", async function () {
             const { protocol, signers } = await loadFixture(protocolFixture);
             const { oracle, directory } = protocol;
