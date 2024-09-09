@@ -202,11 +202,10 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         uint256 salt = uint256(keccak256(abi.encodePacked(_config.salt, subNodeOperator)));
         // move the necessary ETH to this contract for use
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(bond);
+        OperatorDistributor(_directory.getOperatorDistributorAddress()).sendEthForMinipool();
 
         // verify admin server signature if required
         if (adminServerCheck) {
-
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
                     keccak256(
@@ -241,6 +240,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         );
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        
         // register minipool with node operator
         Whitelist(getDirectory().getWhitelistAddress()).registerNewValidator(subNodeOperator);
 
@@ -259,6 +259,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         );
 
         __subNodeOperatorMinipools__[subNodeOperator].push(_config.expectedMinipoolAddress);
+
+        od.rebalanceWethVault();
+        od.rebalanceRplVault();
 
         emit MinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator);
     }
