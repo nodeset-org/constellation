@@ -4,7 +4,6 @@ import { expect } from 'chai';
 import { Protocol, SetupData, Signers } from '../integration/integration';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { RocketPool } from '../integration/integration';
-import { IMinipool, MockMinipool } from '../../typechain-types';
 import {
   createMinipool,
   generateDepositData,
@@ -12,12 +11,9 @@ import {
   getMinipoolMinimumRPLStake,
 } from '../rocketpool/_helpers/minipool';
 import { nodeStakeRPL, registerNode } from '../rocketpool/_helpers/node';
-import { mintRPL } from '../rocketpool/_helpers/tokens';
 import { userDeposit } from '../rocketpool/_helpers/deposit';
 import { ContractTransaction } from '@ethersproject/contracts';
-import { Contract, EventFilter, utils } from 'ethers';
-import seedrandom from 'seedrandom';
-import { deposit } from '../rocketpool/deposit/scenario-deposit';
+import { Contract } from 'ethers';
 import { ContractReceipt } from 'ethers';
 
 interface TransferEvent {
@@ -622,7 +618,7 @@ export const assertAddOperator = async (setupData: SetupData, nodeOperator: Sign
 };
 
 export const deployMockToken = async (amount: BigNumber) => {
-  const Token = await ethers.getContractFactory('MockERC20');
+  const Token = await ethers.getContractFactory('MockErc20');
   const token = await Token.deploy('Mock Token', 'MT', amount);
   return token;
 };
@@ -685,13 +681,10 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
         .add(depositTarget.div(ethers.utils.parseUnits('1', 18)))
         .add(ethers.constants.One);
     }
-    console.log('newEth with additional liquidity', newEth.toString());
 
     const fee = await setupData.protocol.vCWETH.getAdditionalMintFeeToReceive(newEth);
-    console.log('fee', fee.toString());
     newEth = newEth.add(await setupData.protocol.vCWETH.getAdditionalMintFeeToReceive(newEth));
     totalDepositedEth = totalDepositedEth.add(newEth);
-    console.log('totalDepositedEth', totalDepositedEth.toString());
 
     await setupData.protocol.wETH.connect(setupData.signers.ethWhale).deposit({ value: newEth });
     await setupData.protocol.wETH
@@ -704,7 +697,6 @@ export async function prepareOperatorDistributionContract(setupData: SetupData, 
         .deposit(newEth, setupData.signers.ethWhale.address)
     ).to.not.be.reverted;
 
-    console.log('newEth after liquidity and fees', newEth.toString());
 
     expect(await ethers.provider.getBalance(setupData.protocol.operatorDistributor.address)).equals(
       initialODBalance.add(depositTarget)

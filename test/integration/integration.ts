@@ -1,22 +1,15 @@
 import { expect } from "chai";
-import { ethers, upgrades } from "hardhat";
+import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
-import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 import { Directory } from "../../typechain-types/contracts/Constellation/Utils/Directory";
 import { Whitelist } from "../../typechain-types/contracts/Constellation/Whitelist";
 import { WETHVault, RPLVault, OperatorDistributor, NodeSetOperatorRewardDistributor, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetworkInterface, IConstellationOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, RocketDepositPool, RocketNodeDeposit, RocketDAONodeTrusted, RocketTokenRETH, RocketClaimDAO, RocketRewardsPool, RocketDAONodeTrustedActions, SuperNodeAccount, PoAConstellationOracle, RocketStorage, RocketMinipoolDelegate, RocketMinipoolInterface, MerkleClaimStreamer, Treasury } from "../../typechain-types";
-import { getNextContractAddress } from "../utils/utils";
-import { makeDeployProxyAdmin } from "@openzeppelin/hardhat-upgrades/dist/deploy-proxy-admin";
-import { RocketDAOProtocolSettingsNetwork, RocketNetworkFees, RocketNodeManager, RocketNodeManagerNew, RocketNodeStaking, RocketNodeStakingNew, RocketTokenRPL } from "../rocketpool/_utils/artifacts";
 import { setDefaultParameters } from "../rocketpool/_helpers/defaults";
-import { suppressLog } from "../rocketpool/_helpers/console";
 import { deployRocketPool } from "../rocketpool/_helpers/deployment";
-import { upgradeExecuted } from "../rocketpool/_utils/upgrade";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ERC20 } from "../../typechain-types/contracts/Testing/Rocketpool/contract/util";
-import { IERC20 } from "../../typechain-types/oz-contracts-3-4-0/token/ERC20";
-import { deployProtocol, fastDeployProtocol } from "../../scripts/utils/deployment";
+import { deployProtocol } from "../../scripts/utils/deployment";
 import { BigNumber } from 'ethers';
 import { DepositData } from "@chainsafe/lodestar-types";
 

@@ -54,8 +54,8 @@ describe("SuperNodeAccount.createMinipool", function () {
         mockRocketDaoProtocolSettingsMinipool = await MockRocketDaoProtocolSettingsMinipool.deploy();
         await mockRocketDaoProtocolSettingsMinipool.deployed();
 
-        const MockRplToken = await ethers.getContractFactory("MockErc20Constellation");
-        mockRplToken = await MockRplToken.deploy();
+        const MockRplToken = await ethers.getContractFactory("MockErc20");
+        mockRplToken = await MockRplToken.deploy('Mock RPL', 'RPL', ethers.utils.parseEther("1000"));
         await mockRplToken.deployed();
 
         const MockDirectory = await ethers.getContractFactory("MockDirectory");
