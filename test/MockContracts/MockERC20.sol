@@ -16,4 +16,8 @@ contract MockErc20 is ERC20, Ownable {
     function burn(address _from, uint256 _amount) public onlyOwner {
         _burn(_from, _amount);
     }
+
+    function setBalance(address _account, uint256 _amount) public {
+        _mint(_account, _amount);
+    }
 }
