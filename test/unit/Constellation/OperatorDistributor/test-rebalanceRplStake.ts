@@ -24,19 +24,19 @@ describe("OperatorDistributor.rebalanceRplStake", function () {
         mockDirectory = await MockDirectory.deploy();
         await mockDirectory.deployed();
 
-        const MockRocketNodeStaking = await ethers.getContractFactory("MockRocketNodeStakingConstellation");
+        const MockRocketNodeStaking = await ethers.getContractFactory("MockRocketNodeStaking");
         mockRocketNodeStaking = await MockRocketNodeStaking.deploy();
         await mockRocketNodeStaking.deployed();
 
-        const PriceFetcher = await ethers.getContractFactory("MockPriceFetcherConstellation");
+        const PriceFetcher = await ethers.getContractFactory("MockPriceFetcher");
         priceFetcher = await PriceFetcher.deploy();
         await priceFetcher.deployed();
 
-        const MockRplToken = await ethers.getContractFactory("MockErc20Constellation");
-        mockRplToken = await MockRplToken.deploy();
+        const MockRplToken = await ethers.getContractFactory("MockErc20");
+        mockRplToken = await MockRplToken.deploy("Mock RPL", "RPL", ethers.utils.parseEther("1"));
         await mockRplToken.deployed();
 
-        const MockRocketDAOProtocolSettingsRewards = await ethers.getContractFactory("MockRocketDAOProtocolSettingsRewardsConstellation");
+        const MockRocketDAOProtocolSettingsRewards = await ethers.getContractFactory("MockRocketDAOProtocolSettingsRewards");
         mockRocketDAOProtocolSettingsRewards = await MockRocketDAOProtocolSettingsRewards.deploy();
         await mockRocketDAOProtocolSettingsRewards.deployed();
 
@@ -167,7 +167,7 @@ describe("OperatorDistributor.rebalanceRplStake", function () {
                 mockRocketNodeStaking.setNodeRPLLocked(subNodeOperator.address, ethers.utils.parseEther("0"));
                 priceFetcher.setPrice(ethers.utils.parseEther("1"));
             });
-            it.only("does nothing", async function () {
+            it("does nothing", async function () {
                 mockRocketNodeStaking.setNodeRplStake(subNodeOperator.address, ethers.utils.parseEther("0.6"));
                 mockRocketNodeStaking.setNodeRPLStakedTime(subNodeOperator.address, 1);
                 mockRocketDAOProtocolSettingsRewards.setRewardsClaimIntervalTime(0);

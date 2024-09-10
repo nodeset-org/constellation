@@ -46,11 +46,11 @@ describe("SuperNodeAccount.createMinipool", function () {
         mockOperatorDistributor = await MockOperatorDistributor.deploy();
         await mockOperatorDistributor.deployed();
 
-        const MockRocketNodeStaking = await ethers.getContractFactory("MockRocketNodeStakingConstellation");
+        const MockRocketNodeStaking = await ethers.getContractFactory("MockRocketNodeStaking");
         mockRocketNodeStaking = await MockRocketNodeStaking.deploy();
         await mockRocketNodeStaking.deployed();
 
-        const MockRocketDaoProtocolSettingsMinipool = await ethers.getContractFactory("MockRocketDaoProtocolSettingsMinipoolConstellation");
+        const MockRocketDaoProtocolSettingsMinipool = await ethers.getContractFactory("MockRocketDaoProtocolSettingsMinipool");
         mockRocketDaoProtocolSettingsMinipool = await MockRocketDaoProtocolSettingsMinipool.deploy();
         await mockRocketDaoProtocolSettingsMinipool.deployed();
 
@@ -66,7 +66,7 @@ describe("SuperNodeAccount.createMinipool", function () {
         mockWETHVault = await MockWETHVault.deploy();
         await mockWETHVault.deployed()
 
-        const MockRocketNodeDeposit = await ethers.getContractFactory("MockRocketNodeDepositConstellation");
+        const MockRocketNodeDeposit = await ethers.getContractFactory("MockRocketNodeDeposit");
         mockRocketNodeDeposit = await MockRocketNodeDeposit.deploy();
         await mockRocketNodeDeposit.deployed()
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-contract MockRocketNodeStakingConstellation {
+contract MockRocketNodeStaking {
     mapping(address => uint256) nodeRplStake;
     mapping(address => uint256) ethMatched;
     mapping(address => uint256) ethProvided;
