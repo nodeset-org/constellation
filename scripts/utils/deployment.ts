@@ -100,7 +100,7 @@ export async function fastDeployProtocol(
     });
 
     const timelockShort = await retryOperation(async function () {
-        const timelockShort = await (await ethers.getContractFactory("ConstellationTimelock")).deploy(1, [admin], [admin], admin);
+        const timelockShort = await (await ethers.getContractFactory("ConstellationTimelock")).deploy(0, [admin], [admin], admin);
         await timelockShort.deployed();
         if (log) console.log("timelock short deployed to", timelockShort.address)
         return timelockShort
