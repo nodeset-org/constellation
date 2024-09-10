@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-contract MockRocketNodeDepositConstellation {
+contract MockRocketNodeDeposit {
     function deposit(
         uint256,
         uint256,
