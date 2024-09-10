@@ -2,9 +2,9 @@
 pragma solidity 0.8.17;
 
 contract MockOperatorDistributor {
-    receive() external payable {}
-
     uint256 private rplStakeShortfall;
+
+    receive() external payable {}
 
     function setCalculateRplStakeShortfall(uint256 _rplStakeShortfall) external {
         rplStakeShortfall = _rplStakeShortfall;
