@@ -407,12 +407,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /// @dev Transfers any required WETH liquidity to the vault and retains the surplus here as ETH in the operator distributor.
     function rebalanceWethVault() public onlyProtocol {
         IWETH weth = IWETH(_directory.getWETHAddress());
-        
+
         // Initialize the vault and operator distributor addresses
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
 
         uint256 requiredWeth = vweth.getMissingLiquidity();
-
         uint256 wethBalance = IERC20(address(weth)).balanceOf(address(this));
         uint256 balanceEthAndWeth = IERC20(address(weth)).balanceOf(address(this)) + address(this).balance;
         if (balanceEthAndWeth >= requiredWeth) {
