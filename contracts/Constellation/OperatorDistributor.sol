@@ -428,7 +428,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             // not enough available to fill up the liquidity reserve, so send everything we can
             // wrap everything in this contract and give back to the WethVault for liquidity
             weth.deposit{value: address(this).balance}();
-            SafeERC20.safeTransfer(IERC20(address(weth)), address(vweth), address(this).balance);
+            SafeERC20.safeTransfer(IERC20(address(weth)), address(vweth), weth.balanceOf(address(this)));
         }
     }
 
