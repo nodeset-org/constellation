@@ -58,7 +58,7 @@ export async function fastDeployProtocol(
     treasurer: SignerWithAddress,
     deployer: SignerWithAddress,
     nodesetAdmin: SignerWithAddress,
-    nodesetServerAdmin: SignerWithAddress,
+    adminServer: SignerWithAddress,
     directoryDeployer: SignerWithAddress,
     oracleAdmin: SignerWithAddress,
     rocketStorage: string,
@@ -138,7 +138,7 @@ export async function fastDeployProtocol(
     })
 
     const yieldDistributorProxy = await retryOperation(async function () {
-        const yd = await upgrades.deployProxy(await ethers.getContractFactory("NodeSetOperatorRewardDistributor", deployer), [nodesetAdmin.address, nodesetServerAdmin.address], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        const yd = await upgrades.deployProxy(await ethers.getContractFactory("NodeSetOperatorRewardDistributor", deployer), [nodesetAdmin.address, adminServer.address], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         if (log) console.log("yield distributor deployed to", yd.address)
         return yd
     })
@@ -198,11 +198,11 @@ export async function fastDeployProtocol(
                     admin,
                     treasurer.address,
                     treasuryProxy.address,
-                    timelockShort,
-                    timelockMed,
-                    timelockLong,
-                    nodesetServerAdmin,
-                    oracleAdmin
+                    timelockShort.address,
+                    timelockMed.address,
+                    timelockLong.address,
+                    adminServer.address,
+                    oracleAdmin.address
                 ]
             ], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 
@@ -270,41 +270,20 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
         signers.treasurer,
         signers.deployer,
         signers.nodesetAdmin,
-        signers.nodesetServerAdmin,
+        signers.adminServer,
         signers.random5,
         signers.random4,
         rockStorageContract.address,
         wETH.address,
         sanctions.address,
-        signers.nodesetAdmin.address,
+        signers.admin.address,
         log
     )
 
-    // set adminServer to be ADMIN_SERVER_ROLE
-    const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
-    let tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(adminRole), signers.adminServer.address);
-    await tx.wait();
-
-    // set timelock to be TIMELOCK_ROLE
-    const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
-    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRole), signers.admin.address);
-    await tx.wait();
-
-    const timelockRoleMed = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_MED"));
-    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRoleMed), signers.admin.address);
-    await tx.wait();
-
-    const timelockLongRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_LONG"));
-    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockLongRole), signers.admin.address);
-    await tx.wait();
-
-    const oracleAdminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ORACLE_ROLE"));
-    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(oracleAdminRole), signers.admin.address);
-    await tx.wait();
-
     // set protocolSigner to be PROTOCOL_ROLE
     const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
-    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
+    console.log(signers.admin.address)
+    let tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
     await tx.wait();
 
     expect(await directory.getTreasuryAddress()).to.equal(treasury.address);
