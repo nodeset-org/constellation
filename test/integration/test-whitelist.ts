@@ -1,14 +1,48 @@
-import { expect, version } from "chai";
+import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { OperatorStruct } from "../../typechain-types/contracts/Constellation/Whitelist";
 import { protocolFixture } from "./integration";
 import { BigNumber } from "ethers";
-import { keccak256 } from "ethereumjs-util";
 import { badAutWhitelistUserServerSig, whitelistUserServerSig } from "../utils/utils";
 
 describe("Whitelist", function () {
+    it("Admin can update contract", async function () {
+        const { protocol, signers } = await loadFixture(protocolFixture);
+
+        const initialAddress = protocol.whitelist.address;
+
+        const initialImpl = await protocol.whitelist.getImplementation();
+
+        const initialSlotValues = [];
+
+        for (let i = 0; i < 1000; i++) {
+            initialSlotValues.push(await ethers.provider.getStorageAt(initialAddress, i));
+        }
+
+        const WhitelistV2Logic = await ethers.getContractFactory("MockWhitelistV2", signers.admin);
+
+        // upgrade protocol.whitelist to V2
+        const newWhitelist = await upgrades.upgradeProxy(protocol.whitelist.address, WhitelistV2Logic, {
+            kind: 'uups',
+            unsafeAllow: ['constructor']
+        });
+
+        // check that the proxy address has not changed.
+        expect(newWhitelist.address).to.equal(initialAddress);
+
+        // check that the logic address has changed.
+        expect(await newWhitelist.getImplementation()).to.not.equal(initialImpl);
+
+        // execute new function
+        expect(await newWhitelist.testUpgrade()).to.equal(0);
+
+        // read from new storage
+        for (let i = 0; i < 1000; i++) {
+            expect(await ethers.provider.getStorageAt(initialAddress, i)).to.equal(initialSlotValues[i]);
+        }
+    });
+
     it("Admin can add address to whitelist", async function () {
         const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;

@@ -240,4 +240,33 @@ describe("treasury", function () {
     })
   })
 
+  describe("test upgrades", () => {
+    it("success - should upgrade", async () => {
+      const { protocol, signers } = setupData;
+
+      const MockTreasuryV2 = await ethers.getContractFactory("MockTreasuryV2");
+      const mockTreasuryV2 = await MockTreasuryV2.deploy();
+      await mockTreasuryV2.deployed();
+
+      const v2 = await ethers.getContractAt("MockTreasuryV2", treasury.address);
+
+      await expect(v2.test()).to.be.rejectedWith("CALL_EXCEPTION")
+      await treasury.connect(signers.treasurer).upgradeTo(mockTreasuryV2.address)
+      expect(await v2.test()).equals(69)
+    })
+
+    it("fail - non-treasurer cannot upgrade", async () => {
+      const { protocol, signers } = setupData;
+
+      const MockTreasuryV2 = await ethers.getContractFactory("MockTreasuryV2");
+      const mockTreasuryV2 = await MockTreasuryV2.deploy();
+      await mockTreasuryV2.deployed();
+
+      const v2 = await ethers.getContractAt("MockTreasuryV2", treasury.address);
+
+      await expect(v2.test()).to.be.rejectedWith("CALL_EXCEPTION")
+      await expect(treasury.connect(signers.admin).upgradeTo(mockTreasuryV2.address)).to.be.revertedWith("Upgrading only allowed by treasurer!")
+      await expect(v2.test()).to.be.rejectedWith("CALL_EXCEPTION")
+    })
+  })
 });
