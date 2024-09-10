@@ -320,7 +320,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         uint256 rplStaked = rocketNodeStaking.getNodeRPLStake(_nodeAccount);
         uint256 lockedStake = rocketNodeStaking.getNodeRPLLocked(_nodeAccount);
 
-        uint256 ethPriceInRpl = PriceFetcher(_directory.getPriceFetcherAddress()).getPrice();
+        uint256 ethPriceInRpl = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
 
         uint256 targetStake = targetStakeRatio.mulDiv(_ethStaked * ethPriceInRpl, 1e18 * 10 ** 18);
 
