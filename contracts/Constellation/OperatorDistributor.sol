@@ -299,6 +299,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         this.rebalanceWethVault();
         this.rebalanceRplStake(sna.getEthStaked());
+        this.rebalanceRplVault();
     }
 
     /**

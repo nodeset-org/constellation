@@ -89,7 +89,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));
 
         od.processNextMinipool();
-        od.rebalanceRplVault();
+        od.rebalanceRplVault();  // just in case there are no minipools to process, rebalance anyway
     }
 
     /**
@@ -121,7 +121,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
         super._withdraw(caller, receiver, owner, assets, shares);
         
-        od.rebalanceRplVault();
+        od.rebalanceRplVault(); // just in case there are no minipools to process, rebalance anyway
     }
 
     /**
