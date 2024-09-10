@@ -251,8 +251,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
         require(sna.getIsMinipoolRecognized(address(minipool)), 'Must be a minipool managed by Constellation');
 
-        this.rebalanceRplStake(sna.getEthStaked());
-
         MinipoolStatus status = minipool.getStatus();
 
         if (minipool.getFinalised() || status != MinipoolStatus.Staking) {
@@ -300,6 +298,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         }
 
         this.rebalanceWethVault();
+        this.rebalanceRplStake(sna.getEthStaked());
+        this.rebalanceRplVault();
     }
 
     /**
@@ -428,7 +428,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             // not enough available to fill up the liquidity reserve, so send everything we can
             // wrap everything in this contract and give back to the WethVault for liquidity
             weth.deposit{value: address(this).balance}();
-            SafeERC20.safeTransfer(IERC20(address(weth)), address(vweth), address(this).balance);
+            SafeERC20.safeTransfer(IERC20(address(weth)), address(vweth), weth.balanceOf(address(this)));
         }
     }
 
