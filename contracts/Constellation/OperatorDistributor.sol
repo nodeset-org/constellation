@@ -251,8 +251,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
         require(sna.getIsMinipoolRecognized(address(minipool)), 'Must be a minipool managed by Constellation');
 
-        this.rebalanceRplStake(sna.getEthStaked());
-
         MinipoolStatus status = minipool.getStatus();
 
         if (minipool.getFinalised() || status != MinipoolStatus.Staking) {
@@ -300,6 +298,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         }
 
         this.rebalanceWethVault();
+        this.rebalanceRplStake(sna.getEthStaked());
+        this.rebalanceRplVault();
     }
 
     /**
