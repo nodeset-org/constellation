@@ -62,10 +62,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Handles deposits into the vault, ensuring compliance with WETH coverage ratio and distribution of fees.
-     * @dev This function first checks if the WETH coverage ratio after deposit will still be above the threshold, and then continues with the deposit process.
-     * It takes a fee based on the deposit amount and distributes the fee to the treasury.
-     * The rest of the deposited amount is transferred to the OperatorDistributor for utilization.
+     * @notice Handles deposits into the vault, ensuring compliance with WETH coverage ratio.
+     * @dev This function first checks if the WETH coverage ratio after deposit will still be above the threshold, 
+     * and then continues with the deposit process. The deposited amount is transferred to the OperatorDistributor for utilization.
      * This function overrides the `_deposit` function in the parent contract to ensure custom business logic is applied.
      * @param caller The address initiating the deposit.
      * @param receiver The address designated to receive the issued shares for the deposit.
@@ -93,7 +92,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Handles withdrawals from the vault, distributing fees to the treasury.
+     * @notice Handles withdrawals from the vault.
      * @dev This function overrides the `_withdraw` function in the parent contract to
      * ensure custom business logic is applied. May revert if the liquidity reserves are too low.
      * @param caller The address initiating the withdrawal.
