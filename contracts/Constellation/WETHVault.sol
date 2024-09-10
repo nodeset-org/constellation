@@ -67,7 +67,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @notice Handles deposits into the vault, ensuring compliance with RPL coverage ratio and distribution of fees.
      * @dev This function first checks if the RPL coverage ratio is below the maximum threshold, and then continues with the deposit process. 
      * It updates the depositor's position, and distributes the assets to the OperatorDistributor for utilization. Also processes a minipool
-     * and rebalances liquidity.
+     * and rebalances ETH & WETH liquidity.
      * @param caller The address initiating the deposit.
      * @param receiver The address designated to receive the issued shares for the deposit.
      * @param assets The amount of assets being deposited.
@@ -105,7 +105,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     /**
      * @notice Handles withdrawals from the vault.
      * @dev This function distributes the assets to the receiver and also transfers the assets from the OperatorDistributor as necessary.
-     * May revert if the liquidity reserves are too low. Processes a minipool before withdrawing, then rebalances the WETH vault.
+     * May revert if the liquidity reserves are too low. Processes a minipool before withdrawing, then rebalances the protocol's ETH & WETH liquidity.
      * @param caller The address initiating the withdrawal.
      * @param receiver The address designated to receive the withdrawn assets.
      * @param owner The address that owns the shares being redeemed.

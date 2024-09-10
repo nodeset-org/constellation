@@ -66,7 +66,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @dev This function first checks if the WETH coverage ratio after deposit will still be above the threshold, 
      * and then continues with the deposit process. The deposited amount is transferred to the OperatorDistributor for utilization.
      * This function overrides the `_deposit` function in the parent contract to ensure custom business logic is applied.
-     * Processes a minipool after deopsiting, then rebalances the protocol liquidity.
+     * Processes a minipool after depositing, then rebalances the RPL liquidity.
      * @param caller The address initiating the deposit.
      * @param receiver The address designated to receive the issued shares for the deposit.
      * @param assets The amount of assets being deposited.
@@ -96,7 +96,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @notice Handles withdrawals from the vault.
      * @dev This function overrides the `_withdraw` function in the parent contract to
      * ensure custom business logic is applied. May revert if the liquidity reserves are too low.
-     * Processes a minipool before withdrawing, then rebalances the protocol liquidity.
+     * Processes a minipool before withdrawing, then rebalances the RPL liquidity.
      * @param caller The address initiating the withdrawal.
      * @param receiver The address designated to receive the withdrawn assets.
      * @param owner The address that owns the shares being redeemed.
