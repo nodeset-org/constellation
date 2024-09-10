@@ -1,8 +1,8 @@
 import { expect } from "chai";
-import { ethers, upgrades, hardhatArguments } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture } from "./integration";
-import { prepareOperatorDistributionContract, registerNewValidator } from "../utils/utils";
+import { registerNewValidator } from "../utils/utils";
 
 describe("XRETHOracle", function () {
 
@@ -43,7 +43,6 @@ describe("XRETHOracle", function () {
             expect(await upgrades.erc1967.getImplementationAddress(initialAddress)).to.not.equal(initialImpl);
         });
     });
-
 
     describe("Yield Accrual", function () {
         it("Should return the correct total yield accrued", async function () {

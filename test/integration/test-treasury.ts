@@ -1,17 +1,16 @@
 import { expect } from "chai";
+import { Contract } from 'ethers';
 import { ethers, upgrades } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { protocolFixture, SetupData } from "./integration";
-import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Treasury, Directory, MockERC20 } from "../../typechain-types"; // Adjust this import according to your project's structure
-import { IERC20 } from "../../typechain-types/oz-contracts-3-4-0/token/ERC20";
+import { Treasury } from "../../typechain-types"; // Adjust this import according to your project's structure
 
 describe("treasury", function () {
   let treasury: Treasury;
   let treasurer: SignerWithAddress;
   let nonTreasurer: SignerWithAddress;
-  let token: MockERC20;
+  let token: Contract;
   let setupData: SetupData;
 
   beforeEach(async function () {
@@ -20,7 +19,7 @@ describe("treasury", function () {
     treasurer = setupData.signers.treasurer;
     nonTreasurer = setupData.signers.random;
 
-    const MockERC20 = await ethers.getContractFactory("MockERC20");
+    const MockERC20 = await ethers.getContractFactory("MockErc20");
     token = await MockERC20.deploy("Mock Token", "MTKN", ethers.utils.parseEther("1000"));
     await token.deployed();
 

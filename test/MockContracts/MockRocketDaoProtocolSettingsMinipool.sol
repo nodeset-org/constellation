@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-contract MockRocketDaoProtocolSettingsMinipoolConstellation {
+contract MockRocketDaoProtocolSettingsMinipool {
     uint256 launchBalance;
 
     function getLaunchBalance() public view returns (uint256) {
