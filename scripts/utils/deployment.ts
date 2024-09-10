@@ -58,8 +58,10 @@ export async function fastDeployProtocol(
     treasurer: SignerWithAddress,
     deployer: SignerWithAddress,
     nodesetAdmin: SignerWithAddress,
-    nodesetServerAdmin: SignerWithAddress,
+    nodesetAdminServer: SignerWithAddress,
+    adminServer: SignerWithAddress,
     directoryDeployer: SignerWithAddress,
+    oracleAdmin: SignerWithAddress,
     rocketStorage: string,
     weth: string,
     sanctions: string,
@@ -97,6 +99,27 @@ export async function fastDeployProtocol(
         return await ethers.getContractAt("@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20", addressRplContract);
     });
 
+    const timelockShort = await retryOperation(async function () {
+        const timelockShort = await (await ethers.getContractFactory("ConstellationTimelock")).deploy(0, [admin], [admin], admin);
+        await timelockShort.deployed();
+        if (log) console.log("timelock short deployed to", timelockShort.address)
+        return timelockShort
+    })
+
+    const timelockMed = await retryOperation(async function () {
+        const timelockMed = await (await ethers.getContractFactory("ConstellationTimelock")).deploy(0, [admin], [admin], admin);
+        await timelockMed.deployed();
+        if (log) console.log("timelock med deployed to", timelockMed.address)
+        return timelockMed
+    })
+
+    const timelockLong = await retryOperation(async function () {
+        const timelockLong = await (await ethers.getContractFactory("ConstellationTimelock")).deploy(0, [admin], [admin], admin);
+        await timelockLong.deployed();
+        if (log) console.log("timelock long deployed to", timelockLong.address)
+        return timelockLong
+    })
+
     const vCRPLProxy = await retryOperation(async function () {
         const vCRPL = await upgrades.deployProxy(await ethers.getContractFactory("RPLVault", deployer), [directoryAddress, rplContract.address], { 'initializer': 'initializeVault', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         if (log) console.log("vaulted constellation rpl deployed to", vCRPL.address)
@@ -116,7 +139,7 @@ export async function fastDeployProtocol(
     })
 
     const yieldDistributorProxy = await retryOperation(async function () {
-        const yd = await upgrades.deployProxy(await ethers.getContractFactory("NodeSetOperatorRewardDistributor", deployer), [nodesetAdmin.address, nodesetServerAdmin.address], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        const yd = await upgrades.deployProxy(await ethers.getContractFactory("NodeSetOperatorRewardDistributor", deployer), [nodesetAdmin.address, nodesetAdminServer.address], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         if (log) console.log("yield distributor deployed to", yd.address)
         return yd
     })
@@ -172,9 +195,16 @@ export async function fastDeployProtocol(
                     sanctions,
                 ],
                 yieldDistributorProxy.address,
-                treasuryProxy.address,
-                treasurer.address,
-                admin,
+                [
+                    admin,
+                    treasurer.address,
+                    treasuryProxy.address,
+                    timelockShort.address,
+                    timelockMed.address,
+                    timelockLong.address,
+                    adminServer.address,
+                    oracleAdmin.address
+                ]
             ], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 
         if (log) console.log("directory deployed to", dir.address)
@@ -242,7 +272,9 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
         signers.deployer,
         signers.nodesetAdmin,
         signers.nodesetServerAdmin,
+        signers.adminServer,
         signers.random5,
+        signers.random4,
         rockStorageContract.address,
         wETH.address,
         sanctions.address,
@@ -250,7 +282,6 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
         log
     )
 
-    // set adminServer to be ADMIN_SERVER_ROLE
     const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
     let tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(adminRole), signers.adminServer.address);
     await tx.wait();
@@ -274,6 +305,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
 
     // set protocolSigner to be PROTOCOL_ROLE
     const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
+    console.log(signers.admin.address)
     tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
     await tx.wait();
 
