@@ -57,11 +57,11 @@ export const generateBytes32Identifier = (identifier: string) => {
 
 export async function fastDeployProtocol(
     treasurer: string,
-    deployer: SignerWithAddress,
+    deployer: SignerWithAddress | Wallet,
     nodesetAdmin: string,
     nodesetAdminServer: string,
     adminServer: string,
-    directoryDeployer: SignerWithAddress,
+    directoryDeployer: SignerWithAddress | Wallet,
     oracleAdmin: string,
     rocketStorage: string,
     weth: string,
@@ -180,7 +180,7 @@ export async function fastDeployProtocol(
     }
 
     const directoryProxy = await retryOperation(async () => {
-        const dir = await upgrades.deployProxy(await ethers.getContractFactory("Directory", directoryDeployer.address),
+        const dir = await upgrades.deployProxy(await ethers.getContractFactory("Directory", directoryDeployer),
             [
                 [
                     whitelistProxy.address,

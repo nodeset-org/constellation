@@ -1,5 +1,4 @@
 import { ethers, upgrades } from "hardhat";
-import { getRocketPool, protocolFixture } from "../../test/test";
 import { setDefaultParameters } from "../../test/rocketpool/_helpers/defaults";
 import { deployRocketPool } from "../../test/rocketpool/_helpers/deployment";
 import { getNextContractAddress } from "../../test/utils/utils";

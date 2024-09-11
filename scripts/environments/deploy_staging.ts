@@ -1,11 +1,10 @@
 import { ethers, upgrades } from "hardhat";
-import { getRocketPool, protocolFixture } from "../../test/test";
 import { setDefaultParameters } from "../../test/rocketpool/_helpers/defaults";
 import { deployRocketPool } from "../../test/rocketpool/_helpers/deployment";
 import { getNextContractAddress } from "../../test/utils/utils";
 import { expect } from "chai";
 import readline from 'readline';
-import { devParameterization, fastDeployProtocol, fastParameterization, generateBytes32Identifier, retryOperation, revokeTemporalAdmin } from "../utils/deployment";
+import { fastDeployProtocol, generateBytes32Identifier, retryOperation } from "../utils/deployment";
 import { wEth } from "../../typechain-types/contracts/Testing";
 import findConfig from "find-config";
 import dotenv from "dotenv";
@@ -15,11 +14,22 @@ import { Wallet } from 'ethers';
 import { readFileSync } from 'fs';
 import { getWalletFromPath } from "./keyReader";
 
-export async function deployStaging(treasurerAddress: string, deployer: Wallet | SignerWithAddress, nodesetAdmin: string, nodesetServerAdmin: string, directoryDeployer: Wallet | SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, temporalAdmin: Wallet | SignerWithAddress, multiSigAdmin: string, adminServer: string, adminOracle: string, timelockShort: string, timelockMed: string, timelockLong: string) {
-    const { directory, superNode } = await fastDeployProtocol(treasurerAddress, deployer, nodesetAdmin, nodesetServerAdmin, directoryDeployer, rocketStorage, weth, sanctions, temporalAdmin.address, true, 1);
+export async function deployStaging(treasurerAddress: string, deployer: Wallet | SignerWithAddress, nodesetAdmin: string, nodesetServerAdmin: string, directoryDeployer: Wallet | SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, multiSigAdmin: string, adminServer: string, adminOracle: string) {
+    const { directory, superNode } = await fastDeployProtocol(
+        treasurerAddress, 
+        deployer, 
+        nodesetAdmin, 
+        nodesetServerAdmin, 
+        adminServer,
+        directoryDeployer, 
+        rocketStorage, 
+        adminOracle,
+        weth, 
+        sanctions, 
+        multiSigAdmin, 
+        true, 
+    1);
     upgrades.silenceWarnings()
-    await fastParameterization(directory, superNode, temporalAdmin, adminServer, adminOracle, timelockShort, timelockMed, timelockLong);
-    await revokeTemporalAdmin(directory, temporalAdmin, multiSigAdmin)
     return directory
 }
 
@@ -53,13 +63,9 @@ export async function deployStagingUsingEnv(mode=0) {
             process.env.RP_STORAGE_CONTRACT_ADDRESS as string,
             process.env.WETH_ADDRESS as string,
             process.env.SANCTIONS_LIST_ADDRESS as string,
-            temporalAdminWallet,
             process.env.ADMIN_MULTISIG as string,
             process.env.ADMIN_SERVER as string,
             process.env.ADMIN_ORACLE as string,
-            process.env.TIMELOCK_SHORT as string,
-            process.env.TIMELOCK_MEDIUM as string,
-            process.env.TIMELOCK_LONG as string,
             
         );
     } catch (err) {
