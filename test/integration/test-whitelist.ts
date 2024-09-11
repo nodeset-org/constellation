@@ -1,14 +1,12 @@
-import { expect, version } from "chai";
+import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { OperatorStruct } from "../../typechain-types/contracts/Constellation/Whitelist";
 import { protocolFixture } from "./integration";
 import { BigNumber } from "ethers";
-import { keccak256 } from "ethereumjs-util";
 import { badAutWhitelistUserServerSig, whitelistUserServerSig } from "../utils/utils";
 
-describe("Whitelist (proxy)", function () {
+describe("Whitelist", function () {
     it("Admin can update contract", async function () {
         const { protocol, signers } = await loadFixture(protocolFixture);
 
@@ -44,9 +42,7 @@ describe("Whitelist (proxy)", function () {
             expect(await ethers.provider.getStorageAt(initialAddress, i)).to.equal(initialSlotValues[i]);
         }
     });
-});
 
-describe("Whitelist", function () {
     it("Admin can add address to whitelist", async function () {
         const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;

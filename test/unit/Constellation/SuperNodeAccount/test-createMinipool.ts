@@ -46,16 +46,16 @@ describe("SuperNodeAccount.createMinipool", function () {
         mockOperatorDistributor = await MockOperatorDistributor.deploy();
         await mockOperatorDistributor.deployed();
 
-        const MockRocketNodeStaking = await ethers.getContractFactory("MockRocketNodeStakingConstellation");
+        const MockRocketNodeStaking = await ethers.getContractFactory("MockRocketNodeStaking");
         mockRocketNodeStaking = await MockRocketNodeStaking.deploy();
         await mockRocketNodeStaking.deployed();
 
-        const MockRocketDaoProtocolSettingsMinipool = await ethers.getContractFactory("MockRocketDaoProtocolSettingsMinipoolConstellation");
+        const MockRocketDaoProtocolSettingsMinipool = await ethers.getContractFactory("MockRocketDaoProtocolSettingsMinipool");
         mockRocketDaoProtocolSettingsMinipool = await MockRocketDaoProtocolSettingsMinipool.deploy();
         await mockRocketDaoProtocolSettingsMinipool.deployed();
 
-        const MockRplToken = await ethers.getContractFactory("MockErc20Constellation");
-        mockRplToken = await MockRplToken.deploy();
+        const MockRplToken = await ethers.getContractFactory("MockErc20");
+        mockRplToken = await MockRplToken.deploy('Mock RPL', 'RPL', ethers.utils.parseEther("1000"));
         await mockRplToken.deployed();
 
         const MockDirectory = await ethers.getContractFactory("MockDirectory");
@@ -66,7 +66,7 @@ describe("SuperNodeAccount.createMinipool", function () {
         mockWETHVault = await MockWETHVault.deploy();
         await mockWETHVault.deployed()
 
-        const MockRocketNodeDeposit = await ethers.getContractFactory("MockRocketNodeDepositConstellation");
+        const MockRocketNodeDeposit = await ethers.getContractFactory("MockRocketNodeDeposit");
         mockRocketNodeDeposit = await MockRocketNodeDeposit.deploy();
         await mockRocketNodeDeposit.deployed()
 
@@ -297,7 +297,7 @@ describe("SuperNodeAccount.createMinipool", function () {
                                 });
                                 await tx.wait();
 
-                                // Send ETH to SuperNodeAccount contract
+                                // Mock sending ETH to SuperNodeAccount contract
                                 const tx2 = await owner.sendTransaction({
                                     to: superNodeAccount.address,
                                     value: ethers.utils.parseEther("8"),

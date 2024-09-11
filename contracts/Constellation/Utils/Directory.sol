@@ -29,6 +29,17 @@ struct Protocol {
     address sanctions;
 }
 
+struct Governance {
+    address admin;
+    address treasurer;
+    address payable treasury;
+    address timelockShort;
+    address timelockMed;
+    address timelockLong;
+    address adminServer;
+    address adminOracle;
+}
+
 // rocket pool internal dependencies that may branch to other external systems
 struct RocketIntegrations {
     address rocketNetworkPenalties;
@@ -209,16 +220,13 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     /// @notice Initializes the Directory contract with the given protocol addresses, treasury, treasurer, and admin.
     /// @param newProtocol A Protocol struct containing updated addresses of protocol contracts.
-    /// @param treasury The address of the treasury contract.
-    /// @param treasurer The address of the treasurer.
-    /// @param admin The address of the admin.
+    /// @param operatorReward The address of the operator rewards contract.
+    /// @param governance A Governance struct containing the addresses of the treasury contract, treasurer role, and admin roles.
     /// @dev This function sets up the initial protocol contract addresses and grants roles to the admin and treasurer.
     function initialize(
         Protocol memory newProtocol,
         address payable operatorReward,
-        address payable treasury,
-        address treasurer,
-        address admin
+        Governance memory governance
     ) public initializer {
         require(
             _protocol.whitelist == address(0) && newProtocol.whitelist != address(0),
@@ -257,10 +265,11 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
             Constants.INITIALIZATION_ERROR
         );
         require(_protocol.weth == address(0) && newProtocol.weth != address(0), Constants.INITIALIZATION_ERROR);
-        require(_treasury == address(0) && treasury != address(0), Constants.INITIALIZATION_ERROR);
-        require(treasurer != address(0), Constants.INITIALIZATION_ERROR);
-        require(admin != address(0), Constants.INITIALIZATION_ERROR);
+        require(_treasury == address(0) && governance.treasury != address(0), Constants.INITIALIZATION_ERROR);
+        require(governance.treasurer != address(0), Constants.INITIALIZATION_ERROR);
+        require(governance.admin != address(0), Constants.INITIALIZATION_ERROR);
 
+        // set up role admins
         AccessControlUpgradeable.__AccessControl_init();
         _setRoleAdmin(Constants.ADMIN_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
@@ -271,8 +280,14 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.TREASURER_ROLE, Constants.TREASURER_ROLE);
 
-        _grantRole(Constants.ADMIN_ROLE, admin);
-        _grantRole(Constants.TREASURER_ROLE, treasurer);
+        // set role addresses
+        _grantRole(Constants.ADMIN_ROLE, governance.admin);
+        _grantRole(Constants.TREASURER_ROLE, governance.treasurer);
+        _grantRole(Constants.TIMELOCK_SHORT, governance.timelockShort);
+        _grantRole(Constants.TIMELOCK_MED, governance.timelockMed);
+        _grantRole(Constants.TIMELOCK_LONG, governance.timelockLong);
+        _grantRole(Constants.ADMIN_SERVER_ROLE, governance.adminServer);
+        _grantRole(Constants.ADMIN_ORACLE_ROLE, governance.adminOracle);
 
         // Note that the protocol role should ONLY be given to protocol contracts
         // This is a dangerous role that MUST be kept internal
@@ -288,7 +303,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.priceFetcher);
         _grantRole(Constants.CORE_PROTOCOL_ROLE, newProtocol.superNode);
 
-        _treasury = treasury;
+        _treasury = governance.treasury;
         _operatorReward = operatorReward;
         _protocol = newProtocol;
 

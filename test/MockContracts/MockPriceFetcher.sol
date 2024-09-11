@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-contract MockPriceFetcherConstellation {
+contract MockPriceFetcher {
     uint256 price;
     function setPrice(uint256 _price) public {
         price = _price;

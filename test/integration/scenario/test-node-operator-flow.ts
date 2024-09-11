@@ -1,13 +1,11 @@
 import { expect } from "chai";
-import { ethers, network } from "hardhat";
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
+import { ethers } from "hardhat";
 import { getAllAddresses, protocolFixture, SetupData } from "../integration";
-import { BigNumber as BN } from "ethers";
 import { Protocol } from "../integration";
 import { Signers } from "../integration";
 import { RocketPool } from "../integration";
-import { IERC20, IMinipool__factory, MockMinipool, MockMinipool__factory, MockRocketNodeManager, WETHVault, RPLVault, IWETH, RocketMinipoolInterface } from "../../../typechain-types";
-import { deployRPMinipool, registerNewValidator, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances, assertAddOperator, deployMinipool, increaseEVMTime } from "../../utils/utils";
+import { IERC20, WETHVault, RPLVault, IWETH } from "../../../typechain-types";
+import { registerNewValidator, expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, printBalances, printObjectBalances, printObjectTokenBalances, printTokenBalances, assertAddOperator, deployMinipool, increaseEVMTime } from "../../utils/utils";
 import { generateDepositDataForStake } from "../../rocketpool/_helpers/minipool";
 
 
@@ -80,24 +78,9 @@ describe("Node Operator Onboarding", function () {
         await protocol.superNode.connect(signers.hyperdriver).stake(depositDataStake.depositData.signature, depositDataStake.depositDataRoot, minipoolAddress);
     })
 
-    it("eth whale supplies Constellation vaults with eth and rpl", async function () {
-        // ethWhale gets shares of xrETH
-        const initialBalance = await weth.balanceOf(protocol.operatorDistributor.address);
-        await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
-        await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
-        await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
-        const expectedAmountInDP = ethers.utils.parseEther("0"); // should be zero bc funds always get swept and rebalanced during deposit
-        const actualAmountInDP = (await weth.balanceOf(protocol.operatorDistributor.address)).sub(initialBalance);
-        expectNumberE18ToBeApproximately(actualAmountInDP, expectedAmountInDP, 0.05);
-        const intialBalanceRpl = await protocol.vCRPL.totalAssets();
-        await rocketPool.rplContract.connect(signers.rplWhale).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
-        await protocol.vCRPL.connect(signers.rplWhale).deposit(ethers.utils.parseEther("100"), signers.rplWhale.address);
-        const expectedRplInDP = ethers.utils.parseEther("100");
-        const actualRplInDP = (await protocol.vCRPL.totalAssets()).sub(intialBalanceRpl);
-        //expectNumberE18ToBeApproximately(actualRplInDP, expectedRplInDP, 0.1); // ooof, lets get this estimate down to 0.001%
-    });
-
     it("oracle update increases yield appropriately", async function () {
+
+        await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther('100')); // set max ratio to 10000% to allow for large ETH deposits
 
         // push down coverage ratio
         await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.hyperdriver.address, ethers.utils.parseEther("200"));

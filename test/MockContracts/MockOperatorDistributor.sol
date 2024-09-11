@@ -2,9 +2,9 @@
 pragma solidity 0.8.17;
 
 contract MockOperatorDistributor {
-    receive() external payable {}
-
     uint256 private rplStakeShortfall;
+
+    receive() external payable {}
 
     function setCalculateRplStakeShortfall(uint256 _rplStakeShortfall) external {
         rplStakeShortfall = _rplStakeShortfall;
@@ -14,9 +14,11 @@ contract MockOperatorDistributor {
         return rplStakeShortfall;
     }
 
-    function provisionLiquiditiesForMinipoolCreation(uint256) public pure {
-    }
+    function sendEthForMinipool() public pure {}
 
-    function rebalanceRplStake(uint256) public {
-    }
+    function rebalanceRplStake(uint256) public pure {}
+
+    function rebalanceWethVault() public pure {}
+
+    function rebalanceRplVault() public pure {}
 }

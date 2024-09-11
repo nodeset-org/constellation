@@ -4,6 +4,7 @@ import { Protocol, protocolFixture, RocketPool, SetupData, Signers } from "../in
 import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator } from "../../utils/utils";
 import { generateDepositData } from "../../rocketpool/_helpers/minipool";
 import { prepareOperatorDistributionContract } from "../../utils/utils";
+import { ethers } from 'hardhat';
 
 const ethMintAmount = ethers.utils.parseEther("8");
 const rplMintAmount = ethers.utils.parseEther("360");

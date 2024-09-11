@@ -17,6 +17,7 @@ import '../Interfaces/RocketPool/IRocketNodeManager.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
+
 /**
  * @title OperatorDistributor
  * @author Theodore Clapp, Mike Leach
@@ -250,8 +251,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
         require(sna.getIsMinipoolRecognized(address(minipool)), 'Must be a minipool managed by Constellation');
 
-        this.rebalanceRplStake(sna.getEthStaked());
-
         MinipoolStatus status = minipool.getStatus();
 
         if (minipool.getFinalised() || status != MinipoolStatus.Staking) {
@@ -299,6 +298,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         }
 
         this.rebalanceWethVault();
+        this.rebalanceRplStake(sna.getEthStaked());
+        this.rebalanceRplVault();
     }
 
     /**
@@ -427,7 +428,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             // not enough available to fill up the liquidity reserve, so send everything we can
             // wrap everything in this contract and give back to the WethVault for liquidity
             weth.deposit{value: address(this).balance}();
-            SafeERC20.safeTransfer(IERC20(address(weth)), address(vweth), address(this).balance);
+            SafeERC20.safeTransfer(IERC20(address(weth)), address(vweth), weth.balanceOf(address(this)));
         }
     }
 
@@ -510,20 +511,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     /**
      * @notice Allocates the necessary liquidity for the creation of a new minipool.
-     * @param _bond The amount of ETH required to be staked for the minipool.
      */
-    function provisionLiquiditiesForMinipoolCreation(uint256 _bond) external onlyProtocol {
-        rebalanceWethVault();
-        rebalanceRplVault();
+    function sendEthForMinipool() external onlyProtocol {
+        uint256 bond = SuperNodeAccount(getDirectory().getSuperNodeAddress()).bond();
 
-        require(
-            _bond == SuperNodeAccount(getDirectory().getSuperNodeAddress()).bond(),
-            'OperatorDistributor: Bad _bond amount, should be `SuperNodeAccount.bond`'
-        );
-
-        address superNode = _directory.getSuperNodeAddress();
-
-        (bool success, bytes memory data) = superNode.call{value: _bond}('');
+        (bool success, bytes memory data) = getDirectory().getSuperNodeAddress().call{value: bond}('');
         if (!success) {
             revert LowLevelEthTransfer(success, data);
         }

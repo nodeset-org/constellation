@@ -1,11 +1,8 @@
 import { expect } from "chai";
-import { ethers, upgrades } from "hardhat";
+import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { protocolFixture, SetupData } from "./integration";
-import { BigNumber as BN } from "ethers";
-import { computeKeccak256FromBytes32, prepareOperatorDistributionContract, printEventDetails, registerNewValidator, upgradePriceFetcherToMock} from "../utils/utils";
-import { IMinipool, MockMinipool } from "../../typechain-types";
-import { RocketDepositPool } from "../rocketpool/_utils/artifacts";
+import { prepareOperatorDistributionContract, registerNewValidator } from "../utils/utils";
 
 describe("Operator Distributor", function () {
 
@@ -285,14 +282,14 @@ describe("Operator Distributor", function () {
 		const { protocol, signers, rocketPool } = setupData;
 		const { admin, rplWhale } = signers;
 		const { operatorDistributor } = protocol;
-	
+
 		expect(await operatorDistributor.minimumStakeRatio()).equals(ethers.utils.parseEther('0.15'));
 		let price = await protocol.priceFetcher.getPrice();
 		expect(price).equals(ethers.utils.parseEther('100'));
 		console.log("price of RPL/ETH", ethers.utils.formatEther(price));
-		
+
 		console.log('0, 0', ethers.utils.formatEther(await operatorDistributor.calculateRplStakeShortfall(0, 0)), " RPL");
-		
+
 		let rplString = "100";
 		let ethString = "0";
 		let rpl = ethers.utils.parseEther(rplString);
@@ -306,14 +303,14 @@ describe("Operator Distributor", function () {
 		eth = ethers.utils.parseEther(ethString);
 		ratio = rpl.div(price).div(eth)
 		console.log(rplString +" RPL,", ethString + " ETH,", "ratio: " + ratio + "%", ethers.utils.formatEther(await operatorDistributor.calculateRplStakeShortfall(rpl, eth)));
-		
+
 		rplString = "100";
 		ethString = "100";
 		rpl = ethers.utils.parseEther(rplString);
 		eth = ethers.utils.parseEther(ethString);
 		ratio = rpl.div(price).div(eth)
 		console.log(rplString +" RPL,", ethString + " ETH,", "ratio: " + ratio + "%", ethers.utils.formatEther(await operatorDistributor.calculateRplStakeShortfall(rpl, eth)));
-		
+
 		rplString = "1000";
 		ethString = "100";
 		rpl = ethers.utils.parseEther(rplString);

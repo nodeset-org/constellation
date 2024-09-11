@@ -62,11 +62,11 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Handles deposits into the vault, ensuring compliance with WETH coverage ratio and distribution of fees.
-     * @dev This function first checks if the WETH coverage ratio after deposit will still be above the threshold, and then continues with the deposit process.
-     * It takes a fee based on the deposit amount and distributes the fee to the treasury.
-     * The rest of the deposited amount is transferred to the OperatorDistributor for utilization.
+     * @notice Handles deposits into the vault, ensuring compliance with WETH coverage ratio.
+     * @dev This function first checks if the WETH coverage ratio after deposit will still be above the threshold, 
+     * and then continues with the deposit process. The deposited amount is transferred to the OperatorDistributor for utilization.
      * This function overrides the `_deposit` function in the parent contract to ensure custom business logic is applied.
+     * Processes a minipool after depositing, then rebalances the RPL liquidity.
      * @param caller The address initiating the deposit.
      * @param receiver The address designated to receive the issued shares for the deposit.
      * @param assets The amount of assets being deposited.
@@ -89,13 +89,14 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));
 
         od.processNextMinipool();
-        od.rebalanceRplVault();
+        od.rebalanceRplVault();  // just in case there are no minipools to process, rebalance anyway
     }
 
     /**
-     * @notice Handles withdrawals from the vault, distributing fees to the treasury.
+     * @notice Handles withdrawals from the vault.
      * @dev This function overrides the `_withdraw` function in the parent contract to
      * ensure custom business logic is applied. May revert if the liquidity reserves are too low.
+     * Processes a minipool before withdrawing, then rebalances the RPL liquidity.
      * @param caller The address initiating the withdrawal.
      * @param receiver The address designated to receive the withdrawn assets.
      * @param owner The address that owns the shares being redeemed.
@@ -120,7 +121,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
 
         super._withdraw(caller, receiver, owner, assets, shares);
         
-        od.rebalanceRplVault();
+        od.rebalanceRplVault(); // just in case there are no minipools to process, rebalance anyway
     }
 
     /**
