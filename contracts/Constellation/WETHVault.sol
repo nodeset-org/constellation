@@ -120,9 +120,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 shares
     ) internal virtual override nonReentrant {
         require(caller == receiver, 'caller must be receiver');
-        if (_directory.isSanctioned(caller, receiver)) {
-            return;
-        }
         require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         // first process a minipool to give the best chance at actually withdrawing
@@ -132,6 +129,17 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         super._withdraw(caller, receiver, owner, assets, shares);
 
         od.rebalanceWethVault();
+    }
+
+    function _transfer(
+        address sender,
+        address recipient,
+        uint256 shares
+    ) internal virtual override {
+        if (_directory.isSanctioned(sender, recipient)) {
+            return;
+        }
+        super._transfer(sender, recipient, shares);
     }
 
     /// @dev Preview taking an entry fee on deposit. See {IERC4626-previewDeposit}.

@@ -403,9 +403,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         );
     }
 
-    /// @notice Distributes ETH to the vault and operator distributor.
-    /// @dev This function converts the WETH balance to ETH, sends the required capital to the vault,
-    /// and the surplus ETH to the OperatorDistributor.
+    /// @notice Distributes ETH among the vault and operator distributor.
+    /// @dev Transfers any required WETH liquidity to the vault and retains the surplus here as ETH in the operator distributor.
     function rebalanceWethVault() public onlyProtocol {
         IWETH weth = IWETH(_directory.getWETHAddress());
 
@@ -421,7 +420,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             uint256 wrapNeeded = requiredWeth > wethBalance ? requiredWeth - wethBalance : 0;
             if (wrapNeeded != 0) weth.deposit{value: wrapNeeded}();
             // send amount needed to vault
-            SafeERC20.safeTransfer(weth, address(vweth), requiredWeth);
+            if (requiredWeth != 0) SafeERC20.safeTransfer(weth, address(vweth), requiredWeth);
             // unwrap the remaining balance to keep for minipool creation
             weth.withdraw(IERC20(address(weth)).balanceOf(address(this)));
         } else {
@@ -432,8 +431,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         }
     }
 
-    /// @notice Distributes RPL to the vault and operator distributor.
-    /// @dev This function transfers the required RPL capital to the vault and any surplus RPL to the operator distributor.
+    /// @notice Rebalances RPL among the vault and operator distributor.
+    /// @dev Transfers any required RPL liquidity to the vault and retains the surplus here in the operator distributor.
     function rebalanceRplVault() public onlyProtocol {
         // Initialize the RPLVault and the Operator Distributor addresses
         RPLVault vrpl = RPLVault(getDirectory().getRPLVaultAddress());
@@ -447,7 +446,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         // Transfer RPL to the RPLVault
         if (rplBalance >= requiredRpl) {
             // there's extra that can be kept here for minipools, so only send required amount
-            SafeERC20.safeTransfer(IERC20(address(rpl)), address(vrpl), requiredRpl);
+            if (requiredRpl != 0) SafeERC20.safeTransfer(IERC20(address(rpl)), address(vrpl), requiredRpl);
         } else {
             // not enough here to fill up the liquidity reserve, so send everything we can
             SafeERC20.safeTransfer(IERC20(address(rpl)), address(vrpl), rplBalance);

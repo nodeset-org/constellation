@@ -110,9 +110,6 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 shares
     ) internal virtual override {
         require(caller == receiver, 'caller must be receiver');
-        if (_directory.isSanctioned(caller, receiver)) {
-            return;
-        }
         require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
         
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
@@ -122,6 +119,17 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         super._withdraw(caller, receiver, owner, assets, shares);
         
         od.rebalanceRplVault(); // just in case there are no minipools to process, rebalance anyway
+    }
+
+    function _transfer(
+        address sender,
+        address recipient,
+        uint256 shares
+    ) internal virtual override {
+        if (_directory.isSanctioned(sender, recipient)) {
+            return;
+        }
+        super._transfer(sender, recipient, shares);
     }
 
     /**

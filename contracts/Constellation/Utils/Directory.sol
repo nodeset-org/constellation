@@ -267,18 +267,22 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         require(_protocol.weth == address(0) && newProtocol.weth != address(0), Constants.INITIALIZATION_ERROR);
         require(_treasury == address(0) && governance.treasury != address(0), Constants.INITIALIZATION_ERROR);
         require(governance.treasurer != address(0), Constants.INITIALIZATION_ERROR);
+        require(governance.timelockShort != address(0) && 
+                governance.timelockMed != address(0) && 
+                governance.timelockLong != address(0),
+                Constants.INITIALIZATION_ERROR);
         require(governance.admin != address(0), Constants.INITIALIZATION_ERROR);
 
         // set up role admins
         AccessControlUpgradeable.__AccessControl_init();
         _setRoleAdmin(Constants.ADMIN_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.ADMIN_SERVER_ROLE, Constants.ADMIN_ROLE);
-        _setRoleAdmin(Constants.TIMELOCK_SHORT, Constants.ADMIN_ROLE);
-        _setRoleAdmin(Constants.TIMELOCK_MED, Constants.ADMIN_ROLE);
-        _setRoleAdmin(Constants.TIMELOCK_LONG, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.ADMIN_ORACLE_ROLE, Constants.ADMIN_ROLE);
-        _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.TREASURER_ROLE, Constants.TREASURER_ROLE);
+        _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.TIMELOCK_LONG);
+        _setRoleAdmin(Constants.TIMELOCK_SHORT, Constants.TIMELOCK_SHORT);
+        _setRoleAdmin(Constants.TIMELOCK_MED, Constants.TIMELOCK_MED);
+        _setRoleAdmin(Constants.TIMELOCK_LONG, Constants.TIMELOCK_LONG);
 
         // set role addresses
         _grantRole(Constants.ADMIN_ROLE, governance.admin);
