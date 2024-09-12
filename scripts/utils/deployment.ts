@@ -10,6 +10,7 @@ import { Protocol, Signers } from "../../test/integration/integration";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
 import { ERC20 } from "../../typechain-types/contracts/Testing/Rocketpool/contract/util";
 import { expect } from "chai";
+import { ConstellationTimelock } from "../../typechain-types/contracts/External/TimelockController.sol";
 
 // Function to prompt user for input
 function askQuestion(query: string): Promise<string> {
@@ -237,7 +238,8 @@ export async function fastDeployProtocol(
         oracle: oracleProxy as PoAConstellationOracle,
         superNode: superNodeProxy as SuperNodeAccount,
         treasury: treasuryProxy as Treasury,
-        directory: directoryProxy as Directory
+        directory: directoryProxy as Directory,
+        timelockLong: timelockLong as ConstellationTimelock
     }
 }
 
@@ -267,7 +269,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
 
     const deployer = (await ethers.getSigners())[0];
 
-    const { whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury } = await fastDeployProtocol(
+    const { whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury, timelockLong } = await fastDeployProtocol(
         signers.treasurer,
         signers.deployer,
         signers.nodesetAdmin,
@@ -306,7 +308,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     // set protocolSigner to be PROTOCOL_ROLE
     const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
     console.log(signers.admin.address)
-    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
+    tx = await directory.connect(timelockLong.address).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
     await tx.wait();
 
     expect(await directory.getTreasuryAddress()).to.equal(treasury.address);
