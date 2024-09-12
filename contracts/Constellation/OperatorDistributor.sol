@@ -18,6 +18,7 @@ import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
 
+import 'hardhat/console.sol';
 /**
  * @title OperatorDistributor
  * @author Theodore Clapp, Mike Leach
@@ -204,7 +205,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             return 0;
         }
         return
-            lastProcessedMinipoolIndex + 1 < SuperNodeAccount(getDirectory().getSuperNodeAddress()).getNumMinipools()
+            lastProcessedMinipoolIndex + 1 < sna.getNumMinipools()
                 ? lastProcessedMinipoolIndex + 1
                 : 0;
     }
@@ -223,7 +224,9 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * See processMinipool() for more info (this is a very important function).
      */
     function processNextMinipool() public {
+        console.log("!!! processNextMinipool");
         IMinipool nextMinipool = getNextMinipool();
+        console.log('!!! nextMinipool', address(nextMinipool));
         if (address(nextMinipool) == address(0)) {
             // Nothing to do
             return;

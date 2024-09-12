@@ -14,10 +14,9 @@ describe("OperatorDistributor.rebalanceRplStake", function () {
     let mockRocketDAOProtocolSettingsRewards: Contract;
     let owner: any;
     let subNodeOperator: any;
-    let otherSigner: any;
 
     beforeEach(async function () {
-        [owner, subNodeOperator, otherSigner] = await ethers.getSigners();
+        [owner, subNodeOperator] = await ethers.getSigners();
 
         // Deploy mocks
         const MockDirectory = await ethers.getContractFactory("MockDirectory");
@@ -59,7 +58,6 @@ describe("OperatorDistributor.rebalanceRplStake", function () {
             unsafeAllow: ["constructor"],
         });
         await mockDirectory.setRole(CoreProtocolRole, operatorDistributor.address, true);
-
     });
 
     describe("when the caller does not have protocol role", function () {
