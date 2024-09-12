@@ -200,9 +200,12 @@ export async function fastDeployProtocol(
                     admin,
                     treasurer.address,
                     treasuryProxy.address,
-                    timelockShort.address,
-                    timelockMed.address,
-                    timelockLong.address,
+                    // timelockShort.address,
+                    // timelockMed.address,
+                    // timelockLong.address,
+                    admin,
+                    admin,
+                    admin,
                     adminServer.address,
                     oracleAdmin.address
                 ]
@@ -292,15 +295,15 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
 
     // set timelock to be TIMELOCK_ROLE
     const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
-    tx = await directory.connect(timelockShort.address).grantRole(ethers.utils.arrayify(timelockRole), signers.admin.address);
+    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRole), signers.admin.address);
     await tx.wait();
 
     const timelockRoleMed = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_MED"));
-    tx = await directory.connect(timelockMed.address).grantRole(ethers.utils.arrayify(timelockRoleMed), signers.admin.address);
+    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRoleMed), signers.admin.address);
     await tx.wait();
 
     const timelockLongRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_LONG"));
-    tx = await directory.connect(timelockLong.address).grantRole(ethers.utils.arrayify(timelockLongRole), signers.admin.address);
+    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockLongRole), signers.admin.address);
     await tx.wait();
 
     const oracleAdminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ORACLE_ROLE"));
@@ -310,7 +313,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     // set protocolSigner to be PROTOCOL_ROLE
     const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
     console.log(signers.admin.address)
-    tx = await directory.connect(timelockLong.address).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
+    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
     await tx.wait();
 
     expect(await directory.getTreasuryAddress()).to.equal(treasury.address);
