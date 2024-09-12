@@ -101,21 +101,21 @@ export async function fastDeployProtocol(
     });
 
     const timelockShort = await retryOperation(async function () {
-        const timelockShort = await (await ethers.getContractFactory("ConstellationTimelock")).deploy(1, [admin], [admin], admin);
+        const timelockShort = await (await ethers.getContractFactory("ConstellationTimelock", deployer)).deploy(1, [admin], [admin], admin);
         await timelockShort.deployed();
         if (log) console.log("timelock short deployed to", timelockShort.address)
         return timelockShort
     })
 
     const timelockMed = await retryOperation(async function () {
-        const timelockMed = await (await ethers.getContractFactory("ConstellationTimelock")).deploy(2, [admin], [admin], admin);
+        const timelockMed = await (await ethers.getContractFactory("ConstellationTimelock", deployer)).deploy(2, [admin], [admin], admin);
         await timelockMed.deployed();
         if (log) console.log("timelock med deployed to", timelockMed.address)
         return timelockMed
     })
 
     const timelockLong = await retryOperation(async function () {
-        const timelockLong = await (await ethers.getContractFactory("ConstellationTimelock")).deploy(3, [admin], [admin], admin);
+        const timelockLong = await (await ethers.getContractFactory("ConstellationTimelock", deployer)).deploy(3, [admin], [admin], admin);
         await timelockLong.deployed();
         if (log) console.log("timelock long deployed to", timelockLong.address)
         return timelockLong
@@ -209,6 +209,8 @@ export async function fastDeployProtocol(
             ], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 
         if (log) console.log("directory deployed to", dir.address)
+
+        await dir.deployed();
 
         return dir
     })
