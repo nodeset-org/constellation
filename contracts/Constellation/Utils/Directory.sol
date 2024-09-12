@@ -278,7 +278,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.TIMELOCK_LONG);
         _setRoleAdmin(Constants.TIMELOCK_SHORT, Constants.TIMELOCK_SHORT);
         _setRoleAdmin(Constants.TIMELOCK_MED, Constants.TIMELOCK_MED);
-        _setRoleAdmin(Constants.TIMELOCK_LONG, Constants.TIMELOCK_MED);
+        _setRoleAdmin(Constants.TIMELOCK_LONG, Constants.TIMELOCK_LONG);
 
         // set role addresses
         _grantRole(Constants.ADMIN_ROLE, governance.admin);
