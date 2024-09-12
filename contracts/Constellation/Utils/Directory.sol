@@ -276,6 +276,9 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _setRoleAdmin(Constants.ADMIN_ORACLE_ROLE, Constants.ADMIN_ROLE);
         _setRoleAdmin(Constants.TREASURER_ROLE, Constants.TREASURER_ROLE);
         _setRoleAdmin(Constants.CORE_PROTOCOL_ROLE, Constants.TIMELOCK_LONG);
+        _setRoleAdmin(Constants.TIMELOCK_SHORT, Constants.TIMELOCK_SHORT);
+        _setRoleAdmin(Constants.TIMELOCK_MED, Constants.TIMELOCK_MED);
+        _setRoleAdmin(Constants.TIMELOCK_LONG, Constants.TIMELOCK_MED);
 
         // set role addresses
         _grantRole(Constants.ADMIN_ROLE, governance.admin);
