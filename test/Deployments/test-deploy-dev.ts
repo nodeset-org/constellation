@@ -17,6 +17,7 @@ describe(`Test Deploy Dev Env`, () => {
       params: [{
         forking: {
           jsonRpcUrl: process.env.HOLESKY_RPC,
+          blockNumber: 2322494
         },
       }],
     });

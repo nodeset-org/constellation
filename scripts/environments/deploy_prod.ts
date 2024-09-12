@@ -10,7 +10,7 @@ import { deployStagingUsingEnv } from "./deploy_staging";
 
 
 async function main() {
-    await deployStagingUsingEnv(1);
+   // await deployStagingUsingEnv(1);
 }
 
 main()

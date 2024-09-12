@@ -22,13 +22,13 @@ export async function deployStaging(treasurerAddress: string, deployer: Wallet |
         nodesetServerAdmin, 
         adminServer,
         directoryDeployer, 
-        rocketStorage, 
         adminOracle,
+        rocketStorage, 
         weth, 
         sanctions, 
         multiSigAdmin, 
         true, 
-    1);
+    0);
     upgrades.silenceWarnings()
     return directory
 }
@@ -52,7 +52,6 @@ export async function deployStagingUsingEnv(mode=0) {
     try {
         const deployerWallet = await getWalletFromPath(ethers, process.env.DEPLOYER_PRIVATE_KEY_PATH as string);
         const directoryDeployerWallet = await getWalletFromPath(ethers, process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH as string)
-        const temporalAdminWallet = await getWalletFromPath(ethers, process.env.TEMPORAL_ADMIN_KEY_PATH as string)
 
         return await deployStaging(
             process.env.TREASURER_ADDRESS as string,

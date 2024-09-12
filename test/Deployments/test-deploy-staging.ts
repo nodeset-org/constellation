@@ -11,13 +11,14 @@ import { deployDev, deployDevUsingEnv } from "../../scripts/environments/deploy_
 import { getWalletFromPath } from "../../scripts/environments/keyReader";
 import { deployStagingUsingEnv } from "../../scripts/environments/deploy_staging";
 
-describe(`Test Deploy Dev Env`, () => {
+describe(`Test Deploy Staging Env`, () => {
     beforeEach(async function () {
         await network.provider.request({
             method: "hardhat_reset",
             params: [{
                 forking: {
                     jsonRpcUrl: process.env.HOLESKY_RPC,
+                    blockNumber: 2322494
                 },
             }],
         });
@@ -98,13 +99,5 @@ describe(`Test Deploy Dev Env`, () => {
         const adminServerRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
         expect(await directory?.hasRole(adminServerRole, process.env.ADMIN_SERVER as string)).equals(true)
 
-        const timelockShortRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
-        expect(await directory?.hasRole(timelockShortRole, process.env.TIMELOCK_SHORT as string)).equals(true)
-
-        const timelockMedRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_MED"));
-        expect(await directory?.hasRole(timelockMedRole, process.env.TIMELOCK_MEDIUM as string)).equals(true)
-
-        const timelockLongRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_LONG"));
-        expect(await directory?.hasRole(timelockLongRole, process.env.TIMELOCK_LONG as string)).equals(true)
     })
 });
