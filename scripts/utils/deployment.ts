@@ -239,6 +239,8 @@ export async function fastDeployProtocol(
         superNode: superNodeProxy as SuperNodeAccount,
         treasury: treasuryProxy as Treasury,
         directory: directoryProxy as Directory,
+        timelockShort: timelockShort as ConstellationTimelock,
+        timelockMed: timelockMed as ConstellationTimelock,
         timelockLong: timelockLong as ConstellationTimelock
     }
 }
@@ -269,7 +271,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
 
     const deployer = (await ethers.getSigners())[0];
 
-    const { whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury, timelockLong } = await fastDeployProtocol(
+    const { whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury, timelockShort, timelockMed, timelockLong } = await fastDeployProtocol(
         signers.treasurer,
         signers.deployer,
         signers.nodesetAdmin,
@@ -290,15 +292,15 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
 
     // set timelock to be TIMELOCK_ROLE
     const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
-    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRole), signers.admin.address);
+    tx = await directory.connect(timelockShort.address).grantRole(ethers.utils.arrayify(timelockRole), signers.admin.address);
     await tx.wait();
 
     const timelockRoleMed = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_MED"));
-    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRoleMed), signers.admin.address);
+    tx = await directory.connect(timelockMed.address).grantRole(ethers.utils.arrayify(timelockRoleMed), signers.admin.address);
     await tx.wait();
 
     const timelockLongRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_LONG"));
-    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockLongRole), signers.admin.address);
+    tx = await directory.connect(timelockLong.address).grantRole(ethers.utils.arrayify(timelockLongRole), signers.admin.address);
     await tx.wait();
 
     const oracleAdminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ORACLE_ROLE"));
