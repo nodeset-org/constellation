@@ -10,6 +10,7 @@ import { Protocol, Signers } from "../../test/integration/integration";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
 import { ERC20 } from "../../typechain-types/contracts/Testing/Rocketpool/contract/util";
 import { expect } from "chai";
+import { ConstellationTimelock } from "../../typechain-types/contracts/External/TimelockController.sol";
 
 // Function to prompt user for input
 function askQuestion(query: string): Promise<string> {
@@ -199,9 +200,12 @@ export async function fastDeployProtocol(
                     admin,
                     treasurer.address,
                     treasuryProxy.address,
-                    timelockShort.address,
-                    timelockMed.address,
-                    timelockLong.address,
+                    // timelockShort.address,
+                    // timelockMed.address,
+                    // timelockLong.address,
+                    admin,
+                    admin,
+                    admin,
                     adminServer.address,
                     oracleAdmin.address
                 ]
@@ -237,7 +241,10 @@ export async function fastDeployProtocol(
         oracle: oracleProxy as PoAConstellationOracle,
         superNode: superNodeProxy as SuperNodeAccount,
         treasury: treasuryProxy as Treasury,
-        directory: directoryProxy as Directory
+        directory: directoryProxy as Directory,
+        timelockShort: timelockShort as ConstellationTimelock,
+        timelockMed: timelockMed as ConstellationTimelock,
+        timelockLong: timelockLong as ConstellationTimelock
     }
 }
 
@@ -267,7 +274,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
 
     const deployer = (await ethers.getSigners())[0];
 
-    const { whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury } = await fastDeployProtocol(
+    const { whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury, timelockShort, timelockMed, timelockLong } = await fastDeployProtocol(
         signers.treasurer,
         signers.deployer,
         signers.nodesetAdmin,
