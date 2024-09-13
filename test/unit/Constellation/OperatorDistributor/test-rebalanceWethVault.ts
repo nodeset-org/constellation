@@ -83,7 +83,7 @@ describe("OperatorDistributor.rebalanceWethVault", function () {
     });
     describe("when caller has protocol role", function () {
         describe("when the total eth and weth balance is greater than the required weth", function () {
-            it.only("sends the required amount to the vault and unwraps the rest", async function () {
+            it("sends the required amount to the vault and unwraps the rest", async function () {
                 expect(await mockWETHToken.balanceOf(mockWETHVault.address)).to.equal(0);
                 await mockWETHVault.setMissingLiquidity(ethers.utils.parseEther("5"));
 
@@ -101,10 +101,36 @@ describe("OperatorDistributor.rebalanceWethVault", function () {
         });
         describe("when the total eth and weth balance is equal to the required weth", function () {
             it("sends the required amount to the vault and unwraps the rest", async function () {
+                expect(await mockWETHToken.balanceOf(mockWETHVault.address)).to.equal(0);
+                await mockWETHVault.setMissingLiquidity(ethers.utils.parseEther("5"));
+
+                const tx = await owner.sendTransaction({
+                    to: operatorDistributor.address,
+                    value: ethers.utils.parseEther("5")
+                  });
+                  await tx.wait();
+
+                await expect(operatorDistributor.connect(owner).rebalanceWethVault()).to.not.be.reverted;
+
+                expect(await mockWETHToken.balanceOf(operatorDistributor.address)).to.equal(0);
+                expect(await mockWETHToken.balanceOf(mockWETHVault.address)).to.equal(ethers.utils.parseEther("5"));
             });
         });
         describe("when the total eth and weth balance is less than the required weth", function () {
             it("sends everything to the vault", async function () {
+                expect(await mockWETHToken.balanceOf(mockWETHVault.address)).to.equal(0);
+                await mockWETHVault.setMissingLiquidity(ethers.utils.parseEther("10"));
+
+                const tx = await owner.sendTransaction({
+                    to: operatorDistributor.address,
+                    value: ethers.utils.parseEther("3")
+                  });
+                  await tx.wait();
+
+                await expect(operatorDistributor.connect(owner).rebalanceWethVault()).to.not.be.reverted;
+
+                expect(await mockWETHToken.balanceOf(operatorDistributor.address)).to.equal(0);
+                expect(await mockWETHToken.balanceOf(mockWETHVault.address)).to.equal(ethers.utils.parseEther("3"));
             });
         });
 

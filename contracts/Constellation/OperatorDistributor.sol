@@ -18,7 +18,6 @@ import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
 
-import 'hardhat/console.sol';
 /**
  * @title OperatorDistributor
  * @author Theodore Clapp, Mike Leach
@@ -224,9 +223,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * See processMinipool() for more info (this is a very important function).
      */
     function processNextMinipool() public {
-        console.log("!!! processNextMinipool");
         IMinipool nextMinipool = getNextMinipool();
-        console.log('!!! nextMinipool', address(nextMinipool));
         if (address(nextMinipool) == address(0)) {
             // Nothing to do
             return;
@@ -409,42 +406,26 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /// @notice Distributes ETH among the vault and operator distributor.
     /// @dev Transfers any required WETH liquidity to the vault and retains the surplus here as ETH in the operator distributor.
     function rebalanceWethVault() public onlyProtocol {
-        console.log("!!! rebalanceWethVault 1");
         IWETH weth = IWETH(_directory.getWETHAddress());
-        console.log("!!! rebalanceWethVault 2");
         // Initialize the vault and operator distributor addresses
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
-        console.log("!!! rebalanceWethVault 3");
         uint256 requiredWeth = vweth.getMissingLiquidity();
-        console.log("!!! rebalanceWethVault 4", requiredWeth);
         uint256 wethBalance = IERC20(address(weth)).balanceOf(address(this));
-        console.log("!!! rebalanceWethVault 5");
         uint256 balanceEthAndWeth = IERC20(address(weth)).balanceOf(address(this)) + address(this).balance;
-        console.log("!!! rebalanceWethVault 6", balanceEthAndWeth, requiredWeth);
         if (balanceEthAndWeth >= requiredWeth) {
-            console.log("!!! rebalanceWethVault 7");
             // there's extra ETH that can be kept here for minipools, so only send required amount
             // figure out how much to wrap, then wrap it
             uint256 wrapNeeded = requiredWeth > wethBalance ? requiredWeth - wethBalance : 0;
-            console.log("!!! rebalanceWethVault 8");
-            if (wrapNeeded != 0) console.log("************ YES 1");
             if (wrapNeeded != 0) weth.deposit{value: wrapNeeded}();
-            console.log("!!! rebalanceWethVault 9");
             // send amount needed to vault
-            if (requiredWeth != 0) console.log("************ YES 2", address(vweth));
             if (requiredWeth != 0) SafeERC20.safeTransfer(weth, address(vweth), requiredWeth);
-            console.log("!!! rebalanceWethVault 10");
             // unwrap the remaining balance to keep for minipool creation
             weth.withdraw(IERC20(address(weth)).balanceOf(address(this)));
-            console.log("!!! rebalanceWethVault 11");
         } else {
             // not enough available to fill up the liquidity reserve, so send everything we can
             // wrap everything in this contract and give back to the WethVault for liquidity
-            console.log("!!! rebalanceWethVault 12");
             weth.deposit{value: address(this).balance}();
-            console.log("!!! rebalanceWethVault 13");
             SafeERC20.safeTransfer(IERC20(address(weth)), address(vweth), weth.balanceOf(address(this)));
-            console.log("!!! rebalanceWethVault 14");
         }
     }
 
