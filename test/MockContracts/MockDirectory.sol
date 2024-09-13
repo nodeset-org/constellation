@@ -12,6 +12,7 @@ contract MockDirectory {
     address rocketNodeDepositAddress;
     address priceFetcherAddress;
     address superNodeAddress;
+    address wethAddress;
     address rocketDAOProtocolSettingsRewardsAddress;
     mapping(bytes32 => mapping(address => bool)) private roles;
 
@@ -110,5 +111,13 @@ contract MockDirectory {
 
     function setRocketDAOProtocolSettingRewardsAddress(address _rocketDAOProtocolSettingsRewardsAddress) public {
         rocketDAOProtocolSettingsRewardsAddress = _rocketDAOProtocolSettingsRewardsAddress;
+    }
+
+    function getWETHAddress() public view returns (address) {
+        return wethAddress;
+    }
+
+    function setWETHAddress(address _wethAddress) public {
+        wethAddress = _wethAddress;
     }
 }
