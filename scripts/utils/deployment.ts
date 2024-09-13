@@ -69,7 +69,7 @@ export async function fastDeployProtocol(
     admin: string,
     log: boolean,
     localDev: boolean = false) {
-    const directoryAddress = await getNextContractAddress(directoryDeployer, 0)
+    const directoryAddress = await getNextContractAddress(directoryDeployer, localDev ? 1 : 0)
 
     const whitelistProxy = await retryOperation(async () => {
         const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Constellation/Whitelist.sol:Whitelist", deployer), [directoryAddress], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
@@ -271,12 +271,10 @@ export async function deployProtocolLocalDev(signers: Signers, log = false): Pro
     const sanctions = await Sanctions.deploy();
     await sanctions.deployed();
 
-    const deployer = (await ethers.getSigners())[0];
-
     const {
-        whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle, 
+        whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle,
         yieldDistributor, priceFetcher, directory, treasury
-        } = await fastDeployProtocol(
+    } = await fastDeployProtocol(
         signers.treasurer.address, // treasurer
         signers.deployer, // deployer
         signers.nodesetAdmin.address, // nodesetAdmin
