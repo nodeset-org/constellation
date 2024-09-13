@@ -69,7 +69,7 @@ export async function fastDeployProtocol(
     admin: string,
     log: boolean,
     localDev: boolean = false) {
-    const directoryAddress = await getNextContractAddress(directoryDeployer, localDev ? 1 : 0)
+    const directoryAddress = await getNextContractAddress(directoryDeployer, localDev ? 1 : 0) // for some reason HH signers start with a nonce of 1 instead of 0
 
     const whitelistProxy = await retryOperation(async () => {
         const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Constellation/Whitelist.sol:Whitelist", deployer), [directoryAddress], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
