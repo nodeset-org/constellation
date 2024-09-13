@@ -11,6 +11,9 @@ import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/arti
 import { ERC20 } from "../../typechain-types/contracts/Testing/Rocketpool/contract/util";
 import { expect } from "chai";
 import { Wallet } from 'ethers';
+import { getWalletFromPath } from "../environments/keyReader";
+import findConfig from "find-config";
+import dotenv from "dotenv";
 
 // Function to prompt user for input
 function askQuestion(query: string): Promise<string> {
@@ -46,6 +49,127 @@ export async function retryOperation(operation: () => Promise<any>, retries: num
         } else {
             throw error;
         }
+    }
+}
+
+export async function deployDev(rocketStorageAddress: string, wETHAddress: string, sanctionsAddress: string, deployer: Wallet | SignerWithAddress, admin: Wallet | SignerWithAddress) {
+    const { directory, superNode } = await fastDeployProtocol(
+        deployer.address, 
+        deployer,
+        admin.address, 
+        admin.address, 
+        admin.address,
+        admin, 
+        admin.address,
+        rocketStorageAddress, 
+        wETHAddress, 
+        sanctionsAddress, 
+        admin.address, 
+        true
+    );
+    upgrades.silenceWarnings()
+    console.log('trying to set protocol role...');
+
+    // set protocolSigner to be PROTOCOL_ROLE
+    const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('CORE_PROTOCOL_ROLE'));
+    await retryOperation(async () => {
+      await directory.connect(admin).grantRole(ethers.utils.arrayify(protocolRole), deployer.address);
+    });
+    console.log('protocol role set');
+
+    return directory
+}
+
+export async function deployDevUsingEnv() {
+    const dotenvPath = findConfig('.env.dev');
+
+    if (dotenvPath !== null) {
+        dotenv.config({ path: dotenvPath });
+    } else {
+        // Handle the case where no .env file is found
+        console.error('No .env.dev file found');
+        return;
+    }
+
+    const deployerPath = process.env.DEPLOYER_PRIVATE_KEY_PATH;
+    const directoryDeployerPath = process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH;
+
+    if (!deployerPath || !directoryDeployerPath) {
+        console.error('Private key paths are missing in the environment variables.');
+        return;
+    }
+
+    try {
+        const deployerWallet = await getWalletFromPath(ethers, deployerPath);
+        const directoryDeployerWallet = await getWalletFromPath(ethers, directoryDeployerPath)
+
+        return await deployDev(
+            process.env.RP_STORAGE_CONTRACT_ADDRESS as string,
+            process.env.WETH_ADDRESS as string,
+            process.env.SANCTIONS_LIST_ADDRESS as string,
+            directoryDeployerWallet,
+            deployerWallet,
+        );
+    } catch (err) {
+        console.error('Error reading private keys or deploying:', err);
+    }
+}
+
+export async function deployStaging(treasurerAddress: string, deployer: Wallet | SignerWithAddress, nodesetAdmin: string, nodesetServerAdmin: string, directoryDeployer: Wallet | SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, multiSigAdmin: string, adminServer: string, adminOracle: string) {
+    const { directory, superNode } = await fastDeployProtocol(
+        treasurerAddress, 
+        deployer, 
+        nodesetAdmin, 
+        nodesetServerAdmin, 
+        adminServer,
+        directoryDeployer, 
+        adminOracle,
+        rocketStorage, 
+        weth, 
+        sanctions, 
+        multiSigAdmin, 
+        true
+    );
+    upgrades.silenceWarnings()
+    return directory
+}
+
+export async function deployUsingEnv(environment: string) {
+    const dotenvPath = findConfig(`.env.${environment}`);
+
+    if (dotenvPath !== null) {
+        dotenv.config({ path: dotenvPath });
+    } else {
+        // Handle the case where no .env file is found
+        console.error('No .env.staging file found');
+        return;
+    }
+
+    if (!process.env.DEPLOYER_PRIVATE_KEY_PATH || !process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH) {
+        console.error('Private key paths are missing in the environment variables.');
+        return;
+    }
+
+    try {
+        const deployerWallet = await getWalletFromPath(ethers, process.env.DEPLOYER_PRIVATE_KEY_PATH as string);
+        const directoryDeployerWallet = await getWalletFromPath(ethers, process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH as string)
+
+        return await deployStaging(
+            process.env.TREASURER_ADDRESS as string,
+            deployerWallet,
+            process.env.NODESET_ADMIN as string,
+            process.env.NODESET_SERVER_ADMIN as string,
+            directoryDeployerWallet,
+            process.env.RP_STORAGE_CONTRACT_ADDRESS as string,
+            process.env.WETH_ADDRESS as string,
+            process.env.SANCTIONS_LIST_ADDRESS as string,
+            process.env.ADMIN_MULTISIG as string,
+            process.env.ADMIN_SERVER as string,
+            process.env.ADMIN_ORACLE as string,
+            
+        );
+    } catch (err) {
+        console.error('Error reading private keys or deploying:', err);
     }
 }
 
@@ -247,92 +371,3 @@ export async function fastDeployProtocol(
     }
 }
 
-export async function deployProtocolLocalDev(signers: Signers, log = false): Promise<Protocol> {
-    const RocketStorageDeployment = await RocketStorage.deployed();
-    const rockStorageContract = (await ethers.getContractAt(
-        "RocketStorage",
-        RocketStorageDeployment.address
-    )) as IRocketStorage;
-    const RplToken = await RocketTokenRPL.deployed();
-    const rplContract = (await ethers.getContractAt(
-        "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
-        RplToken.address
-    )) as ERC20;
-
-    upgrades.silenceWarnings();
-
-    // deploy weth
-    const WETH = await ethers.getContractFactory("WETH");
-    const wETH = await WETH.deploy();
-    await wETH.deployed();
-
-    // deploy mock sanctions
-    const Sanctions = await ethers.getContractFactory("MockSanctions");
-    const sanctions = await Sanctions.deploy();
-    await sanctions.deployed();
-
-    const {
-        whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle,
-        yieldDistributor, priceFetcher, directory, treasury
-    } = await fastDeployProtocol(
-        signers.treasurer.address, // treasurer
-        signers.deployer, // deployer
-        signers.nodesetAdmin.address, // nodesetAdmin
-        signers.nodesetServerAdmin.address, // nodesetServerAdmin
-        signers.adminServer.address, // adminServer
-        signers.random5, // directoryDeployer
-        signers.random4.address, // adminOracle
-        rockStorageContract.address, // rocketStorage
-        wETH.address, // weth
-        sanctions.address, // sanctions
-        signers.admin.address, // admin
-        log, // log
-        true // localDev
-    )
-
-    const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
-    let tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(adminRole), signers.adminServer.address);
-    await tx.wait();
-
-    // set timelock to be TIMELOCK_ROLE
-    const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
-    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRole), signers.admin.address);
-    await tx.wait();
-
-    const timelockRoleMed = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_MED"));
-    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRoleMed), signers.admin.address);
-    await tx.wait();
-
-    const timelockLongRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_LONG"));
-    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockLongRole), signers.admin.address);
-    await tx.wait();
-
-    const oracleAdminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ORACLE_ROLE"));
-    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(oracleAdminRole), signers.admin.address);
-    await tx.wait();
-
-    // set protocolSigner to be PROTOCOL_ROLE
-    const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
-    console.log(signers.admin.address)
-    tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
-    await tx.wait();
-
-    expect(await directory.getTreasuryAddress()).to.equal(treasury.address);
-
-    const returnData: Protocol = {
-        treasury, directory, whitelist, vCWETH, vCRPL, operatorDistributor,
-        merkleClaimStreamer, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions
-    };
-
-    // send all rpl from admin to rplWhale
-    const rplWhaleBalance = await rplContract.balanceOf(signers.deployer.address);
-    tx = await rplContract.transfer(signers.rplWhale.address, rplWhaleBalance);
-    await tx.wait();
-
-    let hasProtocolRole = await returnData.directory.hasRole(protocolRole, signers.protocolSigner.address);
-    while (!(hasProtocolRole)) {
-        hasProtocolRole = await returnData.directory.hasRole(protocolRole, signers.protocolSigner.address);
-    }
-
-    return returnData;
-}
