@@ -9,7 +9,7 @@ import { setDefaultParameters } from "../rocketpool/_helpers/defaults";
 import { deployRocketPool } from "../rocketpool/_helpers/deployment";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ERC20 } from "../../typechain-types/contracts/Testing/Rocketpool/contract/util";
-import { deployProtocol } from "../../scripts/utils/deployment";
+import { deployProtocolLocalDev } from "../../scripts/utils/deployment";
 import { BigNumber } from 'ethers';
 import { DepositData } from "@chainsafe/lodestar-types";
 
@@ -204,7 +204,7 @@ export async function protocolFixture(): Promise<SetupData> {
 
     const signers = await createSigners();
 
-    const deployedProtocol = await deployProtocol(signers);
+    const deployedProtocol = await deployProtocolLocalDev(signers);
     const rocketPool = await getRocketPool(deployedProtocol.directory);
 
     return { protocol: deployedProtocol, signers, rocketPool };

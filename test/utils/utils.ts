@@ -921,7 +921,7 @@ export async function createClaimRewardBadEncodedSigWithNonce(
   return sig;
 }
 
-export async function getNextContractAddress(signer: SignerWithAddress, offset = 0) {
+export async function getNextContractAddress(signer: Wallet | SignerWithAddress, offset = 0) {
   // Get current nonce of the signer
   const nonce = (await signer.getTransactionCount()) + offset;
 

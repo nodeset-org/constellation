@@ -10,7 +10,7 @@ import { Protocol, Signers } from "../../test/integration/integration";
 import { RocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
 import { ERC20 } from "../../typechain-types/contracts/Testing/Rocketpool/contract/util";
 import { expect } from "chai";
-import { ConstellationTimelock } from "../../typechain-types/contracts/External/TimelockController.sol";
+import { Wallet } from 'ethers';
 
 // Function to prompt user for input
 function askQuestion(query: string): Promise<string> {
@@ -56,20 +56,20 @@ export const generateBytes32Identifier = (identifier: string) => {
 };
 
 export async function fastDeployProtocol(
-    treasurer: SignerWithAddress,
-    deployer: SignerWithAddress,
-    nodesetAdmin: SignerWithAddress,
-    nodesetAdminServer: SignerWithAddress,
-    adminServer: SignerWithAddress,
-    directoryDeployer: SignerWithAddress,
-    oracleAdmin: SignerWithAddress,
+    treasurer: string,
+    deployer: SignerWithAddress | Wallet,
+    nodesetAdmin: string,
+    nodesetAdminServer: string,
+    adminServer: string,
+    directoryDeployer: SignerWithAddress | Wallet,
+    oracleAdmin: string,
     rocketStorage: string,
     weth: string,
     sanctions: string,
     admin: string,
     log: boolean,
-    defaultOffset = 1) {
-    const directoryAddress = await getNextContractAddress(directoryDeployer, defaultOffset)
+    localDev: boolean = false) {
+    const directoryAddress = await getNextContractAddress(directoryDeployer, localDev ? 1 : 0) // for some reason HH signers start with a nonce of 1 instead of 0
 
     const whitelistProxy = await retryOperation(async () => {
         const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Constellation/Whitelist.sol:Whitelist", deployer), [directoryAddress], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
@@ -101,21 +101,21 @@ export async function fastDeployProtocol(
     });
 
     const timelockShort = await retryOperation(async function () {
-        const timelockShort = await (await ethers.getContractFactory("ConstellationTimelock")).deploy(0, [admin], [admin], admin);
+        const timelockShort = await (await ethers.getContractFactory("ConstellationTimelock", deployer)).deploy(1, [admin], [admin], admin);
         await timelockShort.deployed();
         if (log) console.log("timelock short deployed to", timelockShort.address)
         return timelockShort
     })
 
     const timelockMed = await retryOperation(async function () {
-        const timelockMed = await (await ethers.getContractFactory("ConstellationTimelock")).deploy(0, [admin], [admin], admin);
+        const timelockMed = await (await ethers.getContractFactory("ConstellationTimelock", deployer)).deploy(2, [admin], [admin], admin);
         await timelockMed.deployed();
         if (log) console.log("timelock med deployed to", timelockMed.address)
         return timelockMed
     })
 
     const timelockLong = await retryOperation(async function () {
-        const timelockLong = await (await ethers.getContractFactory("ConstellationTimelock")).deploy(0, [admin], [admin], admin);
+        const timelockLong = await (await ethers.getContractFactory("ConstellationTimelock", deployer)).deploy(3, [admin], [admin], admin);
         await timelockLong.deployed();
         if (log) console.log("timelock long deployed to", timelockLong.address)
         return timelockLong
@@ -140,7 +140,7 @@ export async function fastDeployProtocol(
     })
 
     const yieldDistributorProxy = await retryOperation(async function () {
-        const yd = await upgrades.deployProxy(await ethers.getContractFactory("NodeSetOperatorRewardDistributor", deployer), [nodesetAdmin.address, nodesetAdminServer.address], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
+        const yd = await upgrades.deployProxy(await ethers.getContractFactory("NodeSetOperatorRewardDistributor", deployer), [nodesetAdmin, nodesetAdminServer], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor', 'delegatecall'] });
         if (log) console.log("yield distributor deployed to", yd.address)
         return yd
     })
@@ -152,7 +152,7 @@ export async function fastDeployProtocol(
     })
 
     const treasuryProxy = await retryOperation(async function () {
-        const at = await upgrades.deployProxy(await ethers.getContractFactory("Treasury", deployer), [treasurer.address], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+        const at = await upgrades.deployProxy(await ethers.getContractFactory("Treasury", deployer), [treasurer], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
         if (log) console.log("admin treasury deployed to", at.address)
         return at
     })
@@ -179,6 +179,9 @@ export async function fastDeployProtocol(
         console.log("sanctions", sanctions)
     }
 
+    let timeLockShortAddress = localDev ? admin : timelockShort.address;
+    let timeLockMedAddress = localDev ? admin : timelockMed.address;
+    let timeLockLongAddress = localDev ? admin : timelockLong.address;
     const directoryProxy = await retryOperation(async () => {
         const dir = await upgrades.deployProxy(await ethers.getContractFactory("Directory", directoryDeployer),
             [
@@ -198,20 +201,19 @@ export async function fastDeployProtocol(
                 yieldDistributorProxy.address,
                 [
                     admin,
-                    treasurer.address,
+                    treasurer,
                     treasuryProxy.address,
-                    // timelockShort.address,
-                    // timelockMed.address,
-                    // timelockLong.address,
-                    admin,
-                    admin,
-                    admin,
-                    adminServer.address,
-                    oracleAdmin.address
+                    timeLockShortAddress,
+                    timeLockMedAddress,
+                    timeLockLongAddress,
+                    adminServer,
+                    oracleAdmin
                 ]
             ], { 'initializer': 'initialize', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 
         if (log) console.log("directory deployed to", dir.address)
+
+        await dir.deployed();
 
         return dir
     })
@@ -241,14 +243,11 @@ export async function fastDeployProtocol(
         oracle: oracleProxy as PoAConstellationOracle,
         superNode: superNodeProxy as SuperNodeAccount,
         treasury: treasuryProxy as Treasury,
-        directory: directoryProxy as Directory,
-        timelockShort: timelockShort as ConstellationTimelock,
-        timelockMed: timelockMed as ConstellationTimelock,
-        timelockLong: timelockLong as ConstellationTimelock
+        directory: directoryProxy as Directory
     }
 }
 
-export async function deployProtocol(signers: Signers, log = false): Promise<Protocol> {
+export async function deployProtocolLocalDev(signers: Signers, log = false): Promise<Protocol> {
     const RocketStorageDeployment = await RocketStorage.deployed();
     const rockStorageContract = (await ethers.getContractAt(
         "RocketStorage",
@@ -257,7 +256,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     const RplToken = await RocketTokenRPL.deployed();
     const rplContract = (await ethers.getContractAt(
         "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
-        RplToken.address // RplToken.address
+        RplToken.address
     )) as ERC20;
 
     upgrades.silenceWarnings();
@@ -272,21 +271,23 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     const sanctions = await Sanctions.deploy();
     await sanctions.deployed();
 
-    const deployer = (await ethers.getSigners())[0];
-
-    const { whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury, timelockShort, timelockMed, timelockLong } = await fastDeployProtocol(
-        signers.treasurer,
-        signers.deployer,
-        signers.nodesetAdmin,
-        signers.nodesetServerAdmin,
-        signers.adminServer,
-        signers.random5,
-        signers.random4,
-        rockStorageContract.address,
-        wETH.address,
-        sanctions.address,
-        signers.admin.address,
-        log
+    const {
+        whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle,
+        yieldDistributor, priceFetcher, directory, treasury
+    } = await fastDeployProtocol(
+        signers.treasurer.address, // treasurer
+        signers.deployer, // deployer
+        signers.nodesetAdmin.address, // nodesetAdmin
+        signers.nodesetServerAdmin.address, // nodesetServerAdmin
+        signers.adminServer.address, // adminServer
+        signers.random5, // directoryDeployer
+        signers.random4.address, // adminOracle
+        rockStorageContract.address, // rocketStorage
+        wETH.address, // weth
+        sanctions.address, // sanctions
+        signers.admin.address, // admin
+        log, // log
+        true // localDev
     )
 
     const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
@@ -318,7 +319,10 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
 
     expect(await directory.getTreasuryAddress()).to.equal(treasury.address);
 
-    const returnData: Protocol = { treasury, directory, whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
+    const returnData: Protocol = {
+        treasury, directory, whitelist, vCWETH, vCRPL, operatorDistributor,
+        merkleClaimStreamer, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions
+    };
 
     // send all rpl from admin to rplWhale
     const rplWhaleBalance = await rplContract.balanceOf(signers.deployer.address);
@@ -326,7 +330,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     await tx.wait();
 
     let hasProtocolRole = await returnData.directory.hasRole(protocolRole, signers.protocolSigner.address);
-    while(!(hasProtocolRole)) {
+    while (!(hasProtocolRole)) {
         hasProtocolRole = await returnData.directory.hasRole(protocolRole, signers.protocolSigner.address);
     }
 

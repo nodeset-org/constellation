@@ -33,17 +33,19 @@ export const setupSandbox = async () => {
   console.log('sanctions address', sanctions.address);
 
   const { directory } = await fastDeployProtocol(
-    admin,
-    deployer,
-    admin,
-    deployer,
-    admin,
-    admin,
-    rocketStorage.address,
-    wETH.address,
-    sanctions.address,
-    admin.address,
-    true
+    admin.address, // treasurer
+    deployer, // deployer
+    admin.address, // nodesetAdmin
+    admin.address, // nodesetServerAdmin
+    admin.address, // adminServer
+    admin, // directoryDeployer
+    admin.address, // adminOracle
+    rocketStorage.address, // rocketStorage
+    wETH.address, // weth
+    sanctions.address, // sanctions
+    admin.address, // admin
+    true, // log
+    true // localDev
   );
 
   // set adminServer to be ADMIN_SERVER_ROLE
