@@ -90,7 +90,6 @@ const config: HardhatUserConfig = {
 
     holesky: {
       url: process.env.HOLESKY_RPC || "" as string,
-      accounts: [process.env.HOLESKY_DEPLOYER || "" as string, process.env.HOLEKSY_ADMIN || "" as string],
     }
   },
   mocha: {

@@ -68,8 +68,8 @@ export async function fastDeployProtocol(
     sanctions: string,
     admin: string,
     log: boolean,
-    defaultOffset = 1) {
-    const directoryAddress = await getNextContractAddress(directoryDeployer, defaultOffset)
+    localDev: boolean = false) {
+    const directoryAddress = await getNextContractAddress(directoryDeployer, 0)
 
     const whitelistProxy = await retryOperation(async () => {
         const whitelist = await upgrades.deployProxy(await ethers.getContractFactory("contracts/Constellation/Whitelist.sol:Whitelist", deployer), [directoryAddress], { 'initializer': 'initializeWhitelist', 'kind': 'uups', 'unsafeAllow': ['constructor'] });
@@ -179,6 +179,9 @@ export async function fastDeployProtocol(
         console.log("sanctions", sanctions)
     }
 
+    let timeLockShortAddress = localDev ? admin : timelockShort.address;
+    let timeLockMedAddress = localDev ? admin : timelockMed.address;
+    let timeLockLongAddress = localDev ? admin : timelockLong.address;
     const directoryProxy = await retryOperation(async () => {
         const dir = await upgrades.deployProxy(await ethers.getContractFactory("Directory", directoryDeployer),
             [
@@ -200,9 +203,9 @@ export async function fastDeployProtocol(
                     admin,
                     treasurer,
                     treasuryProxy.address,
-                    timelockShort.address,
-                    timelockMed.address,
-                    timelockLong.address,
+                    timeLockShortAddress,
+                    timeLockMedAddress,
+                    timeLockLongAddress,
                     adminServer,
                     oracleAdmin
                 ]
@@ -244,7 +247,7 @@ export async function fastDeployProtocol(
     }
 }
 
-export async function deployProtocol(signers: Signers, log = false): Promise<Protocol> {
+export async function deployProtocolLocalDev(signers: Signers, log = false): Promise<Protocol> {
     const RocketStorageDeployment = await RocketStorage.deployed();
     const rockStorageContract = (await ethers.getContractAt(
         "RocketStorage",
@@ -253,7 +256,7 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
     const RplToken = await RocketTokenRPL.deployed();
     const rplContract = (await ethers.getContractAt(
         "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
-        RplToken.address // RplToken.address
+        RplToken.address
     )) as ERC20;
 
     upgrades.silenceWarnings();
@@ -270,19 +273,23 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
 
     const deployer = (await ethers.getSigners())[0];
 
-    const { whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle, yieldDistributor, priceFetcher, directory, treasury } = await fastDeployProtocol(
-        signers.treasurer.address,
-        signers.deployer,
-        signers.nodesetAdmin.address,
-        signers.nodesetServerAdmin.address,
-        signers.adminServer.address,
-        signers.random5,
-        signers.random4.address,
-        rockStorageContract.address,
-        wETH.address,
-        sanctions.address,
-        signers.admin.address,
-        log
+    const {
+        whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle, 
+        yieldDistributor, priceFetcher, directory, treasury
+        } = await fastDeployProtocol(
+        signers.treasurer.address, // treasurer
+        signers.deployer, // deployer
+        signers.nodesetAdmin.address, // nodesetAdmin
+        signers.nodesetServerAdmin.address, // nodesetServerAdmin
+        signers.adminServer.address, // adminServer
+        signers.random5, // directoryDeployer
+        signers.random4.address, // adminOracle
+        rockStorageContract.address, // rocketStorage
+        wETH.address, // weth
+        sanctions.address, // sanctions
+        signers.admin.address, // admin
+        log, // log
+        true // localDev
     )
 
     const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
@@ -314,7 +321,10 @@ export async function deployProtocol(signers: Signers, log = false): Promise<Pro
 
     expect(await directory.getTreasuryAddress()).to.equal(treasury.address);
 
-    const returnData: Protocol = { treasury, directory, whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions };
+    const returnData: Protocol = {
+        treasury, directory, whitelist, vCWETH, vCRPL, operatorDistributor,
+        merkleClaimStreamer, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions
+    };
 
     // send all rpl from admin to rplWhale
     const rplWhaleBalance = await rplContract.balanceOf(signers.deployer.address);

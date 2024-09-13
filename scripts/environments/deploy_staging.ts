@@ -27,8 +27,8 @@ export async function deployStaging(treasurerAddress: string, deployer: Wallet |
         weth, 
         sanctions, 
         multiSigAdmin, 
-        true, 
-    0);
+        true
+    );
     upgrades.silenceWarnings()
     return directory
 }
@@ -44,7 +44,7 @@ export async function deployStagingUsingEnv(mode=0) {
         return;
     }
 
-    if (!process.env.DEPLOYER_PRIVATE_KEY_PATH || !process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH || !process.env.TEMPORAL_ADMIN_KEY_PATH) {
+    if (!process.env.DEPLOYER_PRIVATE_KEY_PATH || !process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH) {
         console.error('Private key paths are missing in the environment variables.');
         return;
     }

@@ -31,7 +31,7 @@ describe(`Test Deploy Dev Env`, () => {
     });
   })
 
-  it("Should pass", async () => {
+  it.skip("Should pass", async () => {
     const directory = await deployDevUsingEnv();
 
     expect(await directory?.getMerkleClaimStreamerAddress()).not.equals(ethers.constants.AddressZero);

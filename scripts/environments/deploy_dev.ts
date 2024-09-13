@@ -27,8 +27,7 @@ export async function deployDev(rocketStorageAddress: string, wETHAddress: strin
         wETHAddress, 
         sanctionsAddress, 
         admin.address, 
-        true, 
-        0
+        true
     );
     upgrades.silenceWarnings()
     console.log('trying to set protocol role...');
