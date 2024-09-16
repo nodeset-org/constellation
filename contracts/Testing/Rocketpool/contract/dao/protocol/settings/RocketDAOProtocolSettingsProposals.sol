@@ -61,7 +61,7 @@ contract RocketDAOProtocolSettingsProposals is RocketDAOProtocolSettings, Rocket
         } else if(settingKey == keccak256(bytes("proposal.max.block.age"))) {
             // Must be > 128 blocks & < 7200 blocks (RPIP-33)
             require(_value > 128 && _value < 7200, "Value must be > 128 blocks & < 7200 blocks");
-        }
+        } 
         // Update setting now
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }

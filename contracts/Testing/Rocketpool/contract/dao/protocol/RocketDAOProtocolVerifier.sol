@@ -404,6 +404,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @param _nodes A list of nodes making up the new pollard
     function submitRoot(uint256 _proposalID, uint256 _index, Types.Node[] calldata _nodes) external onlyLatestContract("rocketDAOProtocolVerifier", address(this)) onlyRegisteredNode(msg.sender) {
         uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
+
         {  // Scope to prevent stack too deep
             // Check whether the proposal is in the Pending state
             RocketDAOProtocolProposalInterface daoProposal = RocketDAOProtocolProposalInterface(getContractAddress("rocketDAOProtocolProposal"));
@@ -424,7 +425,6 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
             state = setChallengeState(state, Types.ChallengeState.Responded);
             setUint(challengeKey, state);
         }
-
         // Check the proposal hasn't already been defeated
         require(getUint(bytes32(proposalKey + defeatIndexOffset)) == 0, "Proposal already defeated");
 

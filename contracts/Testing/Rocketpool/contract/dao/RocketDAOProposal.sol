@@ -7,6 +7,7 @@ import "../../interface/dao/RocketDAOProposalInterface.sol";
 
 import '../util/SafeMath.sol';
 
+
 // A DAO proposal
 contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
 

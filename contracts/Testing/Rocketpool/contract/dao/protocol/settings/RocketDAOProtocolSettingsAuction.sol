@@ -12,9 +12,9 @@ contract RocketDAOProtocolSettingsAuction is RocketDAOProtocolSettings, RocketDA
         // Initialise settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
-            setSettingBool("auction.lot.create.enabled", true);
+            setSettingBool("auction.lot.create.enabled", true);      
             setSettingBool("auction.lot.bidding.enabled", true);
-            setSettingUint("auction.lot.value.minimum", 1 ether);
+            setSettingUint("auction.lot.value.minimum", 1 ether);   
             setSettingUint("auction.lot.value.maximum", 10 ether);
             setSettingUint("auction.lot.duration", 40320);          // 7 days
             setSettingUint("auction.price.start", 1 ether);         // 100%
