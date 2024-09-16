@@ -18,8 +18,6 @@ import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
 
-import 'hardhat/console.sol';
-
 /**
  * @title OperatorDistributor
  * @author Theodore Clapp, Mike Leach
@@ -206,7 +204,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             return 0;
         }
         return
-            lastProcessedMinipoolIndex + 1 < sna.getNumMinipools()
+            lastProcessedMinipoolIndex + 1 < SuperNodeAccount(getDirectory().getSuperNodeAddress()).getNumMinipools()
                 ? lastProcessedMinipoolIndex + 1
                 : 0;
     }
@@ -409,8 +407,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /// @dev Transfers any required WETH liquidity to the vault and retains the surplus here as ETH in the operator distributor.
     function rebalanceWethVault() public onlyProtocol {
         IWETH weth = IWETH(_directory.getWETHAddress());
+
         // Initialize the vault and operator distributor addresses
         WETHVault vweth = WETHVault(getDirectory().getWETHVaultAddress());
+
         uint256 requiredWeth = vweth.getMissingLiquidity();
         uint256 wethBalance = IERC20(address(weth)).balanceOf(address(this));
         uint256 balanceEthAndWeth = IERC20(address(weth)).balanceOf(address(this)) + address(this).balance;
