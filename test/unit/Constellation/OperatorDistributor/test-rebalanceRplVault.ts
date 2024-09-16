@@ -14,6 +14,7 @@ describe("OperatorDistributor.rebalanceRplVault", function () {
     let priceFetcher: Contract;
     let mockRplToken: Contract;
     let mockRocketDAOProtocolSettingsRewards: Contract;
+    let mockRplVault: Contract;
     let owner: any;
     let subNodeOperator: any;
 
@@ -41,12 +42,17 @@ describe("OperatorDistributor.rebalanceRplVault", function () {
         mockRocketDAOProtocolSettingsRewards = await MockRocketDAOProtocolSettingsRewards.deploy();
         await mockRocketDAOProtocolSettingsRewards.deployed();
 
+        const MockRplVault = await ethers.getContractFactory("MockRPLVault");
+        mockRplVault = await MockRplVault.deploy();
+        await mockRplVault.deployed()
+
         // Set addresses
-        await mockDirectory.setSuperNodeAddress(subNodeOperator.address)
+        await mockDirectory.setSuperNodeAddress(subNodeOperator.address);
         await mockDirectory.setRocketNodeStakingAddress(mockRocketNodeStaking.address);
         await mockDirectory.setPriceFetcherAddress(priceFetcher.address);
         await mockDirectory.setRPLAddress(mockRplToken.address);
         await mockDirectory.setRocketDAOProtocolSettingRewardsAddress(mockRocketDAOProtocolSettingsRewards.address);
+        await mockDirectory.setRPLVaultAddress(mockRplVault.address);
 
         // Set roles
         await mockDirectory.setRole(AdminRole, owner.address, true);
@@ -70,25 +76,60 @@ describe("OperatorDistributor.rebalanceRplVault", function () {
         describe('when the RPL balance is greater than the required RPL balance', function () {
             describe('when the required RPL is zero', function () {
                 it('does nothing', async function () {
+                    await mockRplToken.setBalance(operatorDistributor.address, ethers.utils.parseEther("1"));
+                    expect(await mockRplToken.balanceOf(mockRplVault.address)).to.equal(ethers.utils.parseEther("0"));
+
+                    await expect(operatorDistributor.connect(owner).rebalanceRplVault()).to.not.be.reverted;
+
+                    expect(await mockRplToken.balanceOf(mockRplVault.address)).to.equal(ethers.utils.parseEther("0"));
                 });
             });
             describe('when the required RPL is greater than zero', function () {
                 it('send the required amount to the vault', async function () {
+                    await mockRplVault.setMissingLiquidity(ethers.utils.parseEther("0.2"));
+                    await mockRplToken.setBalance(operatorDistributor.address, ethers.utils.parseEther("1"));
+                    expect(await mockRplToken.balanceOf(mockRplVault.address)).to.equal(ethers.utils.parseEther("0"));
+
+                    await expect(operatorDistributor.connect(owner).rebalanceRplVault()).to.not.be.reverted;
+
+                    expect(await mockRplToken.balanceOf(mockRplVault.address)).to.equal(ethers.utils.parseEther("0.2"));
                 });
             });
         });
         describe('when the RPL balance is equal to the required RPL balance', function () {
             describe('when the required RPL is zero', function () {
                 it('does nothing', async function () {
+                    await mockRplVault.setMissingLiquidity(ethers.utils.parseEther("0"));
+                    await mockRplToken.setBalance(operatorDistributor.address, ethers.utils.parseEther("0"));
+                    expect(await mockRplToken.balanceOf(mockRplVault.address)).to.equal(ethers.utils.parseEther("0"));
+
+                    await expect(operatorDistributor.connect(owner).rebalanceRplVault()).to.not.be.reverted;
+
+                    expect(await mockRplToken.balanceOf(mockRplVault.address)).to.equal(ethers.utils.parseEther("0"));
                 });
             });
             describe('when the required RPL is greater than zero', function () {
                 it('send the required amount to the vault', async function () {
+                    await mockRplVault.setMissingLiquidity(ethers.utils.parseEther("1"));
+                    await mockRplToken.setBalance(operatorDistributor.address, ethers.utils.parseEther("1"));
+                    expect(await mockRplToken.balanceOf(mockRplVault.address)).to.equal(ethers.utils.parseEther("0"));
+
+                    await expect(operatorDistributor.connect(owner).rebalanceRplVault()).to.not.be.reverted;
+
+                    expect(await mockRplToken.balanceOf(mockRplVault.address)).to.equal(ethers.utils.parseEther("1"));
                 });
             });
         });
         describe('when the RPL balance is less than the required RPL balance', function () {
             it('sends everything to the vault', async function () {
+                await mockRplVault.setMissingLiquidity(ethers.utils.parseEther("1"));
+                await mockRplToken.setBalance(operatorDistributor.address, ethers.utils.parseEther("0.2"));
+                expect(await mockRplToken.balanceOf(mockRplVault.address)).to.equal(ethers.utils.parseEther("0"));
+
+                await expect(operatorDistributor.connect(owner).rebalanceRplVault()).to.not.be.reverted;
+
+                expect(await mockRplToken.balanceOf(mockRplVault.address)).to.equal(ethers.utils.parseEther("0.2"));
+
             });
         });
     });

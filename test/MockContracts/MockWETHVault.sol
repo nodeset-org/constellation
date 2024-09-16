@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
-import 'hardhat/console.sol';
 
 contract MockWETHVault {
     uint256 treasuryFeeValue;
@@ -28,7 +27,6 @@ contract MockWETHVault {
     }
 
     function setMissingLiquidity(uint256 _missingLiquidity) public {
-        console.log("IS SET BRO");
         missingLiquidityValue = _missingLiquidity;
     }
 }

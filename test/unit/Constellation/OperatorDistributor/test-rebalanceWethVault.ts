@@ -43,7 +43,6 @@ describe("OperatorDistributor.rebalanceWethVault", function () {
         mockWETHToken = await MockWETHToken.deploy();
         await mockWETHToken.deployed();
 
-
         const MockWETHVault = await ethers.getContractFactory("MockWETHVault");
         mockWETHVault = await MockWETHVault.deploy();
         await mockWETHVault.deployed()
@@ -53,18 +52,17 @@ describe("OperatorDistributor.rebalanceWethVault", function () {
         await mockRocketDAOProtocolSettingsRewards.deployed();
 
         // Set addresses
-        await mockDirectory.setSuperNodeAddress(subNodeOperator.address)
+        await mockDirectory.setSuperNodeAddress(subNodeOperator.address);
         await mockDirectory.setRocketNodeStakingAddress(mockRocketNodeStaking.address);
         await mockDirectory.setPriceFetcherAddress(priceFetcher.address);
         await mockDirectory.setRPLAddress(mockRplToken.address);
         await mockDirectory.setRocketDAOProtocolSettingRewardsAddress(mockRocketDAOProtocolSettingsRewards.address);
         await mockDirectory.setWETHAddress(mockWETHToken.address);
-        await mockDirectory.setWETHVaultAddress(mockWETHVault.address)
+        await mockDirectory.setWETHVaultAddress(mockWETHVault.address);
 
         // Set roles
         await mockDirectory.setRole(AdminRole, owner.address, true);
         await mockDirectory.setRole(CoreProtocolRole, owner.address, true);
-        await mockDirectory.setRole(C);
 
         const OperatorDistributor = await ethers.getContractFactory("OperatorDistributor");
         operatorDistributor = await upgrades.deployProxy(OperatorDistributor, [mockDirectory.address], {

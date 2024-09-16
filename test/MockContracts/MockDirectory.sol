@@ -14,6 +14,7 @@ contract MockDirectory {
     address superNodeAddress;
     address wethAddress;
     address rocketDAOProtocolSettingsRewardsAddress;
+    address rplVaultAddress;
     mapping(bytes32 => mapping(address => bool)) private roles;
 
     function getRocketMinipoolManagerAddress() public view returns (address) {
@@ -70,6 +71,14 @@ contract MockDirectory {
 
     function setRPLAddress(address _rplAddress) public {
         rplAddress = _rplAddress;
+    }
+
+    function setRPLVaultAddress(address _rplVaultAddress) public {
+        rplVaultAddress = _rplVaultAddress;
+    }
+
+    function getRPLVaultAddress() public view returns (address) {
+        return rplVaultAddress;
     }
 
     function getWETHVaultAddress() public view returns (address) {

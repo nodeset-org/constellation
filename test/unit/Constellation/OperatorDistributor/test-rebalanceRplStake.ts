@@ -40,7 +40,7 @@ describe("OperatorDistributor.rebalanceRplStake", function () {
         await mockRocketDAOProtocolSettingsRewards.deployed();
 
         // Set addresses
-        await mockDirectory.setSuperNodeAddress(subNodeOperator.address)
+        await mockDirectory.setSuperNodeAddress(subNodeOperator.address);
         await mockDirectory.setRocketNodeStakingAddress(mockRocketNodeStaking.address);
         await mockDirectory.setPriceFetcherAddress(priceFetcher.address);
         await mockDirectory.setRPLAddress(mockRplToken.address);
@@ -71,13 +71,13 @@ describe("OperatorDistributor.rebalanceRplStake", function () {
     describe("when the caller has protocol role", function () {
         describe("when the targetStake is greater than the rplStaked", function () {
             beforeEach(async function () {
-                mockRocketNodeStaking.setNodeRPLLocked(subNodeOperator.address, ethers.utils.parseEther("0"));
-                priceFetcher.setPrice(ethers.utils.parseEther("1"));
+                await mockRocketNodeStaking.setNodeRPLLocked(subNodeOperator.address, ethers.utils.parseEther("0"));
+                await priceFetcher.setPrice(ethers.utils.parseEther("1"));
             });
             describe("when there is enough RPL in the contract to reach the target stake", function () {
                 it("stakes RPL to the target stake", async function () {
-                    mockRocketNodeStaking.setNodeRplStake(subNodeOperator.address, ethers.utils.parseEther("0"));
-                    mockRplToken.setBalance(operatorDistributor.address, ethers.utils.parseEther("10000000000"));
+                    await mockRocketNodeStaking.setNodeRplStake(subNodeOperator.address, ethers.utils.parseEther("0"));
+                    await mockRplToken.setBalance(operatorDistributor.address, ethers.utils.parseEther("10000000000"));
 
                     let beforeStakeAmount = await mockRocketNodeStaking.getNodeRPLStake(subNodeOperator.address);
                     await expect(
@@ -91,8 +91,8 @@ describe("OperatorDistributor.rebalanceRplStake", function () {
             });
             describe("when there is not enough RPL in the contract to reach the target stake", function () {
                 it("stakes as much RPL as possible", async function () {
-                    mockRocketNodeStaking.setNodeRplStake(subNodeOperator.address, ethers.utils.parseEther("0"));
-                    mockRplToken.setBalance(operatorDistributor.address, ethers.utils.parseEther("0.01"));
+                    await mockRocketNodeStaking.setNodeRplStake(subNodeOperator.address, ethers.utils.parseEther("0"));
+                    await mockRplToken.setBalance(operatorDistributor.address, ethers.utils.parseEther("0.01"));
 
                     let beforeStakeAmount = await mockRocketNodeStaking.getNodeRPLStake(subNodeOperator.address);
                     await expect(
@@ -111,9 +111,9 @@ describe("OperatorDistributor.rebalanceRplStake", function () {
             });
             describe("when not enough time has passed to meet rewards claim interval", function () {
                 it("does nothing", async function () {
-                    mockRocketNodeStaking.setNodeRplStake(subNodeOperator.address, ethers.utils.parseEther("1"));
-                    mockRocketNodeStaking.setNodeRPLStakedTime(subNodeOperator.address, 1);
-                    mockRocketDAOProtocolSettingsRewards.setRewardsClaimIntervalTime(9999999999);
+                    await mockRocketNodeStaking.setNodeRplStake(subNodeOperator.address, ethers.utils.parseEther("1"));
+                    await mockRocketNodeStaking.setNodeRPLStakedTime(subNodeOperator.address, 1);
+                    await mockRocketDAOProtocolSettingsRewards.setRewardsClaimIntervalTime(9999999999);
 
                     let beforeStakeAmount = await mockRocketNodeStaking.getNodeRPLStake(subNodeOperator.address);
                     await expect(
@@ -127,10 +127,10 @@ describe("OperatorDistributor.rebalanceRplStake", function () {
             });
             describe("when there is shortfall", function () {
                 it("does nothing", async function () {
-                    mockRocketNodeStaking.setNodeRplStake(subNodeOperator.address, ethers.utils.parseEther("1"));
-                    mockRocketNodeStaking.setNodeRPLStakedTime(subNodeOperator.address, 1);
-                    mockRocketDAOProtocolSettingsRewards.setRewardsClaimIntervalTime(1);
-                    mockRocketNodeStaking.setNodeMaximumRPLStake(subNodeOperator.address, ethers.utils.parseEther("10"));
+                    await mockRocketNodeStaking.setNodeRplStake(subNodeOperator.address, ethers.utils.parseEther("1"));
+                    await mockRocketNodeStaking.setNodeRPLStakedTime(subNodeOperator.address, 1);
+                    await mockRocketDAOProtocolSettingsRewards.setRewardsClaimIntervalTime(1);
+                    await mockRocketNodeStaking.setNodeMaximumRPLStake(subNodeOperator.address, ethers.utils.parseEther("10"));
 
                     let beforeStakeAmount = await mockRocketNodeStaking.getNodeRPLStake(subNodeOperator.address);
                     await expect(
@@ -144,9 +144,9 @@ describe("OperatorDistributor.rebalanceRplStake", function () {
             });
             describe("when there is no shortfall and enough time has passed", function () {
                 it("unstakes RPL", async function () {
-                    mockRocketNodeStaking.setNodeRplStake(subNodeOperator.address, ethers.utils.parseEther("1"));
-                    mockRocketNodeStaking.setNodeRPLStakedTime(subNodeOperator.address, 1);
-                    mockRocketDAOProtocolSettingsRewards.setRewardsClaimIntervalTime(0);
+                    await mockRocketNodeStaking.setNodeRplStake(subNodeOperator.address, ethers.utils.parseEther("1"));
+                    await mockRocketNodeStaking.setNodeRPLStakedTime(subNodeOperator.address, 1);
+                    await mockRocketDAOProtocolSettingsRewards.setRewardsClaimIntervalTime(0);
 
                     let beforeStakeAmount = await mockRocketNodeStaking.getNodeRPLStake(subNodeOperator.address);
                     await expect(
@@ -161,13 +161,13 @@ describe("OperatorDistributor.rebalanceRplStake", function () {
         });
         describe("when the targetStake is equal to the rplStaked", function () {
             beforeEach(async function () {
-                mockRocketNodeStaking.setNodeRPLLocked(subNodeOperator.address, ethers.utils.parseEther("0"));
-                priceFetcher.setPrice(ethers.utils.parseEther("1"));
+                await mockRocketNodeStaking.setNodeRPLLocked(subNodeOperator.address, ethers.utils.parseEther("0"));
+                await priceFetcher.setPrice(ethers.utils.parseEther("1"));
             });
             it("does nothing", async function () {
-                mockRocketNodeStaking.setNodeRplStake(subNodeOperator.address, ethers.utils.parseEther("0.6"));
-                mockRocketNodeStaking.setNodeRPLStakedTime(subNodeOperator.address, 1);
-                mockRocketDAOProtocolSettingsRewards.setRewardsClaimIntervalTime(0);
+                await mockRocketNodeStaking.setNodeRplStake(subNodeOperator.address, ethers.utils.parseEther("0.6"));
+                await mockRocketNodeStaking.setNodeRPLStakedTime(subNodeOperator.address, 1);
+                await mockRocketDAOProtocolSettingsRewards.setRewardsClaimIntervalTime(0);
 
                 let beforeStakeAmount = await mockRocketNodeStaking.getNodeRPLStake(subNodeOperator.address);
                 await expect(

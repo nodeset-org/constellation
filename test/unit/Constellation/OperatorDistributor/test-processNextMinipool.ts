@@ -45,7 +45,7 @@ describe("OperatorDistributor.processNextMinipool", function () {
         await mockSuperNode.deployed();
 
         // Set addresses
-        await mockDirectory.setSuperNodeAddress(mockSuperNode.address)
+        await mockDirectory.setSuperNodeAddress(mockSuperNode.address);
         await mockDirectory.setRocketNodeStakingAddress(mockRocketNodeStaking.address);
         await mockDirectory.setPriceFetcherAddress(priceFetcher.address);
         await mockDirectory.setRPLAddress(mockRplToken.address);
