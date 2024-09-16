@@ -51,7 +51,6 @@ describe("OperatorDistributor.rebalanceRplVault", function () {
         // Set roles
         await mockDirectory.setRole(AdminRole, owner.address, true);
         await mockDirectory.setRole(CoreProtocolRole, owner.address, true);
-        await mockDirectory.setRole(CoreProtocolRole, owner.address, true);
 
         const OperatorDistributor = await ethers.getContractFactory("OperatorDistributor");
         operatorDistributor = await upgrades.deployProxy(OperatorDistributor, [mockDirectory.address], {
@@ -61,5 +60,36 @@ describe("OperatorDistributor.rebalanceRplVault", function () {
         });
         await mockDirectory.setRole(CoreProtocolRole, operatorDistributor.address, true);
     });
-
+    describe('when the caller is not the protocol', function () {
+        it('reverts', async function () {
+            await expect(operatorDistributor.connect(subNodeOperator).rebalanceRplVault())
+                .to.be.revertedWith('Can only be called by Protocol!');
+        });
+    });
+    describe('when the caller is the protocol', function () {
+        describe('when the RPL balance is greater than the required RPL balance', function () {
+            describe('when the required RPL is zero', function () {
+                it('does nothing', async function () {
+                });
+            });
+            describe('when the required RPL is greater than zero', function () {
+                it('send the required amount to the vault', async function () {
+                });
+            });
+        });
+        describe('when the RPL balance is equal to the required RPL balance', function () {
+            describe('when the required RPL is zero', function () {
+                it('does nothing', async function () {
+                });
+            });
+            describe('when the required RPL is greater than zero', function () {
+                it('send the required amount to the vault', async function () {
+                });
+            });
+        });
+        describe('when the RPL balance is less than the required RPL balance', function () {
+            it('sends everything to the vault', async function () {
+            });
+        });
+    });
 });

@@ -49,7 +49,6 @@ describe("OperatorDistributor.rebalanceRplStake", function () {
         // Set roles
         await mockDirectory.setRole(AdminRole, owner.address, true);
         await mockDirectory.setRole(CoreProtocolRole, owner.address, true);
-        await mockDirectory.setRole(CoreProtocolRole, owner.address, true);
 
         const OperatorDistributor = await ethers.getContractFactory("OperatorDistributor");
         operatorDistributor = await upgrades.deployProxy(OperatorDistributor, [mockDirectory.address], {

@@ -64,7 +64,7 @@ describe("OperatorDistributor.rebalanceWethVault", function () {
         // Set roles
         await mockDirectory.setRole(AdminRole, owner.address, true);
         await mockDirectory.setRole(CoreProtocolRole, owner.address, true);
-        await mockDirectory.setRole(CoreProtocolRole, owner.address, true);
+        await mockDirectory.setRole(C);
 
         const OperatorDistributor = await ethers.getContractFactory("OperatorDistributor");
         operatorDistributor = await upgrades.deployProxy(OperatorDistributor, [mockDirectory.address], {
