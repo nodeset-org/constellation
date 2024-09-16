@@ -246,7 +246,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 tvlEth = totalAssets();
         uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
 
-        return ((maxWethRplRatio * tvlRpl) / rplPerEth) - tvlEth ;
+        if(rplPerEth == 0) return type(uint256).max;
+
+        return ((maxWethRplRatio * tvlRpl) / rplPerEth) - tvlEth;
     }
 
     /**
