@@ -67,7 +67,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     bool public rplStakeRebalanceEnabled;
 
     function setRplStakeRebalanceEnabled(bool _newValue) external onlyAdmin {
-        require(rplStakeRebalanceEnabled != _newValue, 'New value be different than existing value');
+        require(rplStakeRebalanceEnabled != _newValue, 'OperatorDistributor: new rplStakeRebalanceEnabled value must be different than existing value');
         emit RPLStakeRebalanceEnabledChanged(_newValue);
         rplStakeRebalanceEnabled = _newValue;
     }
@@ -75,7 +75,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     bool public minipoolProcessingEnabled;
 
     function setMinipoolProcessingEnabled(bool _newValue) external onlyAdmin {
-        require(minipoolProcessingEnabled != _newValue, 'New value be different than existing value');
+        require(minipoolProcessingEnabled != _newValue, 'OperatorDistributor: new minipoolProcessingEnabled value must be different than existing value');
         emit MinipoolProcessingEnabledChanged(_newValue);
         minipoolProcessingEnabled = _newValue;
     }
@@ -91,7 +91,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @param _targetStakeRatio The new target stake ratio to be set.
      */
     function setTargetStakeRatio(uint256 _targetStakeRatio) external onlyAdmin {
-        require(_targetStakeRatio != targetStakeRatio, 'New value be different than existing value');
+        require(_targetStakeRatio != targetStakeRatio, 'OperatorDistributor: new targetStakeRatio must be different than existing value');
         emit TargetStakeRatioUpdated(targetStakeRatio, _targetStakeRatio);
         targetStakeRatio = _targetStakeRatio;
     }
@@ -105,7 +105,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @param _minimumStakeRatio The new minimum stake ratio to be set.
      */
     function setMinimumStakeRatio(uint256 _minimumStakeRatio) external onlyAdmin {
-        require(_minimumStakeRatio != minimumStakeRatio, 'New value be different than existing value');
+        require(_minimumStakeRatio != minimumStakeRatio, 'OperatorDistributor: new minimumStakeRatio must be different than existing value');
         emit MinStakeRatioUpdated(minimumStakeRatio, _minimumStakeRatio);
         minimumStakeRatio = _minimumStakeRatio;
     }
@@ -138,7 +138,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      */
 
     /**
-     * @notice Returns the total ETH and WETH managed by the contract, including both the ETH+WETH balances of this contract
      * @notice Returns the total ETH and WETH managed by the contract, including both the ETH+WETH balances of this contract
      * and the SuperNode's staked ETH.
      * @return uint256 Total amount of ETH under the management of the contract.
