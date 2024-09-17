@@ -412,7 +412,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function setLiquidityReservePercent(uint256 _liquidityReservePercent) external onlyShortTimelock {
         require(_liquidityReservePercent <= 1e18, 'WETHVault: liquidity reserve percentage must be between 0% and 100% (1e18)');
-        require(_liquidityReservePercent != liquidityReservePercent, 'New value must be different than existing value');
+        require(_liquidityReservePercent != liquidityReservePercent, 'WETHVault: new liquidity reserve percentage value must be different than existing value');
         emit WETHLiquidityReservePercentChanged(liquidityReservePercent, _liquidityReservePercent);
         liquidityReservePercent = _liquidityReservePercent;
 
@@ -424,7 +424,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     function setMintFee(uint256 newMintFee) external onlyMediumTimelock() {
         require(newMintFee <= 1e18, "WETHVault: new mint fee must be between 0% and 100% (1e18)");
-        require(newMintFee != mintFee, 'New value must be different than existing value');
+        require(newMintFee != mintFee, 'WETHVault: new mint fee value must be different than existing value');
         emit MintFeeChanged(mintFee, newMintFee);
         mintFee = newMintFee;
     }

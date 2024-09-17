@@ -122,7 +122,7 @@ describe("xRPL", function () {
 
     const deposit = ethers.utils.parseEther("1000000");
 
-    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+    expect(await protocol.vCRPL.minWethRplRatio()).equals(BigNumber.from(0));
     await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, deposit);

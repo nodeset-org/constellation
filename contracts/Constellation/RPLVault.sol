@@ -240,7 +240,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function setTreasuryFee(uint256 _treasuryFee) external onlyMediumTimelock {
         require(_treasuryFee <= 1e18, 'Fee too high');
-        require(_treasuryFee != treasuryFee, 'New value must be different than existing value');
+        require(_treasuryFee != treasuryFee, 'RPLVault: new treasury fee value must be different than existing value');
         emit TreasuryFeeChanged(treasuryFee, _treasuryFee);
         treasuryFee = _treasuryFee;
     }
@@ -253,7 +253,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _minWethRplRatio The new WETH coverage ratio to be set (in base points).
      */
     function setMinWethRplRatio(uint256 _minWethRplRatio) external onlyShortTimelock {
-        require(_minWethRplRatio != minWethRplRatio, 'New value must be different than existing value');
+        require(_minWethRplRatio != minWethRplRatio, 'RPLVault: new minWethRplRatio value must be different than existing value');
         emit MinWethRplRatioChanged(minWethRplRatio, _minWethRplRatio);
         minWethRplRatio = _minWethRplRatio;
     }
@@ -269,7 +269,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function setLiquidityReservePercent(uint256 _liquidityReservePercent) external onlyShortTimelock {
         require(_liquidityReservePercent <= 1e18, 'RPLVault: liquidity reserve percentage must be less than or equal to 100%');
-        require(_liquidityReservePercent != liquidityReservePercent, 'New value must be different than existing value');
+        require(_liquidityReservePercent != liquidityReservePercent, 'RPLVault: new liquidityReservePercent value must be different than existing value');
 
         emit RPLLiquidityReservePercentChanged(liquidityReservePercent, _liquidityReservePercent);
 
