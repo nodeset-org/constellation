@@ -13,7 +13,7 @@ describe('Liquidity Reserve', async function () {
 
       // Set the liquidity reserve ratio to 10%
       await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(ethers.utils.parseEther('0.1'));
-      await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(ethers.utils.parseEther('0.1'));
+      expect(await protocol.vCWETH.liquidityReservePercent()).equals(ethers.utils.parseEther('0.1'));
 
       // set mint fee to 0
       await protocol.vCWETH.connect(signers.admin).setMintFee(0);
@@ -100,7 +100,7 @@ describe('Liquidity Reserve', async function () {
 
       // Set the liquidity reserve ratio to 10%
       await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(ethers.utils.parseEther('0.1'));
-      await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(ethers.utils.parseEther('0.1'));
+      expect(await protocol.vCWETH.liquidityReservePercent()).equals(ethers.utils.parseEther('0.1'));
 
       await protocol.vCWETH.connect(signers.admin).setMintFee(0);
 
