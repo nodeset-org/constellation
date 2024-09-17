@@ -23,4 +23,7 @@ contract MockWhitelist {
 
     function registerNewValidator(address) public {
     }
+
+    function removeValidator(address) public {
+    }
 }

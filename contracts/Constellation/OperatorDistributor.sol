@@ -335,14 +335,17 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
             // calculate rewards
             rewards = address(this).balance > priorBalance ? address(this).balance - priorBalance : 0;
-            console.log("!!! processMinipool 18");
             this.onEthBeaconRewardsReceived(rewards, treasuryFee, noFee);
         }
-        console.log("!!! processMinipool 19");
 
         this.rebalanceWethVault();
+
         this.rebalanceRplStake(sna.getEthStaked());
+                console.log("!!! processMinipool 21");
+
         this.rebalanceRplVault();
+                console.log("!!! processMinipool 22");
+
     }
 
     /**
@@ -469,6 +472,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         } else {
             // not enough available to fill up the liquidity reserve, so send everything we can
             // wrap everything in this contract and give back to the WethVault for liquidity
+
             weth.deposit{value: address(this).balance}();
             SafeERC20.safeTransfer(IERC20(address(weth)), address(vweth), weth.balanceOf(address(this)));
         }
@@ -479,18 +483,24 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     function rebalanceRplVault() public onlyProtocol {
         // Initialize the RPLVault and the Operator Distributor addresses
         RPLVault vrpl = RPLVault(getDirectory().getRPLVaultAddress());
+        console.log("!!! rebalanceRplVault 2");
 
         IERC20 rpl = IERC20(_directory.getRPLAddress());
         uint256 rplBalance = rpl.balanceOf(address(this));
+        console.log("!!! rebalanceRplVault 3");
 
         // Fetch the required capital in RPL and the total RPL balance of the contract
         uint256 requiredRpl = vrpl.getMissingLiquidity();
+        console.log("!!! rebalanceRplVault 4");
 
         // Transfer RPL to the RPLVault
         if (rplBalance >= requiredRpl) {
+            console.log("!!! rebalanceRplVault 5");
             // there's extra that can be kept here for minipools, so only send required amount
             if (requiredRpl != 0) SafeERC20.safeTransfer(IERC20(address(rpl)), address(vrpl), requiredRpl);
         } else {
+            console.log("!!! rebalanceRplVault 6");
+
             // not enough here to fill up the liquidity reserve, so send everything we can
             SafeERC20.safeTransfer(IERC20(address(rpl)), address(vrpl), rplBalance);
         }
@@ -530,7 +540,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /// Otherwise, the processNextMinipool() function would finalize the minipool normally with this function.
     function distributeExitedMinipool(IMinipool minipool) public onlyProtocolOrAdmin {
         SuperNodeAccount sna = SuperNodeAccount(getDirectory().getSuperNodeAddress());
-
         if (address(minipool).balance < minipool.getNodeRefundBalance()) {
             emit WarningEthBalanceSmallerThanRefundBalance(address(minipool));
             return;

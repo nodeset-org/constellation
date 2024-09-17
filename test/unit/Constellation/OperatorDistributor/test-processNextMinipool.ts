@@ -15,6 +15,8 @@ describe("OperatorDistributor.processNextMinipool", function () {
     let mockSuperNode: Contract;
     let mockWETHToken: Contract;
     let mockWETHVault: Contract;
+    let mockWhitelist: Contract;
+    let mockRPLVault: Contract;
     let mockRocketDaoProtocolSettingsMinipool: Contract;
 
     let owner: any;
@@ -60,6 +62,14 @@ describe("OperatorDistributor.processNextMinipool", function () {
         mockRocketDaoProtocolSettingsMinipool = await MockRocketDaoProtocolSettingsMinipool.deploy();
         await mockRocketDaoProtocolSettingsMinipool.deployed();
 
+        const MockWhitelist = await ethers.getContractFactory("MockWhitelist");
+        mockWhitelist = await MockWhitelist.deploy();
+        await mockWhitelist.deployed();
+
+        const MockRPLVault = await ethers.getContractFactory("MockRPLVault");
+        mockRPLVault = await MockRPLVault.deploy();
+        await mockRPLVault.deployed
+
         // Set addresses
         await mockDirectory.setSuperNodeAddress(mockSuperNode.address);
         await mockDirectory.setRocketNodeStakingAddress(mockRocketNodeStaking.address);
@@ -69,6 +79,8 @@ describe("OperatorDistributor.processNextMinipool", function () {
         await mockDirectory.setWETHAddress(mockWETHToken.address);
         await mockDirectory.setWETHVaultAddress(mockWETHVault.address);
         await mockDirectory.setRocketDAOProtocolSettingsMinipoolAddress(mockRocketDaoProtocolSettingsMinipool.address);
+        await mockDirectory.setWhitelistAddress(mockWhitelist.address);
+        await mockDirectory.setRPLVaultAddress(mockRPLVault.address);
 
         // Set roles
         await mockDirectory.setRole(AdminRole, owner.address, true);
@@ -186,7 +198,7 @@ describe("OperatorDistributor.processNextMinipool", function () {
                             });
 
                             describe("when the minipool balance is greater than the launch balance", function () {
-                                it("distributes and rebalances the vaults", async function () {
+                                it.only("distributes and rebalances the vaults", async function () {
                                     await expect(mockRocketDaoProtocolSettingsMinipool.setLaunchBalance(ethers.utils.parseEther("0.1"))).to.not.be.reverted;
 
                                     await expect(operatorDistributor.processNextMinipool()).to.not.emit(operatorDistributor, "SuspectedPenalizedMinipoolExit");

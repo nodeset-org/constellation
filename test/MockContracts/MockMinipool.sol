@@ -55,4 +55,7 @@ contract MockMinipool {
     function getNodeRefundBalance() public view returns (uint256) {
         return nodeRefundBalance;
     }
+
+    function distributeBalance(bool) public {
+    }
 }

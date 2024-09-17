@@ -6,6 +6,8 @@ contract MockWETHVault {
     uint256 nodeOperatorFeeValue;
     uint256 missingLiquidityValue;
 
+    receive() payable external {}
+
     function treasuryFee() public view returns (uint256) {
         return treasuryFeeValue;
     }

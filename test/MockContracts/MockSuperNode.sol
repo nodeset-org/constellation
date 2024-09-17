@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
-
+import 'hardhat/console.sol';
 
 contract MockSuperNode {
     struct Minipool {
@@ -43,5 +43,12 @@ contract MockSuperNode {
         uint256 _index
     ) public {
         minipoolData[_minipool] = Minipool(_subNodeOperator, _ethTreasuryFee, _noFee, _index);
+    }
+
+    function removeMinipool(address _minipool) public pure {
+    }
+
+    function getEthStaked() public pure returns (uint256) {
+        return 0;
     }
 }
