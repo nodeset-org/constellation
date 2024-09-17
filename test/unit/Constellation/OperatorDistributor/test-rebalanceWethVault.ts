@@ -1,5 +1,3 @@
-// TODO
-
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { Contract } from "ethers";

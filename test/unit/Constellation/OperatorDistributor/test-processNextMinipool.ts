@@ -13,6 +13,8 @@ describe("OperatorDistributor.processNextMinipool", function () {
     let mockRplToken: Contract;
     let mockRocketDAOProtocolSettingsRewards: Contract;
     let mockSuperNode: Contract;
+    let mockWETHToken: Contract;
+    let mockWETHVault: Contract;
     let owner: any;
     let subNodeOperator: any;
 
@@ -40,6 +42,14 @@ describe("OperatorDistributor.processNextMinipool", function () {
         mockRocketDAOProtocolSettingsRewards = await MockRocketDAOProtocolSettingsRewards.deploy();
         await mockRocketDAOProtocolSettingsRewards.deployed();
 
+        const MockWETHToken = await ethers.getContractFactory("MockWEth");
+        mockWETHToken = await MockWETHToken.deploy();
+        await mockWETHToken.deployed();
+
+        const MockWETHVault = await ethers.getContractFactory("MockWETHVault");
+        mockWETHVault = await MockWETHVault.deploy();
+        await mockWETHVault.deployed()
+
         const MockSuperNode = await ethers.getContractFactory("MockSuperNode");
         mockSuperNode = await MockSuperNode.deploy();
         await mockSuperNode.deployed();
@@ -50,6 +60,8 @@ describe("OperatorDistributor.processNextMinipool", function () {
         await mockDirectory.setPriceFetcherAddress(priceFetcher.address);
         await mockDirectory.setRPLAddress(mockRplToken.address);
         await mockDirectory.setRocketDAOProtocolSettingRewardsAddress(mockRocketDAOProtocolSettingsRewards.address);
+        await mockDirectory.setWETHAddress(mockWETHToken.address);
+        await mockDirectory.setWETHVaultAddress(mockWETHVault.address);
 
         // Set roles
         await mockDirectory.setRole(AdminRole, owner.address, true);
@@ -65,46 +77,94 @@ describe("OperatorDistributor.processNextMinipool", function () {
     });
 
     describe("when the next minipool address is the zero address", function () {
-        beforeEach(async function () {
-        });
-        it.only("does nothing", async function () {
+        it("does nothing", async function () {
             await expect(operatorDistributor.processNextMinipool()).to.not.be.reverted;
         });
     });
 
     describe("when the next minipool address is not the zero address", function () {
+        let mockMinipool: Contract;
+
+        beforeEach(async function () {
+            const MinipoolContract = await ethers.getContractFactory("MockMinipool");
+            mockMinipool = await MinipoolContract.deploy();
+            await expect(mockSuperNode.setMinipools([mockMinipool.address])).to.not.be.reverted;
+            await expect(mockSuperNode.setNumMinipools(1)).to.not.be.reverted;
+        });
+
         describe("when minipool processing is not enabled", function () {
+            beforeEach(async function () {
+                await expect(operatorDistributor.setMinipoolProcessingEnabled(false)).to.not.be.reverted;
+            });
+
             it("does nothing", async function () {
+                await expect(operatorDistributor.processNextMinipool()).to.not.be.reverted;
             });
         });
 
         describe("when minipool processing is enabled", function () {
+            beforeEach(async function () {
+                await expect(operatorDistributor.setMinipoolProcessingEnabled(true)).to.not.be.reverted;
+            });
+
             describe("when the minipool balance is zero", function () {
                 it("does nothing", async function () {
+                    await expect(operatorDistributor.processNextMinipool()).to.not.be.reverted;
                 });
             });
 
             describe("when the minipool balance is not zero", function () {
+                beforeEach(async function () {
+                    const tx = await owner.sendTransaction({
+                        to: mockMinipool.address,
+                        value: ethers.utils.parseEther("1")
+                    });
+                    await tx.wait();
+                });
+
                 describe("when the minipool is not managed by Constellation", function () {
-                    it("does nothing", async function () {
+                    beforeEach(async function () {
+                        await expect(mockSuperNode.setIsMinipoolRecognized(mockMinipool.address, false)).to.not.be.reverted;
+                    });
+
+                    it("reverts", async function () {
+                        await expect(operatorDistributor.processNextMinipool()).to.be.revertedWith("Must be a minipool managed by Constellation");
                     });
                 });
 
                 describe("when the minipool is managed by Constellation", function () {
+                    beforeEach(async function () {
+                        await expect(mockSuperNode.setIsMinipoolRecognized(mockMinipool.address, true)).to.not.be.reverted;
+                    });
+
                     describe("when the minipool is finalised", function () {
                         it("does nothing", async function () {
+                            await expect(mockMinipool.setFinalised(true)).to.not.be.reverted;
+                            await expect(mockMinipool.setStaking()).to.not.be.reverted;
+
+                            await expect(operatorDistributor.processNextMinipool()).to.not.be.reverted;
                         });
                     });
 
                     describe("when the status is not Staking", function () {
                         it("does nothing", async function () {
+                            await expect(mockMinipool.setFinalised(false)).to.not.be.reverted;
+                            await expect(mockMinipool.setPrelaunch()).to.not.be.reverted;
+
+                            await expect(operatorDistributor.processNextMinipool()).to.not.be.reverted;
                         });
                     });
 
                     describe("when the minipool is not finalised and the status is Staking", function () {
+                        beforeEach(async function () {
+                            await expect(mockMinipool.setFinalised(false)).to.not.be.reverted;
+                            await expect(mockMinipool.setStaking()).to.not.be.reverted;
+                        });
+
                         describe("when the post-refund balance is greater than deposit balance", function () {
                             describe("when the minipool balance is less than the launch balance", function () {
-                                it("emits a suspected penalized minipool exit message", async function () {
+                                it.only("emits a suspected penalized minipool exit message", async function () {
+                                    await expect(operatorDistributor.processNextMinipool()).to.not.be.reverted;
                                 });
                             });
 

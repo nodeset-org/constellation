@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL v3
 
 /**
-  *    /***        /***          /******                                  /**               /** /**             /**     /**                    
-  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/                    
-  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /******* 
+  *    /***        /***          /******                                  /**               /** /**             /**     /**
+  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/
+  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /*******
   *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
   * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
   *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
@@ -37,7 +37,7 @@ import '../Interfaces/RocketPool/IRocketNodeManager.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
-
+import 'hardhat/console.sol';
 /**
  * @title OperatorDistributor
  * @author Theodore Clapp, Mike Leach
@@ -244,6 +244,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      */
     function processNextMinipool() public {
         IMinipool nextMinipool = getNextMinipool();
+        console.log("!!! nextMinipool: ", address(nextMinipool));
         if (address(nextMinipool) == address(0)) {
             // Nothing to do
             return;
@@ -260,30 +261,44 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * and then rebalance protocol liquidity.
      */
     function processMinipool(IMinipool minipool) public {
+        console.log("!!! processMinipool 1", minipoolProcessingEnabled);
         if (!minipoolProcessingEnabled) return; // emergency switch for minipool processing
+        console.log("!!! processMinipool 2", address(minipool));
+
         if (address(minipool) == address(0)) {
             return; // should only happen if there are no minipools in the system
         }
+        console.log("!!! processMinipool 3", address(minipool).balance);
         if (address(minipool).balance == 0) {
             return;
         }
+        console.log("!!! processMinipool 4");
 
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
+        console.log("!!! processMinipool 5");
+
         require(sna.getIsMinipoolRecognized(address(minipool)), 'Must be a minipool managed by Constellation');
+        console.log("!!! processMinipool 6");
 
         MinipoolStatus status = minipool.getStatus();
+        console.log("!!! processMinipool 7");
 
         if (minipool.getFinalised() || status != MinipoolStatus.Staking) {
+            console.log("!!! processMinipool 8");
+
             return;
         }
+        console.log("!!! processMinipool 9");
 
         // get refs and data
         (, uint256 treasuryFee, uint256 noFee, ) = sna.minipoolData(address(minipool));
+        console.log("!!! processMinipool 10");
 
         // determine the difference in node share and remaining bond amount
         uint256 depositBalance = minipool.getNodeDepositBalance();
         // if nodeshare - original deposit is <= 0 then it's an exit but there are no rewards (it's been penalized)
         uint256 rewards = 0;
+        console.log("!!! processMinipool 11");
 
         // In Constellation, the node refund balance is assumed to be 100% rewards, even though this isn't always true in RP.
         // There are three cases where this can happen, but none of these should be possible in Constellation:
@@ -291,6 +306,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         // - depositType == MinipoolDeposit.Full
         // - prepareVacancy() -- used for solo node migrations to RP
         uint256 balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
+        console.log("!!! processMinipool 12");
 
         if (balanceAfterRefund >= depositBalance) {
             // it's an exit
