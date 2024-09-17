@@ -173,7 +173,7 @@ describe("Unlocking Mechanism", async () => {
 
             // Dissolve and close minipool (unlock)
             await expect(minipoolContract.connect(signers.admin).dissolve()).to.not.be.reverted;
-            await expect(protocol.superNode.closeDissolvedMinipool(signers.hyperdriver.address, minipool)).to.not.be.reverted;
+            await expect(protocol.superNode.closeDissolvedMinipool(minipool)).to.not.be.reverted;
 
             // ensure tvl is not changed after unlocking
             expect(tvl).equals(await protocol.vCWETH.totalAssets());
