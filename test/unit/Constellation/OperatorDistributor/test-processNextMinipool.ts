@@ -170,18 +170,26 @@ describe("OperatorDistributor.processNextMinipool", function () {
 
                         describe("when the post-refund balance is greater than deposit balance", function () {
                             describe("when the minipool balance is less than the launch balance", function () {
-                                it.only("emits a suspected penalized minipool exit message", async function () {
-                                    await expect(operatorDistributor.processNextMinipool()).to.not.be.reverted;
+                                it("emits a suspected penalized minipool exit message", async function () {
+                                    await expect(mockRocketDaoProtocolSettingsMinipool.setLaunchBalance(ethers.utils.parseEther("2"))).to.not.be.reverted;
+
+                                    await expect(operatorDistributor.processNextMinipool()).to.emit(operatorDistributor, "SuspectedPenalizedMinipoolExit").withArgs(mockMinipool.address);
                                 });
                             });
 
                             describe("when the minipool balance is equal to the launch balance", function () {
-                                it("distributes and rebalances the vaults", async function () {
+                                it.only("distributes and rebalances the vaults", async function () {
+                                    await expect(mockRocketDaoProtocolSettingsMinipool.setLaunchBalance(ethers.utils.parseEther("1"))).to.not.be.reverted;
+
+                                    await expect(operatorDistributor.processNextMinipool()).to.not.emit(operatorDistributor, "SuspectedPenalizedMinipoolExit");
                                 });
                             });
 
                             describe("when the minipool balance is greater than the launch balance", function () {
                                 it("distributes and rebalances the vaults", async function () {
+                                    await expect(mockRocketDaoProtocolSettingsMinipool.setLaunchBalance(ethers.utils.parseEther("0.1"))).to.not.be.reverted;
+
+                                    await expect(operatorDistributor.processNextMinipool()).to.not.emit(operatorDistributor, "SuspectedPenalizedMinipoolExit");
                                 });
                             });
                         });
