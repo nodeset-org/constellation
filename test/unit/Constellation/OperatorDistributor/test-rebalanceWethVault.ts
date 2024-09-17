@@ -11,7 +11,7 @@ describe("OperatorDistributor.rebalanceWethVault", function () {
     let mockRocketNodeStaking: Contract;
     let priceFetcher: Contract;
     let mockRplToken: Contract;
-    let mockRocketDAOProtocolSettingsRewards: Contract;
+    let mockRocketDaoProtocolSettingsRewards: Contract;
     let mockWETHToken: Contract;
     let mockWETHVault: Contract;
     let owner: any;
@@ -45,16 +45,16 @@ describe("OperatorDistributor.rebalanceWethVault", function () {
         mockWETHVault = await MockWETHVault.deploy();
         await mockWETHVault.deployed()
 
-        const MockRocketDAOProtocolSettingsRewards = await ethers.getContractFactory("MockRocketDAOProtocolSettingsRewards");
-        mockRocketDAOProtocolSettingsRewards = await MockRocketDAOProtocolSettingsRewards.deploy();
-        await mockRocketDAOProtocolSettingsRewards.deployed();
+        const MockRocketDaoProtocolSettingsRewards = await ethers.getContractFactory("MockRocketDaoProtocolSettingsRewards");
+        mockRocketDaoProtocolSettingsRewards = await MockRocketDaoProtocolSettingsRewards.deploy();
+        await mockRocketDaoProtocolSettingsRewards.deployed();
 
         // Set addresses
         await mockDirectory.setSuperNodeAddress(subNodeOperator.address);
         await mockDirectory.setRocketNodeStakingAddress(mockRocketNodeStaking.address);
         await mockDirectory.setPriceFetcherAddress(priceFetcher.address);
         await mockDirectory.setRPLAddress(mockRplToken.address);
-        await mockDirectory.setRocketDAOProtocolSettingRewardsAddress(mockRocketDAOProtocolSettingsRewards.address);
+        await mockDirectory.setRocketDAOProtocolSettingRewardsAddress(mockRocketDaoProtocolSettingsRewards.address);
         await mockDirectory.setWETHAddress(mockWETHToken.address);
         await mockDirectory.setWETHVaultAddress(mockWETHVault.address);
 

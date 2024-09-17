@@ -3,9 +3,17 @@ pragma solidity ^0.8.17;
 
 
 contract MockSuperNode {
+    struct Minipool {
+        address subNodeOperator;
+        uint256 ethTreasuryFee;
+        uint256 noFee;
+        uint256 index; // index in the minipool list
+    }
+
     uint256 public numMinipools;
     address[] public minipools;
     mapping(address => bool) public isMinipoolRecognized;
+    mapping(address => Minipool) public minipoolData;
 
     function setNumMinipools(uint256 _numMinipools) public {
         numMinipools = _numMinipools;
@@ -25,5 +33,15 @@ contract MockSuperNode {
 
     function setIsMinipoolRecognized(address _minipool, bool _isRecognized) public {
         isMinipoolRecognized[_minipool] = _isRecognized;
+    }
+
+    function setMinipoolData(
+        address _minipool,
+        address _subNodeOperator,
+        uint256 _ethTreasuryFee,
+        uint256 _noFee,
+        uint256 _index
+    ) public {
+        minipoolData[_minipool] = Minipool(_subNodeOperator, _ethTreasuryFee, _noFee, _index);
     }
 }

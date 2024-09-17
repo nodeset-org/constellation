@@ -11,10 +11,12 @@ describe("OperatorDistributor.processNextMinipool", function () {
     let mockRocketNodeStaking: Contract;
     let priceFetcher: Contract;
     let mockRplToken: Contract;
-    let mockRocketDAOProtocolSettingsRewards: Contract;
+    let mockRocketDaoProtocolSettingsRewards: Contract;
     let mockSuperNode: Contract;
     let mockWETHToken: Contract;
     let mockWETHVault: Contract;
+    let mockRocketDaoProtocolSettingsMinipool: Contract;
+
     let owner: any;
     let subNodeOperator: any;
 
@@ -38,9 +40,9 @@ describe("OperatorDistributor.processNextMinipool", function () {
         mockRplToken = await MockRplToken.deploy("Mock RPL", "RPL", ethers.utils.parseEther("1"));
         await mockRplToken.deployed();
 
-        const MockRocketDAOProtocolSettingsRewards = await ethers.getContractFactory("MockRocketDAOProtocolSettingsRewards");
-        mockRocketDAOProtocolSettingsRewards = await MockRocketDAOProtocolSettingsRewards.deploy();
-        await mockRocketDAOProtocolSettingsRewards.deployed();
+        const MockRocketDaoProtocolSettingsRewards = await ethers.getContractFactory("MockRocketDaoProtocolSettingsRewards");
+        mockRocketDaoProtocolSettingsRewards = await MockRocketDaoProtocolSettingsRewards.deploy();
+        await mockRocketDaoProtocolSettingsRewards.deployed();
 
         const MockWETHToken = await ethers.getContractFactory("MockWEth");
         mockWETHToken = await MockWETHToken.deploy();
@@ -54,14 +56,19 @@ describe("OperatorDistributor.processNextMinipool", function () {
         mockSuperNode = await MockSuperNode.deploy();
         await mockSuperNode.deployed();
 
+        const MockRocketDaoProtocolSettingsMinipool = await ethers.getContractFactory("MockRocketDaoProtocolSettingsMinipool");
+        mockRocketDaoProtocolSettingsMinipool = await MockRocketDaoProtocolSettingsMinipool.deploy();
+        await mockRocketDaoProtocolSettingsMinipool.deployed();
+
         // Set addresses
         await mockDirectory.setSuperNodeAddress(mockSuperNode.address);
         await mockDirectory.setRocketNodeStakingAddress(mockRocketNodeStaking.address);
         await mockDirectory.setPriceFetcherAddress(priceFetcher.address);
         await mockDirectory.setRPLAddress(mockRplToken.address);
-        await mockDirectory.setRocketDAOProtocolSettingRewardsAddress(mockRocketDAOProtocolSettingsRewards.address);
+        await mockDirectory.setRocketDAOProtocolSettingRewardsAddress(mockRocketDaoProtocolSettingsRewards.address);
         await mockDirectory.setWETHAddress(mockWETHToken.address);
         await mockDirectory.setWETHVaultAddress(mockWETHVault.address);
+        await mockDirectory.setRocketDAOProtocolSettingsMinipoolAddress(mockRocketDaoProtocolSettingsMinipool.address);
 
         // Set roles
         await mockDirectory.setRole(AdminRole, owner.address, true);

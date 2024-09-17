@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-contract MockRocketDAOProtocolSettingsRewards {
+contract MockRocketDaoProtocolSettingsRewards {
     uint256 claimTimeInterval;
 
     function getRewardsClaimIntervalTime() public view returns (uint256) {

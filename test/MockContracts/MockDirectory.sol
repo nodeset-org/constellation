@@ -6,15 +6,16 @@ contract MockDirectory {
     address whitelist;
     address operatorDistributor;
     address rocketNodeStaking;
-    address rocketDAOProtocolSettingsMinipool;
+    address rocketDaoProtocolSettingsMinipool;
     address rplAddress;
     address wethVaultAddress;
     address rocketNodeDepositAddress;
     address priceFetcherAddress;
     address superNodeAddress;
     address wethAddress;
-    address rocketDAOProtocolSettingsRewardsAddress;
+    address rocketDaoProtocolSettingsRewardsAddress;
     address rplVaultAddress;
+    address rocketDaoProtocolSettingsMinipoolAddress;
     mapping(bytes32 => mapping(address => bool)) private roles;
 
     function getRocketMinipoolManagerAddress() public view returns (address) {
@@ -58,11 +59,11 @@ contract MockDirectory {
     }
 
     function getRocketDAOProtocolSettingsMinipool() public view returns (address) {
-        return rocketDAOProtocolSettingsMinipool;
+        return rocketDaoProtocolSettingsMinipool;
     }
 
-    function setRocketDAOProtocolSettingsMinipoolAddress(address _rocketDAOProtocolSettingsMinipool) public {
-        rocketDAOProtocolSettingsMinipool = _rocketDAOProtocolSettingsMinipool;
+    function setRocketDAOProtocolSettingsMinipoolAddress(address _rocketDaoProtocolSettingsMinipool) public {
+        rocketDaoProtocolSettingsMinipool = _rocketDaoProtocolSettingsMinipool;
     }
 
     function getRPLAddress() public view returns (address) {
@@ -115,11 +116,11 @@ contract MockDirectory {
     }
 
     function getRocketDAOProtocolSettingsRewardsAddress() public view returns (address) {
-        return rocketDAOProtocolSettingsRewardsAddress;
+        return rocketDaoProtocolSettingsRewardsAddress;
     }
 
-    function setRocketDAOProtocolSettingRewardsAddress(address _rocketDAOProtocolSettingsRewardsAddress) public {
-        rocketDAOProtocolSettingsRewardsAddress = _rocketDAOProtocolSettingsRewardsAddress;
+    function setRocketDAOProtocolSettingRewardsAddress(address _rocketDaoProtocolSettingsRewardsAddress) public {
+        rocketDaoProtocolSettingsRewardsAddress = _rocketDaoProtocolSettingsRewardsAddress;
     }
 
     function getWETHAddress() public view returns (address) {

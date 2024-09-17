@@ -306,9 +306,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         // - depositType == MinipoolDeposit.Full
         // - prepareVacancy() -- used for solo node migrations to RP
         uint256 balanceAfterRefund = address(minipool).balance - minipool.getNodeRefundBalance();
-        console.log("!!! processMinipool 12");
+        console.log("!!! processMinipool 12", balanceAfterRefund, depositBalance);
 
         if (balanceAfterRefund >= depositBalance) {
+            console.log("!!! processMinipool 13", address(minipool).balance, IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getLaunchBalance());
             // it's an exit
             // In case there is a penalty, just return so it can be handled manually.
             // This prevents the case where someone sends 8 ETH to the minipool and it's automatically closed,
@@ -318,20 +319,26 @@ contract OperatorDistributor is UpgradeableBase, Errors {
                 IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool())
                     .getLaunchBalance()
             ) {
+                console.log("!!! processMinipool 14");
                 emit SuspectedPenalizedMinipoolExit(address(minipool));
                 return;
             }
-
+            console.log("!!! processMinipool 15");
             this.distributeExitedMinipool(minipool);
         } else if (balanceAfterRefund < depositBalance) {
             // it's still staking
+            console.log("!!! processMinipool 16");
             uint256 priorBalance = address(this).balance;
             // withdrawal address calls distributeBalance(true)
             minipool.distributeBalance(true);
+            console.log("!!! processMinipool 17");
+
             // calculate rewards
             rewards = address(this).balance > priorBalance ? address(this).balance - priorBalance : 0;
+            console.log("!!! processMinipool 18");
             this.onEthBeaconRewardsReceived(rewards, treasuryFee, noFee);
         }
+        console.log("!!! processMinipool 19");
 
         this.rebalanceWethVault();
         this.rebalanceRplStake(sna.getEthStaked());
