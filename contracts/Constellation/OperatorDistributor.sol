@@ -53,8 +53,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     event WarningEthBalanceSmallerThanRefundBalance(address _minipool);
     event TargetStakeRatioUpdated(uint256 oldRatio, uint256 newRatio);
     event MinStakeRatioUpdated(uint256 oldRatio, uint256 newRatio);
-    event MinipoolProcessingAllowed(bool isAllowed);
-    event RPLStakeRebalanceAllowed(bool isAllowed);
+    event MinipoolProcessingEnabledChanged(bool isAllowed);
+    event RPLStakeRebalanceEnabledChanged(bool isAllowed);
 
     event WarningMinipoolNotStaking(
         address indexed _minipoolAddress,
@@ -68,7 +68,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     function setRplStakeRebalanceEnabled(bool _newValue) external onlyAdmin {
         require(rplStakeRebalanceEnabled != _newValue, 'New value be different than existing value');
-        emit RPLStakeRebalanceAllowed(_newValue);
+        emit RPLStakeRebalanceEnabledChanged(_newValue);
         rplStakeRebalanceEnabled = _newValue;
     }
 
@@ -76,7 +76,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
     function setMinipoolProcessingEnabled(bool _newValue) external onlyAdmin {
         require(minipoolProcessingEnabled != _newValue, 'New value be different than existing value');
-        emit MinipoolProcessingAllowed(_newValue);
+        emit MinipoolProcessingEnabledChanged(_newValue);
         minipoolProcessingEnabled = _newValue;
     }
 

@@ -42,9 +42,10 @@ import './Utils/PriceFetcher.sol';
  */
 contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
-    event TreasuryFeeClaimed(uint256 amount);
+
     event TreasuryFeeChanged(uint256 oldFee, uint256 newFee);
     event MinWethRplRatioChanged(uint256 oldValue, uint256 newValue);
+    event RPLLiquidityReservePercentChanged(uint256 oldValue, uint256 newValue);
 
     string constant NAME = 'Constellation RPL';
     string constant SYMBOL = 'xRPL';
@@ -132,11 +133,12 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 shares
     ) internal virtual override {
         require(caller == receiver, 'caller must be receiver');
-        require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
         
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         // first process a minipool to give the best chance at actually withdrawing
         od.processNextMinipool();
+
+        require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
 
         super._withdraw(caller, receiver, owner, assets, shares);
         
@@ -269,7 +271,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         require(_liquidityReservePercent <= 1e18, 'RPLVault: liquidity reserve percentage must be less than or equal to 100%');
         require(_liquidityReservePercent != liquidityReservePercent, 'New value must be different than existing value');
 
-        emit MinWethRplRatioChanged(liquidityReservePercent, _liquidityReservePercent);
+        emit RPLLiquidityReservePercentChanged(liquidityReservePercent, _liquidityReservePercent);
 
         liquidityReservePercent = _liquidityReservePercent;
 
