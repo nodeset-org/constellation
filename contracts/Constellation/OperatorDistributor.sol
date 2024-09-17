@@ -51,6 +51,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     event WarningNoMiniPoolsToHarvest();
     event SuspectedPenalizedMinipoolExit(address minipool);
     event WarningEthBalanceSmallerThanRefundBalance(address _minipool);
+    event TargetStakeRatioUpdated(uint256 oldRatio, uint256 newRatio);
+    event MinStakeRatioUpdated(uint256 oldRatio, uint256 newRatio);
+    event MinipoolProcessingAllowed(bool isAllowed);
+    event RPLStakeRebalanceAllowed(bool isAllowed);
 
     event WarningMinipoolNotStaking(
         address indexed _minipoolAddress,
@@ -63,12 +67,16 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     bool public rplStakeRebalanceEnabled;
 
     function setRplStakeRebalanceEnabled(bool _newValue) external onlyAdmin {
+        require(rplStakeRebalanceEnabled != _newValue, 'New value be different than existing value');
+        emit RPLStakeRebalanceAllowed(_newValue);
         rplStakeRebalanceEnabled = _newValue;
     }
 
     bool public minipoolProcessingEnabled;
 
     function setMinipoolProcessingEnabled(bool _newValue) external onlyAdmin {
+        require(minipoolProcessingEnabled != _newValue, 'New value be different than existing value');
+        emit MinipoolProcessingAllowed(_newValue);
         minipoolProcessingEnabled = _newValue;
     }
 
@@ -83,6 +91,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @param _targetStakeRatio The new target stake ratio to be set.
      */
     function setTargetStakeRatio(uint256 _targetStakeRatio) external onlyAdmin {
+        require(_targetStakeRatio != targetStakeRatio, 'New value be different than existing value');
+        emit TargetStakeRatioUpdated(targetStakeRatio, _targetStakeRatio);
         targetStakeRatio = _targetStakeRatio;
     }
 
@@ -95,6 +105,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @param _minimumStakeRatio The new minimum stake ratio to be set.
      */
     function setMinimumStakeRatio(uint256 _minimumStakeRatio) external onlyAdmin {
+        require(_minimumStakeRatio != minimumStakeRatio, 'New value be different than existing value');
+        emit MinStakeRatioUpdated(minimumStakeRatio, _minimumStakeRatio);
         minimumStakeRatio = _minimumStakeRatio;
     }
 
@@ -441,7 +453,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             if (wrapNeeded != 0) weth.deposit{value: wrapNeeded}();
             // send amount needed to vault
             if (requiredWeth != 0) SafeERC20.safeTransfer(weth, address(vweth), requiredWeth);
-            // unwrap the remaining balance to keep for minipool creation
+            // unwrap the remaining balance to keep for minipool creation (technically not necessary, but done in case WETH is sent to this contract)
             weth.withdraw(IERC20(address(weth)).balanceOf(address(this)));
         } else {
             // not enough available to fill up the liquidity reserve, so send everything we can
@@ -498,7 +510,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         uint256 xrETHPortion = rewardAmount - treasuryPortion - nodeOperatorPortion;
 
-        OperatorDistributor(getDirectory().getOperatorDistributorAddress()).onIncreaseOracleError(xrETHPortion);
+        this.onIncreaseOracleError(xrETHPortion);
     }
 
     /// @notice Finalizes and distributes the balance of an exited minipool.
@@ -532,9 +544,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @notice Allocates the necessary liquidity for the creation of a new minipool.
      */
     function sendEthForMinipool() external onlyProtocol {
-        uint256 bond = SuperNodeAccount(getDirectory().getSuperNodeAddress()).bond();
+        address payable snaAddress = getDirectory().getSuperNodeAddress();
+        uint256 bond = SuperNodeAccount(snaAddress).bond();
 
-        (bool success, bytes memory data) = getDirectory().getSuperNodeAddress().call{value: bond}('');
+        (bool success, bytes memory data) = snaAddress.call{value: bond}('');
         if (!success) {
             revert LowLevelEthTransfer(success, data);
         }

@@ -43,6 +43,8 @@ import './Utils/PriceFetcher.sol';
 contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
     event TreasuryFeeClaimed(uint256 amount);
+    event TreasuryFeeChanged(uint256 oldFee, uint256 newFee);
+    event MinWethRplRatioChanged(uint256 oldValue, uint256 newValue);
 
     string constant NAME = 'Constellation RPL';
     string constant SYMBOL = 'xRPL';
@@ -236,6 +238,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function setTreasuryFee(uint256 _treasuryFee) external onlyMediumTimelock {
         require(_treasuryFee <= 1e18, 'Fee too high');
+        require(_treasuryFee != treasuryFee, 'New value must be different than existing value');
+        emit TreasuryFeeChanged(treasuryFee, _treasuryFee);
         treasuryFee = _treasuryFee;
     }
 
@@ -247,6 +251,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _minWethRplRatio The new WETH coverage ratio to be set (in base points).
      */
     function setMinWethRplRatio(uint256 _minWethRplRatio) external onlyShortTimelock {
+        require(_minWethRplRatio != minWethRplRatio, 'New value must be different than existing value');
+        emit MinWethRplRatioChanged(minWethRplRatio, _minWethRplRatio);
         minWethRplRatio = _minWethRplRatio;
     }
 
@@ -260,9 +266,11 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
     function setLiquidityReservePercent(uint256 _liquidityReservePercent) external onlyShortTimelock {
-        require(_liquidityReservePercent >= 0, 'RPLVault: liquidity reserve percentage must be positive');
         require(_liquidityReservePercent <= 1e18, 'RPLVault: liquidity reserve percentage must be less than or equal to 100%');
-       
+        require(_liquidityReservePercent != liquidityReservePercent, 'New value must be different than existing value');
+
+        emit MinWethRplRatioChanged(liquidityReservePercent, _liquidityReservePercent);
+
         liquidityReservePercent = _liquidityReservePercent;
 
         // rebalance entire balance of the contract to ensure the new liquidity reserve is respected
