@@ -209,7 +209,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
                 await ethers.provider.send("evm_mine", [timestamp+(10*24*3600)]);
                 expect(await protocol.whitelist.getActiveValidatorCountForOperator(nodeOperator1.address)).to.be.equal(1);
                 await expect(minipoolContract.connect(nodeOperator1).dissolve()).to.not.be.reverted;
-                await protocol.superNode.connect(nodeOperator1).closeDissolvedMinipool(nodeOperator1.address, config1.expectedMinipoolAddress);
+                await protocol.superNode.connect(nodeOperator1).closeDissolvedMinipool(config1.expectedMinipoolAddress);
                 expect(await protocol.whitelist.getActiveValidatorCountForOperator(nodeOperator1.address)).to.be.equal(0);
 
                 // create final minipool (3rd but 2nd active)
@@ -714,7 +714,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
                 await ethers.provider.send("evm_mine", [timestamp+(10*24*3600)]);
                 expect(await protocol.whitelist.getActiveValidatorCountForOperator(nodeOperator1.address)).to.be.equal(1);
                 await expect(minipoolContract.connect(nodeOperator1).dissolve()).to.not.be.reverted;
-                await protocol.superNode.connect(nodeOperator1).closeDissolvedMinipool(nodeOperator1.address, config1.expectedMinipoolAddress);
+                await protocol.superNode.connect(nodeOperator1).closeDissolvedMinipool(config1.expectedMinipoolAddress);
                 expect(await protocol.whitelist.getActiveValidatorCountForOperator(nodeOperator1.address)).to.be.equal(0);
 
                 // create minipool for nodeOperator2

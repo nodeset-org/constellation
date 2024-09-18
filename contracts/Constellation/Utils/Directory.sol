@@ -84,7 +84,7 @@ struct RocketIntegrations {
 contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     event SanctionViolation(address account, address eoa_origin);
     event SanctionViolation(address eoa_origin);
-    event SanctionsSettingChanged(bool oldValue, bool newValue);
+    event SanctionsEnabledChanged(bool oldValue, bool newValue);
     event TreasuryAddressChanged(address oldAddress, address newAddress);
     event OperatorRewardAddressChanged(address oldAddress, address newAddress);
     event OracleAddressChanged(address oldAddress, address newAddress);
@@ -460,7 +460,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     function setSanctionsEnabled(bool newValue) public {
         require(newValue != _enabledSanctions, '_enabledSanctions already set to this value');
         require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
-        emit SanctionsSettingChanged(_enabledSanctions, newValue);
+        emit SanctionsEnabledChanged(_enabledSanctions, newValue);
         _enabledSanctions = newValue;
     }
 

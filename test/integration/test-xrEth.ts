@@ -384,7 +384,6 @@ describe("xrETH", function () {
 
       expect(await protocol.vCWETH.depositsEnabled()).equals(true);
 
-      await expect(protocol.vCWETH.connect(signers.admin).setDepositsEnabled(true)).to.not.be.reverted;
       let depositAmount =  ethers.utils.parseEther("1");
       await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmount });
       await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, depositAmount);
@@ -396,13 +395,13 @@ describe("xrETH", function () {
       await expect(protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address)).to.be.revertedWith("deposits are disabled");
 
       await expect(protocol.vCWETH.connect(signers.admin).setDepositsEnabled(true)).to.not.be.reverted;
-      await expect(protocol.vCWETH.connect(signers.admin).setDepositsEnabled(true)).to.not.be.reverted;
+      expect(await protocol.vCWETH.depositsEnabled()).equals(true);
       await expect(protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address)).to.not.be.reverted;
 
       await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmount });
       await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, depositAmount);
       await expect(protocol.vCWETH.connect(signers.admin).setDepositsEnabled(false)).to.not.be.reverted;
-      await expect(protocol.vCWETH.connect(signers.admin).setDepositsEnabled(false)).to.not.be.reverted;
+      expect(await protocol.vCWETH.depositsEnabled()).equals(false);
       await expect(protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address)).to.be.revertedWith("deposits are disabled");
     });
 
