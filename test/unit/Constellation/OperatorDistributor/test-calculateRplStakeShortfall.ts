@@ -10,11 +10,9 @@ describe("OperatorDistributor.calculateRplStakeShortfall", function () {
     let mockDirectory: Contract;
     let priceFetcher: Contract;
     let owner: any;
-    let subNodeOperator: any;
-    let otherSigner: any;
 
     beforeEach(async function () {
-        [owner, subNodeOperator, otherSigner] = await ethers.getSigners();
+        [owner] = await ethers.getSigners();
 
         // Deploy mocks
         const PriceFetcher = await ethers.getContractFactory("MockPriceFetcher");

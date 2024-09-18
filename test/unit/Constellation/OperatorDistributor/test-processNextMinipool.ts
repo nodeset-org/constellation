@@ -20,10 +20,9 @@ describe("OperatorDistributor.processNextMinipool", function () {
     let mockRocketDaoProtocolSettingsMinipool: Contract;
 
     let owner: any;
-    let subNodeOperator: any;
 
     beforeEach(async function () {
-        [owner, subNodeOperator] = await ethers.getSigners();
+        [owner] = await ethers.getSigners();
 
         // Deploy mocks
         const MockDirectory = await ethers.getContractFactory("MockDirectory");

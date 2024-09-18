@@ -16,6 +16,8 @@ contract MockDirectory {
     address rocketDaoProtocolSettingsRewardsAddress;
     address rplVaultAddress;
     address rocketDaoProtocolSettingsMinipoolAddress;
+    address treasuryAddress;
+    address operatorReward;
     mapping(bytes32 => mapping(address => bool)) private roles;
 
     function getRocketMinipoolManagerAddress() public view returns (address) {
@@ -130,4 +132,21 @@ contract MockDirectory {
     function setWETHAddress(address _wethAddress) public {
         wethAddress = _wethAddress;
     }
+
+    function setTreasuryAddress(address _treasuryAddress) public {
+        treasuryAddress = _treasuryAddress;
+    }
+
+    function getTreasuryAddress() public view returns (address) {
+        return treasuryAddress;
+    }
+
+    function setOperatorRewardAddress(address _operatorReward) public {
+        operatorReward = _operatorReward;
+    }
+
+    function getOperatorRewardAddress() public view returns (address) {
+        return operatorReward;
+    }
+
 }
