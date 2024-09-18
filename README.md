@@ -13,6 +13,9 @@ We use [Hardhat](https://github.com/NomicFoundation/hardhat) for development.
 - `nvm use 20` stops Hardhat's warnings about an unsupported NPM version
 - `npx hardhat test` runs the test suite. Mocha Test Explorer extension for VSCode is recommended for a better UX while developing.
 
+> [!WARNING]  
+> Third-party security reviews for the code in this repository are ongoing. We do not recommend using it in production until after audits are complete.
+
 # A brief overview...
 This repository contains Solidity smart contracts and assocated tests for Constellation, a second layer liquid staking protocol built on top of Rocket Pool. The protocol involves the creation and management of node operators, minipools, and token vaults, with integrated staking and reward distribution mechanisms.
 
