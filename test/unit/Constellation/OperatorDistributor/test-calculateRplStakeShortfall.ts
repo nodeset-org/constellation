@@ -36,7 +36,7 @@ describe("OperatorDistributor.calculateRplStakeShortfall", function () {
             kind: "uups",
             unsafeAllow: ["constructor"],
         });
-        await operatorDistributor.setMinimumStakeRatio(ethers.utils.parseEther("0.15"));
+        expect(await operatorDistributor.minimumStakeRatio()).equals(ethers.utils.parseEther("0.15"));
     });
 
     describe("test case 1", async function () {

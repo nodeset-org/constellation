@@ -7,6 +7,7 @@ import "../../interface/dao/RocketDAOProposalInterface.sol";
 
 import '../util/SafeMath.sol';
 
+
 // A DAO proposal
 contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
 
@@ -15,7 +16,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     // Events
     event ProposalAdded(address indexed proposer, string indexed proposalDAO, uint256 indexed proposalID, bytes payload, uint256 time);
     event ProposalVoted(uint256 indexed proposalID, address indexed voter, bool indexed supported, uint256 time);
-    event ProposalExecuted(uint256 indexed proposalID, address indexed executer, uint256 time);
+    event ProposalExecuted(uint256 indexed proposalID, address indexed executor, uint256 time);
     event ProposalCancelled(uint256 indexed proposalID, address indexed canceller, uint256 time);
 
     // The namespace for any data stored in the trusted node DAO (do not change)
@@ -33,7 +34,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Version
-        version = 1;
+        version = 2;
     }
 
 

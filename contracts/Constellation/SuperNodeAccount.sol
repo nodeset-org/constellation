@@ -1,4 +1,24 @@
 // SPDX-License-Identifier: GPL v3
+
+/**
+  *    /***        /***          /******                                  /**               /** /**             /**     /**                    
+  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/                    
+  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /******* 
+  *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
+  * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
+  *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
+  *  |  ***|__/|__/***         |  ******||  ****** | **  | ** /*******   | ****  |  *******| **| **| ********  | ****  | **|  ****** | **  | **
+  *   \___/       |___/         \______/  \______/ |__/  |__/|_______/    \___/   \_______/|__/|__/ \_______/   \___/  |__/ \______/ |__/  |__/
+  *
+  *  A liquid staking protocol extending Rocket Pool.
+  *  Made w/ <3 by {::}
+  *
+  *  For more information, visit https://nodeset.io
+  *
+  *  @author Mike Leach (Wander), Nick Steinhilber (NickS), Theodore Clapp (mryamz), Joe Clapis (jcrtp), Huy Nguyen, Andy Rose (Barbalute)
+  *  @custom:security-info https://docs.nodeset.io/nodeset/security-notice
+  **/
+
 pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
@@ -14,17 +34,15 @@ import '../Interfaces/RocketPool/IRocketNodeDeposit.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketNodeManager.sol';
 import '../Interfaces/RocketPool/IRocketMinipoolManager.sol';
-import '../Interfaces/RocketPool/IRocketNetworkVoting.sol';
-import '../Interfaces/RocketPool/IRocketDAOProtocolProposal.sol';
+
 import '../Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
 import '../Interfaces/RocketPool/IRocketStorage.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
-import '../Interfaces/IConstellationOracle.sol';
+
 import '../Interfaces/IWETH.sol';
 
 import './WETHVault.sol';
-import './RPLVault.sol';
 
 import './Utils/Constants.sol';
 import './Utils/Errors.sol';
@@ -157,6 +175,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @notice This function is responsible for the creation and initialization of a minipool based on the validator's configuration.
      *         It requires that the calling node operator is whitelisted and that the signature provided for the minipool creation is valid (if signature checks are enabled).
      *         It also checks for sufficient liquidity (both RPL and ETH) before proceeding with the creation.
+     *         See the `CreateMinipoolConfig` struct for the parameters required for minipool creation.
      * @dev The function involves multiple steps:
      *      1. Validates that the transaction contains the exact amount of ETH specified in the `lockThreshold` (to prevent depoist contract front-running).
      *      2. Checks if there is sufficient liquidity available for the required bond amount in both RPL and ETH.
@@ -168,18 +187,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      *      8. Adds the minipool to the tracking arrays and mappings.
      *      9. Calls the `OperatorDistributor` to handle liquidity provisioning and event logging for the minipool creation.
      *      10. Finally, it delegates the deposit to the `RocketNodeDeposit` contract with all the required parameters from the configuration.
-     *
-     *      It's crucial that this function is called with correct and validated parameters to ensure the integrity of the node and minipool registration process.
-     *
-     * @notice _config A `ValidatorConfig` struct containing:
-     *        - bondAmount: The amount of ETH to be bonded.
-     *        - minimumNodeFee: Minimum fee for the node operations.
-     *        - validatorPubkey: Public key of the validator.
-     *        - validatorSignature: Signature from the validator for verification.
-     *        - depositDataRoot: Root hash of the deposit data.
-     *        - salt: Random nonce used for generating the expected minipool address.
-     *        - expectedMinipoolAddress: Precomputed address expected to be generated for the new minipool.
-     *        - sig The signature provided for minipool creation; used for admin verification if admin server checks are enabled, ignored otherwise.
      */
     function createMinipool(CreateMinipoolConfig calldata _config) public payable {
         require(msg.value == lockThreshold, 'SuperNode: must set the message value to lockThreshold');
@@ -202,7 +209,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         uint256 salt = uint256(keccak256(abi.encodePacked(_config.salt, subNodeOperator)));
         // move the necessary ETH to this contract for use
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).sendEthForMinipool();
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        od.sendEthForMinipool();
 
         // verify admin server signature if required
         if (adminServerCheck) {
@@ -239,13 +247,11 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             minipools.length-1
         );
 
-        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        
         // register minipool with node operator
         Whitelist(getDirectory().getWhitelistAddress()).registerNewValidator(subNodeOperator);
 
         // stake additional RPL to cover the new minipool
-        od.rebalanceRplStake(this.getEthStaked() + bond);
+        od.rebalanceRplStake(getEthStaked() + bond);
 
         // do the deposit!
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: bond}(
@@ -322,11 +328,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * into the system.
      * In future versions, it may be brought into minipool processing to automate the process, but there are a lot of base layer
      * implications to consider before closing, and it would increase gas for the tick.
-     * @param subNodeOperatorAddress Address of the sub-node operator associated with the minipool.
      * @param minipoolAddress Address of the minipool to close.
      */
-    function closeDissolvedMinipool(address subNodeOperatorAddress, address minipoolAddress) external onlyRecognizedMinipool(minipoolAddress) {
-        require(minipoolData[minipoolAddress].subNodeOperator == subNodeOperatorAddress, "operator does not own the specified minipool");
+    function closeDissolvedMinipool(address minipoolAddress) external onlyRecognizedMinipool(minipoolAddress) {
         IMinipool minipool = IMinipool(minipoolAddress);
         Whitelist(getDirectory().getWhitelistAddress()).removeValidator(minipoolData[minipoolAddress].subNodeOperator);
         this.removeMinipool(minipoolAddress);
@@ -435,7 +439,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         uint256 newEthBorrowed = IRocketDAOProtocolSettingsMinipool(_directory.getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() - _bond;
         uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(
             rplStaking,
-            this.getEthMatched() + newEthBorrowed
+            getEthMatched() + newEthBorrowed
         );
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired && od.balance >= _bond;
     }

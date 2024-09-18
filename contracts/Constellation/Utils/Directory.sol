@@ -1,4 +1,24 @@
 // SPDX-License-Identifier: GPL v3
+
+/**
+  *    /***        /***          /******                                  /**               /** /**             /**     /**                    
+  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/                    
+  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /******* 
+  *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
+  * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
+  *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
+  *  |  ***|__/|__/***         |  ******||  ****** | **  | ** /*******   | ****  |  *******| **| **| ********  | ****  | **|  ****** | **  | **
+  *   \___/       |___/         \______/  \______/ |__/  |__/|_______/    \___/   \_______/|__/|__/ \_______/   \___/  |__/ \______/ |__/  |__/
+  *
+  *  A liquid staking protocol extending Rocket Pool.
+  *  Made w/ <3 by {::}
+  *
+  *  For more information, visit https://nodeset.io
+  *
+  *  @author Mike Leach (Wander), Nick Steinhilber (NickS), Theodore Clapp (mryamz), Joe Clapis (jcrtp), Huy Nguyen, Andy Rose (Barbalute)
+  *  @custom:security-info https://docs.nodeset.io/nodeset/security-notice
+  **/
+
 pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
@@ -64,7 +84,7 @@ struct RocketIntegrations {
 contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     event SanctionViolation(address account, address eoa_origin);
     event SanctionViolation(address eoa_origin);
-    event SanctionsSettingChanged(bool oldValue, bool newValue);
+    event SanctionsEnabledChanged(bool oldValue, bool newValue);
     event TreasuryAddressChanged(address oldAddress, address newAddress);
     event OperatorRewardAddressChanged(address oldAddress, address newAddress);
     event OracleAddressChanged(address oldAddress, address newAddress);
@@ -440,7 +460,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     function setSanctionsEnabled(bool newValue) public {
         require(newValue != _enabledSanctions, '_enabledSanctions already set to this value');
         require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
-        emit SanctionsSettingChanged(_enabledSanctions, newValue);
+        emit SanctionsEnabledChanged(_enabledSanctions, newValue);
         _enabledSanctions = newValue;
     }
 

@@ -112,7 +112,7 @@ describe("SuperNodeAccount close", function () {
             expect(await protocol.superNode.connect(nodeOperator).getNumMinipools()).to.be.equal(1);
 
             // Only close minipool
-            await expect(protocol.superNode.connect(nodeOperator).closeDissolvedMinipool(nodeOperator.address, config.expectedMinipoolAddress)).to.be.revertedWith("The minipool can only be closed while dissolved");
+            await expect(protocol.superNode.connect(nodeOperator).closeDissolvedMinipool(config.expectedMinipoolAddress)).to.be.revertedWith("The minipool can only be closed while dissolved");
         });
     });
     describe("when minipool is dissolved", function () {
@@ -146,7 +146,7 @@ describe("SuperNodeAccount close", function () {
 
                     // Dissolve and close minipool
                     await expect(minipoolContract.connect(nodeOperator).dissolve()).to.not.be.reverted;
-                    await protocol.superNode.connect(nodeOperator).closeDissolvedMinipool(nodeOperator.address, config.expectedMinipoolAddress);
+                    await protocol.superNode.connect(nodeOperator).closeDissolvedMinipool(config.expectedMinipoolAddress);
 
                     // Assert validator count prior after closing minipool
                     expect(await protocol.whitelist.getActiveValidatorCountForOperator(nodeOperator.address)).to.be.equal(0);
@@ -183,43 +183,47 @@ describe("SuperNodeAccount close", function () {
                     // Dissolve and close minipool
                     await expect(minipoolContract.connect(nodeOperator).dissolve()).to.not.be.reverted;
                     // Invalid minipool address
-                    await expect(protocol.superNode.connect(nodeOperator).closeDissolvedMinipool(nodeOperator.address, nodeOperator.address)).to.be.revertedWith("minipool not recognized");
+                    await expect(protocol.superNode.connect(nodeOperator).closeDissolvedMinipool(nodeOperator.address)).to.be.revertedWith("minipool not recognized");
                 });
             });
 
         });
-        describe("when subNodeOperator address is invalid", function () {
-            it("should revert", async function () {
-                await expect(
-                    protocol.superNode
-                .connect(nodeOperator)
-                .createMinipool({
-                    validatorPubkey: config.validatorPubkey,
-                    validatorSignature: config.validatorSignature,
-                    depositDataRoot: config.depositDataRoot,
-                    salt: rawSalt,
-                    expectedMinipoolAddress: config.expectedMinipoolAddress,
-                    sig: sig
-                    }, { value: ethers.utils.parseEther('1') }))
-                .to.not.be.reverted;
+        
+        
+        // NOTE this is old. close dissolved minipool function is now open to the public
 
-                // mint rETH, which will deposit into the minipool and set it to prelaunch state
-                setupData.rocketPool.rocketDepositPoolContract.connect(signers.ethWhale).deposit({value: ethers.utils.parseEther("100")})
+        // describe("when subNodeOperator address is invalid", function () {
+        //     it("should revert", async function () {
+        //         await expect(
+        //             protocol.superNode
+        //         .connect(nodeOperator)
+        //         .createMinipool({
+        //             validatorPubkey: config.validatorPubkey,
+        //             validatorSignature: config.validatorSignature,
+        //             depositDataRoot: config.depositDataRoot,
+        //             salt: rawSalt,
+        //             expectedMinipoolAddress: config.expectedMinipoolAddress,
+        //             sig: sig
+        //             }, { value: ethers.utils.parseEther('1') }))
+        //         .to.not.be.reverted;
 
-                // Increase the time by 10 days
-                const tenDays = 10*24*3600;
-                let latestTimestamp = (await ethers.provider.getBlock("latest")).timestamp
-                await ethers.provider.send("evm_mine", [latestTimestamp + tenDays]);
+        //         // mint rETH, which will deposit into the minipool and set it to prelaunch state
+        //         setupData.rocketPool.rocketDepositPoolContract.connect(signers.ethWhale).deposit({value: ethers.utils.parseEther("100")})
 
-                // Assert validator count prior to closing minipool
-                expect(await protocol.whitelist.getActiveValidatorCountForOperator(nodeOperator.address)).to.be.equal(1);
-                expect(await protocol.superNode.connect(nodeOperator).getNumMinipools()).to.be.equal(1);
+        //         // Increase the time by 10 days
+        //         const tenDays = 10*24*3600;
+        //         let latestTimestamp = (await ethers.provider.getBlock("latest")).timestamp
+        //         await ethers.provider.send("evm_mine", [latestTimestamp + tenDays]);
 
-                // Dissolve and close minipool
-                await expect(minipoolContract.connect(nodeOperator).dissolve()).to.not.be.reverted;
-                // Close with invalid address
-                await expect(protocol.superNode.connect(nodeOperator).closeDissolvedMinipool(config.expectedMinipoolAddress, config.expectedMinipoolAddress)).to.be.revertedWith("operator does not own the specified minipool");
-            });
-        });
+        //         // Assert validator count prior to closing minipool
+        //         expect(await protocol.whitelist.getActiveValidatorCountForOperator(nodeOperator.address)).to.be.equal(1);
+        //         expect(await protocol.superNode.connect(nodeOperator).getNumMinipools()).to.be.equal(1);
+
+        //         // Dissolve and close minipool
+        //         await expect(minipoolContract.connect(nodeOperator).dissolve()).to.not.be.reverted;
+        //         // Close with invalid address
+        //         await expect(protocol.superNode.connect(nodeOperator).closeDissolvedMinipool(config.expectedMinipoolAddress)).to.be.revertedWith("operator does not own the specified minipool");
+        //     });
+        // });
     });
 });
