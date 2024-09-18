@@ -1,6 +1,5 @@
 import { deployUsingEnv } from "../utils/deployment";
 
-
 async function main() {
     const directory = await deployUsingEnv('staging');
     console.log("Successfully deployed staging...");

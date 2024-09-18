@@ -136,6 +136,7 @@ export async function deployStaging(treasurerAddress: string, deployer: Wallet |
 
 export async function deployUsingEnv(environment: string) {
     const dotenvPath = findConfig(`.env.${environment}`);
+    const dotenvKeysStorePath = findConfig(`.env.${environment}`);
 
     if (dotenvPath !== null) {
         dotenv.config({ path: dotenvPath });
