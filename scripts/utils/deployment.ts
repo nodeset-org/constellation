@@ -81,7 +81,7 @@ export async function deployDev(rocketStorageAddress: string, wETHAddress: strin
 }
 
 export async function deployDevUsingEnv() {
-    const dotenvPath = findConfig('.env.dev');
+    const dotenvPath = findConfig('.dev.env');
 
     if (dotenvPath !== null) {
         dotenv.config({ path: dotenvPath });
@@ -90,6 +90,9 @@ export async function deployDevUsingEnv() {
         console.error('No .env.dev file found');
         return;
     }
+
+    const rpc = process.env.RPC;
+    const provider = new ethers.providers.JsonRpcProvider(rpc);
 
     const deployerPath = process.env.DEPLOYER_PRIVATE_KEY_PATH;
     const directoryDeployerPath = process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH;
@@ -100,8 +103,8 @@ export async function deployDevUsingEnv() {
     }
 
     try {
-        const deployerWallet = await getWalletFromPath(ethers, deployerPath);
-        const directoryDeployerWallet = await getWalletFromPath(ethers, directoryDeployerPath)
+        const deployerWallet = await getWalletFromPath(ethers, provider, deployerPath);
+        const directoryDeployerWallet = await getWalletFromPath(ethers, provider, directoryDeployerPath)
 
         return await deployDev(
             process.env.RP_STORAGE_CONTRACT_ADDRESS as string,
@@ -135,8 +138,7 @@ export async function deployStaging(treasurerAddress: string, deployer: Wallet |
 }
 
 export async function deployUsingEnv(environment: string) {
-    const dotenvPath = findConfig(`.env.${environment}`);
-    const dotenvKeysStorePath = findConfig(`.env.${environment}`);
+    const dotenvPath = findConfig(`.${environment}.env`);
 
     if (dotenvPath !== null) {
         dotenv.config({ path: dotenvPath });
@@ -152,8 +154,8 @@ export async function deployUsingEnv(environment: string) {
     }
 
     try {
-        const deployerWallet = await getWalletFromPath(ethers, process.env.DEPLOYER_PRIVATE_KEY_PATH as string);
-        const directoryDeployerWallet = await getWalletFromPath(ethers, process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH as string)
+        const deployerWallet = await getWalletFromPath(ethers, ethers.provider, process.env.DEPLOYER_PRIVATE_KEY_PATH as string);
+        const directoryDeployerWallet = await getWalletFromPath(ethers, ethers.provider, process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH as string)
 
         return await deployStaging(
             process.env.TREASURER_ADDRESS as string,
