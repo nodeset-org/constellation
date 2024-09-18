@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 
-export async function getWalletFromPath(ethers: any, provider: any, path: string) {
+export async function getWalletFromPath(ethers: any, path: string) {
 
     let key = readFileSync(path, 'utf8').trim();
 
@@ -12,5 +12,5 @@ export async function getWalletFromPath(ethers: any, provider: any, path: string
         throw new Error('Invalid characters in private key. Expected a 64-character hex string.');
     }
 
-    return new ethers.Wallet(key, provider);
+    return new ethers.Wallet(key, ethers.provider);
 }

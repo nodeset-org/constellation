@@ -1,7 +1,7 @@
-import { deployDevUsingEnv} from "../utils/deployment";
+import { deployUsingEnv} from "../utils/deployment";
 
  async function main() {
-     const directory = await deployDevUsingEnv();
+    const directory = await deployUsingEnv('dev');
      console.log("Successfully deployed dev...");
      console.log("Directory address", directory?.address);
      console.log(await directory?.getProtocol())

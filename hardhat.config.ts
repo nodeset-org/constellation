@@ -12,6 +12,17 @@ import './tasks/adminTasks'
 import './tasks/viewOperatorDistributorTasks'
 import './tasks/viewSuperNodeAccountTasks'
 
+import dotenv from "dotenv";
+import findConfig from 'find-config';
+
+const dotenvPath = findConfig('.env');
+
+if (dotenvPath !== null) {
+  dotenv.config({ path: dotenvPath });
+} else {
+  // Handle the case where no .env file is found
+  console.error('No .env file found');
+}
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -63,13 +74,21 @@ const config: HardhatUserConfig = {
     localhost: {
       gasPrice: 25000000000,
     },
+
+    holesky: {
+      url: process.env.HOLESKY_RPC || ""
+    },
+
+    ethereum: {
+      url: process.env.ETHEREUM_MAINNET_RPC || ""
+    },
   },
   mocha: {
     timeout: 0,
   },
 
   etherscan: {
-    // set key here if you're trying to verify
+    apiKey: process.env.ETHERSCAN_API_KEY || "" as string,
   },
 
   contractSizer: {

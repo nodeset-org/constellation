@@ -52,73 +52,7 @@ export async function retryOperation(operation: () => Promise<any>, retries: num
     }
 }
 
-export async function deployDev(rocketStorageAddress: string, wETHAddress: string, sanctionsAddress: string, deployer: Wallet | SignerWithAddress, admin: Wallet | SignerWithAddress) {
-    const { directory, superNode } = await fastDeployProtocol(
-        deployer.address, 
-        deployer,
-        admin.address, 
-        admin.address, 
-        admin.address,
-        admin, 
-        admin.address,
-        rocketStorageAddress, 
-        wETHAddress, 
-        sanctionsAddress, 
-        admin.address, 
-        true
-    );
-    upgrades.silenceWarnings()
-    console.log('trying to set protocol role...');
-
-    // set protocolSigner to be PROTOCOL_ROLE
-    const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('CORE_PROTOCOL_ROLE'));
-    await retryOperation(async () => {
-      await directory.connect(admin).grantRole(ethers.utils.arrayify(protocolRole), deployer.address);
-    });
-    console.log('protocol role set');
-
-    return directory
-}
-
-export async function deployDevUsingEnv() {
-    const dotenvPath = findConfig('.dev.env');
-
-    if (dotenvPath !== null) {
-        dotenv.config({ path: dotenvPath });
-    } else {
-        // Handle the case where no .env file is found
-        console.error('No .env.dev file found');
-        return;
-    }
-
-    const rpc = process.env.RPC;
-    const provider = new ethers.providers.JsonRpcProvider(rpc);
-
-    const deployerPath = process.env.DEPLOYER_PRIVATE_KEY_PATH;
-    const directoryDeployerPath = process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH;
-
-    if (!deployerPath || !directoryDeployerPath) {
-        console.error('Private key paths are missing in the environment variables.');
-        return;
-    }
-
-    try {
-        const deployerWallet = await getWalletFromPath(ethers, provider, deployerPath);
-        const directoryDeployerWallet = await getWalletFromPath(ethers, provider, directoryDeployerPath)
-
-        return await deployDev(
-            process.env.RP_STORAGE_CONTRACT_ADDRESS as string,
-            process.env.WETH_ADDRESS as string,
-            process.env.SANCTIONS_LIST_ADDRESS as string,
-            directoryDeployerWallet,
-            deployerWallet,
-        );
-    } catch (err) {
-        console.error('Error reading private keys or deploying:', err);
-    }
-}
-
-export async function deployStaging(treasurerAddress: string, deployer: Wallet | SignerWithAddress, nodesetAdmin: string, nodesetServerAdmin: string, directoryDeployer: Wallet | SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, multiSigAdmin: string, adminServer: string, adminOracle: string) {
+export async function deployWithDirectory(treasurerAddress: string, deployer: Wallet | SignerWithAddress, nodesetAdmin: string, nodesetServerAdmin: string, directoryDeployer: Wallet | SignerWithAddress, rocketStorage: string, weth: string, sanctions: string, multiSigAdmin: string, adminServer: string, adminOracle: string) {
     const { directory, superNode } = await fastDeployProtocol(
         treasurerAddress, 
         deployer, 
@@ -154,10 +88,10 @@ export async function deployUsingEnv(environment: string) {
     }
 
     try {
-        const deployerWallet = await getWalletFromPath(ethers, ethers.provider, process.env.DEPLOYER_PRIVATE_KEY_PATH as string);
-        const directoryDeployerWallet = await getWalletFromPath(ethers, ethers.provider, process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH as string)
+        const deployerWallet = await getWalletFromPath(ethers, process.env.DEPLOYER_PRIVATE_KEY_PATH as string);
+        const directoryDeployerWallet = await getWalletFromPath(ethers, process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH as string)
 
-        return await deployStaging(
+        return await deployWithDirectory(
             process.env.TREASURER_ADDRESS as string,
             deployerWallet,
             process.env.NODESET_ADMIN as string,
