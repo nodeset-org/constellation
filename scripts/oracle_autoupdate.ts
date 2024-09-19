@@ -4,9 +4,8 @@
 // It's best to run via tsx and not via hardhat so you can emulate a similar TS environment that Defender would use
 
 // INSTRUCTIONS
-// 1. Set the constants 
+// 1. Set the constants
 // 2. Follow comment/uncomment instructions depending on if you are deploying or testing
-
 
 // comment this out for deployment
 require('dotenv').config();
@@ -45,8 +44,24 @@ async function testFunction(credentials: any) {
   if (data === undefined) throw new Error('Failed to fetch data from oracle response');
 
   const totalYieldAccrued = data.totalYieldAccrued;
-  const sig = data.sig;
-  const timestamp = data.timestamp;
+  console.log('totalYieldAccrued', totalYieldAccrued);
+  const sig = data.signature;
+  console.log('sig', sig);
+  const timestamp = Math.floor(data.timestamp / 1000); // oracle reports with 13 digit accuracy, EVM needs 10
+  console.log('timestamp', timestamp);
+  console.log('latest timestamp', (await provider.getBlock('latest')).timestamp);
+
+  const directory = new ethers.Contract(
+    '0x925D0700407fB0C855Ae9903B3a2727F1e88576c',
+    ['function hasRole(bytes32 role, address account) public view returns (bool)'],
+    provider
+  );
+
+  const hasRole = await directory.hasRole(
+    ethers.utils.keccak256(ethers.utils.toUtf8Bytes('ADMIN_ORACLE_ROLE')),
+    '0xD2bb9AE090422beaE33c6D7655de1E5d390AB8C6'
+  );
+  console.log('hasRole', hasRole);
 
   const od = new ethers.Contract(OD_ADDRESS, ['function oracleError() public view returns (uint256)'], provider);
 
@@ -59,257 +74,21 @@ async function testFunction(credentials: any) {
   };
   console.log('sigData', sigData);
 
-  // const setTotalYieldAccruedABI = [
-  //   'function getImplementation() public view returns (address) ',
-  //   'function setTotalYieldAccrued(bytes calldata _sig, (int256 newTotalYieldAccrued, uint256 expectedOracleError, uint256 timeStamp) calldata sigData)',
-  // ];
+  const oracleABI = [
+    'function getImplementation() public view returns (address) ',
+    'function setTotalYieldAccrued(bytes calldata _sig, (int256 newTotalYieldAccrued, uint256 expectedOracleError, uint256 timeStamp) calldata sigData)',
+  ];
 
-  const oracle = new ethers.Contract(ORACLE_ADDRESS, setTotalYieldAccruedABI, provider);
+  const oracle = new ethers.Contract(ORACLE_ADDRESS, oracleABI, provider);
   //console.log('oracle', oracle)
   console.log('getImplementation', await oracle.getImplementation());
 
   // use the callStatic line for local testing, the other for deployment
-  const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData, { maxFeePerGas: 200 });
+  const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData, { maxFeePerGas: 200, gasLimit: 1000000 });
   //const txResult = await oracle.setTotalYieldAccrued(sig, sigData, { maxFeePerGas: 200 });
- 
-  // const txRes = await client.relaySigner.sendTransaction({
-  //   to: 'ORACLE_ADDRESS',
-  //   data: functionData,
-  //   value: 0,
-  //   speed: 'fast'
-  // });
 
   console.log(txResult);
+
+  // uncomment this for deployment
   // return txRes.hash;
 }
-
-const setTotalYieldAccruedABI = [
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: 'address',
-        name: 'previousAdmin',
-        type: 'address',
-      },
-      {
-        indexed: false,
-        internalType: 'address',
-        name: 'newAdmin',
-        type: 'address',
-      },
-    ],
-    name: 'AdminChanged',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: 'address',
-        name: 'beacon',
-        type: 'address',
-      },
-    ],
-    name: 'BeaconUpgraded',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: 'uint8',
-        name: 'version',
-        type: 'uint8',
-      },
-    ],
-    name: 'Initialized',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: 'int256',
-        name: '_amount',
-        type: 'int256',
-      },
-    ],
-    name: 'TotalYieldAccruedUpdated',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: 'address',
-        name: 'implementation',
-        type: 'address',
-      },
-    ],
-    name: 'Upgraded',
-    type: 'event',
-  },
-  {
-    inputs: [],
-    name: 'getDirectory',
-    outputs: [
-      {
-        internalType: 'contract Directory',
-        name: '',
-        type: 'address',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'getImplementation',
-    outputs: [
-      {
-        internalType: 'address',
-        name: '',
-        type: 'address',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'getLastUpdatedTotalYieldAccrued',
-    outputs: [
-      {
-        internalType: 'uint256',
-        name: '',
-        type: 'uint256',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'getTotalYieldAccrued',
-    outputs: [
-      {
-        internalType: 'int256',
-        name: '',
-        type: 'int256',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'address',
-        name: 'directoryAddress',
-        type: 'address',
-      },
-    ],
-    name: 'initialize',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'address',
-        name: '_directoryAddress',
-        type: 'address',
-      },
-    ],
-    name: 'initializeOracle',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'proxiableUUID',
-    outputs: [
-      {
-        internalType: 'bytes32',
-        name: '',
-        type: 'bytes32',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'bytes',
-        name: '_sig',
-        type: 'bytes',
-      },
-      {
-        components: [
-          {
-            internalType: 'int256',
-            name: 'newTotalYieldAccrued',
-            type: 'int256',
-          },
-          {
-            internalType: 'uint256',
-            name: 'expectedOracleError',
-            type: 'uint256',
-          },
-          {
-            internalType: 'uint256',
-            name: 'timeStamp',
-            type: 'uint256',
-          },
-        ],
-        internalType: 'struct PoAConstellationOracle.PoAOracleSignatureData',
-        name: 'sigData',
-        type: 'tuple',
-      },
-    ],
-    name: 'setTotalYieldAccrued',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'address',
-        name: 'newImplementation',
-        type: 'address',
-      },
-    ],
-    name: 'upgradeTo',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'address',
-        name: 'newImplementation',
-        type: 'address',
-      },
-      {
-        internalType: 'bytes',
-        name: 'data',
-        type: 'bytes',
-      },
-    ],
-    name: 'upgradeToAndCall',
-    outputs: [],
-    stateMutability: 'payable',
-    type: 'function',
-  },
-];
