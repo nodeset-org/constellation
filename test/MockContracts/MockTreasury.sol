@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+// SPDX License Identifier: GPL v3
+pragma solidity 0.8.17;
 
-contract MockOperatorReward {
+contract MockTreasury {
     bool public rejectCall;
 
     function setRejectCall(bool _rejectCall) public {
@@ -14,4 +14,3 @@ contract MockOperatorReward {
         }
     }
 }
-

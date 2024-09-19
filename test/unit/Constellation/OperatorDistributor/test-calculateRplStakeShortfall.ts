@@ -37,7 +37,7 @@ describe("OperatorDistributor.calculateRplStakeShortfall", function () {
         await operatorDistributor.setMinimumStakeRatio(ethers.utils.parseEther("0.15"));
     });
 
-    describe("test case 1", async function () {
+    describe("test case 1", function () {
         it("should pass", async function () {
             const existingRplStake = ethers.utils.parseEther("0");
             const rpEthMatched = ethers.utils.parseEther("100");
@@ -46,7 +46,7 @@ describe("OperatorDistributor.calculateRplStakeShortfall", function () {
         });
     });
 
-    describe("test case 2", async function () {
+    describe("test case 2", function () {
         it("should pass", async function () {
             const existingRplStake = ethers.utils.parseEther("1000");
             const rpEthMatched = ethers.utils.parseEther("100");
@@ -55,7 +55,7 @@ describe("OperatorDistributor.calculateRplStakeShortfall", function () {
         });
     });
 
-    describe("test case 3", async function () {
+    describe("test case 3", function () {
         it("should pass", async function () {
             const existingRplStake = ethers.utils.parseEther("1500");
             const rpEthMatched = ethers.utils.parseEther("100");
@@ -64,7 +64,7 @@ describe("OperatorDistributor.calculateRplStakeShortfall", function () {
         });
     });
 
-    describe("test case 4", async function () {
+    describe("test case 4", function () {
         it("should pass", async function () {
             const existingRplStake = ethers.utils.parseEther("0");
             const rpEthMatched = ethers.utils.parseEther("0");
@@ -73,7 +73,7 @@ describe("OperatorDistributor.calculateRplStakeShortfall", function () {
         });
     });
 
-    describe("test case 5", async function () {
+    describe("test case 5", function () {
         it("should pass", async function () {
             const existingRplStake = ethers.utils.parseEther("100");
             const rpEthMatched = ethers.utils.parseEther("0");

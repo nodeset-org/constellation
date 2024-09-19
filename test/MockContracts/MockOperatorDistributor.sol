@@ -21,4 +21,6 @@ contract MockOperatorDistributor {
     function rebalanceWethVault() public pure {}
 
     function rebalanceRplVault() public pure {}
+
+    function onIncreaseOracleError() public pure {}
 }
