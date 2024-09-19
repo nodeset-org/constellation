@@ -1,16 +1,34 @@
+// This script is an example of an automated oracle update.
+// This one in particular is intended to be loaded into OZ Defender for a scheduled transaction
+// To test locally, check the instructions below and run with `npx tsx run scripts/oracle_autoupdate.ts`
+// It's best to run via tsx and not via hardhat so you can emulate a similar TS environment that Defender would use
+
+// INSTRUCTIONS
+// 1. Set the constants 
+// 2. Follow comment/uncomment instructions depending on if you are deploying or testing
+
+
+// comment this out for deployment
+require('dotenv').config();
+
 const { Defender } = require('@openzeppelin/defender-sdk');
 const { ethers } = require('ethers');
 
+// comment this out for deployment (Defender will provide the credentials)
 const credentials = {
-  relayerApiKey: 'CvBQUaFWBtMKoSsMp8DjgkQPimYmPcnH',
-  relayerApiSecret: '4GoJqd4wL6HXEsdmt6EkqP86oa1vdcgXq9jq6XmNej58PiJFh2hXvaZQie1p49rS',
+  relayerApiKey: `${process.env.DEFENDER_RELAY_KEY}`,
+  relayerApiSecret: `${process.env.DEFENDER_RELAY_SECRET}`,
 };
+
+// make sure to change these to the correct values
 const OD_ADDRESS = '0x498A46Ef3EaD2D777cEF50Cb368c65FFb1c33f8E';
 const ORACLE_ADDRESS = '0x189CEd4F1a9Eae002bcdb04594E3dC91368AfFaF';
 const CHAIN_ID = 17000;
 
+//comment this out for deployment
 testFunction(credentials);
 
+// use the exports.handler line for deployment, use the other one for testing
 //exports.handler = async function(credentials: any) {
 async function testFunction(credentials: any) {
   const client = new Defender(credentials);
@@ -41,16 +59,19 @@ async function testFunction(credentials: any) {
   };
   console.log('sigData', sigData);
 
-  const setTotalYieldAccruedABI = [
-    'function getImplementation() public view returns (address) ',
-    'function setTotalYieldAccrued(bytes calldata _sig, tuple(int256 newTotalYieldAccrued, uint256 expectedOracleError, uint256 timeStamp) calldata sigData)',
-  ];
+  // const setTotalYieldAccruedABI = [
+  //   'function getImplementation() public view returns (address) ',
+  //   'function setTotalYieldAccrued(bytes calldata _sig, (int256 newTotalYieldAccrued, uint256 expectedOracleError, uint256 timeStamp) calldata sigData)',
+  // ];
 
   const oracle = new ethers.Contract(ORACLE_ADDRESS, setTotalYieldAccruedABI, provider);
   //console.log('oracle', oracle)
   console.log('getImplementation', await oracle.getImplementation());
-  const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData);
 
+  // use the callStatic line for local testing, the other for deployment
+  const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData, { maxFeePerGas: 200 });
+  //const txResult = await oracle.setTotalYieldAccrued(sig, sigData, { maxFeePerGas: 200 });
+ 
   // const txRes = await client.relaySigner.sendTransaction({
   //   to: 'ORACLE_ADDRESS',
   //   data: functionData,
