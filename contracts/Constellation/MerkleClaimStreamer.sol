@@ -73,6 +73,11 @@ contract MerkleClaimStreamer is UpgradeableBase {
         merkleClaimsEnabled = true;
     }
 
+    /// @notice Sets the streaming interval for the MerkleClaimStreamer, which should match the RP rewards interval
+    /// @param _newStreamingInterval The new streaming interval in seconds
+    /// @dev This may also need to be called if there's something wrong with the RP rewards intervals and they are not completed as expected
+    /// if that's the case, the admin should simply change the streaming interval to something else and then immediately back again to trigger
+    /// the sweepLockedTVL function
     function setStreamingInterval(uint256 _newStreamingInterval) external onlyAdmin {
         require(_newStreamingInterval > 0 seconds && _newStreamingInterval <= 365 days, "New streaming interval must be > 0 seconds and <= 365 days");
         require(_newStreamingInterval != streamingInterval, "MerkleClaimStreamer: new streaming interval must be different");
@@ -102,10 +107,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
     }
 
     /// @notice Sweeps the full amount of streamed TVL into the rest of the protocol. Only callable if the full streaming interval has passed.
-    /// @dev Typically not necessary to call, as it's automatically called during each successive merkle claim.
-    /// The only reason to call this otherwise is:
-    /// - if there's something wrong with the RP rewards intervals and they are not completed as expected
-    /// - if RP rewards interval length changes, this can be called to sweep rewards from prior intervals before changing streamingInterval
+    /// @dev Called automaticlly during a merkle claim submission or if the streaming interval is changed
     function sweepLockedTVL() public onlyProtocol {
         require(block.timestamp - lastClaimTime > streamingInterval, "Current streaming interval is not finished");
         if(priorEthStreamAmount == 0 && priorRplStreamAmount == 0) return; // if both ethAmount and rplAmount are 0 there is nothing to do
