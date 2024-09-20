@@ -43,6 +43,9 @@ contract MerkleClaimStreamer is UpgradeableBase {
 
     using Math for uint256;
 
+    event StreamingIntervalChanged(uint256 oldValue, uint256 newValue);
+    event MerkleClaimsEnabledChanged(bool oldValue, bool newValue);
+
     event MerkleClaimSubmitted(
         uint256 indexed timestamp, 
         uint256 newEthRewards, 
@@ -72,12 +75,17 @@ contract MerkleClaimStreamer is UpgradeableBase {
 
     function setStreamingInterval(uint256 _newStreamingInterval) external onlyAdmin {
         require(_newStreamingInterval > 0 seconds && _newStreamingInterval <= 365 days, "New streaming interval must be > 0 seconds and <= 365 days");
-        require(_newStreamingInterval != streamingInterval, "New streaming interval must be different");
+        require(_newStreamingInterval != streamingInterval, "MerkleClaimStreamer: new streaming interval must be different");
         
+        sweepLockedTVL();
+
+        emit StreamingIntervalChanged(streamingInterval, _newStreamingInterval);
         streamingInterval = _newStreamingInterval;
     }
 
     function setMerkleClaimsEnabled(bool _isEnabled) external onlyAdmin {
+        require(_isEnabled != merkleClaimsEnabled, "MerkleClaimStreamer: new merkleClaimsEnabled value must be different");
+        emit MerkleClaimsEnabledChanged(merkleClaimsEnabled, _isEnabled);
         merkleClaimsEnabled = _isEnabled;
     }
 
@@ -98,7 +106,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
     /// The only reason to call this otherwise is:
     /// - if there's something wrong with the RP rewards intervals and they are not completed as expected
     /// - if RP rewards interval length changes, this can be called to sweep rewards from prior intervals before changing streamingInterval
-    function sweepLockedTVL() public onlyProtocolOrAdmin {
+    function sweepLockedTVL() public onlyProtocol {
         require(block.timestamp - lastClaimTime > streamingInterval, "Current streaming interval is not finished");
         if(priorEthStreamAmount == 0 && priorRplStreamAmount == 0) return; // if both ethAmount and rplAmount are 0 there is nothing to do
         
@@ -115,6 +123,10 @@ contract MerkleClaimStreamer is UpgradeableBase {
             SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), odAddress, priorRplStreamAmount);
             od.rebalanceRplVault();
         }
+
+        // anything remaining at this point is counted as rewards for the next streaming interval 
+        priorRplStreamAmount = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
+        priorEthStreamAmount = address(this).balance;
     }
 
     /**
@@ -180,10 +192,6 @@ contract MerkleClaimStreamer is UpgradeableBase {
         this.sweepLockedTVL();
 
         lastClaimTime = block.timestamp;
-
-        // anything remaining at this point is counted as rewards for the next streaming interval 
-        priorRplStreamAmount = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
-        priorEthStreamAmount = address(this).balance;
     }
 
     // must be payable so OD can send ETH here to be locked up during streaming period
