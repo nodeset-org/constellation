@@ -8,8 +8,6 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
-import 'hardhat/console.sol';
-
 library RewardDistributorConstants {
     bytes32 internal constant NODESET_ADMIN_SERVER_ROLE = keccak256('NODESET_ADMIN_SERVER_ROLE');
     bytes32 internal constant NODESET_ADMIN_ROLE = keccak256('NODESET_ADMIN_ROLE');
@@ -19,7 +17,6 @@ contract NodeSetOperatorRewardDistributorV1Storage {
     event RewardDistributed(bytes32 indexed _did, address indexed _rewardee);
 
     mapping(bytes32 => uint256) public nonces;
-    mapping(bytes => bool) public claimSigsUsed;
 
     uint256 public nonce;
 }
@@ -37,19 +34,20 @@ contract NodeSetOperatorRewardDistributorV1Storage {
 contract NodeSetOperatorRewardDistributor is
     UUPSUpgradeable,
     AccessControlUpgradeable,
-    ReentrancyGuard,
     NodeSetOperatorRewardDistributorV1Storage
 {
-    constructor() initializer {}
+    constructor() {
+        _disableInitializers();
+    }
 
     function initialize(address _admin, address _adminServer) public initializer {
         _grantRole(RewardDistributorConstants.NODESET_ADMIN_ROLE, _admin);
         _grantRole(RewardDistributorConstants.NODESET_ADMIN_SERVER_ROLE, _adminServer);
+        _setRoleAdmin(RewardDistributorConstants.NODESET_ADMIN_ROLE, RewardDistributorConstants.NODESET_ADMIN_ROLE);
         _setRoleAdmin(
             RewardDistributorConstants.NODESET_ADMIN_SERVER_ROLE,
             RewardDistributorConstants.NODESET_ADMIN_ROLE
         );
-        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /// @notice Internal function to authorize contract upgrades.
@@ -70,10 +68,8 @@ contract NodeSetOperatorRewardDistributor is
         bytes32 _did,
         address _rewardee,
         uint256 _amount
-    ) public nonReentrant {
+    ) public {
         require(_rewardee != address(0), 'rewardee cannot be zero address');
-        require(!claimSigsUsed[_sig], 'sig already used');
-        claimSigsUsed[_sig] = true;
 
         address recoveredAddress = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(
@@ -83,7 +79,7 @@ contract NodeSetOperatorRewardDistributor is
                         _did,
                         _rewardee,
                         _amount,
-                        nonces[_did],
+                        nonces[_did]++,
                         nonce,
                         address(this),
                         block.chainid
@@ -94,7 +90,7 @@ contract NodeSetOperatorRewardDistributor is
         );
 
         require(
-            this.hasRole(RewardDistributorConstants.NODESET_ADMIN_SERVER_ROLE, recoveredAddress),
+            hasRole(RewardDistributorConstants.NODESET_ADMIN_SERVER_ROLE, recoveredAddress),
             'bad signer role, params, or encoding'
         );
 
@@ -106,24 +102,16 @@ contract NodeSetOperatorRewardDistributor is
             SafeERC20.safeTransfer(IERC20(_token), _rewardee, _amount);
         }
 
-        nonces[_did]++;
-
         emit RewardDistributed(_did, _rewardee);
     }
 
     function invalidateAllOutstandingSigs() external {
-        require(
-            this.hasRole(RewardDistributorConstants.NODESET_ADMIN_ROLE, msg.sender),
-            'caller must be nodeset admin'
-        );
+        require(hasRole(RewardDistributorConstants.NODESET_ADMIN_ROLE, msg.sender), 'caller must be nodeset admin');
         nonce++;
     }
 
     function invalidateSingleOustandingSig(bytes32 _did) external {
-        require(
-            this.hasRole(RewardDistributorConstants.NODESET_ADMIN_ROLE, msg.sender),
-            'caller must be nodeset admin'
-        );
+        require(hasRole(RewardDistributorConstants.NODESET_ADMIN_ROLE, msg.sender), 'caller must be nodeset admin');
         nonces[_did]++;
     }
 

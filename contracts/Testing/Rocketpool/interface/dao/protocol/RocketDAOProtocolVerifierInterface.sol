@@ -35,26 +35,10 @@ interface RocketDAOProtocolVerifierInterface {
     function getChallengeBond(uint256 _proposalID) external view returns (uint256);
     function getChallengePeriod(uint256 _proposalID) external view returns (uint256);
     function getDepthPerRound() external pure returns (uint256);
-    function submitProposalRoot(
-        uint256 _proposalId,
-        address _proposer,
-        uint32 _blockNumber,
-        Types.Node[] memory _treeNodes
-    ) external;
+    function submitProposalRoot(uint256 _proposalId, address _proposer, uint32 _blockNumber, Types.Node[] memory _treeNodes) external;
     function burnProposalBond(uint256 _proposalID) external;
-    function createChallenge(
-        uint256 _proposalID,
-        uint256 _index,
-        Types.Node calldata _node,
-        Types.Node[] calldata _witness
-    ) external;
+    function createChallenge(uint256 _proposalID, uint256 _index, Types.Node calldata _node, Types.Node[] calldata _witness) external;
     function submitRoot(uint256 propId, uint256 index, Types.Node[] memory nodes) external;
     function getChallengeState(uint256 _proposalID, uint256 _index) external view returns (Types.ChallengeState);
-    function verifyVote(
-        address _voter,
-        uint256 _nodeIndex,
-        uint256 _proposalID,
-        uint256 _votingPower,
-        Types.Node[] calldata _witness
-    ) external view returns (bool);
+    function verifyVote(address _voter, uint256 _nodeIndex, uint256 _proposalID, uint256 _votingPower, Types.Node[] calldata _witness) external view returns (bool);
 }

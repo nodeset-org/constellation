@@ -7,18 +7,14 @@ import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 /// @title Treasury
 /// @notice A contract that allows a Treasuerer to manage and execute transfers of ETH and ERC20 tokens.
 /// @dev Inherits from UpgradeableBase to allow for future upgrades.
-contract Treasury is     
-    UUPSUpgradeable,
-    AccessControlUpgradeable,
-    ReentrancyGuard
-{
+contract Treasury is UUPSUpgradeable, AccessControlUpgradeable, ReentrancyGuard {
     bytes32 public constant TREASURER_ROLE = keccak256('TREASURER_ROLE');
 
-    string public constant BAD_TREASURY_EXECUTION_ERROR = 'Treasury: execution reverted.';
     string public constant BAD_TREASURY_BATCH_CALL = 'Treasury: array length mismatch.';
 
     event ClaimedToken(address indexed _token, address indexed _to, uint256 indexed _amount);
@@ -26,7 +22,9 @@ contract Treasury is
     event Executed(address indexed _target, bytes indexed _functionData);
 
     /// @notice Initializer that replaces constructor for upgradeable contracts.
-    constructor() initializer {}
+    constructor() {
+        _disableInitializers();
+    }
 
     /// @notice Initializes the contract by setting the directory address.
     /// @dev Overrides the initialize function of the UpgradeableBase.
@@ -34,7 +32,7 @@ contract Treasury is
     function initialize(address treasurer) public virtual initializer {
         __UUPSUpgradeable_init();
         _grantRole(TREASURER_ROLE, treasurer);
-        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setRoleAdmin(TREASURER_ROLE, TREASURER_ROLE);
     }
 
     /// @notice Internal function to authorize contract upgrades.
@@ -45,12 +43,13 @@ contract Treasury is
     }
 
     function _claimTokenInternal(address _tokenAddress, address _to, uint256 _amount) internal {
-        IERC20(_tokenAddress).transfer(_to, _amount);
+        SafeERC20.safeTransfer(IERC20(_tokenAddress), _to, _amount);
         emit ClaimedToken(_tokenAddress, _to, _amount);
     }
 
     function _claimEthInternal(address payable _to, uint256 _amount) internal {
-        _to.transfer(_amount);
+        (bool success, ) = _to.call{value: _amount}('');
+        require(success, 'Failed to transfer ETH to recipient');
         emit ClaimedEth(_to, _amount);
     }
 
@@ -66,7 +65,7 @@ contract Treasury is
     }
 
     modifier onlyTreasurer() {
-        require(this.hasRole(TREASURER_ROLE, msg.sender), 'Can only be called by treasurer address!');
+        require(hasRole(TREASURER_ROLE, msg.sender), 'Can only be called by treasurer address!');
         _;
     }
 
@@ -110,7 +109,8 @@ contract Treasury is
     ) external payable onlyTreasurer nonReentrant {
         require(_targets.length == _functionData.length, BAD_TREASURY_BATCH_CALL);
         require(_values.length == _functionData.length, BAD_TREASURY_BATCH_CALL);
-        for (uint256 i = 0; i < _targets.length; i++) {
+        uint256 targetLength = _targets.length;
+        for (uint256 i = 0; i < targetLength; i++) {
             _executeInternal(_targets[i], _functionData[i], _values[i]);
         }
     }

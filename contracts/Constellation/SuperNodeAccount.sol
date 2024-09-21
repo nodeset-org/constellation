@@ -1,4 +1,24 @@
 // SPDX-License-Identifier: GPL v3
+
+/**
+  *    /***        /***          /******                                  /**               /** /**             /**     /**                    
+  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/                    
+  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /******* 
+  *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
+  * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
+  *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
+  *  |  ***|__/|__/***         |  ******||  ****** | **  | ** /*******   | ****  |  *******| **| **| ********  | ****  | **|  ****** | **  | **
+  *   \___/       |___/         \______/  \______/ |__/  |__/|_______/    \___/   \_______/|__/|__/ \_______/   \___/  |__/ \______/ |__/  |__/
+  *
+  *  A liquid staking protocol extending Rocket Pool.
+  *  Made w/ <3 by {::}
+  *
+  *  For more information, visit https://nodeset.io
+  *
+  *  @author Mike Leach (Wander), Nick Steinhilber (NickS), Theodore Clapp (mryamz), Joe Clapis (jcrtp), Huy Nguyen, Andy Rose (Barbalute)
+  *  @custom:security-info https://docs.nodeset.io/nodeset/security-notice
+  **/
+
 pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
@@ -14,22 +34,18 @@ import '../Interfaces/RocketPool/IRocketNodeDeposit.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketNodeManager.sol';
 import '../Interfaces/RocketPool/IRocketMinipoolManager.sol';
-import '../Interfaces/RocketPool/IRocketNetworkVoting.sol';
-import '../Interfaces/RocketPool/IRocketDAOProtocolProposal.sol';
+
 import '../Interfaces/RocketPool/IRocketMerkleDistributorMainnet.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
 import '../Interfaces/RocketPool/IRocketStorage.sol';
 import '../Interfaces/RocketPool/IMinipool.sol';
-import '../Interfaces/IConstellationOracle.sol';
+
 import '../Interfaces/IWETH.sol';
 
 import './WETHVault.sol';
-import './RPLVault.sol';
 
 import './Utils/Constants.sol';
 import './Utils/Errors.sol';
-
-import 'hardhat/console.sol';
 
 /**
  * @title SuperNodeAccount
@@ -43,16 +59,11 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     // Mapping of minipool address to the amount of ETH locked
     mapping(address => uint256) public lockedEth;
 
-    // Total amount of ETH locked in for all minipools
-    uint256 public totalEthLocked;
-
     // Lock threshold amount in wei
     uint256 public lockThreshold;
 
     // Variables for admin server message checks (if enabled for minipool creation)
     bool public adminServerCheck;
-    uint256 public adminServerSigExpiry;
-    mapping(bytes => bool) public sigsUsed;
     mapping(address => uint256) public nonces;
     uint256 public nonce;
 
@@ -139,7 +150,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         super.initialize(_directory);
 
         adminServerCheck = true;
-        adminServerSigExpiry = 1 days;
         minimumNodeFee = 14e16;
         bond = 8 ether;
         maxValidators = 1;
@@ -151,19 +161,21 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      */
     function lazyInitialize() external lazyInitializer {
         Directory directory = Directory(_directory);
-        _registerNode('Australia/Brisbane');
+        IRocketNodeManager rnm = IRocketNodeManager(_directory.getRocketNodeManagerAddress());
+        rnm.registerNode('Australia/Brisbane');
         address od = directory.getOperatorDistributorAddress();
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), od, true);
-        lazyInit = true;
-        
         lockThreshold = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getPreLaunchValue();
-        IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(true);
+        rnm.setSmoothingPoolRegistrationState(true);
+        
+        lazyInit = true;
     }
 
     /**
      * @notice This function is responsible for the creation and initialization of a minipool based on the validator's configuration.
      *         It requires that the calling node operator is whitelisted and that the signature provided for the minipool creation is valid (if signature checks are enabled).
      *         It also checks for sufficient liquidity (both RPL and ETH) before proceeding with the creation.
+     *         See the `CreateMinipoolConfig` struct for the parameters required for minipool creation.
      * @dev The function involves multiple steps:
      *      1. Validates that the transaction contains the exact amount of ETH specified in the `lockThreshold` (to prevent depoist contract front-running).
      *      2. Checks if there is sufficient liquidity available for the required bond amount in both RPL and ETH.
@@ -175,18 +187,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      *      8. Adds the minipool to the tracking arrays and mappings.
      *      9. Calls the `OperatorDistributor` to handle liquidity provisioning and event logging for the minipool creation.
      *      10. Finally, it delegates the deposit to the `RocketNodeDeposit` contract with all the required parameters from the configuration.
-     *
-     *      It's crucial that this function is called with correct and validated parameters to ensure the integrity of the node and minipool registration process.
-     *
-     * @notice _config A `ValidatorConfig` struct containing:
-     *        - bondAmount: The amount of ETH to be bonded.
-     *        - minimumNodeFee: Minimum fee for the node operations.
-     *        - validatorPubkey: Public key of the validator.
-     *        - validatorSignature: Signature from the validator for verification.
-     *        - depositDataRoot: Root hash of the deposit data.
-     *        - salt: Random nonce used for generating the expected minipool address.
-     *        - expectedMinipoolAddress: Precomputed address expected to be generated for the new minipool.
-     *        - sig The signature provided for minipool creation; used for admin verification if admin server checks are enabled, ignored otherwise.
      */
     function createMinipool(CreateMinipoolConfig calldata _config) public payable {
         require(msg.value == lockThreshold, 'SuperNode: must set the message value to lockThreshold');
@@ -209,13 +209,11 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         uint256 salt = uint256(keccak256(abi.encodePacked(_config.salt, subNodeOperator)));
         // move the necessary ETH to this contract for use
-        OperatorDistributor(_directory.getOperatorDistributorAddress()).provisionLiquiditiesForMinipoolCreation(bond);
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        od.sendEthForMinipool();
 
         // verify admin server signature if required
         if (adminServerCheck) {
-
-            _validateSigUsed(_config.sig);
-
             address recoveredAddress = ECDSA.recover(
                 ECDSA.toEthSignedMessageHash(
                     keccak256(
@@ -238,7 +236,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         }
 
         lockedEth[_config.expectedMinipoolAddress] = msg.value;
-        totalEthLocked += msg.value;
 
         minipools.push(_config.expectedMinipoolAddress);
 
@@ -250,12 +247,11 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             minipools.length-1
         );
 
-        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         // register minipool with node operator
         Whitelist(getDirectory().getWhitelistAddress()).registerNewValidator(subNodeOperator);
 
         // stake additional RPL to cover the new minipool
-        od.rebalanceRplStake(this.getEthStaked() + bond);
+        od.rebalanceRplStake(getEthStaked() + bond);
 
         // do the deposit!
         IRocketNodeDeposit(_directory.getRocketNodeDepositAddress()).deposit{value: bond}(
@@ -270,6 +266,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
         __subNodeOperatorMinipools__[subNodeOperator].push(_config.expectedMinipoolAddress);
 
+        od.rebalanceWethVault();
+        od.rebalanceRplVault();
+
         emit MinipoolCreated(_config.expectedMinipoolAddress, subNodeOperator);
     }
 
@@ -281,6 +280,13 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      */
     function removeMinipool(address minipool) external onlyProtocol() onlyRecognizedMinipool(address(minipool)) {
         uint256 index = minipoolData[minipool].index;
+        // in case a minipool was dissolved or scrubbed, unlock the ETH and move it to the OD for later use
+        if(lockedEth[minipool] > 0) {
+            uint256 lockupBalance = lockedEth[minipool];
+            lockedEth[minipool] = 0;
+            (bool success, ) = getDirectory().getOperatorDistributorAddress().call{value: lockupBalance}('');
+            require(success, 'ETH transfer failed');
+        }
         address operatorAddress = minipoolData[minipool].subNodeOperator;
         uint256 lastIndex = minipools.length - 1;
         address lastMinipool = minipools[lastIndex];
@@ -290,14 +296,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         delete minipoolData[minipool];
 
         emit MinipoolDestroyed(minipool, operatorAddress);
-    }
-
-    /**
-     * @notice Registers a new node with the specified timezone location.
-     * @param _timezoneLocation The timezone location of the node.
-     */
-    function _registerNode(string memory _timezoneLocation) internal {
-        IRocketNodeManager(_directory.getRocketNodeManagerAddress()).registerNode(_timezoneLocation);
     }
 
     /**
@@ -315,10 +313,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         minipool.stake(_validatorSignature, _depositDataRoot);
 
         // Refund the locked ETH
-        uint256 lockupBalance = lockedEth[_minipool];
-        if (lockupBalance >= 0) {
+        if (lockedEth[_minipool] > 0) {
+            uint256 lockupBalance = lockedEth[_minipool];
             lockedEth[_minipool] = 0;
-            totalEthLocked -= lockupBalance;
             (bool success, ) = msg.sender.call{value: lockupBalance}('');
             require(success, 'ETH transfer failed');
         }
@@ -331,11 +328,9 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * into the system.
      * In future versions, it may be brought into minipool processing to automate the process, but there are a lot of base layer
      * implications to consider before closing, and it would increase gas for the tick.
-     * @param subNodeOperatorAddress Address of the sub-node operator associated with the minipool.
      * @param minipoolAddress Address of the minipool to close.
      */
-    function closeDissolvedMinipool(address subNodeOperatorAddress, address minipoolAddress) external onlyRecognizedMinipool(minipoolAddress) {
-        require(minipoolData[minipoolAddress].subNodeOperator == subNodeOperatorAddress, "operator does not own the specified minipool");
+    function closeDissolvedMinipool(address minipoolAddress) external onlyRecognizedMinipool(minipoolAddress) {
         IMinipool minipool = IMinipool(minipoolAddress);
         Whitelist(getDirectory().getWhitelistAddress()).removeValidator(minipoolData[minipoolAddress].subNodeOperator);
         this.removeMinipool(minipoolAddress);
@@ -374,17 +369,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
     ) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.setUseLatestDelegate(_setting);
-    }
-
-    /**
-     * @notice Validates if a signature has already been used to prevent replay attacks.
-     * @dev This function checks against a mapping to ensure that each signature is used only once,
-     *      adding an additional layer of security by preventing the reuse of signatures in unauthorized transactions.
-     * @param _sig The signature to validate.
-     */
-    function _validateSigUsed(bytes memory _sig) internal {
-        require(!sigsUsed[_sig], 'sig already used');
-        sigsUsed[_sig] = true;
     }
 
     /**
@@ -455,7 +439,7 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
         uint256 newEthBorrowed = IRocketDAOProtocolSettingsMinipool(_directory.getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() - _bond;
         uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(
             rplStaking,
-            this.getEthMatched() + newEthBorrowed
+            getEthMatched() + newEthBorrowed
         );
         return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired && od.balance >= _bond;
     }
@@ -465,14 +449,6 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
 
     function getNumMinipools() external view returns (uint256) {
         return minipools.length;
-    }
-
-    /**
-     * @notice Sets a new admin sig expiry time.
-     * @param _newExpiry The new sig expiry time in seconds.
-     */
-    function setAdminServerSigExpiry(uint256 _newExpiry) external onlyAdmin {
-        adminServerSigExpiry = _newExpiry;
     }
 
     /**

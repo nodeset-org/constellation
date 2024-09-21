@@ -69,18 +69,10 @@ const config: HardhatUserConfig = {
       }
     ]
   },
-  //networks: {
-  //  hardhat: {
-  //    forking: {
-  //      url: process.env.MAINNET_URL as string,
-  //      blockNumber: parseInt(process.env.MAINNET_FORK_NUMBER as string),
-  //    }
-  //  }
-  //},
-
+  
   gasReporter: {
-    enabled: process.env.REPORT_GAS === 'true', // 
-    outputFile: 'gas-report.txt', 
+    enabled: process.env.REPORT_GAS === 'true', //
+    outputFile: 'gas-report.txt',
   },
 
   docgen: {
@@ -96,14 +88,8 @@ const config: HardhatUserConfig = {
       gasPrice: 25000000000,
     },
 
-    goerli: {
-      url: process.env.GOERLI_URL || "" as string,
-      accounts: [process.env.DEPLOYER_PRIVATE_KEY || "" as string],
-    },
-
     holesky: {
       url: process.env.HOLESKY_RPC || "" as string,
-      accounts: [process.env.HOLESKY_DEPLOYER || "" as string, process.env.HOLEKSY_ADMIN || "" as string],
     }
   },
   mocha: {
@@ -119,7 +105,7 @@ const config: HardhatUserConfig = {
     runOnCompile: true,
     disambiguatePaths: false,
   },
-  
+
 };
 
 

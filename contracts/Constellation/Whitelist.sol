@@ -1,4 +1,24 @@
 // SPDX-License-Identifier: GPL v3
+
+/**
+  *    /***        /***          /******                                  /**               /** /**             /**     /**                    
+  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/                    
+  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /******* 
+  *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
+  * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
+  *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
+  *  |  ***|__/|__/***         |  ******||  ****** | **  | ** /*******   | ****  |  *******| **| **| ********  | ****  | **|  ****** | **  | **
+  *   \___/       |___/         \______/  \______/ |__/  |__/|_______/    \___/   \_______/|__/|__/ \_______/   \___/  |__/ \______/ |__/  |__/
+  *
+  *  A liquid staking protocol extending Rocket Pool.
+  *  Made w/ <3 by {::}
+  *
+  *  For more information, visit https://nodeset.io
+  *
+  *  @author Mike Leach (Wander), Nick Steinhilber (NickS), Theodore Clapp (mryamz), Joe Clapis (jcrtp), Huy Nguyen, Andy Rose (Barbalute)
+  *  @custom:security-info https://docs.nodeset.io/nodeset/security-notice
+  **/
+
 pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
@@ -9,8 +29,9 @@ import './Utils/Constants.sol';
 
 /// @notice An operator which provides services to the network.
 struct Operator {
-    uint256 operationStartTime;
     uint256 activeValidatorCount;
+    bool allowed;
+    uint256 nonce;
 }
 
 /**
@@ -25,18 +46,8 @@ contract Whitelist is UpgradeableBase {
     event OperatorRemoved(address);
     event OperatorsRemoved(address[] operators);
 
-    mapping(address => bool) internal _permissions;
-
-    mapping(address => Operator) public nodeMap;
-    mapping(uint256 => address) public nodeIndexMap;
-    mapping(address => uint256) public reverseNodeIndexMap;
-    mapping(bytes => bool) public sigsUsed;
-    mapping(address => uint256) public nonces;
+    mapping(address => Operator) public operators;
     uint256 public nonce;
-
-    uint256 public numOperators;
-
-    uint256 public whitelistSigExpiry;
 
     /**
      * @notice Initializes the Whitelist contract with a directory address.
@@ -44,8 +55,6 @@ contract Whitelist is UpgradeableBase {
      */
     function initializeWhitelist(address directoryAddress) public initializer {
         super.initialize(directoryAddress);
-
-        whitelistSigExpiry = 1 days;
     }
 
     //----
@@ -57,7 +66,7 @@ contract Whitelist is UpgradeableBase {
     /// @param a The address to check.
     /// @return True if the address is in the whitelist, otherwise false.
     function getIsAddressInWhitelist(address a) public view returns (bool) {
-        return _permissions[a];
+        return operators[a].allowed;
     }
 
     /// @notice Retrieves the Operator struct associated with a specific address.
@@ -67,8 +76,7 @@ contract Whitelist is UpgradeableBase {
     /// @return An Operator struct containing details about the operator.
     /// @dev Throws an error if the specified address is not found in the whitelist.
     function getOperatorAtAddress(address a) public view returns (Operator memory) {
-        require(reverseNodeIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
-        return nodeMap[a];
+        return operators[a];
     }
 
     /// @notice Retrieves the number of validators associated with a specific operator address.
@@ -78,18 +86,11 @@ contract Whitelist is UpgradeableBase {
     /// @return The number of validators associated with the specified operator.
     /// @dev Throws an error if the specified address is not found in the whitelist.
     function getActiveValidatorCountForOperator(address a) public view returns (uint) {
-        require(reverseNodeIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
-        return nodeMap[a].activeValidatorCount;
+        return operators[a].activeValidatorCount;
     }
 
-    /// @notice Retrieves the index of an operator based on its address.
-    /// @dev This private function allows the contract to obtain the index of an operator using its address.
-    /// @param a The address of the operator to retrieve the index for.
-    /// @return The index of the operator associated with the specified address.
-    /// @dev Throws an error if the specified address is not found in the whitelist.
-    function getOperatorIndex(address a) private view returns (uint) {
-        require(reverseNodeIndexMap[a] != 0, Constants.OPERATOR_NOT_FOUND_ERROR);
-        return reverseNodeIndexMap[a];
+    function getNonceForOperator(address a) public view returns (uint) {
+        return operators[a].nonce;
     }
 
     //----
@@ -98,31 +99,23 @@ contract Whitelist is UpgradeableBase {
 
     /// @notice Registers a new validator under a specific node operator.
     /// @dev This function allows the protocol to register a new validator under a node operator's address.
-    /// @param nodeOperator The address of the node operator to register the new validator under.
+    /// @param operatorAddress The address of the node operator to register the new validator under.
     /// @dev Increases the validator count for the specified node operator.
-    function registerNewValidator(address nodeOperator) public onlyProtocol {
-        nodeMap[nodeOperator].activeValidatorCount++;
+    function registerNewValidator(address operatorAddress) public onlyProtocol {
+        operators[operatorAddress].activeValidatorCount++;
     }
 
     /// @notice Registers a new validator under a specific node operator.
     /// @dev This function allows the protocol to register a new validator under a node operator's address.
-    /// @param nodeOperator The address of the node operator the validator is being removed from.
+    /// @param operatorAddress The address of the node operator the validator is being removed from.
     /// @dev Decreases the validator count for the specified node operator.
-    function removeValidator(address nodeOperator) public onlyProtocol {
+    function removeValidator(address operatorAddress) public onlyProtocol {
         // ensure this validator is associated with an operator
-        if(nodeMap[nodeOperator].activeValidatorCount == 0) {
+        // if it's not, then the operator may have been removed, so just do nothing
+        if(operators[operatorAddress].activeValidatorCount == 0) {
             return;
         }
-        nodeMap[nodeOperator].activeValidatorCount--;
-    }
-
-    /// @notice Retrieves the address of an operator based on its index.
-    /// @dev This function allows users to obtain the address of an operator using its index.
-    /// @param index The index of the operator whose address is being retrieved.
-    /// @return The address of the operator associated with the specified index.
-    /// @dev If the index is invalid or does not correspond to any operator, the result will be an empty address.
-    function getOperatorAddress(uint index) public view returns (address) {
-        return nodeIndexMap[index];
+        operators[operatorAddress].activeValidatorCount--;
     }
 
     //----
@@ -132,34 +125,22 @@ contract Whitelist is UpgradeableBase {
     /// @notice Adds a new operator to the whitelist.
     /// @dev Ensures that the operator being added is not a duplicate.
     ///      It emits the 'OperatorAdded' event to notify when an operator has been successfully added.
-    /// @param _operator The address of the operator to be added.
+    /// @param operatorAddress The address of the operator to be added.
     /// @dev Throws an error if the operator being added already exists in the whitelist.
-    function addOperator(address _operator, bytes calldata _sig) public {
-        require(!_permissions[_operator], Constants.OPERATOR_DUPLICATE_ERROR);
-        emit OperatorAdded(_addOperator(_operator, _sig));
+    function addOperator(address operatorAddress, bytes calldata sig) public {
+        emit OperatorAdded(_addOperator(operatorAddress, sig));
     }
 
     //----
     // ADMIN
     //----
 
-    function setWhitelistExpiry(uint256 _newExpiry) external onlyAdmin {
-        whitelistSigExpiry = _newExpiry;
-    }
-
     /// @notice Internal function to remove an operator from the whitelist.
     /// @dev This function is used internally to remove an operator from the whitelist, including updating permissions, clearing operator data,
     ///      and notifying the OperatorDistributor and NodeSetOperatorRewardDistributor contracts.
-    /// @param nodeOperator The address of the operator to be removed.
-    function _removeOperator(address nodeOperator) internal {
-        _permissions[nodeOperator] = false;
-
-        delete nodeMap[nodeOperator];
-        uint index = reverseNodeIndexMap[nodeOperator] - 1;
-        delete nodeIndexMap[index];
-        delete reverseNodeIndexMap[nodeOperator];
-
-        numOperators--;
+    /// @param operatorAddress The address of the operator to be removed.
+    function _removeOperator(address operatorAddress) internal {
+        operators[operatorAddress].allowed = false;
     }
 
     /// @notice Removes an operator from the whitelist.
@@ -174,28 +155,25 @@ contract Whitelist is UpgradeableBase {
     /// @notice Batch addition of operators to the whitelist.
     /// @dev This function can only be called by a 24-hour timelock and allows multiple operators to be added to the whitelist simultaneously.
     ///      It checks for duplicates among the provided addresses, adds valid operators, and emits the 'OperatorsAdded' event.
-    /// @param operators An array of addresses representing the operators to be added.
+    /// @param operatorAddresses An array of addresses representing the operators to be added.
     /// @dev Throws an error if any of the operators being added already exist in the whitelist.
-    function addOperators(address[] memory operators, bytes[] memory _sig) public {
-        for (uint i = 0; i < operators.length; i++) {
-            require(!_permissions[operators[i]], Constants.OPERATOR_DUPLICATE_ERROR);
+    function addOperators(address[] memory operatorAddresses, bytes[] memory _sig) public {
+        for (uint i = 0; i < operatorAddresses.length; i++) {
+            _addOperator(operatorAddresses[i], _sig[i]);
         }
-        for (uint i = 0; i < operators.length; i++) {
-            _addOperator(operators[i], _sig[i]);
-        }
-        emit OperatorsAdded(operators);
+        emit OperatorsAdded(operatorAddresses);
     }
 
     /// @notice Batch removal of operators from the whitelist.
     /// @dev This function can only be called by a 24-hour timelock and allows multiple operators to be removed from the whitelist simultaneously.
     ///      It removes valid operators and emits the 'OperatorsRemoved' event.
-    /// @param operators An array of addresses representing the operators to be removed.
+    /// @param operatorAddresses An array of addresses representing the operators to be removed.
     /// @dev Throws no errors during execution.
-    function removeOperators(address[] memory operators) public onlyShortTimelock {
-        for (uint i = 0; i < operators.length; i++) {
-            _removeOperator(operators[i]);
+    function removeOperators(address[] memory operatorAddresses) public onlyShortTimelock {
+        for (uint i = 0; i < operatorAddresses.length; i++) {
+            _removeOperator(operatorAddresses[i]);
         }
-        emit OperatorsRemoved(operators);
+        emit OperatorsRemoved(operatorAddresses);
     }
 
     //----
@@ -214,26 +192,16 @@ contract Whitelist is UpgradeableBase {
         address _operator,
         bytes memory _sig
     ) internal returns (Operator memory) {
-        require(!sigsUsed[_sig], 'sig already used');
-        sigsUsed[_sig] = true;
-        bytes32 messageHash = keccak256(abi.encodePacked(_operator, address(this), nonces[_operator]++, nonce, block.chainid));
-
+        require(!this.getIsAddressInWhitelist(_operator), Constants.OPERATOR_DUPLICATE_ERROR);
+        
+        bytes32 messageHash = keccak256(abi.encodePacked(_operator, address(this), operators[_operator].nonce++, nonce, block.chainid));
         bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
-
         address recoveredAddress = ECDSA.recover(ethSignedMessageHash, _sig);
-        require(_directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress), 'signer must be admin server role');
+        require(_directory.hasRole(Constants.ADMIN_SERVER_ROLE, recoveredAddress), 'bad signature');
 
-        _permissions[_operator] = true;
+        operators[_operator].allowed = true;
 
-        numOperators++;
-
-        Operator memory operator = Operator(block.timestamp, 0);
-
-        nodeMap[_operator] = operator;
-        nodeIndexMap[numOperators] = _operator;
-        reverseNodeIndexMap[_operator] = numOperators + 1;
-
-        return operator;
+        return operators[_operator];
     }
 
     function invalidateAllOutstandingSigs() external onlyAdmin {
@@ -241,6 +209,6 @@ contract Whitelist is UpgradeableBase {
     }
 
     function invalidateSingleOustandingSig(address _nodeOperator) external onlyAdmin {
-        nonces[_nodeOperator]++;
+        operators[_nodeOperator].nonce++;
     }
 }

@@ -1,4 +1,11 @@
-import { RocketNetworkBalances, RocketNetworkFees, RocketNetworkPrices, RocketNetworkWithdrawal } from '../_utils/artifacts';
+import {
+    RocketNetworkBalances, RocketNetworkBalancesNew,
+    RocketNetworkFees,
+    RocketNetworkPrices, RocketNetworkPricesNew,
+    RocketNetworkVoting,
+    RocketNetworkWithdrawal,
+} from '../_utils/artifacts';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Get the network total ETH balance
@@ -26,22 +33,32 @@ export async function getETHUtilizationRate() {
 
 
 // Submit network balances
-export async function submitBalances(block, totalEth, stakingEth, rethSupply, txOptions) {
-    const rocketNetworkBalances = await RocketNetworkBalances.deployed();
-    await rocketNetworkBalances.submitBalances(block, totalEth, stakingEth, rethSupply, txOptions);
+export async function submitBalances(block, slotTimestamp, totalEth, stakingEth, rethSupply, txOptions) {
+    if (await upgradeExecuted()) {
+        const rocketNetworkBalances = await RocketNetworkBalancesNew.deployed();
+        await rocketNetworkBalances.submitBalances(block, slotTimestamp, totalEth, stakingEth, rethSupply, txOptions);
+    } else {
+        const rocketNetworkBalances = await RocketNetworkBalances.deployed();
+        await rocketNetworkBalances.submitBalances(block, totalEth, stakingEth, rethSupply, txOptions);
+    }
 }
 
 
 // Submit network token prices
-export async function submitPrices(block, rplPrice, txOptions) {
-    const rocketNetworkPrices = await RocketNetworkPrices.deployed();
-    await rocketNetworkPrices.submitPrices(block, rplPrice, txOptions);
+export async function submitPrices(block, slotTimestamp, rplPrice, txOptions) {
+    if (await upgradeExecuted()) {
+        const rocketNetworkPrices = await RocketNetworkPricesNew.deployed();
+        await rocketNetworkPrices.submitPrices(block, slotTimestamp, rplPrice, txOptions);
+    } else {
+        const rocketNetworkPrices = await RocketNetworkPrices.deployed();
+        await rocketNetworkPrices.submitPrices(block, rplPrice, txOptions);
+    }
 }
 
 
 // Get network RPL price
 export async function getRPLPrice() {
-    const rocketNetworkPrices = await RocketNetworkPrices.deployed();
+    const rocketNetworkPrices = (await upgradeExecuted()) ? await RocketNetworkPricesNew.deployed() : await RocketNetworkPrices.deployed();
     let price = await rocketNetworkPrices.getRPLPrice.call();
     return price;
 }
@@ -71,4 +88,8 @@ export async function getNodeFeeByDemand(nodeDemand) {
 }
 
 
+export async function setDelegate(nodeAddress, txOptions) {
+    const rocketNetworkVoting = await RocketNetworkVoting.deployed();
+    await rocketNetworkVoting.setDelegate(nodeAddress, txOptions);
+}
 

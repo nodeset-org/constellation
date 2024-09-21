@@ -1,9 +1,8 @@
 import { ethers, upgrades } from 'hardhat';
 import { setDefaultParameters } from '../../test/rocketpool/_helpers/defaults';
 import { deployRocketPool } from '../../test/rocketpool/_helpers/deployment';
-import { MockSanctions, WETH } from '../../typechain-types';
 import { fastDeployProtocol, retryOperation } from '../utils/deployment';
-import { createSigners, Protocol } from '../../test/test';
+import { createSigners, Protocol } from '../../test/integration/integration';
 
 export type SandboxDeployments = Protocol;
 
@@ -11,7 +10,6 @@ export const setupSandbox = async () => {
   const [deployer, admin] = await ethers.getSigners();
 
   console.log('deploying RP...');
-
   const rocketStorage = await deployRocketPool();
   await setDefaultParameters();
 
@@ -35,16 +33,19 @@ export const setupSandbox = async () => {
   console.log('sanctions address', sanctions.address);
 
   const { directory } = await fastDeployProtocol(
-    admin,
-    deployer,
-    admin,
-    deployer,
-    admin,
-    rocketStorage.address,
-    wETH.address,
-    sanctions.address,
-    admin.address,
-    true
+    admin.address, // treasurer
+    deployer, // deployer
+    admin.address, // nodesetAdmin
+    admin.address, // nodesetServerAdmin
+    admin.address, // adminServer
+    admin, // directoryDeployer
+    admin.address, // adminOracle
+    rocketStorage.address, // rocketStorage
+    wETH.address, // weth
+    sanctions.address, // sanctions
+    admin.address, // admin
+    true, // log
+    true // localDev
   );
 
   // set adminServer to be ADMIN_SERVER_ROLE

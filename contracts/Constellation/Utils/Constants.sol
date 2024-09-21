@@ -1,4 +1,24 @@
 // SPDX-License-Identifier: GPL v3
+
+/**
+  *    /***        /***          /******                                  /**               /** /**             /**     /**                    
+  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/                    
+  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /******* 
+  *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
+  * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
+  *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
+  *  |  ***|__/|__/***         |  ******||  ****** | **  | ** /*******   | ****  |  *******| **| **| ********  | ****  | **|  ****** | **  | **
+  *   \___/       |___/         \______/  \______/ |__/  |__/|_______/    \___/   \_______/|__/|__/ \_______/   \___/  |__/ \______/ |__/  |__/
+  *
+  *  A liquid staking protocol extending Rocket Pool.
+  *  Made w/ <3 by {::}
+  *
+  *  For more information, visit https://nodeset.io
+  *
+  *  @author Mike Leach (Wander), Nick Steinhilber (NickS), Theodore Clapp (mryamz), Joe Clapis (jcrtp), Huy Nguyen, Andy Rose (Barbalute)
+  *  @custom:security-info https://docs.nodeset.io/nodeset/security-notice
+  **/
+
 pragma solidity 0.8.17;
 
 /**
@@ -25,6 +45,9 @@ library Constants {
     // DIRECTORY
     string public constant CONTRACT_NOT_FOUND_ERROR = 'Directory: contract not found!';
     string public constant ADMIN_ONLY_ERROR = 'Directory: may only be called by admin address!';
+    string public constant TIMELOCK_SHORT_ONLY_ERROR = 'Directory: may only be called by short timelock address!';
+    string public constant TIMELOCK_MED_ONLY_ERROR = 'Directory: may only be called by medium timelock address!';
+    string public constant TIMELOCK_LONG_ONLY_ERROR = 'Directory: may only be called by long timelock address!';
     string public constant TREASURER_ONLY_ERROR = 'Directory: may only be called by treasurer address!';
     string public constant INITIALIZATION_ERROR = 'Directory: bad initialization!';
 

@@ -1,12 +1,31 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL v3
+
+/**
+  *    /***        /***          /******                                  /**               /** /**             /**     /**                    
+  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/                    
+  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /******* 
+  *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
+  * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
+  *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
+  *  |  ***|__/|__/***         |  ******||  ****** | **  | ** /*******   | ****  |  *******| **| **| ********  | ****  | **|  ****** | **  | **
+  *   \___/       |___/         \______/  \______/ |__/  |__/|_______/    \___/   \_______/|__/|__/ \_______/   \___/  |__/ \______/ |__/  |__/
+  *
+  *  A liquid staking protocol extending Rocket Pool.
+  *  Made w/ <3 by {::}
+  *
+  *  For more information, visit https://nodeset.io
+  *
+  *  @author Mike Leach (Wander), Nick Steinhilber (NickS), Theodore Clapp (mryamz), Joe Clapis (jcrtp), Huy Nguyen, Andy Rose (Barbalute)
+  *  @custom:security-info https://docs.nodeset.io/nodeset/security-notice
+  **/
+
+pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 import '../Interfaces/IConstellationOracle.sol';
 import './Utils/UpgradeableBase.sol';
 import './SuperNodeAccount.sol';
 import './WETHVault.sol';
-
-pragma solidity 0.8.17;
 
 /**
  * @title PoAConstellationOracle
@@ -29,8 +48,6 @@ contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
     /// @dev This takes into account the validator and minipool contract balances
     int256 internal _totalYieldAccrued;
     uint256 internal _lastUpdatedTotalYieldAccrued;
-
-    constructor() initializer {}
 
     /**
      * @notice Initializes the oracle with the specified directory address.
@@ -74,6 +91,7 @@ contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
             'signer must have permission from admin oracle role'
         );
         require(sigData.timeStamp > _lastUpdatedTotalYieldAccrued, 'cannot update oracle using old data');
+        require(sigData.timeStamp <= block.timestamp, 'cannot update oracle using future data');
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
 

@@ -1,4 +1,24 @@
 // SPDX-License-Identifier: GPL v3
+
+/**
+  *    /***        /***          /******                                  /**               /** /**             /**     /**                    
+  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/                    
+  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /******* 
+  *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
+  * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
+  *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
+  *  |  ***|__/|__/***         |  ******||  ****** | **  | ** /*******   | ****  |  *******| **| **| ********  | ****  | **|  ****** | **  | **
+  *   \___/       |___/         \______/  \______/ |__/  |__/|_______/    \___/   \_______/|__/|__/ \_______/   \___/  |__/ \______/ |__/  |__/
+  *
+  *  A liquid staking protocol extending Rocket Pool.
+  *  Made w/ <3 by {::}
+  *
+  *  For more information, visit https://nodeset.io
+  *
+  *  @author Mike Leach (Wander), Nick Steinhilber (NickS), Theodore Clapp (mryamz), Joe Clapis (jcrtp), Huy Nguyen, Andy Rose (Barbalute)
+  *  @custom:security-info https://docs.nodeset.io/nodeset/security-notice
+  **/
+
 pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol';
@@ -7,16 +27,18 @@ import './RPLVault.sol';
 import './Utils/PriceFetcher.sol';
 import './Utils/UpgradeableBase.sol';
 import './MerkleClaimStreamer.sol';
-import './Utils/Constants.sol';
-import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/IConstellationOracle.sol';
-import '../Interfaces/IWETH.sol';
-
-import 'hardhat/console.sol';
 
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
+
+    event MaxWethRplRatioChanged(uint256 oldValue, uint256 newValue);
+    event TreasuryFeeChanged(uint256 oldValue, uint256 newValue);
+    event NodeOperatorFeeChanged(uint256 oldValue, uint256 newValue);
+    event WETHLiquidityReservePercentChanged(uint256 oldValue, uint256 newValue);
+    event MintFeeChanged(uint256 oldValue, uint256 newValue);
+    event DepositsEnabledChanged(bool oldValue, bool newValue);
 
     string constant NAME = 'Constellation ETH';
     string constant SYMBOL = 'xrETH';
@@ -41,7 +63,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     // see the original issue for RP for more details: https://consensys.io/diligence/audits/2021/04/rocketpool/#rockettokenreth---sandwiching-opportunity-on-price-updates
     uint256 public mintFee;
 
-    constructor() initializer {}
+    bool public depositsEnabled;
 
     /**
      * @notice Initializes the vault with necessary parameters and settings.
@@ -56,18 +78,20 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         ERC20Upgradeable.__ERC20_init(NAME, SYMBOL);
 
         liquidityReservePercent = 0.1e18; // 10% of TVL
-        maxWethRplRatio = 40e18; // 400% at start (4 ETH of xrETH for 1 ETH of xRPL)
+        maxWethRplRatio = 4e18; // 400% at start (4 ETH of xrETH for 1 ETH of xRPL)
 
         // default fees with 14% rETH commission mean WETHVault share returns are equal to base ETH staking rewards
         treasuryFee = 0.14788e18; 
         nodeOperatorFee = 0.14788e18;
         mintFee = 0.0003e18; // .03% by default
+        depositsEnabled = true;
     }
 
     /**
      * @notice Handles deposits into the vault, ensuring compliance with RPL coverage ratio and distribution of fees.
      * @dev This function first checks if the RPL coverage ratio is below the maximum threshold, and then continues with the deposit process. 
-     * It updates the depositor's position, and distributes the assets to the OperatorDistributor for utilization.
+     * It updates the depositor's position, and distributes the assets to the OperatorDistributor for utilization. Also processes a minipool
+     * and rebalances ETH & WETH liquidity.
      * @param caller The address initiating the deposit.
      * @param receiver The address designated to receive the issued shares for the deposit.
      * @param assets The amount of assets being deposited.
@@ -79,6 +103,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 assets,
         uint256 shares
     ) internal virtual override nonReentrant {
+        require(depositsEnabled, "deposits are disabled"); // emergency switch for deposits
         require(caller == receiver, 'caller must be receiver');
         if (_directory.isSanctioned(caller, receiver)) {
             return;
@@ -87,7 +112,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         
         require(tvlRatioEthRpl(assets, true) <= maxWethRplRatio, 'insufficient RPL coverage');
 
-        uint256 mintFeePortion = this.getMintFeePortion(assets);
+        uint256 mintFeePortion = getMintFeePortion(assets);
 
         super._deposit(caller, receiver, assets, shares);
         
@@ -102,9 +127,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Handles withdrawals from the vault, updating the position and distributing fees to operators and the treasury.
+     * @notice Handles withdrawals from the vault.
      * @dev This function distributes the assets to the receiver and also transfers the assets from the OperatorDistributor as necessary.
-     * May revert if the liquidity reserves are too low.
+     * May revert if the liquidity reserves are too low. Processes a minipool before withdrawing, then rebalances the protocol's ETH & WETH liquidity.
      * @param caller The address initiating the withdrawal.
      * @param receiver The address designated to receive the withdrawn assets.
      * @param owner The address that owns the shares being redeemed.
@@ -119,30 +144,42 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 shares
     ) internal virtual override nonReentrant {
         require(caller == receiver, 'caller must be receiver');
-        if (_directory.isSanctioned(caller, receiver)) {
-            return;
-        }
-        require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
+        
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         // first process a minipool to give the best chance at actually withdrawing
         od.processNextMinipool();
+        require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
 
         // required violation of CHECKS/EFFECTS/INTERACTIONS: need to change WETH balance here before rebalancing the rest of the protocol
         super._withdraw(caller, receiver, owner, assets, shares);
 
-        od.rebalanceWethVault();
+        // rebalance again just in case there are no minipools to process, which skips the rebalance call in that function
+        od.rebalanceWethVault(); 
+    }
+
+    function _transfer(
+        address sender,
+        address recipient,
+        uint256 shares
+    ) internal virtual override {
+        if (_directory.isSanctioned(sender, recipient)) {
+            return;
+        }
+        super._transfer(sender, recipient, shares);
     }
 
     /// @dev Preview taking an entry fee on deposit. See {IERC4626-previewDeposit}.
+    /// @return The amount of shares that will be received with the deposit amount specified.
     function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
-        uint256 fee = this.getMintFeePortion(assets);
+        uint256 fee = getMintFeePortion(assets);
         return super.previewDeposit(assets - fee);
     }
 
     /// @dev Preview adding an entry fee on mint. See {IERC4626-previewMint}.
+    /// @return The amount of assets that must be deposited to receive the shares specified.
     function previewMint(uint256 shares) public view virtual override returns (uint256) {
         uint256 assets = super.previewMint(shares);
-        return assets + this.getMintFeePortion(assets);
+        return assets + getAdditionalMintFeeToReceive(assets);
     }
 
     /**
@@ -177,7 +214,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function totalAssets() public view override returns (uint256) {
         OperatorDistributor od = OperatorDistributor(getDirectory().getOperatorDistributorAddress());
-        (uint256 distributableYield, bool signed) = this.getDistributableYield();
+        (uint256 distributableYield, bool signed) = getDistributableYield();
         uint256 merkleRewards = MerkleClaimStreamer(getDirectory().getMerkleClaimStreamerAddress()).getStreamedTvlEth();
         return (
             uint256(
@@ -207,19 +244,53 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
+     * @notice Convenience function for determining if a particular deposit amount will be allowed or rejected
+     */
+    function getIsDepositAllowed(uint256 amount) public view returns (bool) {
+        return tvlRatioEthRpl(amount, true) <= maxWethRplRatio;
+    }
+
+    /**
+     * @notice Convenience function for determining if a particular withdraw amount will be allowed or rejected
+     */
+    function getIsWithdrawAllowed(uint256 amount) public view returns (bool) {
+        return IERC20(asset()).balanceOf(address(this)) >= amount;
+    }
+
+    /**
+     * @notice Convenience function for viewing the maximum withdrawal allowed
+     */
+    function getMaximumWithdrawAmount() public view returns (uint256) {
+        return IERC20(asset()).balanceOf(address(this));
+    }
+
+    /**
+     * @notice Convenience function for viewing the maximum depoosit allowed
+     */
+    function getMaximumDeposit() public view returns (uint256) {
+        uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress()).totalAssets();
+        uint256 tvlEth = totalAssets();
+        uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+
+        if(rplPerEth == 0) return type(uint256).max;
+
+        return ((maxWethRplRatio * tvlRpl) / rplPerEth) - tvlEth;
+    }
+
+    /**
      * @notice Calculates the missing liquidity needed to meet the liquidity reserve after a specified deposit.
      * @dev Compares the current balance with the required liquidity based on the total assets including the deposit and mint fee.
      * @param deposit The amount of the new deposit to consider in the liquidity calculation.
      * @return The amount of liquidity required after the specified deposit.
      */
     function getMissingLiquidityAfterDeposit(uint256 deposit) public view returns (uint256) {
-        uint256 fullBalance = totalAssets() + deposit - this.getMintFeePortion(deposit);
+        uint256 fullBalance = totalAssets() + deposit - getMintFeePortion(deposit);
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
         uint256 requiredBalance = liquidityReservePercent.mulDiv(fullBalance, 1e18, Math.Rounding.Up);
         return requiredBalance > currentBalance ? requiredBalance - currentBalance: 0;
     }
 
-    /// @dev for dev/testing
+    /// @dev Calculates the missing liquidity needed to meet the liquidity reserve after a specified deposit without considering the mint fee.
     function getMissingLiquidityAfterDepositNoFee(uint256 deposit) public view returns (uint256) {
         uint256 fullBalance = totalAssets() + deposit;
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
@@ -244,12 +315,18 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         return income - income.mulDiv((treasuryFee + nodeOperatorFee), 1e18);
     }
 
+    /// @notice Calculates the fee assets that must be added to make a deposit of `_amount` size.
     /// @notice Calculates the mint fee portion of a specific deposit amount.
     /// @param _amount The deposit expected
-    function getMintFeePortion(uint256 _amount) external view returns (uint256) {
+    function getAdditionalMintFeeToReceive(uint256 _amount) public view returns (uint256) {
         return _amount.mulDiv(mintFee, 1e18, Math.Rounding.Up);
     }
 
+    /// @notice Calculates the mint fee portion of a specific deposit amount.
+    /// @param _amount The desired deposit amount
+    function getMintFeePortion(uint256 _amount) public view returns (uint256) {
+        return _amount.mulDiv(mintFee, mintFee + 1e18, Math.Rounding.Up);
+    }
 
     /// Calculates the treasury portion of a specific RPL reward amount.
     /// @param _amount The RPL reward expected
@@ -273,6 +350,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _maxWethRplRatio The new ETH/RPL coverage ratio to be set.
      */
     function setMaxWethRplRatio(uint256 _maxWethRplRatio) external onlyShortTimelock {
+        require(_maxWethRplRatio != maxWethRplRatio, 'WETHVault: new maxWethRplRatio value must be different than existing value');
+        emit MaxWethRplRatioChanged(maxWethRplRatio, _maxWethRplRatio);
         maxWethRplRatio = _maxWethRplRatio;
     }
 
@@ -283,8 +362,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _treasuryFee The new treasury fee (1e18 = 100%).
      */
     function setTreasuryFee(uint256 _treasuryFee) external onlyMediumTimelock {
-        require(_treasuryFee <= 1e18, 'Fee too high');
         require(_treasuryFee + nodeOperatorFee <= 1e18, 'Total fees cannot exceed 100%');
+        require(_treasuryFee != treasuryFee, 'WETHVault: new treasury fee value must be different than existing value');
+        emit TreasuryFeeChanged(treasuryFee, _treasuryFee);
         treasuryFee = _treasuryFee;
     }
 
@@ -295,8 +375,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _nodeOperatorFee The new node operator fee (1e18 = 100%).
      */
     function setNodeOperatorFee(uint256 _nodeOperatorFee) external onlyMediumTimelock {
-        require(_nodeOperatorFee <= 1e18, 'Fee too high');
         require(treasuryFee + _nodeOperatorFee <= 1e18, 'Total fees cannot exceed 100%');
+        require(_nodeOperatorFee != nodeOperatorFee, 'WETHVault: new operator fee must be different than existing value');
+        emit NodeOperatorFeeChanged(nodeOperatorFee, _nodeOperatorFee);
         nodeOperatorFee = _nodeOperatorFee;
     }
 
@@ -308,9 +389,14 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _treasuryFee The new treasury fee.
      */
     function setProtocolFees(uint256 _nodeOperatorFee, uint256 _treasuryFee) external onlyMediumTimelock {
-        require(_treasuryFee <= 1e18, 'Fee too high');
-        require(_nodeOperatorFee <= 1e18, 'Fee too high');
         require(_treasuryFee + _nodeOperatorFee <= 1e18, 'Total fees cannot exceed 100%');
+        
+        require(_nodeOperatorFee != nodeOperatorFee, 'WETHVault: new operator fee must be different than existing value');
+        emit NodeOperatorFeeChanged(nodeOperatorFee, _nodeOperatorFee);
+
+        require(_treasuryFee != treasuryFee, 'WETHVault: new treasury fee value must be different than existing value');
+        emit TreasuryFeeChanged(treasuryFee, _treasuryFee);
+        
         nodeOperatorFee = _nodeOperatorFee;
         treasuryFee = _treasuryFee;
     }
@@ -325,9 +411,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
     function setLiquidityReservePercent(uint256 _liquidityReservePercent) external onlyShortTimelock {
-        require(_liquidityReservePercent >= 0, 'WETHVault: liquidity reserve percentage must be positive');
-        require(_liquidityReservePercent <= 1e18, 'WETHVault: liquidity reserve percentage must be less than or equal to 100%');
-
+        require(_liquidityReservePercent <= 1e18, 'WETHVault: liquidity reserve percentage must be between 0% and 100% (1e18)');
+        require(_liquidityReservePercent != liquidityReservePercent, 'WETHVault: new liquidity reserve percentage value must be different than existing value');
+        emit WETHLiquidityReservePercentChanged(liquidityReservePercent, _liquidityReservePercent);
         liquidityReservePercent = _liquidityReservePercent;
 
         // rebalance entire balance of the contract to ensure the new liquidity reserve is respected
@@ -337,7 +423,15 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     function setMintFee(uint256 newMintFee) external onlyMediumTimelock() {
-        require(newMintFee >= 0 && newMintFee <= 1e18, "new mint fee must be between 0 and 100%");
+        require(newMintFee <= 1e18, "WETHVault: new mint fee must be between 0% and 100% (1e18)");
+        require(newMintFee != mintFee, 'WETHVault: new mint fee value must be different than existing value');
+        emit MintFeeChanged(mintFee, newMintFee);
         mintFee = newMintFee;
+    }
+
+    function setDepositsEnabled(bool _newValue) external onlyAdmin {
+        require(_newValue != depositsEnabled, 'WETHVault: new depositsEnabled value must be different than existing value');
+        emit DepositsEnabledChanged(depositsEnabled, _newValue);
+        depositsEnabled = _newValue;
     }
 }

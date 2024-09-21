@@ -1,4 +1,24 @@
 // SPDX-License-Identifier: GPL v3
+
+/**
+  *    /***        /***          /******                                  /**               /** /**             /**     /**                    
+  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/                    
+  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /******* 
+  *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
+  * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
+  *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
+  *  |  ***|__/|__/***         |  ******||  ****** | **  | ** /*******   | ****  |  *******| **| **| ********  | ****  | **|  ****** | **  | **
+  *   \___/       |___/         \______/  \______/ |__/  |__/|_______/    \___/   \_______/|__/|__/ \_______/   \___/  |__/ \______/ |__/  |__/
+  *
+  *  A liquid staking protocol extending Rocket Pool.
+  *  Made w/ <3 by {::}
+  *
+  *  For more information, visit https://nodeset.io
+  *
+  *  @author Mike Leach (Wander), Nick Steinhilber (NickS), Theodore Clapp (mryamz), Joe Clapis (jcrtp), Huy Nguyen, Andy Rose (Barbalute)
+  *  @custom:security-info https://docs.nodeset.io/nodeset/security-notice
+  **/
+
 pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol';
@@ -12,7 +32,7 @@ import './MerkleClaimStreamer.sol';
 import './Utils/UpgradeableBase.sol';
 import './OperatorDistributor.sol';
 
-import 'hardhat/console.sol';
+import './Utils/PriceFetcher.sol';
 
 /**
  * @title RPLVault
@@ -22,7 +42,10 @@ import 'hardhat/console.sol';
  */
 contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
-    event TreasuryFeeClaimed(uint256 amount);
+
+    event TreasuryFeeChanged(uint256 oldFee, uint256 newFee);
+    event MinWethRplRatioChanged(uint256 oldValue, uint256 newValue);
+    event RPLLiquidityReservePercentChanged(uint256 oldValue, uint256 newValue);
 
     string constant NAME = 'Constellation RPL';
     string constant SYMBOL = 'xRPL';
@@ -42,8 +65,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     uint256 public minWethRplRatio;
 
-    constructor() initializer {}
-
+    bool public depositsEnabled;
+    
     /**
      * @notice Initializes the vault with necessary parameters and settings.
      * @dev This function sets up the vault's token references, fee structures, and various configurations. It's intended to be called once after deployment.
@@ -58,20 +81,22 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         liquidityReservePercent = 0.02e18;
         minWethRplRatio = 0; // 0% by default
         treasuryFee = 0.01e18;
+        depositsEnabled = true;
     }
 
     /**
-     * @notice Handles deposits into the vault, ensuring compliance with WETH coverage ratio and distribution of fees.
-     * @dev This function first checks if the WETH coverage ratio after deposit will still be above the threshold, and then continues with the deposit process.
-     * It takes a fee based on the deposit amount and distributes the fee to the treasury.
-     * The rest of the deposited amount is transferred to the OperatorDistributor for utilization.
+     * @notice Handles deposits into the vault, ensuring compliance with WETH coverage ratio.
+     * @dev This function first checks if the WETH coverage ratio after deposit will still be above the threshold, 
+     * and then continues with the deposit process. The deposited amount is transferred to the OperatorDistributor for utilization.
      * This function overrides the `_deposit` function in the parent contract to ensure custom business logic is applied.
+     * Processes a minipool after depositing, then rebalances the RPL liquidity.
      * @param caller The address initiating the deposit.
      * @param receiver The address designated to receive the issued shares for the deposit.
      * @param assets The amount of assets being deposited.
      * @param shares The number of shares to be exchanged for the deposit.
      */
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
+        require(depositsEnabled, "deposits are disabled"); // emergency switch for deposits
         require(caller == receiver, 'caller must be receiver');
         if (_directory.isSanctioned(caller, receiver)) {
             return;
@@ -87,13 +112,14 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));
 
         od.processNextMinipool();
-        od.rebalanceRplVault();
+        od.rebalanceRplVault();  // just in case there are no minipools to process, rebalance anyway
     }
 
     /**
-     * @notice Handles withdrawals from the vault, distributing fees to the treasury.
+     * @notice Handles withdrawals from the vault.
      * @dev This function overrides the `_withdraw` function in the parent contract to
      * ensure custom business logic is applied. May revert if the liquidity reserves are too low.
+     * Processes a minipool before withdrawing, then rebalances the RPL liquidity.
      * @param caller The address initiating the withdrawal.
      * @param receiver The address designated to receive the withdrawn assets.
      * @param owner The address that owns the shares being redeemed.
@@ -107,18 +133,27 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 shares
     ) internal virtual override {
         require(caller == receiver, 'caller must be receiver');
-        if (_directory.isSanctioned(caller, receiver)) {
-            return;
-        }
-        require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
         
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         // first process a minipool to give the best chance at actually withdrawing
         od.processNextMinipool();
 
+        require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
+
         super._withdraw(caller, receiver, owner, assets, shares);
         
-        od.rebalanceRplVault();
+        od.rebalanceRplVault(); // just in case there are no minipools to process, rebalance anyway
+    }
+
+    function _transfer(
+        address sender,
+        address recipient,
+        uint256 shares
+    ) internal virtual override {
+        if (_directory.isSanctioned(sender, recipient)) {
+            return;
+        }
+        super._transfer(sender, recipient, shares);
     }
 
     /**
@@ -154,6 +189,46 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         return getMissingLiquidityAfterDeposit(0);
     }
 
+    /// Calculates the treasury portion of a specific RPL reward amount.
+    /// @param _amount The RPL reward expected
+    function getTreasuryPortion(uint256 _amount) external view returns (uint256) {
+        return _amount.mulDiv(treasuryFee, 1e18);
+    }
+
+    /**
+     * @notice Convenience function for determining if a particular deposit amount will be allowed or rejected
+     */
+    function getIsDepositAllowed(uint256 amount) public view returns (bool) {
+        return WETHVault(_directory.getWETHVaultAddress()).tvlRatioEthRpl(amount, false) >= minWethRplRatio;
+    }
+
+    /**
+     * @notice Convenience function for determining if a particular withdraw amount will be allowed or rejected
+     */
+    function getIsWithdrawAllowed(uint256 amount) public view returns (bool) {
+        return IERC20(asset()).balanceOf(address(this)) >= amount;
+    }
+
+    /**
+     * @notice Convenience function for viewing the maximum withdrawal allowed
+     */
+    function getMaximumWithdrawAmount() public view returns (uint256) {
+        return IERC20(asset()).balanceOf(address(this));
+    }
+
+    /**
+     * @notice Convenience function for viewing the maximum depoosit allowed
+     */
+    function getMaximumDeposit() public view returns (uint256) {
+        if(minWethRplRatio == 0) return type(uint256).max;
+        
+        uint256 tvlRpl = totalAssets();
+        uint256 tvlEth = WETHVault(getDirectory().getWETHVaultAddress()).totalAssets();
+        uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+
+        return ((tvlEth * rplPerEth) / minWethRplRatio) - tvlRpl;
+    }
+
     /**ADMIN FUNCTIONS */
 
     /**
@@ -165,6 +240,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function setTreasuryFee(uint256 _treasuryFee) external onlyMediumTimelock {
         require(_treasuryFee <= 1e18, 'Fee too high');
+        require(_treasuryFee != treasuryFee, 'RPLVault: new treasury fee value must be different than existing value');
+        emit TreasuryFeeChanged(treasuryFee, _treasuryFee);
         treasuryFee = _treasuryFee;
     }
 
@@ -176,6 +253,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _minWethRplRatio The new WETH coverage ratio to be set (in base points).
      */
     function setMinWethRplRatio(uint256 _minWethRplRatio) external onlyShortTimelock {
+        require(_minWethRplRatio != minWethRplRatio, 'RPLVault: new minWethRplRatio value must be different than existing value');
+        emit MinWethRplRatioChanged(minWethRplRatio, _minWethRplRatio);
         minWethRplRatio = _minWethRplRatio;
     }
 
@@ -189,9 +268,11 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
     function setLiquidityReservePercent(uint256 _liquidityReservePercent) external onlyShortTimelock {
-        require(_liquidityReservePercent >= 0, 'RPLVault: liquidity reserve percentage must be positive');
         require(_liquidityReservePercent <= 1e18, 'RPLVault: liquidity reserve percentage must be less than or equal to 100%');
-       
+        require(_liquidityReservePercent != liquidityReservePercent, 'RPLVault: new liquidityReservePercent value must be different than existing value');
+
+        emit RPLLiquidityReservePercentChanged(liquidityReservePercent, _liquidityReservePercent);
+
         liquidityReservePercent = _liquidityReservePercent;
 
         // rebalance entire balance of the contract to ensure the new liquidity reserve is respected
@@ -201,9 +282,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         od.rebalanceRplStake(SuperNodeAccount(getDirectory().getSuperNodeAddress()).getEthStaked());
     }
 
-    /// Calculates the treasury portion of a specific RPL reward amount.
-    /// @param _amount The RPL reward expected
-    function getTreasuryPortion(uint256 _amount) external view returns (uint256) {
-        return _amount.mulDiv(treasuryFee, 1e18);
+    function setDepositsEnabled(bool _newValue) external onlyAdmin {
+        depositsEnabled = _newValue;
     }
 }
