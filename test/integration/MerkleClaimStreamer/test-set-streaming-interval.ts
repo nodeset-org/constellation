@@ -33,7 +33,7 @@ describe("setStreamingInterval()", async () => {
                         const { protocol, signers, rocketPool } = setupData;
 
                         const initial = await protocol.merkleClaimStreamer.streamingInterval();
-                        await expect(protocol.merkleClaimStreamer.connect(signers.admin).setStreamingInterval(initial)).to.be.revertedWith("New streaming interval must be different");
+                        await expect(protocol.merkleClaimStreamer.connect(signers.admin).setStreamingInterval(initial)).to.be.revertedWith("MerkleClaimStreamer: new streaming interval must be different");
                     })
                 })
             })
@@ -69,7 +69,7 @@ describe("setStreamingInterval()", async () => {
                         expect(initial).not.equals(final);
                         expect(final).equals(oneYearInSeconds);
 
-                        await expect(protocol.merkleClaimStreamer.connect(signers.admin).setStreamingInterval(oneYearInSeconds)).to.be.revertedWith("New streaming interval must be different");
+                        await expect(protocol.merkleClaimStreamer.connect(signers.admin).setStreamingInterval(oneYearInSeconds)).to.be.revertedWith("MerkleClaimStreamer: new streaming interval must be different");
                     })
                 })
             })
