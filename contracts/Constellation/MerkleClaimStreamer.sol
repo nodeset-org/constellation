@@ -106,11 +106,21 @@ contract MerkleClaimStreamer is UpgradeableBase {
         return timeSinceLastClaim < streamingInterval ? priorRplStreamAmount * timeSinceLastClaim / streamingInterval : priorRplStreamAmount;
     }
 
+    /// @notice Updates the prior streamed amounts to reflect the current balances
+    /// @dev Called automatically during a merkle claim submission or if the streaming interval is changed
+    function updatePriorStreamAmounts() private {
+        priorRplStreamAmount = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
+        priorEthStreamAmount = address(this).balance;
+    }
+
     /// @notice Sweeps the full amount of streamed TVL into the rest of the protocol. Only callable if the full streaming interval has passed.
-    /// @dev Called automaticlly during a merkle claim submission or if the streaming interval is changed
+    /// @dev Called automatically during a merkle claim submission or if the streaming interval is changed
     function sweepLockedTVL() public onlyProtocol {
         require(block.timestamp - lastClaimTime > streamingInterval, "Current streaming interval is not finished");
-        if(priorEthStreamAmount == 0 && priorRplStreamAmount == 0) return; // if both ethAmount and rplAmount are 0 there is nothing to do
+        if(priorEthStreamAmount == 0 && priorRplStreamAmount == 0) {
+            updatePriorStreamAmounts();
+            return; // if both ethAmount and rplAmount are 0 there is nothing to do except update state
+        }
         
         address payable odAddress = getDirectory().getOperatorDistributorAddress();
         OperatorDistributor od = OperatorDistributor(odAddress);
@@ -126,9 +136,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
             od.rebalanceRplVault();
         }
 
-        // anything remaining at this point is counted as rewards for the next streaming interval 
-        priorRplStreamAmount = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
-        priorEthStreamAmount = address(this).balance;
+        updatePriorStreamAmounts();
     }
 
     /**
