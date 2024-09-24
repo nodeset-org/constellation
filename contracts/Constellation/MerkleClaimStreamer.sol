@@ -82,7 +82,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
         require(_newStreamingInterval > 0 seconds && _newStreamingInterval <= 365 days, "New streaming interval must be > 0 seconds and <= 365 days");
         require(_newStreamingInterval != streamingInterval, "MerkleClaimStreamer: new streaming interval must be different");
         
-        sweepLockedTVL();
+        this.sweepLockedTVL();
 
         emit StreamingIntervalChanged(streamingInterval, _newStreamingInterval);
         streamingInterval = _newStreamingInterval;
@@ -199,7 +199,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
         emit MerkleClaimSubmitted(block.timestamp, ethReward, rplReward, ethTreasuryPortion, ethOperatorPortion, rplTreasuryPortion);
 
         // sweep all the prior interval's TVL
-        sweepLockedTVL();
+        this.sweepLockedTVL();
 
         lastClaimTime = block.timestamp;
     }
