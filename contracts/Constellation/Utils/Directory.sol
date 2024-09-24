@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: GPL v3
 
 /**
-  *    /***        /***          /******                                  /**               /** /**             /**     /**                    
-  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/                    
-  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /******* 
-  *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
-  * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
-  *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
-  *  |  ***|__/|__/***         |  ******||  ****** | **  | ** /*******   | ****  |  *******| **| **| ********  | ****  | **|  ****** | **  | **
-  *   \___/       |___/         \______/  \______/ |__/  |__/|_______/    \___/   \_______/|__/|__/ \_______/   \___/  |__/ \______/ |__/  |__/
-  *
-  *  A liquid staking protocol extending Rocket Pool.
-  *  Made w/ <3 by {::}
-  *
-  *  For more information, visit https://nodeset.io
-  *
-  *  @author Mike Leach (Wander), Nick Steinhilber (NickS), Theodore Clapp (mryamz), Joe Clapis (jcrtp), Huy Nguyen, Andy Rose (Barbalute)
-  *  @custom:security-info https://docs.nodeset.io/nodeset/security-notice
-  **/
+ *    /***        /***          /******                                  /**               /** /**             /**     /**
+ *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/
+ *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /*******
+ *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
+ * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
+ *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
+ *  |  ***|__/|__/***         |  ******||  ****** | **  | ** /*******   | ****  |  *******| **| **| ********  | ****  | **|  ****** | **  | **
+ *   \___/       |___/         \______/  \______/ |__/  |__/|_______/    \___/   \_______/|__/|__/ \_______/   \___/  |__/ \______/ |__/  |__/
+ *
+ *  A liquid staking protocol extending Rocket Pool.
+ *  Made w/ <3 by {::}
+ *
+ *  For more information, visit https://nodeset.io
+ *
+ *  @author Mike Leach (Wander), Nick Steinhilber (NickS), Theodore Clapp (mryamz), Joe Clapis (jcrtp), Huy Nguyen, Andy Rose (Barbalute)
+ *  @custom:security-info https://docs.nodeset.io/nodeset/security-notice
+ **/
 
 pragma solidity 0.8.17;
 
@@ -121,7 +121,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     function getSanctionsEnabled() public view returns (bool) {
         return _enabledSanctions;
     }
-    
+
     function getWhitelistAddress() public view returns (address) {
         return _protocol.whitelist;
     }
@@ -186,7 +186,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         return _protocol;
     }
 
-    function getRocketIntegrations() public view returns(RocketIntegrations memory) {
+    function getRocketIntegrations() public view returns (RocketIntegrations memory) {
         return _integrations;
     }
 
@@ -287,10 +287,12 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         require(_protocol.weth == address(0) && newProtocol.weth != address(0), Constants.INITIALIZATION_ERROR);
         require(_treasury == address(0) && governance.treasury != address(0), Constants.INITIALIZATION_ERROR);
         require(governance.treasurer != address(0), Constants.INITIALIZATION_ERROR);
-        require(governance.timelockShort != address(0) && 
-                governance.timelockMed != address(0) && 
+        require(
+            governance.timelockShort != address(0) &&
+                governance.timelockMed != address(0) &&
                 governance.timelockLong != address(0),
-                Constants.INITIALIZATION_ERROR);
+            Constants.INITIALIZATION_ERROR
+        );
         require(governance.admin != address(0), Constants.INITIALIZATION_ERROR);
 
         // set up role admins
@@ -420,22 +422,28 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     /// @notice Sets the treasury address.
     /// @param newTreasury The new treasury address.
+    /// @dev Note that this does NOT upgrade the existing implementation contract.
+    /// Instead it changes the contract completely, including storage!
     function setTreasury(address payable newTreasury) public {
         require(hasRole(Constants.TREASURER_ROLE, msg.sender), Constants.TREASURER_ONLY_ERROR);
         emit TreasuryAddressChanged(_treasury, newTreasury);
         _treasury = newTreasury;
     }
 
-    /// @notice Sets the operator rewards contract address.
+    /// @notice Sets the operator rewards proxy contract address.
     /// @param newOperatorRewards The new operator rewards contract address.
+    /// @dev Note that this does NOT upgrade the existing implementation contract.
+    /// Instead it changes the contract completely, including storage!
     function setOperatorRewards(address payable newOperatorRewards) public {
         require(hasRole(Constants.TIMELOCK_LONG, msg.sender), Constants.TIMELOCK_LONG_ONLY_ERROR);
         emit OperatorRewardAddressChanged(_operatorReward, newOperatorRewards);
         _operatorReward = newOperatorRewards;
     }
 
-    /// @notice Convenience function to set the oracle contract address specifically.
+    /// @notice Convenience function to set the oracle proxy contract address specifically.
     /// @dev Will enforce that the new address implements the IConstellationOracle interface
+    /// Note that this does NOT upgrade the existing implementation contract.
+    /// Instead it changes the contract completely, including storage!
     /// @param newOracle The new oracle contract address.
     function setOracle(IConstellationOracle newOracle) public {
         require(hasRole(Constants.TIMELOCK_LONG, msg.sender), Constants.TIMELOCK_LONG_ONLY_ERROR);
@@ -444,12 +452,13 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _protocol.oracle = newAddress;
     }
 
-    /// @notice Updates all protocol contract addresses in a single call.
+    /// @notice Updates all protocol contract proxy addresses in a single call. DO NOT CALL THIS TO UPGRADE THE IMPLEMENTATION CONTRACTS!
     /// @param newProtocol A Protocol struct containing updated addresses of protocol contracts.
-    /// @dev This function allows an administrator to update all protocol contract addresses simultaneously.
-    /// Typically, it's better to upgrade a contract specifically, but this is useful for a fallback in emergencies
-    /// Note that this function does NOT validate that the addresses provided differ from the current addresses at all.
+    /// @dev This function allows an administrator to change all protocol contract proxy addresses simultaneously.
+    /// * Note that this function does NOT validate that the addresses provided differ from the current addresses at all.
     /// You will waste gas if you call this with the same addresses already used!
+    /// * Note that this does NOT upgrade the existing implementation contracts.
+    /// Instead it changes the contract completely, including storage!
     function setAll(Protocol memory newProtocol) public {
         require(hasRole(Constants.TIMELOCK_LONG, msg.sender), Constants.TIMELOCK_LONG_ONLY_ERROR);
         emit AllContractAddressesChanged(_protocol, newProtocol);
