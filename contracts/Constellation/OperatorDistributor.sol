@@ -48,13 +48,18 @@ import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
  * Inherits from UpgradeableBase and Errors to use their functionalities for upgradeability and error handling.
  */
 contract OperatorDistributor is UpgradeableBase, Errors {
+    // warnings
     event WarningNoMiniPoolsToHarvest();
     event SuspectedPenalizedMinipoolExit(address minipool);
     event WarningEthBalanceSmallerThanRefundBalance(address _minipool);
+    
+    // parameter updates
     event TargetStakeRatioUpdated(uint256 oldRatio, uint256 newRatio);
     event MinStakeRatioUpdated(uint256 oldRatio, uint256 newRatio);
     event MinipoolProcessingEnabledChanged(bool isAllowed);
     event RPLStakeRebalanceEnabledChanged(bool isAllowed);
+
+    event MinipoolProcessed(address indexed minipool, uint256 ethRewards, bool indexed finalized);
 
     event WarningMinipoolNotStaking(
         address indexed _minipoolAddress,
@@ -331,6 +336,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         this.rebalanceWethVault();
         this.rebalanceRplStake(sna.getEthStaked());
         this.rebalanceRplVault();
+
+        emit MinipoolProcessed(address(minipool), rewards, minipool.getFinalised());
     }
 
     /**
