@@ -4,6 +4,67 @@ import findConfig from "find-config";
 import dotenv from "dotenv";
 import { deployTimelockFromEnv } from "../scripts/environments/timelock";
 
+task("encodeProposal", "Encodes a proposal for execution")
+  .addParam("sigs", "Array of function signatures as a JSON string")
+  .addParam("params", "Array of parameters corresponding to each function signature as a JSON string")
+  .setAction(async ({ sigs, params }, hre) => {
+    let sigsArray;
+    let paramsArray;
+
+    try {
+      sigsArray = JSON.parse(sigs);
+      paramsArray = JSON.parse(params);
+    } catch (error) {
+      console.error("Error parsing JSON inputs:", error);
+      return;
+    }
+
+    if (!Array.isArray(sigsArray) || !Array.isArray(paramsArray)) {
+      console.error("Both sigs and params must be JSON arrays.");
+      return;
+    }
+
+    if (sigsArray.length !== paramsArray.length) {
+      console.error("The number of signatures and parameter sets must match.");
+      console.error(`sigs length: ${sigsArray.length}, params length: ${paramsArray.length}`);
+      return;
+    }
+
+    const calldata = [];
+
+    for (let i = 0; i < sigsArray.length; i++) {
+      const sig = sigsArray[i];
+      const param = paramsArray[i];
+
+      // Extract function name and parameter types
+      const functionNameMatch = sig.match(/^(\w+)\((.*)\)$/);
+      if (!functionNameMatch) {
+        console.error(`Invalid function signature format: ${sig}`);
+        return;
+      }
+
+      const functionName = functionNameMatch[1];
+      const functionParams = functionNameMatch[2].split(',').map((param: string) => param.trim());
+
+      const iface = new hre.ethers.utils.Interface([`function ${sig}`]);
+
+      try {
+        const encodedData = iface.encodeFunctionData(functionName, param);
+        calldata.push(encodedData);
+      } catch (error) {
+        console.error(`Error encoding function ${sig} with params ${JSON.stringify(param)}:`, error);
+        return;
+      }
+    }
+
+    console.log("Encoded proposal data:");
+    calldata.forEach((data, index) => {
+      console.log(`Function ${index + 1}: ${data}`);
+    });
+  });
+
+
+
 task("useAdminServerCheck", "Sets preSignedExitMessageCheck to true")
   .addParam("address", "The address of the NodeAccountFactory contract")
   .setAction(async ({ address }, hre) => {
@@ -50,12 +111,12 @@ task("prepareDependencies", "deploys weth and sanctions")
     const [deployer, admin] = await hre.ethers.getSigners();
 
     // deploy weth
-    const WETH = await ethers.getContractFactory("WETH");
+    const WETH = await hre.ethers.getContractFactory("WETH");
     let contract = await WETH.deploy();
     await contract.deployed();
     console.log("weth address", contract.address)
 
-    const Sanctions = await ethers.getContractFactory("MockSanctions");
+    const Sanctions = await hre.ethers.getContractFactory("MockSanctions");
     contract = await Sanctions.deploy();
     await contract.deployed();
     console.log("sanctions address", contract.address);
@@ -69,8 +130,8 @@ task("setMinimumNodeFee", "Sets minimum node fee")
     const [deployer, admin] = await hre.ethers.getSigners();
     const sna = await hre.ethers.getContractAt("SuperNodeAccount", address, admin);
 
-    const tx = await sna.setMinimumNodeFee(ethers.utils.parseEther(nodeFee));
-    console.log("Setting Node Fee to ", ethers.utils.parseEther(nodeFee));
+    const tx = await sna.setMinimumNodeFee(hre.ethers.utils.parseEther(nodeFee));
+    console.log("Setting Node Fee to ", hre.ethers.utils.parseEther(nodeFee));
     console.log(tx)
   });
 
@@ -91,13 +152,13 @@ task("sendEth", "Send Eth to account")
     const [ethWhale] = await hre.ethers.getSigners();
 
     const result = await ethWhale.sendTransaction({
-      value: ethers.utils.parseEther(amount),
+      value: hre.ethers.utils.parseEther(amount),
       to: address
     });
 
     const tx = await result.wait();
 
-    const balance = await ethers.provider.getBalance(address);
+    const balance = await hre.ethers.provider.getBalance(address);
 
     console.log(`sent ${amount} to ${address}. New balance is ${balance.toString()}`);
 
