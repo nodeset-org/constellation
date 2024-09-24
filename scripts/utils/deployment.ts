@@ -78,7 +78,7 @@ export async function deployUsingEnv(environment: string) {
         dotenv.config({ path: dotenvPath });
     } else {
         // Handle the case where no .env file is found
-        console.error('No .env.staging file found');
+        console.error('No .env.' + environment + 'file found');
         return;
     }
 
