@@ -43,8 +43,8 @@ contract MerkleClaimStreamer is UpgradeableBase {
 
     using Math for uint256;
 
-    event StreamingIntervalChanged(uint256 oldValue, uint256 newValue);
-    event MerkleClaimsEnabledChanged(bool oldValue, bool newValue);
+    event StreamingIntervalChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event MerkleClaimsEnabledChanged(bool indexed oldValue, bool indexed newValue);
 
     event MerkleClaimSubmitted(
         uint256 indexed timestamp, 
