@@ -33,12 +33,13 @@ import '../Interfaces/IConstellationOracle.sol';
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
 
-    event MaxWethRplRatioChanged(uint256 oldValue, uint256 newValue);
-    event TreasuryFeeChanged(uint256 oldValue, uint256 newValue);
-    event NodeOperatorFeeChanged(uint256 oldValue, uint256 newValue);
-    event WETHLiquidityReservePercentChanged(uint256 oldValue, uint256 newValue);
-    event MintFeeChanged(uint256 oldValue, uint256 newValue);
-    event DepositsEnabledChanged(bool oldValue, bool newValue);
+    event MaxWethRplRatioChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event TreasuryFeeChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event NodeOperatorFeeChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event WETHLiquidityReservePercentChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event MintFeeChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event DepositsEnabledChanged(bool indexed oldValue, bool indexed newValue);
+    event DifferingSenderRecipientEnabledChanged(bool indexed oldValue, bool indexed newValue);
 
     string constant NAME = 'Constellation ETH';
     string constant SYMBOL = 'xrETH';
@@ -64,6 +65,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public mintFee;
 
     bool public depositsEnabled;
+
+    // can the recipient of a deposit be different than the caller? False by default for extra security
+    bool public differingSenderRecipientEnabled;
 
     /**
      * @notice Initializes the vault with necessary parameters and settings.
@@ -104,7 +108,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 shares
     ) internal virtual override nonReentrant {
         require(depositsEnabled, "deposits are disabled"); // emergency switch for deposits
-        require(caller == receiver, 'caller must be receiver');
+        require(differingSenderRecipientEnabled || caller == receiver, 'caller must be receiver');
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
@@ -342,6 +346,16 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**ADMIN FUNCTIONS */
+
+    /**
+     * @notice Sets whether the recipient of a deposit is allowed to be different than the caller of the deposit function.
+     * @param _newValue The new value for the differingSenderRecipientEnabled variable
+     */
+    function setDifferingSenderRecipientEnabled(bool _newValue) external onlyAdmin {
+        require(_newValue != differingSenderRecipientEnabled, 'WETHVault: new differingSenderRecipientEnabled value must be different than existing value');
+        emit DifferingSenderRecipientEnabledChanged(differingSenderRecipientEnabled, _newValue);
+        differingSenderRecipientEnabled = _newValue;
+    }
 
     /**
      * @notice Sets the minimum ETH/RPL coverage ratio for the vault.

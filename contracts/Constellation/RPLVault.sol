@@ -46,6 +46,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     event TreasuryFeeChanged(uint256 oldFee, uint256 newFee);
     event MinWethRplRatioChanged(uint256 oldValue, uint256 newValue);
     event RPLLiquidityReservePercentChanged(uint256 oldValue, uint256 newValue);
+    event DifferingSenderRecipientEnabledChanged(bool indexed oldValue, bool indexed newValue);
 
     string constant NAME = 'Constellation RPL';
     string constant SYMBOL = 'xRPL';
@@ -66,6 +67,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public minWethRplRatio;
 
     bool public depositsEnabled;
+
+    // can the recipient of a deposit be different than the caller? False by default for extra security
+    bool public differingSenderRecipientEnabled;
     
     /**
      * @notice Initializes the vault with necessary parameters and settings.
@@ -97,7 +101,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
         require(depositsEnabled, "deposits are disabled"); // emergency switch for deposits
-        require(caller == receiver, 'caller must be receiver');
+        require(differingSenderRecipientEnabled || caller == receiver, 'caller must be receiver');
         if (_directory.isSanctioned(caller, receiver)) {
             return;
         }
@@ -230,6 +234,17 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**ADMIN FUNCTIONS */
+
+
+    /**
+     * @notice Sets whether the recipient of a deposit is allowed to be different than the caller of the deposit function.
+     * @param _newValue The new value for the differingSenderRecipientEnabled variable
+     */
+    function setDifferingSenderRecipientEnabled(bool _newValue) external onlyAdmin {
+        require(_newValue != differingSenderRecipientEnabled, 'RPLVault: new differingSenderRecipientEnabled value must be different than existing value');
+        emit DifferingSenderRecipientEnabledChanged(differingSenderRecipientEnabled, _newValue);
+        differingSenderRecipientEnabled = _newValue;
+    }
 
     /**
      * @notice Sets the treasury fee basis points.
