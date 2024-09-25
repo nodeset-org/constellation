@@ -9,6 +9,7 @@ import 'hardhat-contract-sizer';
 
 // task commands
 import './tasks/adminTasks'
+import './tasks/timelockTasks'
 import './tasks/viewOperatorDistributorTasks'
 import './tasks/viewSuperNodeAccountTasks'
 
