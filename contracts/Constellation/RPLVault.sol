@@ -43,9 +43,9 @@ import './Utils/PriceFetcher.sol';
 contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
 
-    event TreasuryFeeChanged(uint256 oldFee, uint256 newFee);
-    event MinWethRplRatioChanged(uint256 oldValue, uint256 newValue);
-    event RPLLiquidityReservePercentChanged(uint256 oldValue, uint256 newValue);
+    event TreasuryFeeChanged(uint256 indexed oldFee, uint256 indexed newFee);
+    event MinWethRplRatioChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event RPLLiquidityReservePercentChanged(uint256 indexed oldValue, uint256 indexed newValue);
     event DifferingSenderRecipientEnabledChanged(bool indexed oldValue, bool indexed newValue);
 
     string constant NAME = 'Constellation RPL';
