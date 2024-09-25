@@ -54,8 +54,17 @@ import './Utils/Errors.sol';
  */
 contract SuperNodeAccount is UpgradeableBase, Errors {
     event MinipoolCreated(address indexed minipoolAddress, address indexed operatorAddress);
+    event MinipoolStaked(address indexed minipoolAddress, address indexed operatorAddress);
     event MinipoolDestroyed(address indexed minipoolAddress, address indexed operatorAddress);
     
+    // parameters
+    event MaxValidatorsChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event BondChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event MinimumNodeFeeChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event AllowSubNodeOperatorDelegateChangesChanged(bool indexed oldValue, bool indexed newValue);
+    event LockThresholdChanged(uint256 indexed oldLockThreshold, uint256 indexed newLockThreshold);
+    event AdminServerCheckChanged(bool indexed oldValue, bool indexed newValue);
+
     // Mapping of minipool address to the amount of ETH locked
     mapping(address => uint256) public lockedEth;
 
@@ -319,6 +328,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
             (bool success, ) = msg.sender.call{value: lockupBalance}('');
             require(success, 'ETH transfer failed');
         }
+
+        emit MinipoolStaked(_minipool, msg.sender);
     }
 
     /**
@@ -384,6 +395,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev Admin-only
      */
     function setAllowSubNodeOpDelegateChanges(bool newValue) external onlyAdmin {
+        require(newValue != allowSubOpDelegateChanges, 'SuperNodeAccount: new allowSubOpDelegateChanges value must be different');
+        emit AllowSubNodeOperatorDelegateChangesChanged(allowSubOpDelegateChanges, newValue);
         allowSubOpDelegateChanges = newValue;
     }
 
@@ -392,6 +405,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @dev This function can only be called by an admin
      */
     function setAdminServerCheck(bool newValue) external onlyAdmin {
+        require(newValue != adminServerCheck, 'SuperNodeAccount: new adminServerCheck value must be different');
+        emit AdminServerCheckChanged(adminServerCheck, newValue);
         adminServerCheck = newValue;
     }
 
@@ -400,6 +415,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @param _newLockThreshold The new lock threshold value in wei.
      */
     function setLockAmount(uint256 _newLockThreshold) external onlyShortTimelock {
+        require(_newLockThreshold != lockThreshold, 'SuperNodeAccount: new lock threshold value must be different');
+        emit LockThresholdChanged(lockThreshold, _newLockThreshold);
         lockThreshold = _newLockThreshold;
     }
 
@@ -456,6 +473,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @param _newBond The new bond amount in wei.
      */
     function setBond(uint256 _newBond) external onlyAdmin {
+        require(_newBond != bond, 'SuperNodeAccount: new bond value must be different');
+        emit BondChanged(bond, _newBond);
         bond = _newBond;
     }
 
@@ -464,6 +483,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * @param _newMinimumNodeFee The new minimum node fee.
      */
     function setMinimumNodeFee(uint256 _newMinimumNodeFee) external onlyAdmin {
+        require(_newMinimumNodeFee != minimumNodeFee, 'SuperNodeAccount: new minimumNodeFee value must be different');
+        emit MinimumNodeFeeChanged(minimumNodeFee, _newMinimumNodeFee);
         minimumNodeFee = _newMinimumNodeFee;
     }
 
@@ -474,6 +495,8 @@ contract SuperNodeAccount is UpgradeableBase, Errors {
      * Adjusting this parameter will change the reward distribution dynamics for validators.
      */
     function setMaxValidators(uint256 _maxValidators) public onlyMediumTimelock {
+        require(_maxValidators != maxValidators, 'SuperNodeAccount: new maxValidators value must be different');
+        emit MaxValidatorsChanged(maxValidators, _maxValidators);
         maxValidators = _maxValidators;
     }
 
