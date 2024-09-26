@@ -82,8 +82,10 @@ struct RocketIntegrations {
 /// @dev The Directory contract is a central component of the protocol, managing contract addresses and access control roles.
 ///      It provides the ability to set contract addresses during initialization, manage treasury, and update the Oracle contract.
 contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
+    // These events should never actually be emitted because the calling code should should revert if the result is true
     event SanctionViolation(address account, address eoa_origin);
     event SanctionViolation(address eoa_origin);
+    
     event SanctionsEnabledChanged(bool oldValue, bool newValue);
     event TreasuryAddressChanged(address oldAddress, address newAddress);
     event OperatorRewardAddressChanged(address oldAddress, address newAddress);
@@ -512,6 +514,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
             if (_accounts[i] != address(0) && ISanctions(_protocol.sanctions).isSanctioned(_accounts[i])) {
                 emit SanctionViolation(_accounts[i], tx.origin);
                 sanctioned = true;
+                break;
             }
         }
         if (sanctioned || ISanctions(_protocol.sanctions).isSanctioned(tx.origin)) {
