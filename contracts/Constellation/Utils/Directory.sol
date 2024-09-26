@@ -420,7 +420,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _enabledSanctions = true;
     }
 
-    /// @notice Sets the treasury address.
+    /// @notice Sets the treasury address. DO NOT CALL THIS TO UPGRADE THE IMPLEMENTATION CONTRACT!
     /// @param newTreasury The new treasury address.
     /// @dev Note that this does NOT upgrade the existing implementation contract.
     /// Instead it changes the contract completely, including storage!
@@ -430,7 +430,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _treasury = newTreasury;
     }
 
-    /// @notice Sets the operator rewards proxy contract address.
+    /// @notice Sets the operator rewards proxy contract address. DO NOT CALL THIS TO UPGRADE THE IMPLEMENTATION CONTRACT!
     /// @param newOperatorRewards The new operator rewards contract address.
     /// @dev Note that this does NOT upgrade the existing implementation contract.
     /// Instead it changes the contract completely, including storage!
@@ -440,7 +440,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
         _operatorReward = newOperatorRewards;
     }
 
-    /// @notice Convenience function to set the oracle proxy contract address specifically.
+    /// @notice Convenience function to set the oracle proxy contract address specifically. DO NOT CALL THIS TO UPGRADE THE IMPLEMENTATION CONTRACT!
     /// @dev Will enforce that the new address implements the IConstellationOracle interface
     /// Note that this does NOT upgrade the existing implementation contract.
     /// Instead it changes the contract completely, including storage!
