@@ -33,12 +33,13 @@ import '../Interfaces/IConstellationOracle.sol';
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
 
-    event MaxWethRplRatioChanged(uint256 oldValue, uint256 newValue);
-    event TreasuryFeeChanged(uint256 oldValue, uint256 newValue);
-    event NodeOperatorFeeChanged(uint256 oldValue, uint256 newValue);
-    event WETHLiquidityReservePercentChanged(uint256 oldValue, uint256 newValue);
-    event MintFeeChanged(uint256 oldValue, uint256 newValue);
-    event DepositsEnabledChanged(bool oldValue, bool newValue);
+    event MaxWethRplRatioChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event TreasuryFeeChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event NodeOperatorFeeChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event WETHLiquidityReservePercentChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event MintFeeChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event DepositsEnabledChanged(bool indexed oldValue, bool indexed newValue);
+    event DifferingSenderRecipientEnabledChanged(bool indexed oldValue, bool indexed newValue);
 
     string constant NAME = 'Constellation ETH';
     string constant SYMBOL = 'xrETH';
@@ -64,6 +65,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public mintFee;
 
     bool public depositsEnabled;
+
+    // can the recipient of a deposit be different than the caller? False by default for extra security
+    bool public differingSenderRecipientEnabled;
 
     /**
      * @notice Initializes the vault with necessary parameters and settings.
@@ -104,10 +108,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 shares
     ) internal virtual override nonReentrant {
         require(depositsEnabled, "deposits are disabled"); // emergency switch for deposits
-        require(caller == receiver, 'caller must be receiver');
-        if (_directory.isSanctioned(caller, receiver)) {
-            return;
-        }
+        require(differingSenderRecipientEnabled || caller == receiver, 'caller must be receiver');
+        require(!_directory.isSanctioned(caller, receiver), "WETHVault: cannot deposit from or to a sanctioned address");
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         
         require(tvlRatioEthRpl(assets, true) <= maxWethRplRatio, 'insufficient RPL coverage');
@@ -162,9 +164,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         address recipient,
         uint256 shares
     ) internal virtual override {
-        if (_directory.isSanctioned(sender, recipient)) {
-            return;
-        }
+        require(!_directory.isSanctioned(sender, recipient), "WETHVault: transfer not allowed from or to sanctioned address");
         super._transfer(sender, recipient, shares);
     }
 
@@ -225,7 +225,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Calculates the Total Value Locked (TVL) ratio between ETH and RPL within the contract.
+     * @notice Calculates the Total Value Locked (TVL) ratio between ETH and RPL within Constellation.
      * @dev This function computes the ratio of the total value locked in ETH to the total value locked in RPL.
      * It first retrieves the TVLs in ETH and RPL, then calculates the price of ETH in RPL units using a PriceFetcher.
      * The ratio is given by (TVL in ETH * ETH price in RPL) / TVL in RPL. If TVL in RPL is 0, it returns a predefined
@@ -268,7 +268,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @notice Convenience function for viewing the maximum depoosit allowed
      */
     function getMaximumDeposit() public view returns (uint256) {
-        uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress()).totalAssets();
+        RPLVault rplVault = RPLVault(getDirectory().getRPLVaultAddress());
+        if(tvlRatioEthRpl(0, false) < rplVault.minWethRplRatio()) return 0;
+
+        uint256 tvlRpl = rplVault.totalAssets();
         uint256 tvlEth = totalAssets();
         uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
 
@@ -342,6 +345,16 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**ADMIN FUNCTIONS */
+
+    /**
+     * @notice Sets whether the recipient of a deposit is allowed to be different than the caller of the deposit function.
+     * @param _newValue The new value for the differingSenderRecipientEnabled variable
+     */
+    function setDifferingSenderRecipientEnabled(bool _newValue) external onlyAdmin {
+        require(_newValue != differingSenderRecipientEnabled, 'WETHVault: new differingSenderRecipientEnabled value must be different than existing value');
+        emit DifferingSenderRecipientEnabledChanged(differingSenderRecipientEnabled, _newValue);
+        differingSenderRecipientEnabled = _newValue;
+    }
 
     /**
      * @notice Sets the minimum ETH/RPL coverage ratio for the vault.
