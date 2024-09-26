@@ -1,16 +1,12 @@
-import { ethers, upgrades } from "hardhat";
-import { setDefaultParameters } from "../../test/rocketpool/_helpers/defaults";
-import { deployRocketPool } from "../../test/rocketpool/_helpers/deployment";
-import { getNextContractAddress } from "../../test/utils/utils";
-import { expect } from "chai";
-import readline from 'readline';
-import { fastDeployProtocol, generateBytes32Identifier, retryOperation } from "../utils/deployment";
-import { wEth } from "../../typechain-types/contracts/Testing";
-import { deployStagingUsingEnv } from "./deploy_staging";
+import { deployUsingEnv } from "../utils/deployment";
 
 
 async function main() {
-   // await deployStagingUsingEnv(1);
+    const directory = await deployUsingEnv('prod');
+    console.log("Successfully deployed production...");
+    console.log("Directory address", directory?.address);
+    console.log(await directory?.getProtocol())
+    console.log(await directory?.getRocketIntegrations())
 }
 
 main()

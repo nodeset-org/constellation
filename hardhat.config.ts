@@ -12,7 +12,6 @@ import './tasks/adminTasks'
 import './tasks/viewOperatorDistributorTasks'
 import './tasks/viewSuperNodeAccountTasks'
 
-// init dotenv
 import dotenv from "dotenv";
 import findConfig from 'find-config';
 
@@ -23,18 +22,6 @@ if (dotenvPath !== null) {
 } else {
   // Handle the case where no .env file is found
   console.error('No .env file found');
-}
-
-if (dotenvPath !== null) {
-  dotenv.config({ path: dotenvPath });
-} else {
-  // Use dummy data for CI/CD testing environment
-  process.env.GOERLI_URL = "http://dummy-goerli-url";
-  process.env.DEPLOYER_PRIVATE_KEY = "0x" + "1".repeat(64); // Dummy private key
-  process.env.HOLESKY_RPC = "http://dummy-holesky-url";
-  process.env.HOLESKY_DEPLOYER = "0x" + "2".repeat(64); // Another dummy private key
-  process.env.HOLEKSY_ADMIN = "0x" + "3".repeat(64); // Yet another dummy private key
-  // Set other necessary dummy environment variables here
 }
 
 const config: HardhatUserConfig = {
@@ -89,15 +76,32 @@ const config: HardhatUserConfig = {
     },
 
     holesky: {
-      url: process.env.HOLESKY_RPC || "" as string,
-    }
+      url: process.env.HOLESKY_RPC || ""
+    },
+
+    ethereum: {
+      url: process.env.ETHEREUM_MAINNET_RPC || ""
+    },
   },
   mocha: {
     timeout: 0,
   },
 
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY || "" as string,
+    apiKey: {
+      holesky: process.env.ETHERSCAN_HOLESKY_API_KEY || "" as string,
+      mainnet: process.env.ETHERSCAN_MAINNET_API_KEY || "" as string,
+    },
+    customChains: [
+      {
+        network: "holesky",
+        chainId: 17000,
+        urls: {
+          apiURL: "https://api-holesky.etherscan.io/api",
+          browserURL: "https://holesky.etherscan.io"
+        }
+      }
+    ]
   },
 
   contractSizer: {
