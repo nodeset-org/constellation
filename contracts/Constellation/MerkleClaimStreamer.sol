@@ -108,7 +108,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
 
     /// @notice Updates the prior streamed amounts to reflect the current balances
     /// @dev Called automatically during a merkle claim submission or if the streaming interval is changed
-    function updatePriorStreamAmounts() internal {
+    function _updatePriorStreamAmounts() internal {
         priorRplStreamAmount = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
         priorEthStreamAmount = address(this).balance;
     }
@@ -118,7 +118,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
     function sweepLockedTVL() public onlyProtocol {
         require(block.timestamp - lastClaimTime > streamingInterval, "Current streaming interval is not finished");
         if(priorEthStreamAmount == 0 && priorRplStreamAmount == 0) {
-            updatePriorStreamAmounts();
+            _updatePriorStreamAmounts();
             return; // if both ethAmount and rplAmount are 0 there is nothing to do except update state
         }
         
@@ -136,7 +136,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
             od.rebalanceRplVault();
         }
 
-        updatePriorStreamAmounts();
+        _updatePriorStreamAmounts();
     }
 
     /**
