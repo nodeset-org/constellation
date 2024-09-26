@@ -102,9 +102,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
         require(depositsEnabled, "deposits are disabled"); // emergency switch for deposits
         require(differingSenderRecipientEnabled || caller == receiver, 'caller must be receiver');
-        if (_directory.isSanctioned(caller, receiver)) {
-            return;
-        }
+        require(!_directory.isSanctioned(caller, receiver), "RPLVault: cannot deposit from or to a sanctioned address");
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
 
         require(vweth.tvlRatioEthRpl(assets, false) >= minWethRplRatio, 'insufficient weth coverage ratio');
@@ -154,9 +152,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         address recipient,
         uint256 shares
     ) internal virtual override {
-        if (_directory.isSanctioned(sender, recipient)) {
-            return;
-        }
+        require(!_directory.isSanctioned(sender, recipient), "RPLVault: transfer not allowed from or to sanctioned address");
         super._transfer(sender, recipient, shares);
     }
 

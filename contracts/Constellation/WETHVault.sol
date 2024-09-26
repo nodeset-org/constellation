@@ -109,9 +109,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     ) internal virtual override nonReentrant {
         require(depositsEnabled, "deposits are disabled"); // emergency switch for deposits
         require(differingSenderRecipientEnabled || caller == receiver, 'caller must be receiver');
-        if (_directory.isSanctioned(caller, receiver)) {
-            return;
-        }
+        require(!_directory.isSanctioned(caller, receiver), "WETHVault: cannot deposit from or to a sanctioned address");
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         
         require(tvlRatioEthRpl(assets, true) <= maxWethRplRatio, 'insufficient RPL coverage');
@@ -166,9 +164,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         address recipient,
         uint256 shares
     ) internal virtual override {
-        if (_directory.isSanctioned(sender, recipient)) {
-            return;
-        }
+        require(!_directory.isSanctioned(sender, recipient), "WETHVault: transfer not allowed from or to sanctioned address");
         super._transfer(sender, recipient, shares);
     }
 
