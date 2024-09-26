@@ -225,7 +225,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Calculates the Total Value Locked (TVL) ratio between ETH and RPL within the contract.
+     * @notice Calculates the Total Value Locked (TVL) ratio between ETH and RPL within Constellation.
      * @dev This function computes the ratio of the total value locked in ETH to the total value locked in RPL.
      * It first retrieves the TVLs in ETH and RPL, then calculates the price of ETH in RPL units using a PriceFetcher.
      * The ratio is given by (TVL in ETH * ETH price in RPL) / TVL in RPL. If TVL in RPL is 0, it returns a predefined
@@ -268,7 +268,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @notice Convenience function for viewing the maximum depoosit allowed
      */
     function getMaximumDeposit() public view returns (uint256) {
-        uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress()).totalAssets();
+        RPLVault rplVault = RPLVault(getDirectory().getRPLVaultAddress());
+        if(tvlRatioEthRpl(0, false) < rplVault.minWethRplRatio()) return 0;
+
+        uint256 tvlRpl = rplVault.totalAssets();
         uint256 tvlEth = totalAssets();
         uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
 

@@ -221,7 +221,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function getMaximumDeposit() public view returns (uint256) {
         if(minWethRplRatio == 0) return type(uint256).max;
-        
+        WETHVault wethVault = WETHVault(_directory.getWETHVaultAddress());
+        if(wethVault.tvlRatioEthRpl(0, false) < minWethRplRatio) return 0;
+
         uint256 tvlRpl = totalAssets();
         uint256 tvlEth = WETHVault(getDirectory().getWETHVaultAddress()).totalAssets();
         uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
