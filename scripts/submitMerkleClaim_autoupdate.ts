@@ -50,21 +50,49 @@ async function fetchRewardFileContent(url) {
     }
 }
 
+function processRewardsForVersion(rewardData, version, nodeAddress) {
+    // TODO: Handle different versions later
+    switch (version) {
+        case 1:
+            return processVersion1(rewardData, nodeAddress);
+        case 2:
+            return processVersion1(rewardData, nodeAddress);
+        case 3:
+            return processVersion1(rewardData, nodeAddress);
+        default:
+            throw new Error(`Unsupported rewardsFileVersion: ${version}`);
+    }
+}
+
+function processVersion1(rewardData, nodeAddress) {
+    const nodeRewards = rewardData.nodeRewards[nodeAddress];
+    if (!nodeRewards) throw new Error(`No rewards found for node ${nodeAddress}`);
+
+    const { merkleProof, collateralRpl, smoothingPoolEth } = nodeRewards;
+    return { merkleProof, collateralRpl, smoothingPoolEth };
+}
+
 exports.handler = async function(credentials) {
     const client = new Defender(credentials);
 
     const provider = client.relaySigner.getProvider();
     const signer = await client.relaySigner.getSigner(provider, { speed: 'fast' });
 
-    const rocketStorage = new ethers.Contract(ROCKET_STORAGE_ADDRESS, ROCKET_STORAGE_ABI, provider)
-    const merkleClaimStreamer = new ethers.Contract(MERKLE_CLAIM_STREAMER_ADDRESS, MERKLE_CLAIM_STREAMER_ABI, provider)
+    const rocketStorage = new ethers.Contract(ROCKET_STORAGE_ADDRESS, ROCKET_STORAGE_ABI, provider);
+    const merkleClaimStreamer = new ethers.Contract(MERKLE_CLAIM_STREAMER_ADDRESS, MERKLE_CLAIM_STREAMER_ABI, provider);
+
+    // Arrays to accumulate all claims
+    let rewardIndexes = [];
+    let amountsRPL = [];
+    let amountsETH = [];
+    let merkleProofsArray = [];
 
     try {
         // Fetch reward files from GitHub
         const rewardFiles = await fetchRewardFiles();
         console.log('Fetched reward files:', rewardFiles.map(file => file.name));
 
-        // Loop over each reward file
+        // Loop over each reward file and collect data for all claims
         for (const file of rewardFiles) {
             // Extract interval from filenames like 'rp-rewards-holesky-124.json' or 'rp-rewards-holesky-999.json'
             const intervalMatch = file.name.match(/rp-rewards-holesky-(\d+)\.json/);
@@ -98,38 +126,46 @@ exports.handler = async function(credentials) {
             console.log(`Fetching content for interval ${interval}...`);
             const rewardData = await fetchRewardFileContent(file.download_url);
 
-            // Find the node's reward data in the file
-            const nodeRewards = rewardData.nodeRewards[NODE_ADDRESS];
-            if (!nodeRewards) {
-                console.log(`No rewards found for node ${NODE_ADDRESS} in interval ${interval}, skipping...`);
-                continue; // Skip if no rewards are found for the node
+            const { rewardsFileVersion } = rewardData;
+
+            // Process rewards based on the version of the file
+            let rewardsInfo;
+            try {
+                rewardsInfo = processRewardsForVersion(rewardData, rewardsFileVersion, NODE_ADDRESS);
+            } catch (error) {
+                console.error(`Error processing rewards for interval ${interval}:`, error);
+                continue;
             }
 
-            // Extract the parameters needed for the claim from the file
-            const { merkleProof, collateralRpl, oracleDaoRpl, smoothingPoolEth } = nodeRewards;
+            const { merkleProof, collateralRpl, smoothingPoolEth } = rewardsInfo;
 
+            // Accumulate claims data for batch submission
+            rewardIndexes.push(interval);
+            amountsRPL.push(collateralRpl);
+            amountsETH.push(smoothingPoolEth);
+            merkleProofsArray.push(merkleProof);
+        }
+
+        // Submit all claims in a single transaction
+        if (rewardIndexes.length > 0) {
             try {
-                // Submit Merkle Claim
-                console.log(`Claiming reward for interval ${interval} with proof:`, merkleProof);
-
-                const rewardIndex = [interval];
-                const amountRPL = [collateralRpl];
-                const amountETH = [smoothingPoolEth];
-                const merkleProofs = [merkleProof];
+                console.log(`Submitting batch Merkle claim for ${rewardIndexes.length} intervals...`);
 
                 const txResult = await merkleClaimStreamer.submitMerkleClaim(
-                    rewardIndex, amountRPL, amountETH, merkleProofs
+                    rewardIndexes,
+                    amountsRPL,
+                    amountsETH,
+                    merkleProofsArray
                 );
 
-                console.log(`Successfully claimed reward for interval ${interval}, tx: ${txResult.hash}`);
+                console.log(`Successfully claimed rewards for ${rewardIndexes.length} intervals, tx: ${txResult.hash}`);
             } catch (error) {
-                console.error(`Failed to claim reward for interval ${interval}:`, error);
+                console.error(`Failed to submit Merkle claim:`, error);
             }
+        } else {
+            console.log('No unclaimed rewards to submit.');
         }
     } catch (error) {
         console.error('Error processing rewards:', error);
     }
-
-
-}
-
+};
