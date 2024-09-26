@@ -119,7 +119,9 @@ contract MerkleClaimStreamer is UpgradeableBase {
         require(block.timestamp - lastClaimTime > streamingInterval, "Current streaming interval is not finished");
         if(priorEthStreamAmount == 0 && priorRplStreamAmount == 0) {
             _updatePriorStreamAmounts();
-            return; // if both ethAmount and rplAmount are 0 only update streaming amounts
+            // if both ethAmount and rplAmount are 0, only update streaming amounts
+            // no need to send 0 amounts to the OD or rebalance
+            return; 
         }
         
         address payable odAddress = getDirectory().getOperatorDistributorAddress();
