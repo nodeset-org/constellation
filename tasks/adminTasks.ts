@@ -61,6 +61,8 @@ task("encodeProposal", "Encodes a proposal for execution")
     calldata.forEach((data, index) => {
       console.log(`Function ${index + 1}: ${data}`);
     });
+
+    return calldata;
   });
 
 // MerkleClaimStreamer tasks
@@ -71,7 +73,7 @@ task("setStreamingInterval", "Encodes the setStreamingInterval(uint256) function
     const params = [[newStreamingInterval]];
 
     console.log(`Encoding setStreamingInterval with newStreamingInterval: ${newStreamingInterval}`);
-    await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+    return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
 
 task("setMerkleClaimsEnabled", "Encodes the setMerkleClaimsEnabled(bool) function call")
@@ -81,7 +83,7 @@ task("setMerkleClaimsEnabled", "Encodes the setMerkleClaimsEnabled(bool) functio
     const params = [[isEnabled]];
 
     console.log(`Encoding setMerkleClaimsEnabled with isEnabled: ${isEnabled}`);
-    await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+    return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
 
 // OperatorDistributor tasks
@@ -92,7 +94,7 @@ task("setRplStakeRebalanceEnabled", "Encodes the setRplStakeRebalanceEnabled(boo
     const params = [[newValue]];
 
     console.log(`Encoding setRplStakeRebalanceEnabled with newValue: ${newValue}`);
-    await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+    return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
 
 task("setMinipoolProcessingEnabled", "Encodes the setMinipoolProcessingEnabled(bool) function call")
@@ -102,7 +104,7 @@ task("setMinipoolProcessingEnabled", "Encodes the setMinipoolProcessingEnabled(b
     const params = [[newValue]];
 
     console.log(`Encoding setMinipoolProcessingEnabled with newValue: ${newValue}`);
-    await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+    return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
 
 task("setTargetStakeRatio", "Encodes the setTargetStakeRatio(uint256) function call")
@@ -112,7 +114,7 @@ task("setTargetStakeRatio", "Encodes the setTargetStakeRatio(uint256) function c
     const params = [[targetStakeRatio]];
 
     console.log(`Encoding setTargetStakeRatio with targetStakeRatio: ${targetStakeRatio}`);
-    await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+    return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
 
 task("setMinimumStakeRatio", "Encodes the setMinimumStakeRatio(uint256) function call")
@@ -122,7 +124,7 @@ task("setMinimumStakeRatio", "Encodes the setMinimumStakeRatio(uint256) function
     const params = [[minimumStakeRatio]];
 
     console.log(`Encoding setMinimumStakeRatio with minimumStakeRatio: ${minimumStakeRatio}`);
-    await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+    return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
 
 // SuperNodeAccount tasks
@@ -133,7 +135,7 @@ task("setDepositsEnabledSuperNodeAccount", "Encodes the setDepositsEnabled(bool)
     const params = [[newValue]];
 
     console.log(`Encoding setDepositsEnabled with newValue: ${newValue}`);
-    await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+    return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
 
 task("setMaxValidators", "Encodes the setMaxValidators(uint256) function call")
@@ -143,7 +145,7 @@ task("setMaxValidators", "Encodes the setMaxValidators(uint256) function call")
     const params = [[maxValidators]];
 
     console.log(`Encoding setMaxValidators with maxValidators: ${maxValidators}`);
-    await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+    return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
 
 task("setSmoothingPoolParticipation", "Encodes the setSmoothingPoolParticipation(bool) function call")
@@ -153,7 +155,7 @@ task("setSmoothingPoolParticipation", "Encodes the setSmoothingPoolParticipation
     const params = [[useSmoothingPool]];
 
     console.log(`Encoding setSmoothingPoolParticipation with useSmoothingPool: ${useSmoothingPool}`);
-    await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+    return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
 
 task("setAllowSubNodeOpDelegateChanges", "Encodes the setAllowSubNodeOpDelegateChanges(bool) function call")
@@ -163,7 +165,7 @@ task("setAllowSubNodeOpDelegateChanges", "Encodes the setAllowSubNodeOpDelegateC
     const params = [[newValue]];
 
     console.log(`Encoding setAllowSubNodeOpDelegateChanges with newValue: ${newValue}`);
-    await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+    return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
 
 task("setAdminServerCheck", "Encodes the setAdminServerCheck(bool) function call")
@@ -173,7 +175,7 @@ task("setAdminServerCheck", "Encodes the setAdminServerCheck(bool) function call
     const params = [[newValue]];
 
     console.log(`Encoding setAdminServerCheck with newValue: ${newValue}`);
-    await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+    return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
 
 task("setBond", "Encodes the setBond(uint256) function call")
@@ -183,7 +185,7 @@ task("setBond", "Encodes the setBond(uint256) function call")
     const params = [[newBond]];
 
     console.log(`Encoding setBond with newBond: ${newBond}`);
-    await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+    return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
 
 task("setMinimumNodeFee", "Encodes the setMinimumNodeFee(uint256) function call")
@@ -193,7 +195,7 @@ task("setMinimumNodeFee", "Encodes the setMinimumNodeFee(uint256) function call"
     const params = [[newMinimumNodeFee]];
 
     console.log(`Encoding setMinimumNodeFee with newMinimumNodeFee: ${newMinimumNodeFee}`);
-    await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+    return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
 
 // WETHVault tasks
@@ -204,7 +206,7 @@ task("setDepositsEnabledWETHVault", "Encodes the setDepositsEnabled(bool) functi
     const params = [[newValue]];
 
     console.log(`Encoding setDepositsEnabled with newValue: ${newValue}`);
-    await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+    return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
 
 // Whitelist tasks
@@ -214,15 +216,15 @@ task("invalidateAllOutstandingSigs", "Encodes the invalidateAllOutstandingSigs()
     const params = [[]];
 
     console.log(`Encoding invalidateAllOutstandingSigs()`);
-    await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+    return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
 
 task("invalidateSingleOutstandingSig", "Encodes the invalidateSingleOutstandingSig(address) function call")
   .addParam("nodeOperator", "The address of the node operator (address)", undefined, types.string)
   .setAction(async ({ nodeOperator }, hre) => {
-    const sigs = ["invalidateSingleOutstandingSig(address)"];
+    const sigs = ["invalidateSingleOustandingSig(address)"];
     const params = [[nodeOperator]];
 
     console.log(`Encoding invalidateSingleOutstandingSig with nodeOperator: ${nodeOperator}`);
-    await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+    return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
