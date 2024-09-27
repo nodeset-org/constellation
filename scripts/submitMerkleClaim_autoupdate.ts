@@ -16,8 +16,7 @@ const credentials = {
 const GITHUB_REPO_API = 'https://api.github.com/repos/rocket-pool/rewards-trees/contents/holesky';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
-
-const NODE_ADDRESS = '0x0b4ead9adb79457816d446deb57d7a22f88c644c'
+const SUPERNODE_ADDRESS = '0x83fafb58393311affb742bb8b61737ddab74d575'
 
 const ROCKET_STORAGE_ABI = [{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"oldGuardian","type":"address"},{"indexed":false,"internalType":"address","name":"newGuardian","type":"address"}],"name":"GuardianChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"node","type":"address"},{"indexed":true,"internalType":"address","name":"withdrawalAddress","type":"address"},{"indexed":false,"internalType":"uint256","name":"time","type":"uint256"}],"name":"NodeWithdrawalAddressSet","type":"event"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"addUint","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"confirmGuardian","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_nodeAddress","type":"address"}],"name":"confirmWithdrawalAddress","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"deleteAddress","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"deleteBool","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"deleteBytes","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"deleteBytes32","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"deleteInt","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"deleteString","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"deleteUint","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"getAddress","outputs":[{"internalType":"address","name":"r","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"getBool","outputs":[{"internalType":"bool","name":"r","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"getBytes","outputs":[{"internalType":"bytes","name":"","type":"bytes"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"getBytes32","outputs":[{"internalType":"bytes32","name":"r","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getDeployedStatus","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getGuardian","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"getInt","outputs":[{"internalType":"int256","name":"r","type":"int256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_nodeAddress","type":"address"}],"name":"getNodePendingWithdrawalAddress","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_nodeAddress","type":"address"}],"name":"getNodeWithdrawalAddress","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"getString","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"getUint","outputs":[{"internalType":"uint256","name":"r","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"address","name":"_value","type":"address"}],"name":"setAddress","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"bool","name":"_value","type":"bool"}],"name":"setBool","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"bytes","name":"_value","type":"bytes"}],"name":"setBytes","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"bytes32","name":"_value","type":"bytes32"}],"name":"setBytes32","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"setDeployedStatus","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_newAddress","type":"address"}],"name":"setGuardian","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"int256","name":"_value","type":"int256"}],"name":"setInt","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"string","name":"_value","type":"string"}],"name":"setString","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"uint256","name":"_value","type":"uint256"}],"name":"setUint","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_nodeAddress","type":"address"},{"internalType":"address","name":"_newWithdrawalAddress","type":"address"},{"internalType":"bool","name":"_confirm","type":"bool"}],"name":"setWithdrawalAddress","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"subUint","outputs":[],"stateMutability":"nonpayable","type":"function"}]
 const ROCKET_STORAGE_ADDRESS = "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"
@@ -41,7 +40,7 @@ async function fetchRewardFiles() {
         const rewardFiles = files.filter(file => /rp-rewards-holesky-\d+\.json/.test(file.name));
         return rewardFiles;
     } catch (error) {
-        console.error('Error fetching files from GitHub:', error);
+        console.log('Error fetching files from GitHub:', error);
         throw error;
     }
 }
@@ -52,7 +51,7 @@ async function fetchRewardFileContent(downloadUrl) {
         const response = await axios.get(downloadUrl);
         return response.data; // Assuming the content is JSON, you can directly return the parsed JSON
     } catch (error) {
-        console.error('Error fetching file content from GitHub:', error);
+        console.log('Error fetching file content from GitHub:', error);
         throw error;
     }
 }
@@ -73,10 +72,12 @@ function processRewardsForVersion(rewardData, version, nodeAddress) {
 
 function processVersion1(rewardData, nodeAddress) {
     const nodeRewards = rewardData.nodeRewards[nodeAddress];
-    if (!nodeRewards) throw new Error(`No rewards found for node ${nodeAddress}`);
+    if (!nodeRewards) {
+        return null;
+    }
 
-    const { merkleProof, collateralRpl, smoothingPoolEth } = nodeRewards;
-    return { merkleProof, collateralRpl, smoothingPoolEth };
+    const { merkleProof, collateralRpl, oracleDaoRpl, smoothingPoolEth } = nodeRewards;
+    return { merkleProof, collateralRpl, oracleDaoRpl, smoothingPoolEth };
 }
 
 //comment this out for deployment
@@ -106,31 +107,26 @@ async function testFunction(credentials: any) {
 
         // Loop over each reward file and collect data for all claims
         for (const file of rewardFiles) {
-            console.log(`Processing file: ${file.name}`);
             // Extract interval from filenames like 'rp-rewards-holesky-124.json' or 'rp-rewards-holesky-999.json'
             const intervalMatch = file.name.match(/rp-rewards-holesky-(\d+)\.json/);
             if (!intervalMatch) {
                 console.log(`Invalid filename format: ${file.name}, skipping...`);
                 continue; // Skip if the filename doesn't match the expected pattern
             }
-            console.log("HUY 1")
             const interval = parseInt(intervalMatch[1], 10); // Extracted interval number
             const indexWordIndex = Math.floor(interval / 256); // Get the word index
             const indexBitIndex = interval % 256; // Get the bit index within that word
-            console.log("HUY 2")
 
             // Create the key for checking whether the reward has been claimed
             const claimedWordKey = ethers.utils.keccak256(
                 ethers.utils.defaultAbiCoder.encode(
                     ['string', 'address', 'uint256'],
-                    ['rewards.interval.claimed', NODE_ADDRESS, indexWordIndex]
+                    ['rewards.interval.claimed', SUPERNODE_ADDRESS.toLowerCase(), indexWordIndex]
                 )
             );
-            console.log("HUY 3")
 
             // Get the claimedWord for this interval
             const claimedWord = await rocketStorage.getUint(claimedWordKey);
-            console.log("HUY 4")
 
             // Check if the reward has been claimed
             if (isClaimed(claimedWord, indexBitIndex)) {
@@ -147,17 +143,23 @@ async function testFunction(credentials: any) {
             // Process rewards based on the version of the file
             let rewardsInfo;
             try {
-                rewardsInfo = processRewardsForVersion(rewardData, rewardsFileVersion, NODE_ADDRESS);
+                rewardsInfo = processRewardsForVersion(rewardData, rewardsFileVersion, SUPERNODE_ADDRESS.toLowerCase());
             } catch (error) {
-                console.error(`Error processing rewards for interval ${interval}:`, error);
+                console.log(`Error processing rewards for interval ${interval}:`, error);
                 continue;
             }
 
-            const { merkleProof, collateralRpl, smoothingPoolEth } = rewardsInfo;
+            if (rewardsInfo === null) {
+                console.log(`No rewards found for interval ${interval}, skipping...`);
+                continue; // Skip to the next interval
+            }
+
+            const { merkleProof, collateralRpl, oracleDaoRpl, smoothingPoolEth } = rewardsInfo;
+            const totalRplReward = ethers.BigNumber.from(collateralRpl).add(oracleDaoRpl);
 
             // Accumulate claims data for batch submission
             rewardIndexes.push(interval);
-            amountsRPL.push(collateralRpl);
+            amountsRPL.push(totalRplReward.toString());
             amountsETH.push(smoothingPoolEth);
             merkleProofsArray.push(merkleProof);
         }
