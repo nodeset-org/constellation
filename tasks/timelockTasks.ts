@@ -63,7 +63,7 @@ task("setMintFee", "Encodes the setMintFee(uint256) function call for WETHVault"
         return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
     });
 
-task("setLiquidityReservePercentMerkleClaimStreamer", "Encodes the setLiquidityReservePercent(uint256) function call for MerkleClaimStreamer")
+task("setLiquidityReservePercentWETHVault", "Encodes the setLiquidityReservePercent(uint256) function call for WETHVault")
     .addParam("liquidityReservePercent", "The new liquidity reserve percent (uint256)", undefined, types.string)
     .setAction(async ({ liquidityReservePercent }, hre) => {
         const sigs = ["setLiquidityReservePercent(uint256)"];
