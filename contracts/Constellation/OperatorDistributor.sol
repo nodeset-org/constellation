@@ -365,7 +365,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         // need to stake more
         if (targetStake > rplStaked) {
             uint256 stakeIncrease = targetStake - rplStaked;
-            if (stakeIncrease == 0) return;
 
             uint256 currentRplBalance = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
 
