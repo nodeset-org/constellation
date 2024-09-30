@@ -23,14 +23,14 @@ describe("totalAssets() bug", function () {
 
         const previewRedeem = await protocol.vCRPL.previewDeposit(depositAmount);
 
-        console.log("previewRedeem", previewRedeem)
+        //console.log("previewRedeem", previewRedeem)
 
         await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, depositAmount);
         await assertAddOperator(setupData, signers.random);
 
         await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, depositAmount);
         await protocol.vCRPL.connect(signers.random).deposit(depositAmount, signers.random.address);
-        console.log(await protocol.vCRPL.balanceOf(signers.random.address));
+        //console.log(await protocol.vCRPL.balanceOf(signers.random.address));
 
         const expectedRplInSystem = depositAmount;
         const actualRplInSystem = await protocol.vCRPL.totalAssets();
