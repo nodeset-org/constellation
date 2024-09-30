@@ -1,13 +1,24 @@
 
 import { task, types } from "hardhat/config";
 
-task("authorizeUpgrade", "Encodes the _authorizeUpgrade(address) function call")
-    .addParam("upgrader", "The address to authorize for upgrade", undefined, types.string)
-    .setAction(async ({ upgrader }, hre) => {
-        const sigs = ["_authorizeUpgrade(address)"];
-        const params = [[upgrader]]; // Parameters for each function signature
+task("upgradeTo", "Encodes the upgradeTo(address) function call for an upgradable contract")
+    .addParam("newImplementation", "The address of the new implementation contract", undefined, types.string)
+    .setAction(async ({ newImplementation }, hre) => {
+        const sigs = ["upgradeTo(address)"];
+        const params = [[newImplementation]];
 
-        console.log(`Encoding _authorizeUpgrade for upgrader: ${upgrader}`);
+        console.log(`Encoding upgradeTo with new implementation: ${newImplementation}`);
+        return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+    });
+
+task("upgradeToAndCall", "Encodes the upgradeToAndCall(address,bytes) function call for an upgradable contract")
+    .addParam("newImplementation", "The address of the new implementation contract", undefined, types.string)
+    .addParam("data", "The calldata to be executed after the upgrade", undefined, types.string)
+    .setAction(async ({ newImplementation, data }, hre) => {
+        const sigs = ["upgradeToAndCall(address,bytes)"];
+        const params = [[newImplementation, data]];
+
+        console.log(`Encoding upgradeToAndCall with new implementation: ${newImplementation} and data: ${data}`);
         return await hre.run("encodeProposal", { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
     });
 

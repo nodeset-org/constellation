@@ -6,13 +6,33 @@ import hre from "hardhat";
 
 describe("Test Timelock Tasks", function () {
     describe("When task calldata matches expected timelock protocol calldata", async () => {
-        it("Should pass - authorizeUpgrade", async () => {
+        it("Should pass - upgrade", async () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers } = setupData;
 
-            const upgrader = signers.admin.address;
-            const calldata = await hre.run("authorizeUpgrade", { upgrader });
-           // const tx = await protocol.treasury.connect(signers.admin)._authorizeUpgrade(upgrader);
+
+            const WhitelistV2Logic = await ethers.getContractFactory("MockWhitelistV2", signers.admin);
+            const whitelistV2 = await WhitelistV2Logic.deploy();
+
+            const newImplementation = whitelistV2.address;
+            const calldata = await hre.run("upgradeTo", { newImplementation });
+            const tx = await protocol.whitelist.connect(signers.admin).upgradeTo(newImplementation);
+            expect(tx.data).hexEqual(calldata[0]);
+        });
+
+        it("Should pass - upgradeToAndCall", async () => {
+            const setupData = await loadFixture(protocolFixture);
+            const { protocol, signers } = setupData;
+
+            const WhitelistV2Logic = await ethers.getContractFactory("MockWhitelistV2", signers.admin);
+            const whitelistV2 = await WhitelistV2Logic.deploy();
+
+            const newImplementation = whitelistV2.address;
+            
+            // npx hardhat encodeProposal --sigs '["testPublicFunction()"]' --params '[[]]'
+            const data = "0xd32f0101";
+            const calldata = await hre.run("upgradeToAndCall", { newImplementation, data });
+            const tx = await protocol.whitelist.connect(signers.admin).upgradeToAndCall(newImplementation, data);
             expect(tx.data).hexEqual(calldata[0]);
         });
 
