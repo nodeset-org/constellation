@@ -107,15 +107,29 @@ async function testFunction(credentials: any) {
 
         // Loop over each reward file and collect data for all claims
         for (const file of rewardFiles) {
+            console.log("\n")
             // Extract interval from filenames like 'rp-rewards-holesky-124.json' or 'rp-rewards-holesky-999.json'
             const intervalMatch = file.name.match(/rp-rewards-holesky-(\d+)\.json/);
             if (!intervalMatch) {
                 console.log(`Invalid filename format: ${file.name}, skipping...`);
                 continue; // Skip if the filename doesn't match the expected pattern
             }
+
             const interval = parseInt(intervalMatch[1], 10); // Extracted interval number
             const indexWordIndex = Math.floor(interval / 256); // Get the word index
             const indexBitIndex = interval % 256; // Get the bit index within that word
+
+            // Skip file if merkle root has not been posted yet
+            const encodedData = ethers.utils.concat([
+                ethers.utils.toUtf8Bytes('rewards.merkle.root'),  // String to bytes
+                ethers.utils.zeroPad(ethers.utils.hexlify(interval), 32)  // Zero-pad the reward index to 32 bytes (uint256)
+            ]);
+            const key = ethers.utils.keccak256(encodedData);
+            const merkleRoot = await rocketStorage.getBytes32(key);
+            if (merkleRoot === '0x0000000000000000000000000000000000000000000000000000000000000000') {
+                console.log(`Merkle root not set for interval ${interval}, skipping...`);
+                continue; // Skip to the next interval
+            }
 
             // Create the key for checking whether the reward has been claimed
             const claimedWordKey = ethers.utils.keccak256(
@@ -157,6 +171,8 @@ async function testFunction(credentials: any) {
             const { merkleProof, collateralRpl, oracleDaoRpl, smoothingPoolEth } = rewardsInfo;
             const totalRplReward = ethers.BigNumber.from(collateralRpl).add(oracleDaoRpl);
 
+            console.log("Adding reward from interval", interval);
+
             // Accumulate claims data for batch submission
             rewardIndexes.push(interval);
             amountsRPL.push(totalRplReward.toString());
@@ -184,8 +200,6 @@ async function testFunction(credentials: any) {
                 //     merkleProofsArray,
                 //     { maxFeePerGas: 200, gasLimit: 1000000 }
                 // );
-
-                console.log(txResult);
 
                 // uncomment this for deployment
                 // return txResult.hash;
