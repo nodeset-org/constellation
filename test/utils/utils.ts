@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat';
-import { BigNumber } from 'ethers';
+import { BigNumber, Wallet } from 'ethers';
 import { expect } from 'chai';
 import { Protocol, SetupData, Signers } from '../integration/integration';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
