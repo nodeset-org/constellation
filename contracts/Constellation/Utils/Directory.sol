@@ -84,7 +84,7 @@ struct RocketIntegrations {
 contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
     // These events should never actually be emitted because the calling code should should revert if the result is true
     event SanctionViolation(address account, address eoa_origin);
-    event SanctionViolation(address eoa_origin);
+    event SanctionViolationSingleOrigin(address eoa_origin);
     
     event SanctionsEnabledChanged(bool oldValue, bool newValue);
     event TreasuryAddressChanged(address oldAddress, address newAddress);
@@ -518,7 +518,7 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
             }
         }
         if (sanctioned || ISanctions(_protocol.sanctions).isSanctioned(tx.origin)) {
-            emit SanctionViolation(tx.origin);
+            emit SanctionViolationSingleOrigin(tx.origin);
             return true;
         }
         return false;
