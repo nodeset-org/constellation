@@ -222,7 +222,7 @@ task("invalidateAllOutstandingSigs", "Encodes the invalidateAllOutstandingSigs()
 task("invalidateSingleOutstandingSig", "Encodes the invalidateSingleOutstandingSig(address) function call")
   .addParam("nodeOperator", "The address of the node operator (address)", undefined, types.string)
   .setAction(async ({ nodeOperator }, hre) => {
-    const sigs = ["invalidateSingleOustandingSig(address)"];
+    const sigs = ["invalidateSingleOutstandingSig(address)"];
     const params = [[nodeOperator]];
 
     console.log(`Encoding invalidateSingleOutstandingSig with nodeOperator: ${nodeOperator}`);
