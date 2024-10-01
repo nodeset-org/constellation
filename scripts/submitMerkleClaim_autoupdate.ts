@@ -1,16 +1,15 @@
-
 // comment this out for deployment
-require('dotenv').config();
+// require('dotenv').config();
 
 const { Defender } = require('@openzeppelin/defender-sdk');
 const { ethers } = require('ethers');
 
 // comment this out for deployment (Defender will provide the credentials)
 // if you're testing, you need these relayer API keys set in your .env file
-const credentials = {
-  relayerApiKey: `${process.env.DEFENDER_RELAY_KEY}`,
-  relayerApiSecret: `${process.env.DEFENDER_RELAY_SECRET}`,
-};
+// const credentials = {
+//   relayerApiKey: `${process.env.DEFENDER_RELAY_KEY}`,
+//   relayerApiSecret: `${process.env.DEFENDER_RELAY_SECRET}`,
+// };
 
 const GITHUB_REPO_API = `https://api.github.com/repos/rocket-pool/rewards-trees/contents/${process.env.NETWORK}`;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
@@ -83,11 +82,11 @@ function processVersion1(rewardData, nodeAddress) {
 }
 
 //comment this out for deployment
-testFunction(credentials);
+// testFunction(credentials);
 
 // use the exports.handler line for deployment, use the other one for testing
-// exports.handler = async function(credentials) {
-async function testFunction(credentials: any) {
+exports.handler = async function(credentials) {
+// async function testFunction(credentials: any) {
     const client = new Defender(credentials);
 
     const provider = client.relaySigner.getProvider();
@@ -194,24 +193,24 @@ async function testFunction(credentials: any) {
                 console.log(`Submitting batch Merkle claim for ${rewardIndexes.length} intervals...`);
 
                 // use the callStatic line for local testing, the other for deployment
-                const txResult = await merkleClaimStreamer.callStatic.submitMerkleClaim(
-                    rewardIndexes,
-                    amountsRPL,
-                    amountsETH,
-                    merkleProofsArray,
-                    { maxFeePerGas: 200, gasLimit: 1000000 }
-                );
-                // const txResult = await merkleClaimStreamer.submitMerkleClaim(
+                // const txResult = await merkleClaimStreamer.callStatic.submitMerkleClaim(
                 //     rewardIndexes,
                 //     amountsRPL,
                 //     amountsETH,
                 //     merkleProofsArray,
                 //     { maxFeePerGas: 200, gasLimit: 1000000 }
                 // );
+                const txResult = await merkleClaimStreamer.submitMerkleClaim(
+                    rewardIndexes,
+                    amountsRPL,
+                    amountsETH,
+                    merkleProofsArray,
+                    { maxFeePerGas: 200, gasLimit: 1000000 }
+                );
                 console.log(txResult);
 
                 // uncomment this for deployment
-                // return txResult.hash;
+                return txResult.hash;
             } catch (error) {
                 console.log(`Failed to submit Merkle claim:`, error);
             }
