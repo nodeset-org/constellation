@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat';
-import { BigNumber } from 'ethers';
+import { BigNumber, Wallet } from 'ethers';
 import { expect } from 'chai';
 import { Protocol, SetupData, Signers } from '../integration/integration';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -360,7 +360,7 @@ export const registerNewValidator = async (setupData: SetupData, subNodeOperator
 
   const minipools = [];
   for (let i = 0; i < subNodeOperators.length; i++) {
-    console.log('setting up node operator %s of %s', i + 1, subNodeOperators.length);
+    //console.log('setting up node operator %s of %s', i + 1, subNodeOperators.length);
     //console.log('ETH balance of OD', await ethers.provider.getBalance(protocol.operatorDistributor.address));
     if (!(await protocol.superNode.hasSufficientLiquidity(bond))) {
       //console.log('not enough liquidity, calling prepareOperatorDistributionContract');
