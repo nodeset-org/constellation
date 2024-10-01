@@ -20,9 +20,8 @@ describe("Test Admin Tasks", function () {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers } = setupData;
 
-            const invertedVal = !(await protocol.merkleClaimStreamer.merkleClaimsEnabled());
-            const calldata = await hre.run("setMerkleClaimsEnabled", { isEnabled: invertedVal });
-            const tx = await protocol.merkleClaimStreamer.connect(signers.admin).setMerkleClaimsEnabled(invertedVal);
+            const calldata = await hre.run("setMerkleClaimsEnabled", { isEnabled: false });
+            const tx = await protocol.merkleClaimStreamer.connect(signers.admin).setMerkleClaimsEnabled(false);
             expect(tx.data).hexEqual(calldata[0]);
         });
 
@@ -77,9 +76,8 @@ describe("Test Admin Tasks", function () {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers } = setupData;
 
-            const invertedVal = !(await protocol.superNode.adminServerCheck());
-            const calldata = await hre.run("setAdminServerCheck", { newValue: invertedVal });
-            const tx = await protocol.superNode.connect(signers.admin).setAdminServerCheck(invertedVal);
+            const calldata = await hre.run("setAdminServerCheck", { newValue: false });
+            const tx = await protocol.superNode.connect(signers.admin).setAdminServerCheck(false);
             expect(tx.data).hexEqual(calldata[0]);
         });
 
