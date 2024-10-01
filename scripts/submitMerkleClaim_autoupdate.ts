@@ -1,6 +1,6 @@
 
 // comment this out for deployment
-require('dotenv').config();
+// require('dotenv').config();
 
 const { Defender } = require('@openzeppelin/defender-sdk');
 const { ethers } = require('ethers');
@@ -8,21 +8,21 @@ const axios = require('axios');
 
 // comment this out for deployment (Defender will provide the credentials)
 // if you're testing, you need these relayer API keys set in your .env file
-const credentials = {
-  relayerApiKey: `${process.env.DEFENDER_RELAY_KEY}`,
-  relayerApiSecret: `${process.env.DEFENDER_RELAY_SECRET}`,
-};
+// const credentials = {
+//   relayerApiKey: `${process.env.DEFENDER_RELAY_KEY}`,
+//   relayerApiSecret: `${process.env.DEFENDER_RELAY_SECRET}`,
+// };
 
 const GITHUB_REPO_API = `https://api.github.com/repos/rocket-pool/rewards-trees/contents/${process.env.NETWORK}`;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
-const SUPERNODE_ADDRESS = process.env.SUPERNODE_ADDRESS
+const SUPERNODE_ADDRESS = process.env.SUPERNODE_ADDRESS;
 
 const ROCKET_STORAGE_ABI = [{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"oldGuardian","type":"address"},{"indexed":false,"internalType":"address","name":"newGuardian","type":"address"}],"name":"GuardianChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"node","type":"address"},{"indexed":true,"internalType":"address","name":"withdrawalAddress","type":"address"},{"indexed":false,"internalType":"uint256","name":"time","type":"uint256"}],"name":"NodeWithdrawalAddressSet","type":"event"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"addUint","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"confirmGuardian","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_nodeAddress","type":"address"}],"name":"confirmWithdrawalAddress","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"deleteAddress","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"deleteBool","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"deleteBytes","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"deleteBytes32","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"deleteInt","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"deleteString","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"deleteUint","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"getAddress","outputs":[{"internalType":"address","name":"r","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"getBool","outputs":[{"internalType":"bool","name":"r","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"getBytes","outputs":[{"internalType":"bytes","name":"","type":"bytes"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"getBytes32","outputs":[{"internalType":"bytes32","name":"r","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getDeployedStatus","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getGuardian","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"getInt","outputs":[{"internalType":"int256","name":"r","type":"int256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_nodeAddress","type":"address"}],"name":"getNodePendingWithdrawalAddress","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_nodeAddress","type":"address"}],"name":"getNodeWithdrawalAddress","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"getString","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"}],"name":"getUint","outputs":[{"internalType":"uint256","name":"r","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"address","name":"_value","type":"address"}],"name":"setAddress","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"bool","name":"_value","type":"bool"}],"name":"setBool","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"bytes","name":"_value","type":"bytes"}],"name":"setBytes","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"bytes32","name":"_value","type":"bytes32"}],"name":"setBytes32","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"setDeployedStatus","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_newAddress","type":"address"}],"name":"setGuardian","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"int256","name":"_value","type":"int256"}],"name":"setInt","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"string","name":"_value","type":"string"}],"name":"setString","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"uint256","name":"_value","type":"uint256"}],"name":"setUint","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_nodeAddress","type":"address"},{"internalType":"address","name":"_newWithdrawalAddress","type":"address"},{"internalType":"bool","name":"_confirm","type":"bool"}],"name":"setWithdrawalAddress","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"_key","type":"bytes32"},{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"subUint","outputs":[],"stateMutability":"nonpayable","type":"function"}]
-const ROCKET_STORAGE_ADDRESS = "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"
+const ROCKET_STORAGE_ADDRESS = process.env.ROCKET_STORAGE_ADDRESS;
 
 const MERKLE_CLAIM_STREAMER_ABI = [{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"previousAdmin","type":"address"},{"indexed":false,"internalType":"address","name":"newAdmin","type":"address"}],"name":"AdminChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"beacon","type":"address"}],"name":"BeaconUpgraded","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint8","name":"version","type":"uint8"}],"name":"Initialized","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"timestamp","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"newEthRewards","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"newRplRewards","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"ethTreasuryPortion","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"ethOperatorPortion","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"rplTreasuryPortion","type":"uint256"}],"name":"MerkleClaimSubmitted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"implementation","type":"address"}],"name":"Upgraded","type":"event"},{"inputs":[],"name":"getDirectory","outputs":[{"internalType":"contract Directory","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getImplementation","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getStreamedTvlEth","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getStreamedTvlRpl","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_directory","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"lastClaimTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"merkleClaimsEnabled","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"priorEthStreamAmount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"priorRplStreamAmount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"proxiableUUID","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bool","name":"_isEnabled","type":"bool"}],"name":"setMerkleClaimsEnabled","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_newStreamingInterval","type":"uint256"}],"name":"setStreamingInterval","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"streamingInterval","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256[]","name":"rewardIndex","type":"uint256[]"},{"internalType":"uint256[]","name":"amountRPL","type":"uint256[]"},{"internalType":"uint256[]","name":"amountETH","type":"uint256[]"},{"internalType":"bytes32[][]","name":"merkleProof","type":"bytes32[][]"}],"name":"submitMerkleClaim","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"sweepLockedTVL","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newImplementation","type":"address"}],"name":"upgradeTo","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newImplementation","type":"address"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"upgradeToAndCall","outputs":[],"stateMutability":"payable","type":"function"},{"stateMutability":"payable","type":"receive"}]
-const MERKLE_CLAIM_STREAMER_ADDRESS = "0x519819178206E0a8B7b089FbAE23FFd4f06FA2C3"
+const MERKLE_CLAIM_STREAMER_ADDRESS = process.env.MERKLE_CLAIM_STREAMER_ADDRESS;
 
 function isClaimed(claimedWord, bitIndex) {
     // Using BigNumber to manipulate bits
@@ -44,7 +44,6 @@ async function fetchRewardFiles() {
         throw error;
     }
 }
-
 
 async function fetchRewardFileContent(downloadUrl) {
     try {
@@ -81,11 +80,11 @@ function processVersion1(rewardData, nodeAddress) {
 }
 
 //comment this out for deployment
-testFunction(credentials);
+// testFunction(credentials);
 
 // use the exports.handler line for deployment, use the other one for testing
-// exports.handler = async function(credentials) {
-async function testFunction(credentials: any) {
+exports.handler = async function(credentials) {
+// async function testFunction(credentials: any) {
     const client = new Defender(credentials);
 
     const provider = client.relaySigner.getProvider();
@@ -186,23 +185,24 @@ async function testFunction(credentials: any) {
                 console.log(`Submitting batch Merkle claim for ${rewardIndexes.length} intervals...`);
 
                 // use the callStatic line for local testing, the other for deployment
-                const txResult = await merkleClaimStreamer.callStatic.submitMerkleClaim(
-                    rewardIndexes,
-                    amountsRPL,
-                    amountsETH,
-                    merkleProofsArray,
-                    { maxFeePerGas: 200, gasLimit: 1000000 }
-                );
-                // const txResult = await merkleClaimStreamer.submitMerkleClaim(
+                // const txResult = await merkleClaimStreamer.callStatic.submitMerkleClaim(
                 //     rewardIndexes,
                 //     amountsRPL,
                 //     amountsETH,
                 //     merkleProofsArray,
                 //     { maxFeePerGas: 200, gasLimit: 1000000 }
                 // );
+                const txResult = await merkleClaimStreamer.submitMerkleClaim(
+                    rewardIndexes,
+                    amountsRPL,
+                    amountsETH,
+                    merkleProofsArray,
+                    { maxFeePerGas: 200, gasLimit: 1000000 }
+                );
+                console.log(txResult);
 
                 // uncomment this for deployment
-                // return txResult.hash;
+                return txResult.hash;
             } catch (error) {
                 console.log(`Failed to submit Merkle claim:`, error);
             }
