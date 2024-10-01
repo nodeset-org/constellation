@@ -116,7 +116,7 @@ describe("Test Admin Tasks", function () {
 
             const nodeOperator = signers.random.address;
             const calldata = await hre.run("invalidateSingleOutstandingSig", { nodeOperator });
-            const tx = await protocol.whitelist.connect(signers.admin).invalidateSingleOustandingSig(nodeOperator);
+            const tx = await protocol.whitelist.connect(signers.admin).invalidateSingleOutstandingSig(nodeOperator);
             expect(tx.data).hexEqual(calldata[0]);
         });
     });
