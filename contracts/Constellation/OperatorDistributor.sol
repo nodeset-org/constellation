@@ -37,7 +37,7 @@ import '../Interfaces/RocketPool/IRocketNodeManager.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsRewards.sol';
 import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
-import 'hardhat/console.sol';
+
 /**
  * @title OperatorDistributor
  * @author Theodore Clapp, Mike Leach
@@ -52,7 +52,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     event WarningNoMiniPoolsToHarvest();
     event SuspectedPenalizedMinipoolExit(address minipool);
     event WarningEthBalanceSmallerThanRefundBalance(address _minipool);
-    
+
     // parameter updates
     event TargetStakeRatioUpdated(uint256 oldRatio, uint256 newRatio);
     event MinStakeRatioUpdated(uint256 oldRatio, uint256 newRatio);
