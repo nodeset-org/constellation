@@ -122,7 +122,7 @@ describe("OperatorDistributor.processNextMinipool", function () {
 
         describe("when minipool processing is enabled", function () {
             beforeEach(async function () {
-                await expect(operatorDistributor.setMinipoolProcessingEnabled(true)).to.not.be.reverted;
+                await expect(operatorDistributor.setMinipoolProcessingEnabled(true)).to.be.revertedWith('OperatorDistributor: new minipoolProcessingEnabled value must be different than existing value');
             });
 
             describe("when the minipool balance is zero", function () {
