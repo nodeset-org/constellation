@@ -143,7 +143,7 @@ describe("OperatorDistributor.onEthBeaconRewardsReceived", function () {
                         ethers.utils.parseEther("0.2"),
                     )).to.not.be.rejected;
 
-                    expect(await ethers.provider.getBalance(treasury.address)).to.equal(ethers.BigNumber.from("1000000000000000000"));
+                    expect(await ethers.provider.getBalance(treasury.address)).to.equal(ethers.utils.parseEther("1"));
                     expect(await ethers.provider.getBalance(operatorReward.address)).to.equal(ethers.BigNumber.from("2000000000000000000"));
                     expect(await operatorDistributor.oracleError()).to.equal(ethers.BigNumber.from("7000000000000000000"));
                 });
