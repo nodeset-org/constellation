@@ -12,7 +12,7 @@ const { ethers } = require('ethers');
 // };
 
 // Fill in network (i.e. holesky/mainnet) prior to running
-const NETWORK = process.env.NETWORK;
+const NETWORK = process.env.NETWORK || "holesky";
 
 // Fill in github token prior to running
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
