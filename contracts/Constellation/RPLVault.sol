@@ -217,7 +217,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Convenience function for viewing the maximum depoosit allowed
+     * @notice Convenience function for viewing the maximum deposit allowed
      */
     function getMaximumDeposit() public view returns (uint256) {
         if(minWethRplRatio == 0) return type(uint256).max;
@@ -276,7 +276,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * RPL backing xRPL will be reserved for withdrawals. If the reserve is below maximum, it will be refilled before assets are
      * put to work with the OperatorDistributor.
      * @dev This function allows the admin to update the liquidity reserve which determines the amount available for withdrawals.
-     * The liquidity rserve must be a reasonable percentage between 0 and 100%. 1e18 = 100%
+     * The liquidity reserve must be a reasonable percentage between 0 and 100%. 1e18 = 100%
      * @param _liquidityReservePercent The new collateralization ratio in basis points.
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
