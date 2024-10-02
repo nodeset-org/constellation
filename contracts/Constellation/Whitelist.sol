@@ -208,7 +208,7 @@ contract Whitelist is UpgradeableBase {
         nonce++;
     }
 
-    function invalidateSingleOustandingSig(address _nodeOperator) external onlyAdmin {
+    function invalidateSingleOutstandingSig(address _nodeOperator) external onlyAdmin {
         operators[_nodeOperator].nonce++;
     }
 }

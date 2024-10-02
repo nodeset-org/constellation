@@ -47,7 +47,7 @@ describe("Test Add Operator Nonce", function () {
                 const { sig } = await whitelistUserServerSig(setupData, signers.random);
                 expect(await protocol.whitelist.nonce()).equals(0);
                 expect(await protocol.whitelist.getNonceForOperator(signers.random.address)).equals(0);
-                await protocol.whitelist.connect(signers.admin).invalidateSingleOustandingSig(signers.random.address);
+                await protocol.whitelist.connect(signers.admin).invalidateSingleOutstandingSig(signers.random.address);
                 expect(await protocol.whitelist.nonce()).equals(0);
                 expect(await protocol.whitelist.getNonceForOperator(signers.random.address)).equals(1);
                 await expect(protocol.whitelist.connect(signers.admin).addOperator(signers.random.address, sig)).to.be.revertedWith("bad signature");

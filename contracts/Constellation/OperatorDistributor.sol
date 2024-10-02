@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL v3
 
 /**
-  *    /***        /***          /******                                  /**               /** /**             /**     /**                    
-  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/                    
-  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /******* 
+  *    /***        /***          /******                                  /**               /** /**             /**     /**
+  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/
+  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /*******
   *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
   * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
   *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
@@ -28,7 +28,6 @@ import './WETHVault.sol';
 import './SuperNodeAccount.sol';
 
 import './Utils/Constants.sol';
-import './Utils/Errors.sol';
 
 import '../Interfaces/IWETH.sol';
 import '../Interfaces/RocketPool/IRocketStorage.sol';
@@ -44,17 +43,20 @@ import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
  * @dev Manages distribution and staking of ETH and RPL tokens for
  * decentralized node operators to stake with a single Rocket Pool "supernode".
  * Serves as the withdrawal address for the SuperNode and has functions for rebalancing liquidity across the protocol.
- * Serves as the withdrawal address for the SuperNode and has functions for rebalancing liquidity across the protocol.
- * Inherits from UpgradeableBase and Errors to use their functionalities for upgradeability and error handling.
  */
-contract OperatorDistributor is UpgradeableBase, Errors {
+contract OperatorDistributor is UpgradeableBase {
+    // warnings
     event WarningNoMiniPoolsToHarvest();
     event SuspectedPenalizedMinipoolExit(address minipool);
     event WarningEthBalanceSmallerThanRefundBalance(address _minipool);
+
+    // parameter updates
     event TargetStakeRatioUpdated(uint256 oldRatio, uint256 newRatio);
     event MinStakeRatioUpdated(uint256 oldRatio, uint256 newRatio);
     event MinipoolProcessingEnabledChanged(bool isAllowed);
     event RPLStakeRebalanceEnabledChanged(bool isAllowed);
+
+    event MinipoolProcessed(address indexed minipool, uint256 ethRewards, bool indexed finalized);
 
     event WarningMinipoolNotStaking(
         address indexed _minipoolAddress,
@@ -63,6 +65,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     );
 
     using Math for uint256;
+
+    error LowLevelEthTransfer(bool success, bytes data);
 
     bool public rplStakeRebalanceEnabled;
 
@@ -331,6 +335,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         this.rebalanceWethVault();
         this.rebalanceRplStake(sna.getEthStaked());
         this.rebalanceRplVault();
+
+        emit MinipoolProcessed(address(minipool), rewards, minipool.getFinalised());
     }
 
     /**
@@ -358,7 +364,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         // need to stake more
         if (targetStake > rplStaked) {
             uint256 stakeIncrease = targetStake - rplStaked;
-            if (stakeIncrease == 0) return;
 
             uint256 currentRplBalance = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
 
@@ -409,9 +414,11 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     /// @dev This function ensures that the specified amount of RPL tokens is approved and then staked
     /// for the SuperNode.
     function stakeRpl(uint256 _amount) external onlyProtocol {
-        SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), 0);
-        SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), _amount);
-        IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(
+        IERC20 rpl = IERC20(_directory.getRPLAddress());
+        address rocketNodeStakingAddress = _directory.getRocketNodeStakingAddress();
+        SafeERC20.safeApprove(rpl, rocketNodeStakingAddress, 0);
+        SafeERC20.safeApprove(rpl, rocketNodeStakingAddress, _amount);
+        IRocketNodeStaking(rocketNodeStakingAddress).stakeRPLFor(
             getDirectory().getSuperNodeAddress(),
             _amount
         );
@@ -444,7 +451,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         uint256 requiredWeth = vweth.getMissingLiquidity();
         uint256 wethBalance = IERC20(address(weth)).balanceOf(address(this));
-        uint256 balanceEthAndWeth = IERC20(address(weth)).balanceOf(address(this)) + address(this).balance;
+        uint256 balanceEthAndWeth = wethBalance + address(this).balance;
         if (balanceEthAndWeth >= requiredWeth) {
             // there's extra ETH that can be kept here for minipools, so only send required amount
             // figure out how much to wrap, then wrap it
@@ -458,6 +465,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             // not enough available to fill up the liquidity reserve, so send everything we can
             // wrap everything in this contract and give back to the WethVault for liquidity
             weth.deposit{value: address(this).balance}();
+            // note: must recheck weth balance because it will change in the above line
             SafeERC20.safeTransfer(IERC20(address(weth)), address(vweth), weth.balanceOf(address(this)));
         }
     }
@@ -564,15 +572,17 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     }
 
     function transferMerkleClaimToStreamer(uint256 ethAmount, uint256 rplAmount) external onlyProtocol {
+        address payable mcsAddress = getDirectory().getMerkleClaimStreamerAddress();
+        
         if (ethAmount > 0) {
-            (bool success, ) = getDirectory().getMerkleClaimStreamerAddress().call{value: ethAmount}('');
+            (bool success, ) = mcsAddress.call{value: ethAmount}('');
             require(success, 'ETH transfer to MerkleClaimStreamer failed');
         }
 
         if (rplAmount > 0) {
             SafeERC20.safeTransfer(
                 IERC20(_directory.getRPLAddress()),
-                getDirectory().getMerkleClaimStreamerAddress(),
+                mcsAddress,
                 rplAmount
             );
         }

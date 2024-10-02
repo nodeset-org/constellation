@@ -43,17 +43,20 @@ contract Treasury is UUPSUpgradeable, AccessControlUpgradeable, ReentrancyGuard 
     }
 
     function _claimTokenInternal(address _tokenAddress, address _to, uint256 _amount) internal {
+        require(_to != address(0), 'Treasury: invalid recipient address');
         SafeERC20.safeTransfer(IERC20(_tokenAddress), _to, _amount);
         emit ClaimedToken(_tokenAddress, _to, _amount);
     }
 
     function _claimEthInternal(address payable _to, uint256 _amount) internal {
+        require(_to != address(0), 'Treasury: invalid recipient address');
         (bool success, ) = _to.call{value: _amount}('');
         require(success, 'Failed to transfer ETH to recipient');
         emit ClaimedEth(_to, _amount);
     }
 
     function _executeInternal(address payable _target, bytes memory _functionData, uint256 _value) internal {
+        require(_target != address(0), 'Treasury: invalid target address');
         (bool _success, bytes memory _returnData) = _target.call{value: _value}(_functionData);
         if (!_success) {
             assembly {

@@ -31,6 +31,7 @@ abstract contract UpgradeableBase is UUPSUpgradeable, ReentrancyGuard {
     Directory internal _directory;
 
     function initialize(address directoryAddress) public virtual onlyInitializing {
+        require(directoryAddress != address(0), 'UpgradeableBase: invalid directory address');
         _directory = Directory(directoryAddress);
         __UUPSUpgradeable_init();
     }

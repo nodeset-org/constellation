@@ -45,23 +45,23 @@ exports.handler = async function(credentials) {
   if (data === undefined) throw new Error('Failed to fetch data from oracle response');
 
   const totalYieldAccrued = data.totalYieldAccrued;
-  console.log('totalYieldAccrued', totalYieldAccrued);
+  //console.log('totalYieldAccrued', totalYieldAccrued);
   const sig = data.signature;
-  console.log('sig', sig);
+  //console.log('sig', sig);
   const timestamp = data.timestamp;
-  console.log('timestamp', timestamp);
-  console.log('latest timestamp', (await provider.getBlock('latest')).timestamp);
+  //console.log('timestamp', timestamp);
+  //console.log('latest timestamp', (await provider.getBlock('latest')).timestamp);
 
   const od = new ethers.Contract(OD_ADDRESS, ['function oracleError() public view returns (uint256)'], provider);
 
   const expectedOracleError = await od.oracleError();
-  console.log('expectedOracleError', expectedOracleError);
+  //console.log('expectedOracleError', expectedOracleError);
   const sigData = {
     newTotalYieldAccrued: totalYieldAccrued,
     expectedOracleError: expectedOracleError,
     timeStamp: timestamp,
   };
-  console.log('sigData', sigData);
+  //console.log('sigData', sigData);
 
   const oracleABI = [
     'function setTotalYieldAccrued(bytes calldata _sig, (int256 newTotalYieldAccrued, uint256 expectedOracleError, uint256 timeStamp) calldata sigData)',
@@ -73,7 +73,7 @@ exports.handler = async function(credentials) {
   //const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData, { maxFeePerGas: 200, gasLimit: 1000000 });
   const txResult = await oracle.setTotalYieldAccrued(sig, sigData, { maxFeePerGas: 200 });
 
-  console.log(txResult);
+  //console.log(txResult);
 
   // uncomment this for deployment
   return txResult.hash;

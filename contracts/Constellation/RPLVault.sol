@@ -43,9 +43,10 @@ import './Utils/PriceFetcher.sol';
 contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
 
-    event TreasuryFeeChanged(uint256 oldFee, uint256 newFee);
-    event MinWethRplRatioChanged(uint256 oldValue, uint256 newValue);
-    event RPLLiquidityReservePercentChanged(uint256 oldValue, uint256 newValue);
+    event TreasuryFeeChanged(uint256 indexed oldFee, uint256 indexed newFee);
+    event MinWethRplRatioChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event RPLLiquidityReservePercentChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event DifferingSenderRecipientEnabledChanged(bool indexed oldValue, bool indexed newValue);
 
     string constant NAME = 'Constellation RPL';
     string constant SYMBOL = 'xRPL';
@@ -66,6 +67,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public minWethRplRatio;
 
     bool public depositsEnabled;
+
+    // can the recipient of a deposit be different than the caller? False by default for extra security
+    bool public differingSenderRecipientEnabled;
     
     /**
      * @notice Initializes the vault with necessary parameters and settings.
@@ -97,10 +101,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
         require(depositsEnabled, "deposits are disabled"); // emergency switch for deposits
-        require(caller == receiver, 'caller must be receiver');
-        if (_directory.isSanctioned(caller, receiver)) {
-            return;
-        }
+        require(differingSenderRecipientEnabled || caller == receiver, 'caller must be receiver');
+        require(!_directory.isSanctioned(caller, receiver), "RPLVault: cannot deposit from or to a sanctioned address");
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
 
         require(vweth.tvlRatioEthRpl(assets, false) >= minWethRplRatio, 'insufficient weth coverage ratio');
@@ -150,9 +152,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         address recipient,
         uint256 shares
     ) internal virtual override {
-        if (_directory.isSanctioned(sender, recipient)) {
-            return;
-        }
+        require(!_directory.isSanctioned(sender, recipient), "RPLVault: transfer not allowed from or to sanctioned address");
         super._transfer(sender, recipient, shares);
     }
 
@@ -217,11 +217,13 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Convenience function for viewing the maximum depoosit allowed
+     * @notice Convenience function for viewing the maximum deposit allowed
      */
     function getMaximumDeposit() public view returns (uint256) {
         if(minWethRplRatio == 0) return type(uint256).max;
-        
+        WETHVault wethVault = WETHVault(_directory.getWETHVaultAddress());
+        if(wethVault.tvlRatioEthRpl(0, false) < minWethRplRatio) return 0;
+
         uint256 tvlRpl = totalAssets();
         uint256 tvlEth = WETHVault(getDirectory().getWETHVaultAddress()).totalAssets();
         uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
@@ -230,6 +232,17 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**ADMIN FUNCTIONS */
+
+
+    /**
+     * @notice Sets whether the recipient of a deposit is allowed to be different than the caller of the deposit function.
+     * @param _newValue The new value for the differingSenderRecipientEnabled variable
+     */
+    function setDifferingSenderRecipientEnabled(bool _newValue) external onlyAdmin {
+        require(_newValue != differingSenderRecipientEnabled, 'RPLVault: new differingSenderRecipientEnabled value must be different than existing value');
+        emit DifferingSenderRecipientEnabledChanged(differingSenderRecipientEnabled, _newValue);
+        differingSenderRecipientEnabled = _newValue;
+    }
 
     /**
      * @notice Sets the treasury fee basis points.
@@ -263,7 +276,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * RPL backing xRPL will be reserved for withdrawals. If the reserve is below maximum, it will be refilled before assets are
      * put to work with the OperatorDistributor.
      * @dev This function allows the admin to update the liquidity reserve which determines the amount available for withdrawals.
-     * The liquidity rserve must be a reasonable percentage between 0 and 100%. 1e18 = 100%
+     * The liquidity reserve must be a reasonable percentage between 0 and 100%. 1e18 = 100%
      * @param _liquidityReservePercent The new collateralization ratio in basis points.
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
