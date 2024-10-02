@@ -414,9 +414,11 @@ contract OperatorDistributor is UpgradeableBase {
     /// @dev This function ensures that the specified amount of RPL tokens is approved and then staked
     /// for the SuperNode.
     function stakeRpl(uint256 _amount) external onlyProtocol {
-        SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), 0);
-        SafeERC20.safeApprove(IERC20(_directory.getRPLAddress()), _directory.getRocketNodeStakingAddress(), _amount);
-        IRocketNodeStaking(_directory.getRocketNodeStakingAddress()).stakeRPLFor(
+        IERC20 rpl = IERC20(_directory.getRPLAddress());
+        address rocketNodeStakingAddress = _directory.getRocketNodeStakingAddress();
+        SafeERC20.safeApprove(rpl, rocketNodeStakingAddress, 0);
+        SafeERC20.safeApprove(rpl, rocketNodeStakingAddress, _amount);
+        IRocketNodeStaking(rocketNodeStakingAddress).stakeRPLFor(
             getDirectory().getSuperNodeAddress(),
             _amount
         );
@@ -449,7 +451,7 @@ contract OperatorDistributor is UpgradeableBase {
 
         uint256 requiredWeth = vweth.getMissingLiquidity();
         uint256 wethBalance = IERC20(address(weth)).balanceOf(address(this));
-        uint256 balanceEthAndWeth = IERC20(address(weth)).balanceOf(address(this)) + address(this).balance;
+        uint256 balanceEthAndWeth = wethBalance + address(this).balance;
         if (balanceEthAndWeth >= requiredWeth) {
             // there's extra ETH that can be kept here for minipools, so only send required amount
             // figure out how much to wrap, then wrap it
@@ -463,6 +465,7 @@ contract OperatorDistributor is UpgradeableBase {
             // not enough available to fill up the liquidity reserve, so send everything we can
             // wrap everything in this contract and give back to the WethVault for liquidity
             weth.deposit{value: address(this).balance}();
+            // note: must recheck weth balance because it will change in the above line
             SafeERC20.safeTransfer(IERC20(address(weth)), address(vweth), weth.balanceOf(address(this)));
         }
     }
@@ -569,15 +572,17 @@ contract OperatorDistributor is UpgradeableBase {
     }
 
     function transferMerkleClaimToStreamer(uint256 ethAmount, uint256 rplAmount) external onlyProtocol {
+        address payable mcsAddress = getDirectory().getMerkleClaimStreamerAddress();
+        
         if (ethAmount > 0) {
-            (bool success, ) = getDirectory().getMerkleClaimStreamerAddress().call{value: ethAmount}('');
+            (bool success, ) = mcsAddress.call{value: ethAmount}('');
             require(success, 'ETH transfer to MerkleClaimStreamer failed');
         }
 
         if (rplAmount > 0) {
             SafeERC20.safeTransfer(
                 IERC20(_directory.getRPLAddress()),
-                getDirectory().getMerkleClaimStreamerAddress(),
+                mcsAddress,
                 rplAmount
             );
         }

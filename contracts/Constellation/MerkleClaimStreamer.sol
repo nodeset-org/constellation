@@ -162,7 +162,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
         uint256 initialEthBalance = odAddress.balance;
         uint256 initialRplBalance = IERC20(getDirectory().getRPLAddress()).balanceOf(odAddress);
         
-        // note: will revert if both amountRPLR and amountETH are zero
+        // note: RP will revert if both amountRPL and amountETH are zero
         od.submitMerkleClaim(rewardIndex, amountRPL, amountETH, merkleProof);
 
         uint256 ethReward = odAddress.balance - initialEthBalance;
