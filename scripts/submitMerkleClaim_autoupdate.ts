@@ -110,7 +110,7 @@ exports.handler = async function(credentials) {
     const merkleClaimStreamerAddress =  await directory.getMerkleClaimStreamerAddress();
 
     const rocketStorage = new ethers.Contract(rocketStorageAddress, ROCKET_STORAGE_ABI, provider);
-    const merkleClaimStreamer = new ethers.Contract(merkleClaimStreamerAddress, MERKLE_CLAIM_STREAMER_ABI, provider);
+    const merkleClaimStreamer = new ethers.Contract(merkleClaimStreamerAddress, MERKLE_CLAIM_STREAMER_ABI, signer);
 
     // Arrays to accumulate all claims
     let rewardIndexes = [];
