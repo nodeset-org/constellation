@@ -15,7 +15,6 @@ describe("OperatorDistributor.onEthBeaconRewardsReceived", function () {
 
     beforeEach(async function () {
         [owner, subNodeOperator] = await ethers.getSigners();
-
         // Deploy mocks
         const MockTreasury = await ethers.getContractFactory("MockTreasury");
         treasury = await MockTreasury.deploy();
@@ -43,7 +42,7 @@ describe("OperatorDistributor.onEthBeaconRewardsReceived", function () {
             kind: "uups",
             unsafeAllow: ["constructor"],
         });
-        await operatorDistributor.setMinimumStakeRatio(ethers.utils.parseEther("0.15"));
+
         await mockDirectory.setOperatorDistributorAddress(operatorDistributor.address);
         await mockDirectory.setRole(CoreProtocolRole, operatorDistributor.address, true);
 
@@ -150,6 +149,5 @@ describe("OperatorDistributor.onEthBeaconRewardsReceived", function () {
                 });
             });
         });
-
     });
 });
