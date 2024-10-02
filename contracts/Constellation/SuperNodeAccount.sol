@@ -29,7 +29,6 @@ import './OperatorDistributor.sol';
 import './Whitelist.sol';
 import './Utils/UpgradeableBase.sol';
 
-import '../Interfaces/RocketPool/RocketTypes.sol';
 import '../Interfaces/RocketPool/IRocketNodeDeposit.sol';
 import '../Interfaces/RocketPool/IRocketNodeStaking.sol';
 import '../Interfaces/RocketPool/IRocketNodeManager.sol';
