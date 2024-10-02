@@ -27,14 +27,19 @@ import './RPLVault.sol';
 import './Utils/PriceFetcher.sol';
 import './Utils/UpgradeableBase.sol';
 import './MerkleClaimStreamer.sol';
-import './Utils/Constants.sol';
-import '../Interfaces/RocketPool/IMinipool.sol';
 import '../Interfaces/IConstellationOracle.sol';
-import '../Interfaces/IWETH.sol';
 
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
+
+    event MaxWethRplRatioChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event TreasuryFeeChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event NodeOperatorFeeChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event WETHLiquidityReservePercentChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event MintFeeChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event DepositsEnabledChanged(bool indexed oldValue, bool indexed newValue);
+    event DifferingSenderRecipientEnabledChanged(bool indexed oldValue, bool indexed newValue);
 
     string constant NAME = 'Constellation ETH';
     string constant SYMBOL = 'xrETH';
@@ -60,6 +65,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public mintFee;
 
     bool public depositsEnabled;
+
+    // can the recipient of a deposit be different than the caller? False by default for extra security
+    bool public differingSenderRecipientEnabled;
 
     /**
      * @notice Initializes the vault with necessary parameters and settings.
@@ -100,10 +108,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 shares
     ) internal virtual override nonReentrant {
         require(depositsEnabled, "deposits are disabled"); // emergency switch for deposits
-        require(caller == receiver, 'caller must be receiver');
-        if (_directory.isSanctioned(caller, receiver)) {
-            return;
-        }
+        require(differingSenderRecipientEnabled || caller == receiver, 'caller must be receiver');
+        require(!_directory.isSanctioned(caller, receiver), "WETHVault: cannot deposit from or to a sanctioned address");
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         
         require(tvlRatioEthRpl(assets, true) <= maxWethRplRatio, 'insufficient RPL coverage');
@@ -140,15 +146,17 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 shares
     ) internal virtual override nonReentrant {
         require(caller == receiver, 'caller must be receiver');
-        require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
+        
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         // first process a minipool to give the best chance at actually withdrawing
         od.processNextMinipool();
+        require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
 
         // required violation of CHECKS/EFFECTS/INTERACTIONS: need to change WETH balance here before rebalancing the rest of the protocol
         super._withdraw(caller, receiver, owner, assets, shares);
 
-        od.rebalanceWethVault();
+        // rebalance again just in case there are no minipools to process, which skips the rebalance call in that function
+        od.rebalanceWethVault(); 
     }
 
     function _transfer(
@@ -156,9 +164,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         address recipient,
         uint256 shares
     ) internal virtual override {
-        if (_directory.isSanctioned(sender, recipient)) {
-            return;
-        }
+        require(!_directory.isSanctioned(sender, recipient), "WETHVault: transfer not allowed from or to sanctioned address");
         super._transfer(sender, recipient, shares);
     }
 
@@ -219,7 +225,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Calculates the Total Value Locked (TVL) ratio between ETH and RPL within the contract.
+     * @notice Calculates the Total Value Locked (TVL) ratio between ETH and RPL within Constellation.
      * @dev This function computes the ratio of the total value locked in ETH to the total value locked in RPL.
      * It first retrieves the TVLs in ETH and RPL, then calculates the price of ETH in RPL units using a PriceFetcher.
      * The ratio is given by (TVL in ETH * ETH price in RPL) / TVL in RPL. If TVL in RPL is 0, it returns a predefined
@@ -262,7 +268,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @notice Convenience function for viewing the maximum depoosit allowed
      */
     function getMaximumDeposit() public view returns (uint256) {
-        uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress()).totalAssets();
+        RPLVault rplVault = RPLVault(getDirectory().getRPLVaultAddress());
+        if(tvlRatioEthRpl(0, false) < rplVault.minWethRplRatio()) return 0;
+
+        uint256 tvlRpl = rplVault.totalAssets();
         uint256 tvlEth = totalAssets();
         uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
 
@@ -284,7 +293,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         return requiredBalance > currentBalance ? requiredBalance - currentBalance: 0;
     }
 
-    /// @dev for dev/testing
+    /// @dev Calculates the missing liquidity needed to meet the liquidity reserve after a specified deposit without considering the mint fee.
     function getMissingLiquidityAfterDepositNoFee(uint256 deposit) public view returns (uint256) {
         uint256 fullBalance = totalAssets() + deposit;
         uint256 currentBalance = IERC20(asset()).balanceOf(address(this));
@@ -338,12 +347,24 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     /**ADMIN FUNCTIONS */
 
     /**
+     * @notice Sets whether the recipient of a deposit is allowed to be different than the caller of the deposit function.
+     * @param _newValue The new value for the differingSenderRecipientEnabled variable
+     */
+    function setDifferingSenderRecipientEnabled(bool _newValue) external onlyAdmin {
+        require(_newValue != differingSenderRecipientEnabled, 'WETHVault: new differingSenderRecipientEnabled value must be different than existing value');
+        emit DifferingSenderRecipientEnabledChanged(differingSenderRecipientEnabled, _newValue);
+        differingSenderRecipientEnabled = _newValue;
+    }
+
+    /**
      * @notice Sets the minimum ETH/RPL coverage ratio for the vault.
      * @dev This function allows the admin to update the RPL coverage ratio, which determines the 
      * minimum ETH/RPL coverage required for the vault's health.
      * @param _maxWethRplRatio The new ETH/RPL coverage ratio to be set.
      */
     function setMaxWethRplRatio(uint256 _maxWethRplRatio) external onlyShortTimelock {
+        require(_maxWethRplRatio != maxWethRplRatio, 'WETHVault: new maxWethRplRatio value must be different than existing value');
+        emit MaxWethRplRatioChanged(maxWethRplRatio, _maxWethRplRatio);
         maxWethRplRatio = _maxWethRplRatio;
     }
 
@@ -354,8 +375,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _treasuryFee The new treasury fee (1e18 = 100%).
      */
     function setTreasuryFee(uint256 _treasuryFee) external onlyMediumTimelock {
-        require(_treasuryFee <= 1e18, 'Fee too high');
         require(_treasuryFee + nodeOperatorFee <= 1e18, 'Total fees cannot exceed 100%');
+        require(_treasuryFee != treasuryFee, 'WETHVault: new treasury fee value must be different than existing value');
+        emit TreasuryFeeChanged(treasuryFee, _treasuryFee);
         treasuryFee = _treasuryFee;
     }
 
@@ -366,8 +388,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _nodeOperatorFee The new node operator fee (1e18 = 100%).
      */
     function setNodeOperatorFee(uint256 _nodeOperatorFee) external onlyMediumTimelock {
-        require(_nodeOperatorFee <= 1e18, 'Fee too high');
         require(treasuryFee + _nodeOperatorFee <= 1e18, 'Total fees cannot exceed 100%');
+        require(_nodeOperatorFee != nodeOperatorFee, 'WETHVault: new operator fee must be different than existing value');
+        emit NodeOperatorFeeChanged(nodeOperatorFee, _nodeOperatorFee);
         nodeOperatorFee = _nodeOperatorFee;
     }
 
@@ -379,9 +402,14 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _treasuryFee The new treasury fee.
      */
     function setProtocolFees(uint256 _nodeOperatorFee, uint256 _treasuryFee) external onlyMediumTimelock {
-        require(_treasuryFee <= 1e18, 'Fee too high');
-        require(_nodeOperatorFee <= 1e18, 'Fee too high');
         require(_treasuryFee + _nodeOperatorFee <= 1e18, 'Total fees cannot exceed 100%');
+        
+        require(_nodeOperatorFee != nodeOperatorFee, 'WETHVault: new operator fee must be different than existing value');
+        emit NodeOperatorFeeChanged(nodeOperatorFee, _nodeOperatorFee);
+
+        require(_treasuryFee != treasuryFee, 'WETHVault: new treasury fee value must be different than existing value');
+        emit TreasuryFeeChanged(treasuryFee, _treasuryFee);
+        
         nodeOperatorFee = _nodeOperatorFee;
         treasuryFee = _treasuryFee;
     }
@@ -396,9 +424,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
     function setLiquidityReservePercent(uint256 _liquidityReservePercent) external onlyShortTimelock {
-        require(_liquidityReservePercent >= 0, 'WETHVault: liquidity reserve percentage must be positive');
-        require(_liquidityReservePercent <= 1e18, 'WETHVault: liquidity reserve percentage must be less than or equal to 100%');
-
+        require(_liquidityReservePercent <= 1e18, 'WETHVault: liquidity reserve percentage must be between 0% and 100% (1e18)');
+        require(_liquidityReservePercent != liquidityReservePercent, 'WETHVault: new liquidity reserve percentage value must be different than existing value');
+        emit WETHLiquidityReservePercentChanged(liquidityReservePercent, _liquidityReservePercent);
         liquidityReservePercent = _liquidityReservePercent;
 
         // rebalance entire balance of the contract to ensure the new liquidity reserve is respected
@@ -408,11 +436,15 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     function setMintFee(uint256 newMintFee) external onlyMediumTimelock() {
-        require(newMintFee >= 0 && newMintFee <= 1e18, "new mint fee must be between 0 and 100%");
+        require(newMintFee <= 1e18, "WETHVault: new mint fee must be between 0% and 100% (1e18)");
+        require(newMintFee != mintFee, 'WETHVault: new mint fee value must be different than existing value');
+        emit MintFeeChanged(mintFee, newMintFee);
         mintFee = newMintFee;
     }
 
     function setDepositsEnabled(bool _newValue) external onlyAdmin {
+        require(_newValue != depositsEnabled, 'WETHVault: new depositsEnabled value must be different than existing value');
+        emit DepositsEnabledChanged(depositsEnabled, _newValue);
         depositsEnabled = _newValue;
     }
 }

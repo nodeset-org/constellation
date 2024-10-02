@@ -48,9 +48,18 @@ import 'hardhat/console.sol';
  * Inherits from UpgradeableBase and Errors to use their functionalities for upgradeability and error handling.
  */
 contract OperatorDistributor is UpgradeableBase, Errors {
+    // warnings
     event WarningNoMiniPoolsToHarvest();
     event SuspectedPenalizedMinipoolExit(address minipool);
     event WarningEthBalanceSmallerThanRefundBalance(address _minipool);
+    
+    // parameter updates
+    event TargetStakeRatioUpdated(uint256 oldRatio, uint256 newRatio);
+    event MinStakeRatioUpdated(uint256 oldRatio, uint256 newRatio);
+    event MinipoolProcessingEnabledChanged(bool isAllowed);
+    event RPLStakeRebalanceEnabledChanged(bool isAllowed);
+
+    event MinipoolProcessed(address indexed minipool, uint256 ethRewards, bool indexed finalized);
 
     event WarningMinipoolNotStaking(
         address indexed _minipoolAddress,
@@ -63,12 +72,16 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     bool public rplStakeRebalanceEnabled;
 
     function setRplStakeRebalanceEnabled(bool _newValue) external onlyAdmin {
+        require(rplStakeRebalanceEnabled != _newValue, 'OperatorDistributor: new rplStakeRebalanceEnabled value must be different than existing value');
+        emit RPLStakeRebalanceEnabledChanged(_newValue);
         rplStakeRebalanceEnabled = _newValue;
     }
 
     bool public minipoolProcessingEnabled;
 
     function setMinipoolProcessingEnabled(bool _newValue) external onlyAdmin {
+        require(minipoolProcessingEnabled != _newValue, 'OperatorDistributor: new minipoolProcessingEnabled value must be different than existing value');
+        emit MinipoolProcessingEnabledChanged(_newValue);
         minipoolProcessingEnabled = _newValue;
     }
 
@@ -83,6 +96,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @param _targetStakeRatio The new target stake ratio to be set.
      */
     function setTargetStakeRatio(uint256 _targetStakeRatio) external onlyAdmin {
+        require(_targetStakeRatio != targetStakeRatio, 'OperatorDistributor: new targetStakeRatio must be different than existing value');
+        emit TargetStakeRatioUpdated(targetStakeRatio, _targetStakeRatio);
         targetStakeRatio = _targetStakeRatio;
     }
 
@@ -95,6 +110,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @param _minimumStakeRatio The new minimum stake ratio to be set.
      */
     function setMinimumStakeRatio(uint256 _minimumStakeRatio) external onlyAdmin {
+        require(_minimumStakeRatio != minimumStakeRatio, 'OperatorDistributor: new minimumStakeRatio must be different than existing value');
+        emit MinStakeRatioUpdated(minimumStakeRatio, _minimumStakeRatio);
         minimumStakeRatio = _minimumStakeRatio;
     }
 
@@ -126,7 +143,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      */
 
     /**
-     * @notice Returns the total ETH and WETH managed by the contract, including both the ETH+WETH balances of this contract
      * @notice Returns the total ETH and WETH managed by the contract, including both the ETH+WETH balances of this contract
      * and the SuperNode's staked ETH.
      * @return uint256 Total amount of ETH under the management of the contract.
@@ -320,6 +336,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         this.rebalanceWethVault();
         this.rebalanceRplStake(sna.getEthStaked());
         this.rebalanceRplVault();
+
+        emit MinipoolProcessed(address(minipool), rewards, minipool.getFinalised());
     }
 
     /**
@@ -347,7 +365,6 @@ contract OperatorDistributor is UpgradeableBase, Errors {
         // need to stake more
         if (targetStake > rplStaked) {
             uint256 stakeIncrease = targetStake - rplStaked;
-            if (stakeIncrease == 0) return;
 
             uint256 currentRplBalance = IERC20(_directory.getRPLAddress()).balanceOf(address(this));
 
@@ -441,7 +458,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
             if (wrapNeeded != 0) weth.deposit{value: wrapNeeded}();
             // send amount needed to vault
             if (requiredWeth != 0) SafeERC20.safeTransfer(weth, address(vweth), requiredWeth);
-            // unwrap the remaining balance to keep for minipool creation
+            // unwrap the remaining balance to keep for minipool creation (technically not necessary, but done in case WETH is sent to this contract)
             weth.withdraw(IERC20(address(weth)).balanceOf(address(this)));
         } else {
             // not enough available to fill up the liquidity reserve, so send everything we can
@@ -498,7 +515,7 @@ contract OperatorDistributor is UpgradeableBase, Errors {
 
         uint256 xrETHPortion = rewardAmount - treasuryPortion - nodeOperatorPortion;
 
-        OperatorDistributor(getDirectory().getOperatorDistributorAddress()).onIncreaseOracleError(xrETHPortion);
+        this.onIncreaseOracleError(xrETHPortion);
     }
 
     /// @notice Finalizes and distributes the balance of an exited minipool.
@@ -532,9 +549,10 @@ contract OperatorDistributor is UpgradeableBase, Errors {
      * @notice Allocates the necessary liquidity for the creation of a new minipool.
      */
     function sendEthForMinipool() external onlyProtocol {
-        uint256 bond = SuperNodeAccount(getDirectory().getSuperNodeAddress()).bond();
+        address payable snaAddress = getDirectory().getSuperNodeAddress();
+        uint256 bond = SuperNodeAccount(snaAddress).bond();
 
-        (bool success, bytes memory data) = getDirectory().getSuperNodeAddress().call{value: bond}('');
+        (bool success, bytes memory data) = snaAddress.call{value: bond}('');
         if (!success) {
             revert LowLevelEthTransfer(success, data);
         }

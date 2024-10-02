@@ -79,7 +79,7 @@ contract NodeSetOperatorRewardDistributor is
                         _did,
                         _rewardee,
                         _amount,
-                        nonces[_did],
+                        nonces[_did]++,
                         nonce,
                         address(this),
                         block.chainid
@@ -93,8 +93,6 @@ contract NodeSetOperatorRewardDistributor is
             hasRole(RewardDistributorConstants.NODESET_ADMIN_SERVER_ROLE, recoveredAddress),
             'bad signer role, params, or encoding'
         );
-
-        nonces[_did]++;
 
         // send eth to rewardee
         if (_token == address(0)) {

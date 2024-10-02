@@ -42,7 +42,11 @@ import './Utils/PriceFetcher.sol';
  */
 contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
-    event TreasuryFeeClaimed(uint256 amount);
+
+    event TreasuryFeeChanged(uint256 indexed oldFee, uint256 indexed newFee);
+    event MinWethRplRatioChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event RPLLiquidityReservePercentChanged(uint256 indexed oldValue, uint256 indexed newValue);
+    event DifferingSenderRecipientEnabledChanged(bool indexed oldValue, bool indexed newValue);
 
     string constant NAME = 'Constellation RPL';
     string constant SYMBOL = 'xRPL';
@@ -63,6 +67,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     uint256 public minWethRplRatio;
 
     bool public depositsEnabled;
+
+    // can the recipient of a deposit be different than the caller? False by default for extra security
+    bool public differingSenderRecipientEnabled;
     
     /**
      * @notice Initializes the vault with necessary parameters and settings.
@@ -94,10 +101,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
         require(depositsEnabled, "deposits are disabled"); // emergency switch for deposits
-        require(caller == receiver, 'caller must be receiver');
-        if (_directory.isSanctioned(caller, receiver)) {
-            return;
-        }
+        require(differingSenderRecipientEnabled || caller == receiver, 'caller must be receiver');
+        require(!_directory.isSanctioned(caller, receiver), "RPLVault: cannot deposit from or to a sanctioned address");
         WETHVault vweth = WETHVault(_directory.getWETHVaultAddress());
 
         require(vweth.tvlRatioEthRpl(assets, false) >= minWethRplRatio, 'insufficient weth coverage ratio');
@@ -130,11 +135,12 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 shares
     ) internal virtual override {
         require(caller == receiver, 'caller must be receiver');
-        require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
         
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         // first process a minipool to give the best chance at actually withdrawing
         od.processNextMinipool();
+
+        require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
 
         super._withdraw(caller, receiver, owner, assets, shares);
         
@@ -146,9 +152,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         address recipient,
         uint256 shares
     ) internal virtual override {
-        if (_directory.isSanctioned(sender, recipient)) {
-            return;
-        }
+        require(!_directory.isSanctioned(sender, recipient), "RPLVault: transfer not allowed from or to sanctioned address");
         super._transfer(sender, recipient, shares);
     }
 
@@ -217,7 +221,9 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function getMaximumDeposit() public view returns (uint256) {
         if(minWethRplRatio == 0) return type(uint256).max;
-        
+        WETHVault wethVault = WETHVault(_directory.getWETHVaultAddress());
+        if(wethVault.tvlRatioEthRpl(0, false) < minWethRplRatio) return 0;
+
         uint256 tvlRpl = totalAssets();
         uint256 tvlEth = WETHVault(getDirectory().getWETHVaultAddress()).totalAssets();
         uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
@@ -226,6 +232,17 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     /**ADMIN FUNCTIONS */
+
+
+    /**
+     * @notice Sets whether the recipient of a deposit is allowed to be different than the caller of the deposit function.
+     * @param _newValue The new value for the differingSenderRecipientEnabled variable
+     */
+    function setDifferingSenderRecipientEnabled(bool _newValue) external onlyAdmin {
+        require(_newValue != differingSenderRecipientEnabled, 'RPLVault: new differingSenderRecipientEnabled value must be different than existing value');
+        emit DifferingSenderRecipientEnabledChanged(differingSenderRecipientEnabled, _newValue);
+        differingSenderRecipientEnabled = _newValue;
+    }
 
     /**
      * @notice Sets the treasury fee basis points.
@@ -236,6 +253,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function setTreasuryFee(uint256 _treasuryFee) external onlyMediumTimelock {
         require(_treasuryFee <= 1e18, 'Fee too high');
+        require(_treasuryFee != treasuryFee, 'RPLVault: new treasury fee value must be different than existing value');
+        emit TreasuryFeeChanged(treasuryFee, _treasuryFee);
         treasuryFee = _treasuryFee;
     }
 
@@ -247,6 +266,8 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @param _minWethRplRatio The new WETH coverage ratio to be set (in base points).
      */
     function setMinWethRplRatio(uint256 _minWethRplRatio) external onlyShortTimelock {
+        require(_minWethRplRatio != minWethRplRatio, 'RPLVault: new minWethRplRatio value must be different than existing value');
+        emit MinWethRplRatioChanged(minWethRplRatio, _minWethRplRatio);
         minWethRplRatio = _minWethRplRatio;
     }
 
@@ -260,9 +281,11 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
      * @custom:requires This function can only be called by an address with the Medium Timelock role.
      */
     function setLiquidityReservePercent(uint256 _liquidityReservePercent) external onlyShortTimelock {
-        require(_liquidityReservePercent >= 0, 'RPLVault: liquidity reserve percentage must be positive');
         require(_liquidityReservePercent <= 1e18, 'RPLVault: liquidity reserve percentage must be less than or equal to 100%');
-       
+        require(_liquidityReservePercent != liquidityReservePercent, 'RPLVault: new liquidityReservePercent value must be different than existing value');
+
+        emit RPLLiquidityReservePercentChanged(liquidityReservePercent, _liquidityReservePercent);
+
         liquidityReservePercent = _liquidityReservePercent;
 
         // rebalance entire balance of the contract to ensure the new liquidity reserve is respected

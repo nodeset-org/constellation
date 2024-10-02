@@ -30,7 +30,7 @@ import './Constants.sol';
 abstract contract UpgradeableBase is UUPSUpgradeable, ReentrancyGuard {
     Directory internal _directory;
 
-    function initialize(address directoryAddress) public virtual initializer {
+    function initialize(address directoryAddress) public virtual onlyInitializing {
         _directory = Directory(directoryAddress);
         __UUPSUpgradeable_init();
     }

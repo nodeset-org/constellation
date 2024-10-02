@@ -1,17 +1,18 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Contract } from "@ethersproject/contracts/lib/index"
 import { Directory } from "../../typechain-types/contracts/Constellation/Utils/Directory";
 import { Whitelist } from "../../typechain-types/contracts/Constellation/Whitelist";
-import { WETHVault, RPLVault, OperatorDistributor, NodeSetOperatorRewardDistributor, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetworkInterface, IConstellationOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, RocketDepositPool, RocketNodeDeposit, RocketDAONodeTrusted, RocketTokenRETH, RocketClaimDAO, RocketRewardsPool, RocketDAONodeTrustedActions, SuperNodeAccount, PoAConstellationOracle, RocketStorage, RocketMinipoolDelegate, RocketMinipoolInterface, MerkleClaimStreamer, Treasury } from "../../typechain-types";
+import { WETHVault, RPLVault, OperatorDistributor, NodeSetOperatorRewardDistributor, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetworkInterface, IConstellationOracle, IRocketStorage, IRocketNodeManager, IRocketNodeStaking, IWETH, PriceFetcher, MockSanctions, RocketNodeManagerInterface, RocketNodeDepositInterface, RocketDepositPool, RocketNodeDeposit, RocketDAONodeTrusted, RocketTokenRETH, RocketClaimDAO, RocketRewardsPool, RocketDAONodeTrustedActions, SuperNodeAccount, PoAConstellationOracle, RocketMinipoolDelegate, RocketMinipoolInterface, MerkleClaimStreamer, Treasury, RocketStorage } from "../../typechain-types";
 import { setDefaultParameters } from "../rocketpool/_helpers/defaults";
 import { deployRocketPool } from "../rocketpool/_helpers/deployment";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ERC20 } from "../../typechain-types/contracts/Testing/Rocketpool/contract/util";
-import { deployProtocolLocalDev } from "../../scripts/utils/deployment";
 import { BigNumber } from 'ethers';
 import { DepositData } from "@chainsafe/lodestar-types";
+import { RocketStorage as TruffleLegacyRocketStorage, RocketTokenRPL } from "../../test/rocketpool/_utils/artifacts";
+import { fastDeployProtocol } from "../../scripts/utils/deployment";
 
 
 export type SetupData = {
@@ -195,6 +196,96 @@ export async function createSigners(): Promise<Signers> {
     nodesetAdmin: signersArray[15],
     nodesetServerAdmin: signersArray[16],
 	};
+}
+
+async function deployProtocolLocalDev(signers: Signers, log = false): Promise<Protocol> {
+  const RocketStorageDeployment = await TruffleLegacyRocketStorage.deployed();
+  const rockStorageContract = (await ethers.getContractAt(
+      "RocketStorage",
+      RocketStorageDeployment.address
+  )) as IRocketStorage;
+  const RplToken = await RocketTokenRPL.deployed();
+  const rplContract = (await ethers.getContractAt(
+      "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
+      RplToken.address
+  )) as ERC20;
+
+  upgrades.silenceWarnings();
+
+  // deploy weth
+  const WETH = await ethers.getContractFactory("WETH");
+  const wETH = await WETH.deploy();
+  await wETH.deployed();
+
+  // deploy mock sanctions
+  const Sanctions = await ethers.getContractFactory("MockSanctions");
+  const sanctions = await Sanctions.deploy();
+  await sanctions.deployed();
+
+  const {
+      whitelist, vCWETH, vCRPL, operatorDistributor, merkleClaimStreamer, superNode, oracle,
+      yieldDistributor, priceFetcher, directory, treasury
+  } = await fastDeployProtocol(
+      signers.treasurer.address, // treasurer
+      signers.deployer, // deployer
+      signers.nodesetAdmin.address, // nodesetAdmin
+      signers.nodesetServerAdmin.address, // nodesetServerAdmin
+      signers.adminServer.address, // adminServer
+      signers.random5, // directoryDeployer
+      signers.random4.address, // adminOracle
+      rockStorageContract.address, // rocketStorage
+      wETH.address, // weth
+      sanctions.address, // sanctions
+      signers.admin.address, // admin
+      log, // log
+      true // localDev
+  )
+
+  const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
+  let tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(adminRole), signers.adminServer.address);
+  await tx.wait();
+
+  // set timelock to be TIMELOCK_ROLE
+  const timelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
+  tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRole), signers.admin.address);
+  await tx.wait();
+
+  const timelockRoleMed = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_MED"));
+  tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockRoleMed), signers.admin.address);
+  await tx.wait();
+
+  const timelockLongRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_LONG"));
+  tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(timelockLongRole), signers.admin.address);
+  await tx.wait();
+
+  const oracleAdminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ORACLE_ROLE"));
+  tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(oracleAdminRole), signers.admin.address);
+  await tx.wait();
+
+  // set protocolSigner to be PROTOCOL_ROLE
+  const protocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
+  console.log(signers.admin.address)
+  tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(protocolRole), signers.protocolSigner.address);
+  await tx.wait();
+
+  expect(await directory.getTreasuryAddress()).to.equal(treasury.address);
+
+  const returnData: Protocol = {
+      treasury, directory, whitelist, vCWETH, vCRPL, operatorDistributor,
+      merkleClaimStreamer, superNode, yieldDistributor, oracle, priceFetcher, wETH, sanctions
+  };
+
+  // send all rpl from admin to rplWhale
+  const rplWhaleBalance = await rplContract.balanceOf(signers.deployer.address);
+  tx = await rplContract.transfer(signers.rplWhale.address, rplWhaleBalance);
+  await tx.wait();
+
+  let hasProtocolRole = await returnData.directory.hasRole(protocolRole, signers.protocolSigner.address);
+  while (!(hasProtocolRole)) {
+      hasProtocolRole = await returnData.directory.hasRole(protocolRole, signers.protocolSigner.address);
+  }
+
+  return returnData;
 }
 
 export async function protocolFixture(): Promise<SetupData> {

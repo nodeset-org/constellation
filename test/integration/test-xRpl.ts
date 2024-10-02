@@ -83,18 +83,7 @@ describe("xRPL", function () {
 
     await rocketPool.rplContract.connect(signers.random).approve(protocol.vCRPL.address, ethers.utils.parseEther("100"));
 
-    const tx = await protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("100"), signers.random.address);
-    const receipt = await tx.wait();
-    const { events } = receipt;
-    if (events) {
-      for (let i = 0; i < events.length; i++) {
-        expect(events[i].event).not.equals(null)
-        if (events[i].event?.includes("SanctionViolation")) {
-          expect(events[i].event?.includes("SanctionViolation")).equals(true)
-        }
-      }
-    }
-
+    await expect(protocol.vCRPL.connect(signers.random).deposit(ethers.utils.parseEther("100"), signers.random.address)).to.be.revertedWith("RPLVault: cannot deposit from or to a sanctioned address");
     const expectedRplInDP = ethers.utils.parseEther("0");
     const actualRplInDP = await rocketPool.rplContract.balanceOf(protocol.operatorDistributor.address);
     expect(expectedRplInDP).equals(actualRplInDP)
@@ -122,7 +111,7 @@ describe("xRPL", function () {
 
     const deposit = ethers.utils.parseEther("1000000");
 
-    await protocol.vCRPL.connect(signers.admin).setMinWethRplRatio(ethers.BigNumber.from(0));
+    expect(await protocol.vCRPL.minWethRplRatio()).equals(BigNumber.from(0));
     await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
     await rocketPool.rplContract.connect(signers.rplWhale).transfer(signers.random.address, deposit);

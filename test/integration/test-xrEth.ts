@@ -35,17 +35,7 @@ describe("xrETH", function () {
 
     await protocol.wETH.connect(signers.ethWhale).deposit({ value: ethers.utils.parseEther("100") });
     await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, ethers.utils.parseEther("100"));
-    const tx = await protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address);
-    const receipt = await tx.wait();
-    const { events } = receipt;
-    if (events) {
-      for (let i = 0; i < events.length; i++) {
-        expect(events[i].event).not.equals(null)
-        if (events[i].event?.includes("SanctionViolation")) {
-          expect(events[i].event?.includes("SanctionViolation")).equals(true)
-        }
-      }
-    }
+    await expect(protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("100"), signers.ethWhale.address)).to.be.revertedWith("WETHVault: cannot deposit from or to a sanctioned address");
 
     const expectedxrETHInSystem = ethers.utils.parseEther("0");
     const actualxrETHInSystem = await protocol.vCWETH.totalAssets();
@@ -351,16 +341,6 @@ describe("xrETH", function () {
     expect(await ethers.provider.getBalance(protocol.directory.getTreasuryAddress())).equals(expectedTreasuryPortion)
   })
 
-  it("fail - cannot deposit 1 eth at 50 rpl and 500 rpl, tvl ratio returns ~15%", async () => {
-    const setupData = await loadFixture(protocolFixture);
-    const { protocol, signers, rocketPool } = setupData;
-  })
-
-  it("success - can deposit 5 eth at 50 rpl and 500 rpl, tvl ratio returns ~15%", async () => {
-    const setupData = await loadFixture(protocolFixture);
-    const { protocol, signers, rocketPool } = setupData;
-  });
-
   describe("admin functions", () => {
     it("success - admin can set tvlCoverageRatio", async () => {
       const { protocol, signers } = await loadFixture(protocolFixture);
@@ -384,7 +364,6 @@ describe("xrETH", function () {
 
       expect(await protocol.vCWETH.depositsEnabled()).equals(true);
 
-      await expect(protocol.vCWETH.connect(signers.admin).setDepositsEnabled(true)).to.not.be.reverted;
       let depositAmount =  ethers.utils.parseEther("1");
       await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmount });
       await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, depositAmount);
@@ -396,13 +375,13 @@ describe("xrETH", function () {
       await expect(protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address)).to.be.revertedWith("deposits are disabled");
 
       await expect(protocol.vCWETH.connect(signers.admin).setDepositsEnabled(true)).to.not.be.reverted;
-      await expect(protocol.vCWETH.connect(signers.admin).setDepositsEnabled(true)).to.not.be.reverted;
+      expect(await protocol.vCWETH.depositsEnabled()).equals(true);
       await expect(protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address)).to.not.be.reverted;
 
       await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmount });
       await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, depositAmount);
       await expect(protocol.vCWETH.connect(signers.admin).setDepositsEnabled(false)).to.not.be.reverted;
-      await expect(protocol.vCWETH.connect(signers.admin).setDepositsEnabled(false)).to.not.be.reverted;
+      expect(await protocol.vCWETH.depositsEnabled()).equals(false);
       await expect(protocol.vCWETH.connect(signers.ethWhale).deposit(ethers.utils.parseEther("1"), signers.ethWhale.address)).to.be.revertedWith("deposits are disabled");
     });
 
@@ -429,22 +408,6 @@ describe("xrETH", function () {
       await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmountEth });
       await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, depositAmountEth);
       const tx = await protocol.vCWETH.connect(signers.ethWhale).deposit(depositAmountEth, signers.ethWhale.address);
-      const events = await getEventNames(tx, protocol.directory);
-      expect(events.includes("SanctionViolation")).equals(false);
-    })
-
-    it("fail - should fail siliently with event logging", async () => {
-      const { protocol, signers } = await loadFixture(protocolFixture);
-
-      const depositAmountEth = ethers.utils.parseEther("5");
-
-      await protocol.sanctions.addBlacklist(signers.ethWhale.address);
-
-      await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmountEth });
-      await protocol.wETH.connect(signers.ethWhale).approve(protocol.vCWETH.address, depositAmountEth);
-      const tx = await protocol.vCWETH.connect(signers.ethWhale).deposit(depositAmountEth, signers.ethWhale.address);
-      const events = await getEventNames(tx, protocol.directory);
-      expect(events.includes("SanctionViolation")).equals(true);
     })
   })
 
