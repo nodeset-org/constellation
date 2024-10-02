@@ -45,14 +45,13 @@ import '../Interfaces/IWETH.sol';
 import './WETHVault.sol';
 
 import './Utils/Constants.sol';
-import './Utils/Errors.sol';
 
 /**
  * @title SuperNodeAccount
  * @author Theodore Clapp, Mike Leach
  * @dev Abstracts all created minipools under a single node
  */
-contract SuperNodeAccount is UpgradeableBase, Errors {
+contract SuperNodeAccount is UpgradeableBase {
     event MinipoolCreated(address indexed minipoolAddress, address indexed operatorAddress);
     event MinipoolStaked(address indexed minipoolAddress, address indexed operatorAddress);
     event MinipoolDestroyed(address indexed minipoolAddress, address indexed operatorAddress);

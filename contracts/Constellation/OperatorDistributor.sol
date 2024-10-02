@@ -28,7 +28,6 @@ import './WETHVault.sol';
 import './SuperNodeAccount.sol';
 
 import './Utils/Constants.sol';
-import './Utils/Errors.sol';
 
 import '../Interfaces/IWETH.sol';
 import '../Interfaces/RocketPool/IRocketStorage.sol';
@@ -44,10 +43,8 @@ import '../Interfaces/RocketPool/IRocketDAOProtocolSettingsMinipool.sol';
  * @dev Manages distribution and staking of ETH and RPL tokens for
  * decentralized node operators to stake with a single Rocket Pool "supernode".
  * Serves as the withdrawal address for the SuperNode and has functions for rebalancing liquidity across the protocol.
- * Serves as the withdrawal address for the SuperNode and has functions for rebalancing liquidity across the protocol.
- * Inherits from UpgradeableBase and Errors to use their functionalities for upgradeability and error handling.
  */
-contract OperatorDistributor is UpgradeableBase, Errors {
+contract OperatorDistributor is UpgradeableBase {
     // warnings
     event WarningNoMiniPoolsToHarvest();
     event SuspectedPenalizedMinipoolExit(address minipool);
@@ -68,6 +65,8 @@ contract OperatorDistributor is UpgradeableBase, Errors {
     );
 
     using Math for uint256;
+
+    error LowLevelEthTransfer(bool success, bytes data);
 
     bool public rplStakeRebalanceEnabled;
 
