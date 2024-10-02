@@ -20,6 +20,9 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 // Fill in directory contract address prior to running
 const DIRECTORY_ADDRESS = process.env.DIRECTORY_ADDRESS;
 
+// Fill in the number of files to process prior to running
+const NUM_FILES_PROCESS = process.env.NUM_FILES_PROCESS || 50; // Default to 50 files if not set in environment
+
 
 const GITHUB_REPO_API = `https://api.github.com/repos/rocket-pool/rewards-trees/contents/${NETWORK}`;
 
@@ -120,13 +123,19 @@ exports.handler = async function(credentials) {
         const rewardFiles = await fetchRewardFiles();
         console.log('Fetched reward files:', rewardFiles.length);
 
+        // Sort files by interval number and only process the last NUM_FILES_PROCESS files
+        rewardFiles.sort((a, b) => {
+            const aInterval = parseInt(a.name.match(/(\d+)\.json$/)[1], 10);
+            const bInterval = parseInt(b.name.match(/(\d+)\.json$/)[1], 10);
+            return aInterval - bInterval;
+        });
+        const filesToProcess = rewardFiles.slice(-NUM_FILES_PROCESS);
+
         // Loop over each reward file and collect data for all claims
-        for (const file of rewardFiles) {
-            console.log("\n")
+        for (const file of filesToProcess) {
             // Extract interval from filenames like 'rp-rewards-holesky-124.json' or 'rp-rewards-holesky-999.json'
             const intervalMatch = file.name.match(new RegExp(`rp-rewards-${NETWORK}-(\\d+)\\.json`));
             if (!intervalMatch) {
-                console.log(`Invalid filename format: ${file.name}, skipping...`);
                 continue; // Skip if the filename doesn't match the expected pattern
             }
 
@@ -142,7 +151,6 @@ exports.handler = async function(credentials) {
             const key = ethers.utils.keccak256(encodedData);
             const merkleRoot = await rocketStorage.getBytes32(key);
             if (merkleRoot === '0x0000000000000000000000000000000000000000000000000000000000000000') {
-                console.log(`Merkle root not set for interval ${interval}, skipping...`);
                 continue; // Skip to the next interval
             }
 
@@ -160,12 +168,10 @@ exports.handler = async function(credentials) {
 
             // Check if the reward has been claimed
             if (isClaimed(claimedWord, indexBitIndex)) {
-                console.log(`Reward interval ${interval} has already been claimed, skipping...`);
                 continue; // Skip to the next interval
             }
 
             // Reward hasn't been claimed, fetch the file content
-            console.log(`Fetching content for interval ${interval}...`);
             const rewardData = await fetchRewardFileContent(file.download_url);
 
             const { rewardsFileVersion } = rewardData;
@@ -175,12 +181,10 @@ exports.handler = async function(credentials) {
             try {
                 rewardsInfo = processRewardsForVersion(rewardData, rewardsFileVersion, superNodeAddress.toLowerCase());
             } catch (error) {
-                console.log(`Error processing rewards for interval ${interval}:`, error);
                 continue;
             }
 
             if (rewardsInfo === null) {
-                console.log(`No rewards found for interval ${interval}, skipping...`);
                 continue; // Skip to the next interval
             }
 
@@ -221,13 +225,10 @@ exports.handler = async function(credentials) {
                 // uncomment this for deployment
                 return txResult.hash;
             } catch (error) {
-                console.log(`Failed to submit Merkle claim:`, error);
             }
         } else {
-            console.log('No unclaimed rewards to submit.');
         }
     } catch (error) {
-        console.log('Error processing rewards:', error);
     }
 
 };
