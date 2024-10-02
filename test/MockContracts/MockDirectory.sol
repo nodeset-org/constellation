@@ -6,13 +6,18 @@ contract MockDirectory {
     address whitelist;
     address operatorDistributor;
     address rocketNodeStaking;
-    address rocketDAOProtocolSettingsMinipool;
+    address rocketDaoProtocolSettingsMinipool;
     address rplAddress;
     address wethVaultAddress;
     address rocketNodeDepositAddress;
     address priceFetcherAddress;
     address superNodeAddress;
-    address rocketDAOProtocolSettingsRewardsAddress;
+    address wethAddress;
+    address rocketDaoProtocolSettingsRewardsAddress;
+    address rplVaultAddress;
+    address rocketDaoProtocolSettingsMinipoolAddress;
+    address treasuryAddress;
+    address operatorReward;
     mapping(bytes32 => mapping(address => bool)) private roles;
 
     function getRocketMinipoolManagerAddress() public view returns (address) {
@@ -56,11 +61,11 @@ contract MockDirectory {
     }
 
     function getRocketDAOProtocolSettingsMinipool() public view returns (address) {
-        return rocketDAOProtocolSettingsMinipool;
+        return rocketDaoProtocolSettingsMinipool;
     }
 
-    function setRocketDAOProtocolSettingsMinipoolAddress(address _rocketDAOProtocolSettingsMinipool) public {
-        rocketDAOProtocolSettingsMinipool = _rocketDAOProtocolSettingsMinipool;
+    function setRocketDAOProtocolSettingsMinipoolAddress(address _rocketDaoProtocolSettingsMinipool) public {
+        rocketDaoProtocolSettingsMinipool = _rocketDaoProtocolSettingsMinipool;
     }
 
     function getRPLAddress() public view returns (address) {
@@ -69,6 +74,14 @@ contract MockDirectory {
 
     function setRPLAddress(address _rplAddress) public {
         rplAddress = _rplAddress;
+    }
+
+    function setRPLVaultAddress(address _rplVaultAddress) public {
+        rplVaultAddress = _rplVaultAddress;
+    }
+
+    function getRPLVaultAddress() public view returns (address) {
+        return rplVaultAddress;
     }
 
     function getWETHVaultAddress() public view returns (address) {
@@ -105,10 +118,35 @@ contract MockDirectory {
     }
 
     function getRocketDAOProtocolSettingsRewardsAddress() public view returns (address) {
-        return rocketDAOProtocolSettingsRewardsAddress;
+        return rocketDaoProtocolSettingsRewardsAddress;
     }
 
-    function setRocketDAOProtocolSettingRewardsAddress(address _rocketDAOProtocolSettingsRewardsAddress) public {
-        rocketDAOProtocolSettingsRewardsAddress = _rocketDAOProtocolSettingsRewardsAddress;
+    function setRocketDAOProtocolSettingRewardsAddress(address _rocketDaoProtocolSettingsRewardsAddress) public {
+        rocketDaoProtocolSettingsRewardsAddress = _rocketDaoProtocolSettingsRewardsAddress;
     }
+
+    function getWETHAddress() public view returns (address) {
+        return wethAddress;
+    }
+
+    function setWETHAddress(address _wethAddress) public {
+        wethAddress = _wethAddress;
+    }
+
+    function setTreasuryAddress(address _treasuryAddress) public {
+        treasuryAddress = _treasuryAddress;
+    }
+
+    function getTreasuryAddress() public view returns (address) {
+        return treasuryAddress;
+    }
+
+    function setOperatorRewardAddress(address _operatorReward) public {
+        operatorReward = _operatorReward;
+    }
+
+    function getOperatorRewardAddress() public view returns (address) {
+        return operatorReward;
+    }
+
 }
