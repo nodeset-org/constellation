@@ -99,6 +99,20 @@ describe("Directory.getters", function () {
     mockRocketStorage = await MockRocketStorage.deploy();
     await mockRocketStorage.deployed()
 
+    // Set initial rocket storage values - needs to be done before deployment of Directory contract
+    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketNodeManager"), "0x0000000000000000000000000000000000000001");
+    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketNodeDeposit"), "0x0000000000000000000000000000000000000002");
+    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketNodeStaking"), "0x0000000000000000000000000000000000000003");
+    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketMinipoolManager"), "0x0000000000000000000000000000000000000004");
+    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketDAOProtocolSettingsRewards"), "0x0000000000000000000000000000000000000005");
+    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketDAOProtocolSettingsMinipool"), "0x0000000000000000000000000000000000000006");
+    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketTokenRPL"), "0x0000000000000000000000000000000000000007");
+    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketNetworkPenalties"), "0x0000000000000000000000000000000000000008");
+    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketDepositPool"), "0x0000000000000000000000000000000000000009");
+    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketNetworkPrices"), "0x0000000000000000000000000000000000000010");
+    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketDAOProtocolProposal"), "0x0000000000000000000000000000000000000011");
+    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketMerkleDistributorMainnet"), "0x0000000000000000000000000000000000000012");
+    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketNetworkVoting"), "0x0000000000000000000000000000000000000013");
 
     // Deploy contract to test
     const Directory = await ethers.getContractFactory("Directory");
@@ -135,22 +149,7 @@ describe("Directory.getters", function () {
   });
 
   it("should return the correct addresses after RocketStorage values change", async function () {
-    // Set initial rocket storage values
-    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketNodeManager"), "0x0000000000000000000000000000000000000001");
-    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketNodeDeposit"), "0x0000000000000000000000000000000000000002");
-    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketNodeStaking"), "0x0000000000000000000000000000000000000003");
-    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketMinipoolManager"), "0x0000000000000000000000000000000000000004");
-    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketDAOProtocolSettingsRewards"), "0x0000000000000000000000000000000000000005");
-    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketDAOProtocolSettingsMinipool"), "0x0000000000000000000000000000000000000006");
-    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketTokenRPL"), "0x0000000000000000000000000000000000000007");
-    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketNetworkPenalties"), "0x0000000000000000000000000000000000000008");
-    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketDepositPool"), "0x0000000000000000000000000000000000000009");
-    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketNetworkPrices"), "0x0000000000000000000000000000000000000010");
-    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketDAOProtocolProposal"), "0x0000000000000000000000000000000000000011");
-    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketMerkleDistributorMainnet"), "0x0000000000000000000000000000000000000012");
-    await mockRocketStorage.setAddress(generateBytes32Identifier("rocketNetworkVoting"), "0x0000000000000000000000000000000000000013");
-
-    // Protocol addresses should not change
+    // assert protocol addresses prior to RocketStorage update
     expect(await directory.getWhitelistAddress()).to.equal(mockWhitelist.address);
     expect(await directory.getWETHVaultAddress()).to.equal(mockWETHVault.address);
     expect(await directory.getRPLVaultAddress()).to.equal(mockRPLVault.address);
@@ -159,7 +158,7 @@ describe("Directory.getters", function () {
     expect(await directory.getOperatorDistributorAddress()).to.equal(mockOperatorDistributor.address);
     expect(await directory.getMerkleClaimStreamerAddress()).to.equal(mockMerkleClaimStreamer.address);
 
-    // RocketStorage addresses should change
+    // assert RocketStorage addresses prior to RocketStorage update
     expect(await directory.getRocketNodeManagerAddress()).to.equal("0x0000000000000000000000000000000000000001");
     expect(await directory.getRocketNodeDepositAddress()).to.equal("0x0000000000000000000000000000000000000002");
     expect(await directory.getRocketNodeStakingAddress()).to.equal("0x0000000000000000000000000000000000000003");
