@@ -1,15 +1,9 @@
-import { assert, expect } from "chai";
+import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { Protocol, protocolFixture, RocketPool, SetupData } from "../integration";
-import { BigNumber } from "ethers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { assertTransferEvents, expectNumberE18ToBeApproximately, getEventNames, increaseEVMTime, prepareOperatorDistributionContract, registerNewValidator, upgradePriceFetcherToMock, whitelistUserServerSig } from "../../utils/utils";
-import { ContractTransaction } from "@ethersproject/contracts";
-import { MerkleClaimStreamer, RocketMerkleDistributorMainnet, RocketVault } from "../../typechain-types";
+import { protocolFixture } from "../integration";
 
 describe("submitMerkleClaim()", async () => {
-
     describe("When claim is submitted for 1 user", async () => {
         describe("When merkleClaimsEnabled", async () => {
             describe("When ethReward is greater than 0", async () => {
