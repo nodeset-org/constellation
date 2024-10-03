@@ -1,6 +1,20 @@
 
 import { task, types } from "hardhat/config";
 
+task("deployContract", "Deploys a contract using the provided Factory address")
+    .addParam("factory", "The name of the Factory contract", undefined, types.string)
+    .setAction(async ({ factory }, hre) => {
+        console.log(`Deploying contract using Factory: ${factory}`);
+
+        const FactoryContract: any = await hre.ethers.getContractFactory(factory);
+
+        const deployedContract = await FactoryContract.deploy();
+        await deployedContract.deployed();
+
+        console.log(`Contract deployed at address: ${deployedContract.address}`);
+        return deployedContract.address;
+    });
+
 task("upgradeTo", "Encodes the upgradeTo(address) function call for an upgradable contract")
     .addParam("newImplementation", "The address of the new implementation contract", undefined, types.string)
     .setAction(async ({ newImplementation }, hre) => {
