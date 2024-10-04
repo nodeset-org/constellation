@@ -1,8 +1,5 @@
+
 import { task, types } from "hardhat/config";
-//import { retryOperation } from "../scripts/utils/deployment";
-import findConfig from "find-config";
-import dotenv from "dotenv";
-import { deployTimelockFromEnv } from "../scripts/environments/timelock";
 
 task("encodeProposal", "Encodes a proposal for execution")
   .addParam("sigs", "Array of function signatures as a JSON string")

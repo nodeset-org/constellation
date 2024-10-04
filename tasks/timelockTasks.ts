@@ -1,9 +1,4 @@
 import { task, types } from 'hardhat/config';
-import findConfig from 'find-config';
-import { getWalletFromPath } from '../scripts/utils/keyReader';
-import dotenv from 'dotenv';
-import { ContractFactory } from 'ethers';
-import { deployContract } from '@nomiclabs/hardhat-ethers/types';
 
 task('upgradeTo', 'Encodes the upgradeTo(address) function call for an upgradable contract')
   .addParam('newImplementation', 'The address of the new implementation contract', undefined, types.string)
@@ -13,31 +8,6 @@ task('upgradeTo', 'Encodes the upgradeTo(address) function call for an upgradabl
 
     console.log(`Encoding upgradeTo with new implementation: ${newImplementation}`);
     return await hre.run('encodeProposal', { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
-  });
-
-task(
-  'deployAndEncodeUpgrade',
-  'Deploys a new implementation contract and encodes the upgradeTo(address) function call for an upgradable contract'
-)
-  .addParam('contractName', 'The name of the contract', undefined, types.string)
-  .addParam('environmentName', 'The name of the env file to use (.environmentName.env)', undefined, types.string)
-  .setAction(async ({ contractName, environmentName }, hre) => {
-    const dotenvPath = findConfig(`.${environmentName}.env`);
-    if (dotenvPath !== null) {
-      dotenv.config({ path: dotenvPath });
-    } else {
-      // Handle the case where no .env file is found
-      console.error('No .env.' + environmentName + 'file found');
-      return;
-    }
-    const deployerWallet = await getWalletFromPath(ethers, process.env.DEPLOYER_PRIVATE_KEY_PATH as string);
-
-    console.log(`Deploying new implementation contract for ${contractName}...`);
-    const contract = await (await hre.ethers.deployContract(contractName, [], deployerWallet)).deployed();
-
-    console.log(`Deployed new implementation contract for ${contractName}: ${contract.address}`);
-
-    return await hre.run('upgradeTo', { newImplementation: contract.address });
   });
 
 task('upgradeToAndCall', 'Encodes the upgradeToAndCall(address,bytes) function call for an upgradable contract')
