@@ -113,18 +113,15 @@ task(
     const txData: UpgradeTxData = { targets, values, payloads: encodings, predecessor, salt };
 
     console.log('\n==== TRANSACTION DATA ====');
-    console.log('Targets:\n', targets);
-    console.log('Values\n', values);
-    console.log('Payloads:\n', encodings);
-    console.log('Predecessor:\n', predecessor);
-    console.log('Salt:\n', salt);
+      let output = 'Targets:\n' + targets + '\nValues\n' + values + '\nPayloads:\n' + encodings + '\nPredecessor:\n' + predecessor + '\nSalt:\n' + salt;
+      console.log(output);
 
     const fs = require('fs');
     const dir = __dirname + '/../.upgrades';
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir);
     }
-    fs.writeFileSync(dir + '/' + Date.now(), JSON.stringify(txData, null, 2));
+    fs.writeFileSync(dir + '/' + Date.now(), JSON.stringify(output, null, 2));
 
     return txData;
   });
