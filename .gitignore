@@ -20,3 +20,7 @@ artifacts
 #OpenZeppelin
 .openzeppelin/unknown-*.json
 *.keystore
+
+# deployments and upgrades
+.deployments
+.upgrades

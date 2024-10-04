@@ -8,9 +8,10 @@ task(
   'Deploys a new implementation contract and encodes the upgradeTo(address) function call for an upgradable contract'
 )
   .addParam('contractName', 'The name of the contract', undefined, types.string)
-  .addParam('environmentName', 'The name of the env file to use (.environmentName.env)', undefined, types.string)
+  .addParam('environmentName', 'The name of the env file to use (.environmentName.env).', undefined, types.string)
   .setAction(async ({ contractName, environmentName }, hre) => {
     const dotenvPath = findConfig(`.${environmentName}.env`);
+
     if (dotenvPath !== null) {
       dotenv.config({ path: dotenvPath });
     } else {
@@ -21,6 +22,7 @@ task(
     const deployerWallet = await getWalletFromPath(ethers, process.env.DEPLOYER_PRIVATE_KEY_PATH as string);
 
     const contract = await (await hre.ethers.deployContract(contractName, [], deployerWallet)).deployed();
+
     const address = contract.address;
     console.log(`Deployed new implementation contract for ${contractName}: ${address}`);
 
@@ -42,11 +44,11 @@ task('getProxyAddress', 'Gets the address of the proxy address for a given contr
   .addParam('directoryAddress', 'The directory address for the deployment to check', undefined, types.string)
   .setAction(async ({ contractName, directoryAddress }, hre) => {
     if (contractName === 'Directory') {
-      console.log('Directory proxy address:' + directoryAddress);
+      console.log('Directory proxy address: ' + directoryAddress);
       return directoryAddress;
     }
 
-    const directory = await hre.ethers.getContractAt('Directory', directoryAddress, );
+    const directory = await hre.ethers.getContractAt('Directory', directoryAddress);
     let address = '';
     if (contractName === 'MerkleClaimStreamer') address = await directory.getMerkleClaimStreamerAddress();
     else if (contractName === 'SuperNodeAccount') address = await directory.getSuperNodeAddress();
@@ -60,7 +62,7 @@ task('getProxyAddress', 'Gets the address of the proxy address for a given contr
       throw new Error('Invalid contract name');
     }
 
-    console.log(contractName + ' proxy address:' + address);
+    console.log(contractName + ' proxy address: ' + address);
     return address;
   });
 
@@ -89,12 +91,10 @@ task(
     let encodings: string[] = [];
     for (const contract of contractNames) {
       targets.push(
-        (
-          await hre.run('getProxyAddress', {
-            contractName: contract,
-            directoryAddress: directoryAddress,
-          })
-        )
+        await hre.run('getProxyAddress', {
+          contractName: contract,
+          directoryAddress: directoryAddress,
+        })
       );
 
       encodings.push(
@@ -119,10 +119,17 @@ task(
     console.log('Predecessor:\n', predecessor);
     console.log('Salt:\n', salt);
 
+    const fs = require('fs');
+    const dir = __dirname + '/../.upgrades';
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir);
+    }
+    fs.writeFileSync(dir + '/' + Date.now(), JSON.stringify(txData, null, 2));
+
     return txData;
   });
 
-// note that this should only be used for testing. Real contract deployments will use a timelock which requires encoding the upgrade proposal, then subsequent execution
+// note that this should only be used for testing. Real contract deployments will use a timelock which requires encoding the upgrade proposal and scheduling before execution
 task(
   'upgradeProxy',
   'Upgrades a proxy contract to a new implementation using upgrades.upgradeProxy. WILL NOT WORK ON DEPLOYMENTS WITH A TIMELOCK.'
