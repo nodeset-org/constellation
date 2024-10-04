@@ -8,20 +8,18 @@ task(
   'Deploys a new implementation contract and encodes the upgradeTo(address) function call for an upgradable contract'
 )
   .addParam('contractName', 'The name of the contract', undefined, types.string)
-  .addParam('environmentName', 'The name of the env file to use (.environmentName.env).', undefined, types.string)
+  .addParam('environmentName', 'The name of the env file to use (.environmentName.env).', undefined, types.string, true)
   .setAction(async ({ contractName, environmentName }, hre) => {
     const dotenvPath = findConfig(`.${environmentName}.env`);
 
+    let contract;
     if (dotenvPath !== null) {
       dotenv.config({ path: dotenvPath });
+      const deployerWallet = await getWalletFromPath(ethers, process.env.DEPLOYER_PRIVATE_KEY_PATH as string);
+      contract = await (await hre.ethers.deployContract(contractName, [], deployerWallet)).deployed();
     } else {
-      // Handle the case where no .env file is found
-      console.error('No .env.' + environmentName + 'file found');
-      return;
+      contract = await (await hre.ethers.deployContract(contractName)).deployed();
     }
-    const deployerWallet = await getWalletFromPath(ethers, process.env.DEPLOYER_PRIVATE_KEY_PATH as string);
-
-    const contract = await (await hre.ethers.deployContract(contractName, [], deployerWallet)).deployed();
 
     const address = contract.address;
     console.log(`Deployed new implementation contract for ${contractName}: ${address}`);
@@ -71,7 +69,7 @@ task(
   'Deploys new implementations for all contracts, encodes them, and returns the addresses and encodings'
 )
   .addParam('directoryAddress', 'The directory address for the deployment to be upgraded', undefined, types.string)
-  .addParam('environmentName', 'The name of the env file to use (.environmentName.env)', undefined, types.string)
+  .addParam('environmentName', 'The name of the env file to use (.environmentName.env)', undefined, types.string, true)
   .setAction(async ({ directoryAddress, environmentName }, hre) => {
     const contractNames = [
       'Directory',
@@ -113,8 +111,18 @@ task(
     const txData: UpgradeTxData = { targets, values, payloads: encodings, predecessor, salt };
 
     console.log('\n==== TRANSACTION DATA ====');
-      let output = 'Targets:\n' + targets + '\nValues\n' + values + '\nPayloads:\n' + encodings + '\nPredecessor:\n' + predecessor + '\nSalt:\n' + salt;
-      console.log(output);
+    let output =
+      "Targets:\n[" +
+      targets +
+      "]\nValues\n" +
+      values +
+      "\nPayloads:\n[" +
+      encodings +
+      "]\nPredecessor:\n" +
+      predecessor +
+      "\nSalt:\n" +
+      salt;
+    console.log(output);
 
     const fs = require('fs');
     const dir = __dirname + '/../.upgrades';
@@ -125,6 +133,15 @@ task(
 
     return txData;
   });
+
+task('testPrepareFullUpgrade', 'Tests the prepareFullUpgrade task')
+    .setAction(async ({ }, hre) => {
+  const directory = await (await hre.ethers.deployContract('Directory')).deployed();
+  await hre.run('prepareFullUpgrade', {
+    directoryAddress: directory.address,
+  });
+});
+
 
 // note that this should only be used for testing. Real contract deployments will use a timelock which requires encoding the upgrade proposal and scheduling before execution
 task(
