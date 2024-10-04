@@ -52,17 +52,24 @@ task(
       'PriceFetcher',
     ];
 
-      let contractInfos: UpgradeInfo[] = [];
-      for (const contract of contractNames){
-          contractInfos.push((await hre.run('deployAndEncodeUpgrade', {
-              contractName: contract,
-              environmentName,
-          })) as UpgradeInfo)
-      };
-      
+      // todo: this could be done in parallel, but we'd have to increment the tx nonce manually
+      // (this functionality would need to be added to deployAndEncodeUpgrade)
+    let contractInfos: UpgradeInfo[] = [];
+    for (const contract of contractNames) {
+      contractInfos.push(
+        (await hre.run('deployAndEncodeUpgrade', {
+          contractName: contract,
+          environmentName,
+        })) as UpgradeInfo
+      );
+    }
+
     const addresses = contractInfos.map((info) => info.address);
     const encodings = contractInfos.map((info) => info.encoding);
-    
+
+    console.log('All addresses:\n', addresses);
+    console.log('All upgradeTo encodings:\n', encodings);
+
     return { addresses, encodings };
   });
 
