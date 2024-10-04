@@ -3,11 +3,6 @@ import findConfig from 'find-config';
 import dotenv from 'dotenv';
 import { getWalletFromPath } from '../scripts/utils/keyReader';
 
-type UpgradeInfo = {
-  address: string;
-  encoding: string;
-};
-
 task(
   'deployAndEncodeUpgrade',
   'Deploys a new implementation contract and encodes the upgradeTo(address) function call for an upgradable contract'
@@ -34,12 +29,48 @@ task(
     return { address, encoding };
   });
 
+type UpgradeTxData = {
+  targets: string[];
+  values: string;
+  payloads: string[];
+  predecessor: string;
+  salt: string;
+};
+
+task('getProxyAddress', 'Gets the address of the proxy address for a given contract name and directory address')
+  .addParam('contractName', 'The name of the contract to retrieve the proxy address for', undefined, types.string)
+  .addParam('directoryAddress', 'The directory address for the deployment to check', undefined, types.string)
+  .setAction(async ({ contractName, directoryAddress }, hre) => {
+    if (contractName === 'Directory') {
+      console.log(directoryAddress);
+      return directoryAddress;
+    }
+
+    const directory = await hre.ethers.getContractAt('Directory', directoryAddress);
+    let address = '';
+    if (contractName === 'MerkleClaimStreamer') address = await directory.getMerkleClaimStreamerAddress();
+    else if (contractName === 'SuperNodeAccount') address = await directory.getSuperNodeAddress();
+    else if (contractName === 'OperatorDistributor') address = await directory.getOperatorDistributorAddress();
+    else if (contractName === 'WETHVault') address = await directory.getWETHVaultAddress();
+    else if (contractName === 'RPLVault') address = await directory.getRPLVaultAddress();
+    else if (contractName === 'Whitelist') address = await directory.getWhitelistAddress();
+    else if (contractName === 'PoAConstellationOracle') address = await directory.getOracleAddress();
+    else if (contractName === 'PriceFetcher') address = await directory.getPriceFetcherAddress();
+    else {
+      throw new Error('Invalid contract name');
+    }
+
+    console.log(address);
+    return address;
+  });
+
 task(
   'prepareFullUpgrade',
   'Deploys new implementations for all contracts, encodes them, and returns the addresses and encodings'
 )
+  .addParam('directoryAddress', 'The directory address for the deployment to be upgraded', undefined, types.string)
   .addParam('environmentName', 'The name of the env file to use (.environmentName.env)', undefined, types.string)
-  .setAction(async ({ environmentName }, hre) => {
+  .setAction(async ({ directoryAddress, environmentName }, hre) => {
     const contractNames = [
       'Directory',
       'MerkleClaimStreamer',
@@ -52,29 +83,52 @@ task(
       'PriceFetcher',
     ];
 
-      // todo: this could be done in parallel, but we'd have to increment the tx nonce manually
-      // (this functionality would need to be added to deployAndEncodeUpgrade)
-    let contractInfos: UpgradeInfo[] = [];
+    // todo: this could be done in parallel, but we'd have to increment the tx nonce manually
+    // (this functionality would need to be added to deployAndEncodeUpgrade)
+    let targets: string[] = [];
+    let encodings: string[] = [];
     for (const contract of contractNames) {
-      contractInfos.push(
-        (await hre.run('deployAndEncodeUpgrade', {
-          contractName: contract,
-          environmentName,
-        })) as UpgradeInfo
+      targets.push(
+        (
+          await hre.run('getProxyAddress', {
+            contractName: contract,
+            directoryAddress: directoryAddress,
+          })
+        ).address
+      );
+
+      encodings.push(
+        (
+          await hre.run('deployAndEncodeUpgrade', {
+            contractName: contract,
+            environmentName,
+          })
+        ).encoding
       );
     }
 
-    const addresses = contractInfos.map((info) => info.address);
-    const encodings = contractInfos.map((info) => info.encoding);
+    const values: string = '[' + '0,'.repeat(contractNames.length - 1) + '0' + ']';
+    // the array of encodings comes in as an array of arrays with 1 element each due to the way encodeProposal works
+    //const encodings = contractInfos.map((info) => info.encoding).flat();
+    const predecessor = '0x00000000000000000000000000000000';
+    const salt = '0x00000000000000000000000000000000';
+    const txData: UpgradeTxData = { targets, values, payloads: encodings, predecessor, salt };
 
-    console.log('All addresses:\n', addresses);
-    console.log('All upgradeTo encodings:\n', encodings);
+    console.log('\n==== TRANSACTION DATA ====');
+    console.log('Targets:\n', targets);
+    console.log('Values\n', values);
+    console.log('Payloads:\n', encodings);
+    console.log('Predecessor:\n', predecessor);
+    console.log('Salt:\n', salt);
 
-    return { addresses, encodings };
+    return txData;
   });
 
 // note that this should only be used for testing. Real contract deployments will use a timelock which requires encoding the upgrade proposal, then subsequent execution
-task('upgradeProxy', 'Upgrades a proxy contract to a new implementation using upgrades.upgradeProxy')
+task(
+  'upgradeProxy',
+  'Upgrades a proxy contract to a new implementation using upgrades.upgradeProxy. WILL NOT WORK ON DEPLOYMENTS WITH A TIMELOCK.'
+)
   .addParam('proxy', 'The address of the proxy contract', undefined, types.string)
   .addParam('implementation', 'The name of the new implementation contract factory', undefined, types.string)
   .setAction(async ({ proxy, implementation }, hre) => {
