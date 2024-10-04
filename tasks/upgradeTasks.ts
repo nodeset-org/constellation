@@ -2,8 +2,6 @@ import { task, types } from 'hardhat/config';
 import findConfig from 'find-config';
 import dotenv from 'dotenv';
 import { getWalletFromPath } from '../scripts/utils/keyReader';
-import { ContractFactory } from 'ethers';
-import { deployContract } from '@nomiclabs/hardhat-ethers/types';
 
 type UpgradeInfo = {
   address: string;
@@ -40,7 +38,6 @@ task(
   'prepareFullUpgrade',
   'Deploys new implementations for all contracts, encodes them, and returns the addresses and encodings'
 )
-  .addParam('contractName', 'The name of the contract', undefined, types.string)
   .addParam('environmentName', 'The name of the env file to use (.environmentName.env)', undefined, types.string)
   .setAction(async ({ environmentName }, hre) => {
     const contractNames = [
