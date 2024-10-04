@@ -12,19 +12,15 @@ task("encodeProposal", "Encodes a proposal for execution")
       sigsArray = JSON.parse(sigs);
       paramsArray = JSON.parse(params);
     } catch (error) {
-      console.error("Error parsing JSON inputs:", error);
-      return;
+      throw new Error("Error parsing JSON inputs:" + error);
     }
 
     if (!Array.isArray(sigsArray) || !Array.isArray(paramsArray)) {
-      console.error("Both sigs and params must be JSON arrays.");
-      return;
+      throw new Error("Both sigs and params must be JSON arrays.");
     }
 
     if (sigsArray.length !== paramsArray.length) {
-      console.error("The number of signatures and parameter sets must match.");
-      console.error(`sigs length: ${sigsArray.length}, params length: ${paramsArray.length}`);
-      return;
+      throw new Error(`The number of signatures and parameter sets must match.\n sigs length: ${sigsArray.length}, params length: ${paramsArray.length}`);
     }
 
     const calldata = [];
@@ -36,8 +32,7 @@ task("encodeProposal", "Encodes a proposal for execution")
       // Extract function name and parameter types
       const functionNameMatch = sig.match(/^(\w+)\((.*)\)$/);
       if (!functionNameMatch) {
-        console.error(`Invalid function signature format: ${sig}`);
-        return;
+        throw new Error(`Invalid function signature format: ${sig}`);
       }
 
       const functionName = functionNameMatch[1];
@@ -49,8 +44,7 @@ task("encodeProposal", "Encodes a proposal for execution")
         const encodedData = iface.encodeFunctionData(functionName, param);
         calldata.push(encodedData);
       } catch (error) {
-        console.error(`Error encoding function ${sig} with params ${JSON.stringify(param)}:`, error);
-        return;
+        throw new Error(`Error encoding function ${sig} with params ${JSON.stringify(param)}:` + error);
       }
     }
 
