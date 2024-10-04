@@ -1,5 +1,22 @@
-
 import { task, types } from "hardhat/config";
+
+task("upgradeProxy", "Upgrades a proxy contract to a new implementation using upgrades.upgradeProxy")
+    .addParam("proxy", "The address of the proxy contract", undefined, types.string)
+    .addParam("implementation", "The name of the new implementation contract factory", undefined, types.string)
+    .setAction(async ({ proxy, implementation }, hre) => {
+        try {
+            console.log(`Upgrading proxy at address: ${proxy} to new implementation: ${implementation}`);
+
+            const ImplFactory: any = await hre.ethers.getContractFactory(implementation);
+            const upgradedContract = await hre.upgrades.upgradeProxy(proxy, ImplFactory, {'kind': 'uups', 'unsafeAllow': ['constructor'] });
+
+            console.log(`Proxy upgraded. Implementation is now at: ${upgradedContract.address}`);
+            return upgradedContract.address;
+        } catch (error) {
+            console.error("An error occurred during the upgrade:", error);
+            throw error;
+        }
+    });
 
 task("deployContract", "Deploys a contract using the provided Factory address")
     .addParam("factory", "The name of the Factory contract", undefined, types.string)
