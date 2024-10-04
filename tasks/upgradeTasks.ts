@@ -42,11 +42,11 @@ task('getProxyAddress', 'Gets the address of the proxy address for a given contr
   .addParam('directoryAddress', 'The directory address for the deployment to check', undefined, types.string)
   .setAction(async ({ contractName, directoryAddress }, hre) => {
     if (contractName === 'Directory') {
-      console.log(directoryAddress);
+      console.log('Directory proxy address:' + directoryAddress);
       return directoryAddress;
     }
 
-    const directory = await hre.ethers.getContractAt('Directory', directoryAddress);
+    const directory = await hre.ethers.getContractAt('Directory', directoryAddress, );
     let address = '';
     if (contractName === 'MerkleClaimStreamer') address = await directory.getMerkleClaimStreamerAddress();
     else if (contractName === 'SuperNodeAccount') address = await directory.getSuperNodeAddress();
@@ -60,7 +60,7 @@ task('getProxyAddress', 'Gets the address of the proxy address for a given contr
       throw new Error('Invalid contract name');
     }
 
-    console.log(address);
+    console.log(contractName + ' proxy address:' + address);
     return address;
   });
 
@@ -94,7 +94,7 @@ task(
             contractName: contract,
             directoryAddress: directoryAddress,
           })
-        ).address
+        )
       );
 
       encodings.push(
@@ -103,13 +103,11 @@ task(
             contractName: contract,
             environmentName,
           })
-        ).encoding
+        ).encoding[0] // encodings come in as an array with 1 element due to the way encodeProposal works
       );
     }
 
     const values: string = '[' + '0,'.repeat(contractNames.length - 1) + '0' + ']';
-    // the array of encodings comes in as an array of arrays with 1 element each due to the way encodeProposal works
-    //const encodings = contractInfos.map((info) => info.encoding).flat();
     const predecessor = '0x00000000000000000000000000000000';
     const salt = '0x00000000000000000000000000000000';
     const txData: UpgradeTxData = { targets, values, payloads: encodings, predecessor, salt };
