@@ -131,7 +131,7 @@ task(
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir);
     }
-    fs.writeFileSync(dir + '/' + Date.now() + '.log', JSON.stringify(output, null, 2));
+    fs.writeFileSync(dir + '/' + Date.now() + '.log', output);
 
     return txData;
   });
