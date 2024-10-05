@@ -2,6 +2,7 @@ import { task, types } from 'hardhat/config';
 import findConfig from 'find-config';
 import dotenv from 'dotenv';
 import { getWalletFromPath } from '../scripts/utils/keyReader';
+const { Defender } = require('@openzeppelin/defender-sdk');
 
 task(
   'deployAndEncodeUpgrade',
@@ -112,15 +113,15 @@ task(
 
     console.log('\n==== TRANSACTION DATA ====');
     let output =
-      "Targets:\n[" +
+      'Targets:\n[' +
       targets +
-      "]\nValues\n" +
+      ']\nValues\n' +
       values +
-      "\nPayloads:\n[" +
+      '\nPayloads:\n[' +
       encodings +
-      "]\nPredecessor:\n" +
+      ']\nPredecessor:\n' +
       predecessor +
-      "\nSalt:\n" +
+      '\nSalt:\n' +
       salt;
     console.log(output);
 
@@ -134,14 +135,50 @@ task(
     return txData;
   });
 
-task('testPrepareFullUpgrade', 'Tests the prepareFullUpgrade task')
-    .setAction(async ({ }, hre) => {
+task('submitNewUpgrade', 'Deploys new implementations, encodes them, and submits the scheduled proposal')
+  .addParam('timelockAddress', 'The address of the TIMELOCK_LONG contract', undefined, types.string)
+  .addParam('directoryAddress', 'The directory address for the deployment to be upgraded', undefined, types.string)
+  .addParam('environmentName', 'The name of the env file to use (.environmentName.env)', undefined, types.string, true)
+  .setAction(async ({ directoryAddress, timelockAddress, environmentName }, hre) => {
+    const txData = await hre.run('prepareFullUpgrade', { directoryAddress, environmentName });
+    const dotenvPath = findConfig(`.${environmentName}.env`);
+    if (dotenvPath === null) throw new Error('Environment file not found');
+
+    dotenv.config({ path: dotenvPath });
+    const client = new Defender({
+      relayerApiKey: `${process.env.DEFENDER_RELAY_KEY}`,
+      relayerApiSecret: `${process.env.DEFENDER_RELAY_SECRET}`,
+    });
+
+    const provider = client.relaySigner.getProvider();
+    const signer = await client.relaySigner.getSigner(provider, { speed: 'fast' });
+    const timelock = await hre.ethers.getContractAt('ConstellationTimelock', timelockAddress, signer);
+    const tx = await timelock.scheduleBatch(
+      txData.targets,
+      txData.values,
+      txData.payloads,
+      txData.predecessor,
+      txData.salt,
+      await timelock.getMinDelay()
+    );
+    const networkName = hre.network.name;
+    console.log(
+      'Scheduled upgrade proposal with tx hash: ' +
+        tx.hash +
+        '\nhttps://' +
+        (networkName === 'mainnet' ? '' : networkName + '.') +
+        'etherscan.io/tx/' +
+        tx.hash
+    );
+    return tx;
+  });
+
+task('testPrepareFullUpgrade', 'Tests the prepareFullUpgrade task').setAction(async ({}, hre) => {
   const directory = await (await hre.ethers.deployContract('Directory')).deployed();
   await hre.run('prepareFullUpgrade', {
     directoryAddress: directory.address,
   });
 });
-
 
 // note that this should only be used for testing. Real contract deployments will use a timelock which requires encoding the upgrade proposal and scheduling before execution
 task(
