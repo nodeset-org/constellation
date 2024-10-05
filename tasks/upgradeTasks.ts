@@ -2,6 +2,7 @@ import { task, types } from 'hardhat/config';
 import findConfig from 'find-config';
 import dotenv from 'dotenv';
 import { getWalletFromPath } from '../scripts/utils/keyReader';
+import { Bytes32 } from '@chainsafe/lodestar-types';
 const { Defender } = require('@openzeppelin/defender-sdk');
 
 task(
@@ -32,10 +33,10 @@ task(
 
 type UpgradeTxData = {
   targets: string[];
-  values: string;
-  payloads: string[];
-  predecessor: string;
-  salt: string;
+  values: number[];
+  payloads: Bytes32[];
+  predecessor: Bytes32;
+  salt: Bytes32;
 };
 
 task('getProxyAddress', 'Gets the address of the proxy address for a given contract name and directory address')
@@ -87,7 +88,7 @@ task(
     // todo: this could be done in parallel, but we'd have to increment the tx nonce manually
     // (this functionality would need to be added to deployAndEncodeUpgrade)
     let targets: string[] = [];
-    let encodings: string[] = [];
+    let encodings: Bytes32[] = [];
     for (const contract of contractNames) {
       targets.push(
         await hre.run('getProxyAddress', {
@@ -106,22 +107,22 @@ task(
       );
     }
 
-    const values: string = '[' + '0,'.repeat(contractNames.length - 1) + '0' + ']';
-    const predecessor = '0x00000000000000000000000000000000';
-    const salt = '0x00000000000000000000000000000000';
+    const values: number[] = Array(targets.length).fill(0);
+    const predecessor = ethers.utils.hexZeroPad('0x0', 32);
+    const salt = ethers.utils.hexZeroPad('0x0', 32);
     const txData: UpgradeTxData = { targets, values, payloads: encodings, predecessor, salt };
 
     console.log('\n==== TRANSACTION DATA ====');
     let output =
-      'Targets:\n[' +
+      "Targets:\n[" +
       targets +
-      ']\nValues\n' +
+      "]\nValues\n[" +
       values +
-      '\nPayloads:\n[' +
+      "]\nPayloads:\n[" +
       encodings +
-      ']\nPredecessor:\n' +
+      "]\nPredecessor:\n" +
       predecessor +
-      '\nSalt:\n' +
+      "\nSalt:\n" +
       salt;
     console.log(output);
 
