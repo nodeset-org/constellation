@@ -72,7 +72,8 @@ task(
 )
   .addParam('directoryAddress', 'The directory address for the deployment to be upgraded', undefined, types.string)
   .addParam('environmentName', 'The name of the env file to use (.environmentName.env)', undefined, types.string, true)
-  .setAction(async ({ directoryAddress, environmentName }, hre) => {
+  .addParam('timelockAddress', 'Optional: the address of the timelock to log', undefined, types.string, true)
+  .setAction(async ({ directoryAddress, environmentName, timelockAddress }, hre) => {
     const contractNames = [
       'Directory',
       'MerkleClaimStreamer',
@@ -114,15 +115,17 @@ task(
 
     console.log('\n==== TRANSACTION DATA ====');
     let output =
-      "Targets:\n[" +
+      'Timelock:\n' +
+      timelockAddress +
+      '\nTargets:\n[' +
       targets +
-      "]\nValues\n[" +
+      ']\nValues\n[' +
       values +
-      "]\nPayloads:\n[" +
+      ']\nPayloads:\n[' +
       encodings +
-      "]\nPredecessor:\n" +
+      ']\nPredecessor:\n' +
       predecessor +
-      "\nSalt:\n" +
+      '\nSalt:\n' +
       salt;
     console.log(output);
 
@@ -141,7 +144,7 @@ task('submitNewUpgrade', 'Deploys new implementations, encodes them, and submits
   .addParam('directoryAddress', 'The directory address for the deployment to be upgraded', undefined, types.string)
   .addParam('environmentName', 'The name of the env file to use (.environmentName.env)', undefined, types.string, true)
   .setAction(async ({ directoryAddress, timelockAddress, environmentName }, hre) => {
-    const txData = await hre.run('prepareFullUpgrade', { directoryAddress, environmentName });
+    const txData = await hre.run('prepareFullUpgrade', { directoryAddress, environmentName, timelockAddress });
     const dotenvPath = findConfig(`.${environmentName}.env`);
     if (dotenvPath === null) throw new Error('Environment file not found');
 
