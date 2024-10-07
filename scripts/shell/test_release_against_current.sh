@@ -37,7 +37,7 @@ else
   npx hardhat run ./scripts/sandbox.ts --network localhost > sandbox_deployment.log
 
   # Extract relevant proxy addresses from the deployment log
-  ADDRESSES=$(grep -Eo '(whitelistProxy|vCWETHProxy|vCRPLProxy|operatorDistributorProxy|merkleClaimStreamerProxy|yieldDistributorProxy|priceFetcherProxy|snap)\.address\s0x[a-fA-F0-9]{40}' sandbox_deployment.log | awk '{print $2}')
+  ADDRESSES=$(grep -Eo '(whitelistProxy|vCWETHProxy|vCRPLProxy|operatorDistributorProxy|merkleClaimStreamerProxy|yieldDistributorProxy|priceFetcherProxy|snap)\.address\s0x[a-fA-F0-9]{40}|directory deployed to\s0x[a-fA-F0-9]{40}' sandbox_deployment.log | awk '{print $NF}')
 
   # Move back to the original branch directory and delete tag-repo
   cd "$ORIGINAL_DIR"
@@ -54,6 +54,7 @@ FACTORY_NAMES=(
   "NodeSetOperatorRewardDistributor"
   "PriceFetcher"
   "SuperNodeAccount"
+  "Directory"
 )
 
 # Convert addresses and factory names into arrays
