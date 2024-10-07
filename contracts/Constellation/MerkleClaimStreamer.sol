@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL v3
 
 /**
-  *    /***        /***          /******                                  /**               /** /**             /**     /**
-  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/
-  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /*******
+  *    /***        /***          /******                                  /**               /** /**             /**     /**                    
+  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/                    
+  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /******* 
   *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
   * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
   *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
@@ -31,9 +31,10 @@ import './Utils/Constants.sol';
 import './OperatorDistributor.sol';
 import './WETHVault.sol';
 import './RPLVault.sol';
+
 /// @title MerkleClaimStreamer
 /// @author Mike Leach, Theodore Clapp
-/// @notice Allows claiming of merkle rewards and reports a "streamed" value for these assets over a specified time interval to the rest of the
+/// @notice Allows claiming of merkle rewards and reports a "streamed" value for these assets over a specified time interval to the rest of the 
 /// protocol. This prevents the TVL from updating with a significant step which would allow for sandwich attacks.
 /// See this issue with Rocket Pool for a deeper description: https://consensys.io/diligence/audits/2021/04/rocketpool/#rockettokenreth---sandwiching-opportunity-on-price-updates
 contract MerkleClaimStreamer is UpgradeableBase {
@@ -44,15 +45,15 @@ contract MerkleClaimStreamer is UpgradeableBase {
     event MerkleClaimsEnabledChanged(bool indexed oldValue, bool indexed newValue);
 
     event MerkleClaimSubmitted(
-        uint256 indexed timestamp,
-        uint256 newEthRewards,
+        uint256 indexed timestamp, 
+        uint256 newEthRewards, 
         uint256 newRplRewards,
-        uint256 ethTreasuryPortion,
-        uint256 ethOperatorPortion,
+        uint256 ethTreasuryPortion, 
+        uint256 ethOperatorPortion, 
         uint256 rplTreasuryPortion
         );
 
-    // the prior interval's rewards which are "streamed" to the TVL
+    // the prior interval's rewards which are "streamed" to the TVL 
     uint256 public priorEthStreamAmount; // slot 67
     uint256 public priorRplStreamAmount; // slot 68
 
@@ -63,7 +64,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
     // The admin needs to be able to disable merkle claims in case the RP rewards interval is reduced. That way, they can disable claims, then wait for
     // the current streamingInterval to be completely finished, lower the streamingInterval, and re-enable claims.
     bool public merkleClaimsEnabled;
-
+    
     function initialize(address _directory) public override initializer {
         super.initialize(_directory);
         streamingInterval = 28 days; // default RP rewards interval
@@ -78,7 +79,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
     function setStreamingInterval(uint256 _newStreamingInterval) external onlyAdmin {
         require(_newStreamingInterval > 0 seconds && _newStreamingInterval <= 365 days, "New streaming interval must be > 0 seconds and <= 365 days");
         require(_newStreamingInterval != streamingInterval, "MerkleClaimStreamer: new streaming interval must be different");
-
+        
         this.sweepLockedTVL();
 
         emit StreamingIntervalChanged(streamingInterval, _newStreamingInterval);
@@ -118,9 +119,9 @@ contract MerkleClaimStreamer is UpgradeableBase {
             _updatePriorStreamAmounts();
             // if both ethAmount and rplAmount are 0, only update streaming amounts
             // no need to send 0 amounts to the OD or rebalance
-            return;
+            return; 
         }
-
+        
         address payable odAddress = getDirectory().getOperatorDistributorAddress();
         OperatorDistributor od = OperatorDistributor(odAddress);
 
@@ -129,7 +130,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
             require(success, "Failed to transfer ETH from MerkleClaimStreamer to OperatorDistributor");
             od.rebalanceWethVault();
         }
-
+        
         if(priorRplStreamAmount > 0){
             SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), odAddress, priorRplStreamAmount);
             od.rebalanceRplVault();
@@ -160,7 +161,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
 
         uint256 initialEthBalance = odAddress.balance;
         uint256 initialRplBalance = IERC20(getDirectory().getRPLAddress()).balanceOf(odAddress);
-
+        
         // note: RP will revert if both amountRPL and amountETH are zero
         od.submitMerkleClaim(rewardIndex, amountRPL, amountETH, merkleProof);
 
@@ -173,10 +174,12 @@ contract MerkleClaimStreamer is UpgradeableBase {
         uint256 ethTreasuryPortion = 0;
         uint256 ethOperatorPortion = 0;
         uint256 rplTreasuryPortion = 0;
+
         // process ETH fees
         if(ethReward > 0) {
             ethTreasuryPortion = WETHVault(getDirectory().getWETHVaultAddress()).getTreasuryPortion(ethReward);
             ethOperatorPortion = WETHVault(getDirectory().getWETHVaultAddress()).getOperatorPortion(ethReward);
+
             // send treasury and NO fees out immediately
             (bool success, ) = getDirectory().getTreasuryAddress().call{value: ethTreasuryPortion}('');
             require(success, 'Transfer to treasury failed');
@@ -184,7 +187,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
             (success, ) = getDirectory().getOperatorRewardAddress().call{value: ethOperatorPortion}('');
             require(success, 'Transfer to operator reward address failed');
         }
-
+        
         // process RPL fees
         if(rplReward > 0) {
             rplTreasuryPortion = RPLVault(getDirectory().getRPLVaultAddress()).getTreasuryPortion(rplReward);
@@ -194,6 +197,7 @@ contract MerkleClaimStreamer is UpgradeableBase {
         }
 
         emit MerkleClaimSubmitted(block.timestamp, ethReward, rplReward, ethTreasuryPortion, ethOperatorPortion, rplTreasuryPortion);
+
         // sweep all the prior interval's TVL
         this.sweepLockedTVL();
 
