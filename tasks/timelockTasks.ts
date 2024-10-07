@@ -1,3 +1,4 @@
+
 import { task, types } from "hardhat/config";
 
 task("upgradeProxy", "Upgrades a proxy contract to a new implementation using upgrades.upgradeProxy")
@@ -8,7 +9,7 @@ task("upgradeProxy", "Upgrades a proxy contract to a new implementation using up
             console.log(`Upgrading proxy at address: ${proxy} to new implementation: ${implementation}`);
 
             const ImplFactory: any = await hre.ethers.getContractFactory(implementation);
-            const upgradedContract = await hre.upgrades.upgradeProxy(proxy, ImplFactory, {'kind': 'uups', 'unsafeAllow': ['constructor'] });
+            const upgradedContract = await hre.upgrades.upgradeProxy(proxy, ImplFactory, { 'kind': 'uups', 'unsafeAllow': ['constructor'] });
 
             console.log(`Proxy upgraded. Implementation is now at: ${upgradedContract.address}`);
             return upgradedContract.address;
@@ -31,6 +32,29 @@ task("deployContract", "Deploys a contract using the provided Factory address")
         console.log(`Contract deployed at address: ${deployedContract.address}`);
         return deployedContract.address;
     });
+
+task("deployAndUpgrade", "Deploys a new contract and then upgrades a proxy to the new implementation")
+    .addParam("proxy", "The address of the proxy contract", undefined, types.string)
+    .addParam("factory", "The name of the new implementation contract factory", undefined, types.string)
+    .setAction(async ({ proxy, factory }, hre) => {
+        try {
+            // Deploy the new implementation contract using deployContract task
+            console.log(`Deploying a new implementation contract using Factory: ${factory}`);
+            const deployedContractAddress = await hre.run("deployContract", { factory });
+
+            console.log(`New implementation contract deployed at address: ${deployedContractAddress}`);
+
+            // Upgrade the proxy to the new implementation using upgradeProxy task
+            console.log(`Upgrading proxy at address: ${proxy} to new implementation at: ${deployedContractAddress}`);
+            await hre.run("upgradeProxy", { proxy, implementation: factory });
+
+            console.log(`Proxy successfully upgraded.`);
+        } catch (error) {
+            console.error("An error occurred during the deployment and upgrade:", error);
+            throw error;
+        }
+    });
+
 
 task("upgradeTo", "Encodes the upgradeTo(address) function call for an upgradable contract")
     .addParam("newImplementation", "The address of the new implementation contract", undefined, types.string)
