@@ -37,22 +37,17 @@ task("deployAndUpgrade", "Deploys a new contract and then upgrades a proxy to th
     .addParam("proxy", "The address of the proxy contract", undefined, types.string)
     .addParam("factory", "The name of the new implementation contract factory", undefined, types.string)
     .setAction(async ({ proxy, factory }, hre) => {
-        try {
-            // Deploy the new implementation contract using deployContract task
-            console.log(`Deploying a new implementation contract using Factory: ${factory}`);
-            const deployedContractAddress = await hre.run("deployContract", { factory });
+        // Deploy the new implementation contract using deployContract task
+        console.log(`Deploying a new implementation contract using Factory: ${factory}`);
+        const deployedContractAddress = await hre.run("deployContract", { factory });
 
-            console.log(`New implementation contract deployed at address: ${deployedContractAddress}`);
+        console.log(`New implementation contract deployed at address: ${deployedContractAddress}`);
 
-            // Upgrade the proxy to the new implementation using upgradeProxy task
-            console.log(`Upgrading proxy at address: ${proxy} to new implementation at: ${deployedContractAddress}`);
-            await hre.run("upgradeProxy", { proxy, implementation: factory });
+        // Upgrade the proxy to the new implementation using upgradeProxy task
+        console.log(`Upgrading proxy at address: ${proxy} to new implementation at: ${deployedContractAddress}`);
+        await hre.run("upgradeProxy", { proxy, implementation: factory });
 
-            console.log(`Proxy successfully upgraded.`);
-        } catch (error) {
-            console.error("An error occurred during the deployment and upgrade:", error);
-            throw error;
-        }
+        console.log(`Proxy successfully upgraded.`);
     });
 
 
