@@ -13,4 +13,8 @@ contract MockRPLVault {
     function setMissingLiquidity(uint256 _missingLiquidity) public {
         missingLiquidityValue = _missingLiquidity;
     }
+
+    function getTreasuryPortion(uint256 _rplReward) public pure returns (uint256) {
+        return _rplReward;
+    }
 }

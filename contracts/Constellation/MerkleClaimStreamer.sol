@@ -31,8 +31,6 @@ import './Utils/Constants.sol';
 import './OperatorDistributor.sol';
 import './WETHVault.sol';
 import './RPLVault.sol';
-import 'hardhat/console.sol';
-
 /// @title MerkleClaimStreamer
 /// @author Mike Leach, Theodore Clapp
 /// @notice Allows claiming of merkle rewards and reports a "streamed" value for these assets over a specified time interval to the rest of the
@@ -175,12 +173,10 @@ contract MerkleClaimStreamer is UpgradeableBase {
         uint256 ethTreasuryPortion = 0;
         uint256 ethOperatorPortion = 0;
         uint256 rplTreasuryPortion = 0;
-
         // process ETH fees
         if(ethReward > 0) {
             ethTreasuryPortion = WETHVault(getDirectory().getWETHVaultAddress()).getTreasuryPortion(ethReward);
             ethOperatorPortion = WETHVault(getDirectory().getWETHVaultAddress()).getOperatorPortion(ethReward);
-
             // send treasury and NO fees out immediately
             (bool success, ) = getDirectory().getTreasuryAddress().call{value: ethTreasuryPortion}('');
             require(success, 'Transfer to treasury failed');
@@ -198,7 +194,6 @@ contract MerkleClaimStreamer is UpgradeableBase {
         }
 
         emit MerkleClaimSubmitted(block.timestamp, ethReward, rplReward, ethTreasuryPortion, ethOperatorPortion, rplTreasuryPortion);
-
         // sweep all the prior interval's TVL
         this.sweepLockedTVL();
 
