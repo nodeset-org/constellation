@@ -21,3 +21,4 @@ artifacts
 .openzeppelin/unknown-*.json
 *.keystore
 hardhat_node.log
+deploy_upgrade_output.log
