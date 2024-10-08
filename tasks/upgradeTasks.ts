@@ -6,7 +6,7 @@ import { Bytes32 } from '@chainsafe/lodestar-types';
 const { Defender } = require('@openzeppelin/defender-sdk');
 
 
-task("upgradeProxy", "Upgrades a proxy contract to a new implementation using upgrades.upgradeProxy")
+task("upgradeProxy", "Upgrades a proxy contract to a new implementation using upgrades.upgradeProxy"). WILL NOT WORK ON DEPLOYMENTS WITH A TIMELOCK.
     .addParam("proxy", "The address of the proxy contract", undefined, types.string)
     .addParam("implementation", "The name of the new implementation contract factory", undefined, types.string)
     .setAction(async ({ proxy, implementation }, hre) => {
