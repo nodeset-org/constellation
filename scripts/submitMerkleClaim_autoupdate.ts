@@ -226,7 +226,7 @@ exports.handler = async function(credentials) {
         await txResult.wait();
 
         if(txResult.status === 0)
-    		throw new Error(`Transaction reverted: ${txResult}`)
+            throw new Error(`Transaction reverted: ${txResult}`)
         console.log(`Transaction successful: ${txResult}`);
 
         // uncomment this for deployment
