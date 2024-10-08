@@ -22,3 +22,7 @@ artifacts
 *.keystore
 hardhat_node.log
 deploy_upgrade_output.log
+
+# deployments and upgrades
+.deployments
+.upgrades
