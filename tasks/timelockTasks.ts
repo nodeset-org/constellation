@@ -180,3 +180,4 @@ task('setMaxWethRplRatio', 'Encodes the setMaxWethRplRatio(uint256) function cal
     console.log(`Encoding setMaxWethRplRatio for WETHVault with ratio: ${maxWethRplRatio}`);
     return await hre.run('encodeProposal', { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
+});
