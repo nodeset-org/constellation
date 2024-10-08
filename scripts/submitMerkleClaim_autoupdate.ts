@@ -219,8 +219,12 @@ exports.handler = async function(credentials) {
                     merkleProofsArray,
                     { maxFeePerGas: 200, gasLimit: 1000000 }
                 );
-                console.log(txResult);
                 await txResult.wait();
+                console.log(txResult);
+
+                if (txResult.status === 0) {
+                    throw new Error('Transaction reverted');
+                }
 
                 // uncomment this for deployment
                 return txResult.hash;
