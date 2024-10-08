@@ -73,9 +73,9 @@ exports.handler = async function(credentials) {
   //const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData, { maxFeePerGas: 200, gasLimit: 1000000 });
   const txResult = await oracle.setTotalYieldAccrued(sig, sigData, { maxFeePerGas: 200 });
   await txResult.wait();
-  if (txResult.status === 0) {
-    throw new Error('Transaction reverted');
-  }
+  if(txResult.status === 0)
+    throw new Error(`Transaction reverted: ${txResult}`)
+  console.log(`Transaction successful: ${txResult}`);
 
   //console.log(txResult);
 

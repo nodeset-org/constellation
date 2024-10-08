@@ -199,42 +199,40 @@ exports.handler = async function(credentials) {
             merkleProofsArray.push(merkleProof);
         }
 
-        // Submit all claims in a single transaction
-        if (rewardIndexes.length > 0) {
-            try {
-                console.log(`Submitting batch Merkle claim for ${rewardIndexes.length} intervals...`);
-
-                // use the callStatic line for local testing, the other for deployment
-                // const txResult = await merkleClaimStreamer.callStatic.submitMerkleClaim(
-                //     rewardIndexes,
-                //     amountsRPL,
-                //     amountsETH,
-                //     merkleProofsArray,
-                //     { maxFeePerGas: 200, gasLimit: 1000000 }
-                // );
-                const txResult = await merkleClaimStreamer.submitMerkleClaim(
-                    rewardIndexes,
-                    amountsRPL,
-                    amountsETH,
-                    merkleProofsArray,
-                    { maxFeePerGas: 200, gasLimit: 1000000 }
-                );
-                await txResult.wait();
-                console.log(txResult);
-
-                if (txResult.status === 0) {
-                    throw new Error('Transaction reverted');
-                }
-
-                // uncomment this for deployment
-                return txResult.hash;
-            } catch (error) {
-                throw new Error(`Error submitting Merkle claim: ${error.message}`);
-            }
-        } else {
-            // Nothing to claim
-        }
+        if (rewardIndexes.length === 0)
+            return;
     } catch (error) {
         throw new Error(`Error processing rewards: ${error.message}`);
     }
+
+    // Submit all claims in a single transaction
+    try {
+        console.log(`Submitting batch Merkle claim for ${rewardIndexes.length} intervals...`);
+        // use the callStatic line for local testing, the other for deployment
+        // const txResult = await merkleClaimStreamer.callStatic.submitMerkleClaim(
+        //     rewardIndexes,
+        //     amountsRPL,
+        //     amountsETH,
+        //     merkleProofsArray,
+        //     { maxFeePerGas: 200, gasLimit: 1000000 }
+        // );
+        const txResult = await merkleClaimStreamer.submitMerkleClaim(
+            rewardIndexes,
+            amountsRPL,
+            amountsETH,
+            merkleProofsArray,
+            { maxFeePerGas: 200, gasLimit: 1000000 }
+        );
+        await txResult.wait();
+
+        if(txResult.status === 0)
+    		throw new Error(`Transaction reverted: ${txResult}`)
+        console.log(`Transaction successful: ${txResult}`);
+
+        // uncomment this for deployment
+        return txResult.hash;
+    } catch (error) {
+        throw new Error(`Error submitting Merkle claim: ${error.message}`);
+    }
+
 };
