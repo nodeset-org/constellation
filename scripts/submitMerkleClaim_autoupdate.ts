@@ -190,7 +190,7 @@ exports.handler = async function(credentials) {
             const { merkleProof, collateralRpl, oracleDaoRpl, smoothingPoolEth } = rewardsInfo;
             const totalRplReward = ethers.BigNumber.from(collateralRpl).add(oracleDaoRpl);
 
-            console.log("Adding reward from interval", interval);
+            console.log(`Adding reward from interval ${interval}`);
 
             // Accumulate claims data for batch submission
             rewardIndexes.push(interval);
@@ -220,6 +220,7 @@ exports.handler = async function(credentials) {
                     { maxFeePerGas: 200, gasLimit: 1000000 }
                 );
                 console.log(txResult);
+                await txResult.wait();
 
                 // uncomment this for deployment
                 return txResult.hash;
