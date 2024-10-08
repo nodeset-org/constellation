@@ -1,19 +1,20 @@
-import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
+import { HardhatUserConfig } from 'hardhat/config';
+import '@nomicfoundation/hardhat-toolbox';
 import '@openzeppelin/hardhat-upgrades';
-import "hardhat-contract-sizer";
-import "hardhat-gas-reporter";
+import 'hardhat-contract-sizer';
+import 'hardhat-gas-reporter';
 import '@nomiclabs/hardhat-truffle5';
 import 'solidity-docgen';
 import 'hardhat-contract-sizer';
 
 // task commands
-import './tasks/adminTasks'
-import './tasks/timelockTasks'
-import './tasks/viewOperatorDistributorTasks'
-import './tasks/viewSuperNodeAccountTasks'
+import './tasks/adminTasks';
+import './tasks/timelockTasks';
+import './tasks/upgradeTasks';
+import './tasks/viewOperatorDistributorTasks';
+import './tasks/viewSuperNodeAccountTasks';
 
-import dotenv from "dotenv";
+import dotenv from 'dotenv';
 import findConfig from 'find-config';
 
 const dotenvPath = findConfig('.env');
@@ -29,7 +30,7 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.8.18",
+        version: '0.8.18',
         settings: {
           optimizer: {
             enabled: true,
@@ -38,7 +39,7 @@ const config: HardhatUserConfig = {
         },
       },
       {
-        version: "0.8.17",
+        version: '0.8.17',
         settings: {
           optimizer: {
             enabled: true,
@@ -54,17 +55,17 @@ const config: HardhatUserConfig = {
             runs: 15000,
           },
         },
-      }
-    ]
+      },
+    ],
   },
-  
+
   gasReporter: {
     enabled: process.env.REPORT_GAS === 'true', //
     outputFile: 'gas-report.txt',
   },
 
   docgen: {
-    exclude: ["Testing", "Interfaces"],
+    exclude: ['Testing', 'Interfaces'],
   },
 
   networks: {
@@ -77,11 +78,11 @@ const config: HardhatUserConfig = {
     },
 
     holesky: {
-      url: process.env.HOLESKY_RPC || ""
+      url: process.env.HOLESKY_RPC || '',
     },
 
     ethereum: {
-      url: process.env.ETHEREUM_MAINNET_RPC || ""
+      url: process.env.ETHEREUM_MAINNET_RPC || '',
     },
   },
   mocha: {
@@ -90,19 +91,19 @@ const config: HardhatUserConfig = {
 
   etherscan: {
     apiKey: {
-      holesky: process.env.ETHERSCAN_HOLESKY_API_KEY || "" as string,
-      mainnet: process.env.ETHERSCAN_MAINNET_API_KEY || "" as string,
+      holesky: process.env.ETHERSCAN_HOLESKY_API_KEY || ('' as string),
+      mainnet: process.env.ETHERSCAN_MAINNET_API_KEY || ('' as string),
     },
     customChains: [
       {
-        network: "holesky",
+        network: 'holesky',
         chainId: 17000,
         urls: {
-          apiURL: "https://api-holesky.etherscan.io/api",
-          browserURL: "https://holesky.etherscan.io"
-        }
-      }
-    ]
+          apiURL: 'https://api-holesky.etherscan.io/api',
+          browserURL: 'https://holesky.etherscan.io',
+        },
+      },
+    ],
   },
 
   contractSizer: {
@@ -110,8 +111,6 @@ const config: HardhatUserConfig = {
     runOnCompile: true,
     disambiguatePaths: false,
   },
-
 };
-
 
 export default config;

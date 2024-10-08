@@ -6,7 +6,6 @@ async function main() {
     console.log("Successfully deployed production...");
     console.log("Directory address", directory?.address);
     console.log(await directory?.getProtocol())
-    console.log(await directory?.getRocketIntegrations())
 }
 
 main()

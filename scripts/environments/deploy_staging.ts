@@ -5,7 +5,6 @@ async function main() {
     console.log("Successfully deployed staging...");
     console.log("Directory address", directory?.address);
     console.log(await directory?.getProtocol())
-    console.log(await directory?.getRocketIntegrations())
 }
 
 main()

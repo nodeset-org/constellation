@@ -5,7 +5,6 @@ import { deployUsingEnv} from "../utils/deployment";
      console.log("Successfully deployed dev...");
      console.log("Directory address", directory?.address);
      console.log(await directory?.getProtocol())
-     console.log(await directory?.getRocketIntegrations())
  }
  
  
