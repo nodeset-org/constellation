@@ -186,7 +186,7 @@ task('testPrepareFullUpgrade', 'Tests the prepareFullUpgrade task').setAction(as
 
 // note that this should only be used for testing. Real contract deployments will use a timelock which requires encoding the upgrade proposal and scheduling before execution
 task(
-  'upgradeProxy',
+  'upgradeProxy2',
   'Upgrades a proxy contract to a new implementation using upgrades.upgradeProxy. WILL NOT WORK ON DEPLOYMENTS WITH A TIMELOCK.'
 )
   .addParam('proxy', 'The address of the proxy contract', undefined, types.string)

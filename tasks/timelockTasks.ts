@@ -1,10 +1,5 @@
 import { task, types } from 'hardhat/config';
 
-task('upgradeTo', 'Encodes the upgradeTo(address) function call for an upgradable contract')
-  .addParam('newImplementation', 'The address of the new implementation contract', undefined, types.string)
-  .setAction(async ({ newImplementation }, hre) => {
-    const sigs = ['upgradeTo(address)'];
-    const params = [[newImplementation]];
 
 task("upgradeProxy", "Upgrades a proxy contract to a new implementation using upgrades.upgradeProxy")
     .addParam("proxy", "The address of the proxy contract", undefined, types.string)
@@ -180,4 +175,3 @@ task('setMaxWethRplRatio', 'Encodes the setMaxWethRplRatio(uint256) function cal
     console.log(`Encoding setMaxWethRplRatio for WETHVault with ratio: ${maxWethRplRatio}`);
     return await hre.run('encodeProposal', { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
-});
