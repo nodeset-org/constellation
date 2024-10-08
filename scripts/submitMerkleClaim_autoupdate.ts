@@ -121,7 +121,6 @@ exports.handler = async function(credentials) {
     try {
         // Fetch reward files from GitHub
         const rewardFiles = await fetchRewardFiles();
-        console.log('Fetched reward files:', rewardFiles.length);
 
         // Sort files by interval number and only process the last NUM_FILES_PROCESS files
         rewardFiles.sort((a, b) => {
@@ -225,10 +224,12 @@ exports.handler = async function(credentials) {
                 // uncomment this for deployment
                 return txResult.hash;
             } catch (error) {
+                throw new Error(`Error submitting Merkle claim: ${error.message}`);
             }
         } else {
+            // Nothing to claim
         }
     } catch (error) {
+        throw new Error(`Error processing rewards: ${error.message}`);
     }
-
 };
