@@ -118,118 +118,108 @@ exports.handler = async function(credentials) {
     let amountsETH = [];
     let merkleProofsArray = [];
 
-    try {
-        // Fetch reward files from GitHub
-        const rewardFiles = await fetchRewardFiles();
+    // Fetch reward files from GitHub
+    const rewardFiles = await fetchRewardFiles();
 
-        // Sort files by interval number and only process the last NUM_FILES_PROCESS files
-        rewardFiles.sort((a, b) => {
-            const aInterval = parseInt(a.name.match(/(\d+)\.json$/)[1], 10);
-            const bInterval = parseInt(b.name.match(/(\d+)\.json$/)[1], 10);
-            return aInterval - bInterval;
-        });
-        const filesToProcess = rewardFiles.slice(-NUM_FILES_PROCESS);
+    // Sort files by interval number and only process the last NUM_FILES_PROCESS files
+    rewardFiles.sort((a, b) => {
+        const aInterval = parseInt(a.name.match(/(\d+)\.json$/)[1], 10);
+        const bInterval = parseInt(b.name.match(/(\d+)\.json$/)[1], 10);
+        return aInterval - bInterval;
+    });
+    const filesToProcess = rewardFiles.slice(-NUM_FILES_PROCESS);
 
-        // Loop over each reward file and collect data for all claims
-        for (const file of filesToProcess) {
-            // Extract interval from filenames like 'rp-rewards-holesky-124.json' or 'rp-rewards-holesky-999.json'
-            const intervalMatch = file.name.match(new RegExp(`rp-rewards-${NETWORK}-(\\d+)\\.json`));
-            if (!intervalMatch) {
-                continue; // Skip if the filename doesn't match the expected pattern
-            }
-
-            const interval = parseInt(intervalMatch[1], 10); // Extracted interval number
-            const indexWordIndex = Math.floor(interval / 256); // Get the word index
-            const indexBitIndex = interval % 256; // Get the bit index within that word
-
-            // Skip file if merkle root has not been posted yet
-            const encodedData = ethers.utils.concat([
-                ethers.utils.toUtf8Bytes('rewards.merkle.root'),  // String to bytes
-                ethers.utils.zeroPad(ethers.utils.hexlify(interval), 32)  // Zero-pad the reward index to 32 bytes (uint256)
-            ]);
-            const key = ethers.utils.keccak256(encodedData);
-            const merkleRoot = await rocketStorage.getBytes32(key);
-            if (merkleRoot === '0x0000000000000000000000000000000000000000000000000000000000000000') {
-                continue; // Skip to the next interval
-            }
-
-            const superNodeAddress = await directory.getSuperNodeAddress()
-            // Create the key for checking whether the reward has been claimed
-            const claimedWordKey = ethers.utils.keccak256(
-                ethers.utils.defaultAbiCoder.encode(
-                    ['string', 'address', 'uint256'],
-                    ['rewards.interval.claimed', superNodeAddress.toLowerCase(), indexWordIndex]
-                )
-            );
-
-            // Get the claimedWord for this interval
-            const claimedWord = await rocketStorage.getUint(claimedWordKey);
-
-            // Check if the reward has been claimed
-            if (isClaimed(claimedWord, indexBitIndex)) {
-                continue; // Skip to the next interval
-            }
-
-            // Reward hasn't been claimed, fetch the file content
-            const rewardData = await fetchRewardFileContent(file.download_url);
-
-            const { rewardsFileVersion } = rewardData;
-
-            // Process rewards based on the version of the file
-            let rewardsInfo;
-            try {
-                rewardsInfo = processRewardsForVersion(rewardData, rewardsFileVersion, superNodeAddress.toLowerCase());
-            } catch (error) {
-                continue;
-            }
-
-            if (rewardsInfo === null) {
-                continue; // Skip to the next interval
-            }
-
-            const { merkleProof, collateralRpl, oracleDaoRpl, smoothingPoolEth } = rewardsInfo;
-            const totalRplReward = ethers.BigNumber.from(collateralRpl).add(oracleDaoRpl);
-
-            console.log("Adding reward from interval", interval);
-
-            // Accumulate claims data for batch submission
-            rewardIndexes.push(interval);
-            amountsRPL.push(totalRplReward.toString());
-            amountsETH.push(smoothingPoolEth);
-            merkleProofsArray.push(merkleProof);
+    // Loop over each reward file and collect data for all claims
+    for (const file of filesToProcess) {
+        // Extract interval from filenames like 'rp-rewards-holesky-124.json' or 'rp-rewards-holesky-999.json'
+        const intervalMatch = file.name.match(new RegExp(`rp-rewards-${NETWORK}-(\\d+)\\.json`));
+        if (!intervalMatch) {
+            continue; // Skip if the filename doesn't match the expected pattern
         }
 
-        // Submit all claims in a single transaction
-        if (rewardIndexes.length > 0) {
-            try {
-                console.log(`Submitting batch Merkle claim for ${rewardIndexes.length} intervals...`);
+        const interval = parseInt(intervalMatch[1], 10); // Extracted interval number
+        const indexWordIndex = Math.floor(interval / 256); // Get the word index
+        const indexBitIndex = interval % 256; // Get the bit index within that word
 
-                // use the callStatic line for local testing, the other for deployment
-                // const txResult = await merkleClaimStreamer.callStatic.submitMerkleClaim(
-                //     rewardIndexes,
-                //     amountsRPL,
-                //     amountsETH,
-                //     merkleProofsArray,
-                //     { maxFeePerGas: 200, gasLimit: 1000000 }
-                // );
-                const txResult = await merkleClaimStreamer.submitMerkleClaim(
-                    rewardIndexes,
-                    amountsRPL,
-                    amountsETH,
-                    merkleProofsArray,
-                    { maxFeePerGas: 200, gasLimit: 1000000 }
-                );
-                console.log(txResult);
-
-                // uncomment this for deployment
-                return txResult.hash;
-            } catch (error) {
-                throw new Error(`Error submitting Merkle claim: ${error.message}`);
-            }
-        } else {
-            // Nothing to claim
+        // Skip file if merkle root has not been posted yet
+        const encodedData = ethers.utils.concat([
+            ethers.utils.toUtf8Bytes('rewards.merkle.root'),  // String to bytes
+            ethers.utils.zeroPad(ethers.utils.hexlify(interval), 32)  // Zero-pad the reward index to 32 bytes (uint256)
+        ]);
+        const key = ethers.utils.keccak256(encodedData);
+        const merkleRoot = await rocketStorage.getBytes32(key);
+        if (merkleRoot === '0x0000000000000000000000000000000000000000000000000000000000000000') {
+            continue; // Skip to the next interval
         }
-    } catch (error) {
-        throw new Error(`Error processing rewards: ${error.message}`);
+
+        const superNodeAddress = await directory.getSuperNodeAddress()
+        // Create the key for checking whether the reward has been claimed
+        const claimedWordKey = ethers.utils.keccak256(
+            ethers.utils.defaultAbiCoder.encode(
+                ['string', 'address', 'uint256'],
+                ['rewards.interval.claimed', superNodeAddress.toLowerCase(), indexWordIndex]
+            )
+        );
+
+        // Get the claimedWord for this interval
+        const claimedWord = await rocketStorage.getUint(claimedWordKey);
+
+        // Check if the reward has been claimed
+        if (isClaimed(claimedWord, indexBitIndex)) {
+            continue; // Skip to the next interval
+        }
+
+        // Reward hasn't been claimed, fetch the file content
+        const rewardData = await fetchRewardFileContent(file.download_url);
+
+        const { rewardsFileVersion } = rewardData;
+
+        // Process rewards based on the version of the file
+        let rewardsInfo;
+        try {
+            rewardsInfo = processRewardsForVersion(rewardData, rewardsFileVersion, superNodeAddress.toLowerCase());
+        } catch (error) {
+            continue;
+        }
+
+        if (rewardsInfo === null) {
+            continue; // Skip to the next interval
+        }
+
+        const { merkleProof, collateralRpl, oracleDaoRpl, smoothingPoolEth } = rewardsInfo;
+        const totalRplReward = ethers.BigNumber.from(collateralRpl).add(oracleDaoRpl);
+
+        console.log("Adding reward from interval", interval);
+
+        // Accumulate claims data for batch submission
+        rewardIndexes.push(interval);
+        amountsRPL.push(totalRplReward.toString());
+        amountsETH.push(smoothingPoolEth);
+        merkleProofsArray.push(merkleProof);
+    }
+
+    // Submit all claims in a single transaction
+    if (rewardIndexes.length > 0) {
+        console.log(`Submitting batch Merkle claim for ${rewardIndexes.length} intervals...`);
+
+        // use the callStatic line for local testing, the other for deployment
+        // const txResult = await merkleClaimStreamer.callStatic.submitMerkleClaim(
+        //     rewardIndexes,
+        //     amountsRPL,
+        //     amountsETH,
+        //     merkleProofsArray,
+        //     { maxFeePerGas: 200, gasLimit: 1000000 }
+        // );
+        const txResult = await merkleClaimStreamer.submitMerkleClaim(
+            rewardIndexes,
+            amountsRPL,
+            amountsETH,
+            merkleProofsArray,
+            { maxFeePerGas: 200, gasLimit: 1000000 }
+        );
+        console.log(txResult);
+
+        // uncomment this for deployment
+        return txResult.hash;
     }
 };
