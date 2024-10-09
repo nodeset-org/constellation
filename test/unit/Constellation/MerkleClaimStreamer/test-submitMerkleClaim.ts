@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { Contract } from "ethers";
+const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 
 const AdminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ROLE"));
 const CoreProtocolRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("CORE_PROTOCOL_ROLE"));
@@ -144,6 +145,14 @@ describe("MerkleClaimStreamer.submitMerkleClaim", function () {
                         [ethers.utils.parseEther("1")],
                         [["0x0000000000000000000000000000000000000000000000000000000000000000"]]
                     )).to.emit(merkleClaimStreamer, "MerkleClaimSubmitted")
+                    .withArgs(
+                        anyValue, // block timestamp
+                        ethers.utils.parseEther("1"),
+                        ethers.utils.parseEther("0"),
+                        ethers.utils.parseEther("0.5"),
+                        ethers.utils.parseEther("0.5"),
+                        ethers.utils.parseEther("0")
+                    )
 
                     expect(await ethers.provider.getBalance(mockTreasury.address)).to.equal(ethers.utils.parseEther("0.5"));
                     expect(await ethers.provider.getBalance(mockOperatorReward.address)).to.equal(ethers.utils.parseEther("0.5"));
@@ -165,6 +174,14 @@ describe("MerkleClaimStreamer.submitMerkleClaim", function () {
                     [ethers.utils.parseEther("1")],
                     [["0x0000000000000000000000000000000000000000000000000000000000000000"]]
                 )).to.emit(merkleClaimStreamer, "MerkleClaimSubmitted")
+                .withArgs(
+                    anyValue, // block timestamp
+                    ethers.utils.parseEther("0"),
+                    ethers.utils.parseEther("0.28"),
+                    ethers.utils.parseEther("0"),
+                    ethers.utils.parseEther("0"),
+                    ethers.utils.parseEther("0.28")
+                )
 
                 expect(await mockRplToken.balanceOf(mockTreasury.address)).to.equal(ethers.utils.parseEther("0.28"));
             });
@@ -188,7 +205,14 @@ describe("MerkleClaimStreamer.submitMerkleClaim", function () {
                     [ethers.utils.parseEther("1")],
                     [["0x0000000000000000000000000000000000000000000000000000000000000000"]]
                 )).to.emit(merkleClaimStreamer, "MerkleClaimSubmitted")
-
+                .withArgs(
+                    anyValue, // block timestamp
+                    ethers.utils.parseEther("0"),
+                    ethers.utils.parseEther("0"),
+                    ethers.utils.parseEther("0"),
+                    ethers.utils.parseEther("0"),
+                    ethers.utils.parseEther("0")
+                )
                 expect(await ethers.provider.getBalance(mockTreasury.address)).to.equal(ethers.utils.parseEther("0"));
                 expect(await ethers.provider.getBalance(mockOperatorReward.address)).to.equal(ethers.utils.parseEther("0"));
                 expect(await mockRplToken.balanceOf(mockTreasury.address)).to.equal(ethers.utils.parseEther("0.0"));
