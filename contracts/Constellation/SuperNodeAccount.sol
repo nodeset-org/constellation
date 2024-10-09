@@ -157,7 +157,7 @@ contract SuperNodeAccount is UpgradeableBase {
         super.initialize(_directory);
 
         adminServerCheck = true;
-        minimumNodeFee = 14e16;
+        minimumNodeFee = 5e16;
         bond = 8 ether;
         maxValidators = 1;
         allowSubOpDelegateChanges = false;
