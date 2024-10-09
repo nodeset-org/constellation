@@ -92,9 +92,9 @@ contract Directory is UUPSUpgradeable, AccessControlUpgradeable {
 
     /// @notice Internal function to authorize contract upgrades.
     /// @dev This function is used internally to ensure that only administrators can authorize contract upgrades.
-    ///      It checks whether the sender has the required ADMIN_ROLE before allowing the upgrade.
+    ///      It checks whether the sender has the required TIMELOCK_LONG before allowing the upgrade.
     function _authorizeUpgrade(address) internal view override {
-        require(hasRole(Constants.ADMIN_ROLE, msg.sender), Constants.ADMIN_ONLY_ERROR);
+        require(hasRole(Constants.TIMELOCK_LONG, msg.sender), Constants.TIMELOCK_LONG_ONLY_ERROR);
     }
 
     //----
