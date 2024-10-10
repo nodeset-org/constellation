@@ -1059,7 +1059,7 @@ export const directoryAbi = [
         indexed: false,
       },
     ],
-    name: 'SanctionViolation',
+    name: 'SanctionViolationSingleOrigin',
   },
   {
     type: 'event',
@@ -1233,82 +1233,6 @@ export const directoryAbi = [
     inputs: [],
     name: 'getRocketDepositPoolAddress',
     outputs: [{ name: '', internalType: 'address', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'getRocketIntegrations',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct RocketIntegrations',
-        type: 'tuple',
-        components: [
-          {
-            name: 'rocketNetworkPenalties',
-            internalType: 'address',
-            type: 'address',
-          },
-          {
-            name: 'rocketNetworkPrices',
-            internalType: 'address',
-            type: 'address',
-          },
-          {
-            name: 'rocketNodeDeposit',
-            internalType: 'address',
-            type: 'address',
-          },
-          {
-            name: 'rocketNodeManager',
-            internalType: 'address',
-            type: 'address',
-          },
-          {
-            name: 'rocketNodeStaking',
-            internalType: 'address',
-            type: 'address',
-          },
-          {
-            name: 'rocketMinipoolManager',
-            internalType: 'address',
-            type: 'address',
-          },
-          { name: 'rplToken', internalType: 'address', type: 'address' },
-          {
-            name: 'rocketDepositPool',
-            internalType: 'address',
-            type: 'address',
-          },
-          {
-            name: 'rocketMerkleDistributorMainnet',
-            internalType: 'address',
-            type: 'address',
-          },
-          {
-            name: 'rocketNetworkVoting',
-            internalType: 'address',
-            type: 'address',
-          },
-          {
-            name: 'rocketDAOProtocolProposal',
-            internalType: 'address',
-            type: 'address',
-          },
-          {
-            name: 'rocketDAOProtocolSettingsRewards',
-            internalType: 'address',
-            type: 'address',
-          },
-          {
-            name: 'rocketDAOProtocolSettingsMinipool',
-            internalType: 'address',
-            type: 'address',
-          },
-        ],
-      },
-    ],
     stateMutability: 'view',
   },
   {
@@ -2398,74 +2322,6 @@ export const emptyTimelockControllerAbi = [
     stateMutability: 'nonpayable',
   },
   { type: 'receive', stateMutability: 'payable' },
-] as const
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Errors
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export const errorsAbi = [
-  {
-    type: 'error',
-    inputs: [
-      { name: 'expectedBondAmount', internalType: 'uint256', type: 'uint256' },
-      { name: 'actualBondAmount', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'BadBondAmount',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'expected', internalType: 'address', type: 'address' },
-      { name: 'actual', internalType: 'address', type: 'address' },
-    ],
-    name: 'BadPredictedCreation',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'role', internalType: 'bytes32', type: 'bytes32' },
-      { name: 'user', internalType: 'address', type: 'address' },
-    ],
-    name: 'BadRole',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'expectedSender', internalType: 'address', type: 'address' },
-    ],
-    name: 'BadSender',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'expectedBalance', internalType: 'uint256', type: 'uint256' },
-      { name: 'actualBalance', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'InsufficientBalance',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'success', internalType: 'bool', type: 'bool' },
-      { name: 'data', internalType: 'bytes', type: 'bytes' },
-    ],
-    name: 'LowLevelCall',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'success', internalType: 'bool', type: 'bool' },
-      { name: 'data', internalType: 'bytes', type: 'bytes' },
-    ],
-    name: 'LowLevelEthTransfer',
-  },
-  {
-    type: 'error',
-    inputs: [{ name: 'addr', internalType: 'address', type: 'address' }],
-    name: 'NotAContract',
-  },
-  { type: 'error', inputs: [], name: 'ZeroAddressError' },
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4225,64 +4081,11 @@ export const operatorDistributorAbi = [
   {
     type: 'error',
     inputs: [
-      { name: 'expectedBondAmount', internalType: 'uint256', type: 'uint256' },
-      { name: 'actualBondAmount', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'BadBondAmount',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'expected', internalType: 'address', type: 'address' },
-      { name: 'actual', internalType: 'address', type: 'address' },
-    ],
-    name: 'BadPredictedCreation',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'role', internalType: 'bytes32', type: 'bytes32' },
-      { name: 'user', internalType: 'address', type: 'address' },
-    ],
-    name: 'BadRole',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'expectedSender', internalType: 'address', type: 'address' },
-    ],
-    name: 'BadSender',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'expectedBalance', internalType: 'uint256', type: 'uint256' },
-      { name: 'actualBalance', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'InsufficientBalance',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'success', internalType: 'bool', type: 'bool' },
-      { name: 'data', internalType: 'bytes', type: 'bytes' },
-    ],
-    name: 'LowLevelCall',
-  },
-  {
-    type: 'error',
-    inputs: [
       { name: 'success', internalType: 'bool', type: 'bool' },
       { name: 'data', internalType: 'bytes', type: 'bytes' },
     ],
     name: 'LowLevelEthTransfer',
   },
-  {
-    type: 'error',
-    inputs: [{ name: 'addr', internalType: 'address', type: 'address' }],
-    name: 'NotAContract',
-  },
-  { type: 'error', inputs: [], name: 'ZeroAddressError' },
   {
     type: 'event',
     anonymous: false,
@@ -28944,67 +28747,6 @@ export const snapshotTestAbi = [
 
 export const superNodeAccountAbi = [
   {
-    type: 'error',
-    inputs: [
-      { name: 'expectedBondAmount', internalType: 'uint256', type: 'uint256' },
-      { name: 'actualBondAmount', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'BadBondAmount',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'expected', internalType: 'address', type: 'address' },
-      { name: 'actual', internalType: 'address', type: 'address' },
-    ],
-    name: 'BadPredictedCreation',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'role', internalType: 'bytes32', type: 'bytes32' },
-      { name: 'user', internalType: 'address', type: 'address' },
-    ],
-    name: 'BadRole',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'expectedSender', internalType: 'address', type: 'address' },
-    ],
-    name: 'BadSender',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'expectedBalance', internalType: 'uint256', type: 'uint256' },
-      { name: 'actualBalance', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'InsufficientBalance',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'success', internalType: 'bool', type: 'bool' },
-      { name: 'data', internalType: 'bytes', type: 'bytes' },
-    ],
-    name: 'LowLevelCall',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'success', internalType: 'bool', type: 'bool' },
-      { name: 'data', internalType: 'bytes', type: 'bytes' },
-    ],
-    name: 'LowLevelEthTransfer',
-  },
-  {
-    type: 'error',
-    inputs: [{ name: 'addr', internalType: 'address', type: 'address' }],
-    name: 'NotAContract',
-  },
-  { type: 'error', inputs: [], name: 'ZeroAddressError' },
-  {
     type: 'event',
     anonymous: false,
     inputs: [
@@ -31186,7 +30928,7 @@ export const whitelistAbi = [
     inputs: [
       { name: '_nodeOperator', internalType: 'address', type: 'address' },
     ],
-    name: 'invalidateSingleOustandingSig',
+    name: 'invalidateSingleOutstandingSig',
     outputs: [],
     stateMutability: 'nonpayable',
   },
