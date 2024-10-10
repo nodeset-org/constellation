@@ -200,6 +200,7 @@ exports.handler = async function(credentials) {
         }
 
         if (rewardIndexes.length === 0)
+            console.log('No rewards to claim');
             return;
     } catch (error) {
         throw new Error(`Error processing rewards: ${error.message}`);
