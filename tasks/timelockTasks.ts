@@ -1,11 +1,11 @@
 import { task, types } from 'hardhat/config';
 
-task('upgradeTo', 'Encodes the upgradeTo(address) function call for an upgradable contract')
-  .addParam('newImplementation', 'The address of the new implementation contract', undefined, types.string)
-  .setAction(async ({ newImplementation }, hre) => {
-    const sigs = ['upgradeTo(address)'];
-    const params = [[newImplementation]];
 
+task("upgradeTo", "Encodes the upgradeTo(address) function call for an upgradable contract")
+    .addParam("newImplementation", "The address of the new implementation contract", undefined, types.string)
+    .setAction(async ({ newImplementation }, hre) => {
+        const sigs = ["upgradeTo(address)"];
+        const params = [[newImplementation]];
     console.log(`Encoding upgradeTo with new implementation: ${newImplementation}`);
     return await hre.run('encodeProposal', { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });

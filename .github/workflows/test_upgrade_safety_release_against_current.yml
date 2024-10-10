@@ -1,0 +1,29 @@
+name: Test Release Against Current
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to use for the script'
+        required: false
+        default: ''
+
+jobs:
+  test-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}  # Updated to checkout the correct ref
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Run test release script
+        run: |
+          chmod +x scripts/shell/test_release_against_current.sh
+          ./scripts/shell/test_release_against_current.sh ${{ github.event.inputs.tag }}
