@@ -9,8 +9,8 @@
 
 // comment this out for deployment
 //require('dotenv').config();
-//const { Defender } = require('@openzeppelin/defender-sdk');
 
+const { Defender } = require('@openzeppelin/defender-sdk');
 const { ethers } = require('ethers');
 
 // comment this out for deployment (Defender will provide the credentials)
