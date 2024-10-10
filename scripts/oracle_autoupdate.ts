@@ -21,8 +21,6 @@ const { ethers } = require('ethers');
 // };
 
 // make sure to change these to the correct values
-// const OD_ADDRESS = '0x498A46Ef3EaD2D777cEF50Cb368c65FFb1c33f8E';
-// const ORACLE_ADDRESS = '0x189CEd4F1a9Eae002bcdb04594E3dC91368AfFaF';
 const DIRECTORY_ADDRESS = '0x925D0700407fB0C855Ae9903B3a2727F1e88576c'
 const CHAIN_ID = 17000;
 
