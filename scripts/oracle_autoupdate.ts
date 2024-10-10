@@ -72,14 +72,13 @@ exports.handler = async function(credentials) {
   const oracle = new ethers.Contract((await directory.getOracleAddress()), oracleABI, signer);
 
   // use the callStatic line for local testing, the other for deployment
-  //const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData);//, { maxFeePerGas: 200, gasLimit: 1000000 });
-  const txResult = await oracle.setTotalYieldAccrued(sig, sigData);//, { maxFeePerGas: 200 });
+  //const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData);
+  const txResult = await oracle.setTotalYieldAccrued(sig, sigData);
   await txResult.wait();
+
   if(txResult.status === 0)
     throw new Error(`Transaction reverted: ${txResult}`)
   console.log(`Transaction successful: ${txResult}`);
-
-  console.log(txResult);
 
   // uncomment this for deployment
   return txResult.hash;
