@@ -73,7 +73,7 @@ exports.handler = async function(credentials) {
 
   // use the callStatic line for local testing, the other for deployment
   //const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData);//, { maxFeePerGas: 200, gasLimit: 1000000 });
-  const txResult = await oracle.setTotalYieldAccrued(sig, sigData, { maxFeePerGas: 200 });
+  const txResult = await oracle.setTotalYieldAccrued(sig, sigData);//, { maxFeePerGas: 200 });
 
   console.log(txResult);
 
