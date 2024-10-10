@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 # Capture the original working directory
 ORIGINAL_DIR=$(pwd)
 echo "Original directory: $ORIGINAL_DIR"
@@ -142,9 +141,9 @@ for (( i=0; i<$NUM_ADDRESSES; i++ )); do
     STORAGE_ERROR_MESSAGES+=("$ERROR_MSG")
   elif echo "$OUTPUT" | grep -q "An error occurred during the upgrade"; then
     echo "Error occurred during upgrade of $FACTORY_NAME"
+    OTHER_ERRORS+=("$FACTORY_NAME")
     # Extract the error message
     ERROR_MSG=$(echo "$OUTPUT" | grep -A10 -m1 "An error occurred during the upgrade")
-    OTHER_ERRORS+=("$FACTORY_NAME")
     OTHER_ERROR_MESSAGES+=("$ERROR_MSG")
   fi
 done
@@ -189,3 +188,34 @@ else
 fi
 
 echo -e "\n========== END OF SUMMARY =========="
+
+# Initialize exit code
+EXIT_CODE=0
+
+# Output the errors and warnings in a format recognized by GitHub Actions
+
+# Output storage errors as errors and set exit code to 1
+if [ ${#STORAGE_ERRORS[@]} -gt 0 ]; then
+  echo -e "\n========== STORAGE ERRORS =========="
+  for idx in "${!STORAGE_ERRORS[@]}"; do
+    CONTRACT="${STORAGE_ERRORS[$idx]}"
+    ERROR_MSG="${STORAGE_ERROR_MESSAGES[$idx]}"
+    # Output error annotation for GitHub Actions
+    echo "::error file=${BASH_SOURCE[0]},line=${LINENO}::${CONTRACT}: ${ERROR_MSG}"
+  done
+  EXIT_CODE=1  # Fail the job due to storage errors
+fi
+
+# Output other errors as warnings
+if [ ${#OTHER_ERRORS[@]} -gt 0 ]; then
+  echo -e "\n========== OTHER ERRORS (Warnings) =========="
+  for idx in "${!OTHER_ERRORS[@]}"; do
+    CONTRACT="${OTHER_ERRORS[$idx]}"
+    ERROR_MSG="${OTHER_ERROR_MESSAGES[$idx]}"
+    # Output warning annotation for GitHub Actions
+    echo "::warning file=${BASH_SOURCE[0]},line=${LINENO}::${CONTRACT}: ${ERROR_MSG}"
+  done
+fi
+
+# Exit with the appropriate code
+exit $EXIT_CODE
