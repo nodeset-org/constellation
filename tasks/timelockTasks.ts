@@ -125,3 +125,13 @@ task('setMaxWethRplRatio', 'Encodes the setMaxWethRplRatio(uint256) function cal
     console.log(`Encoding setMaxWethRplRatio for WETHVault with ratio: ${maxWethRplRatio}`);
     return await hre.run('encodeProposal', { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
+
+  task('setOperatorRewardsAddress', 'Encodes the setOperatorRewards(address) function call for Directory')
+  .addParam('operatorRewardsAddress', 'The new operator rewards address (string)', undefined, types.string)
+  .setAction(async ({ operatorRewardsAddress }, hre) => {
+    const sigs = ['setOperatorRewards(address)'];
+    const params = [[operatorRewardsAddress]];
+
+    console.log(`Encoding setOperatorRewards for Directory with ratio: ${operatorRewardsAddress}`);
+    return await hre.run('encodeProposal', { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+  });

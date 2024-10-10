@@ -214,14 +214,12 @@ exports.handler = async function(credentials) {
         //     amountsRPL,
         //     amountsETH,
         //     merkleProofsArray,
-        //     { maxFeePerGas: 200, gasLimit: 1000000 }
         // );
         const txResult = await merkleClaimStreamer.submitMerkleClaim(
             rewardIndexes,
             amountsRPL,
             amountsETH,
             merkleProofsArray,
-            { maxFeePerGas: 200, gasLimit: 1000000 }
         );
         await txResult.wait();
 

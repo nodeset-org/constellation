@@ -11,6 +11,7 @@ import 'hardhat-contract-sizer';
 import './tasks/adminTasks';
 import './tasks/timelockTasks';
 import './tasks/upgradeTasks';
+import './tasks/debugTasks';
 import './tasks/viewOperatorDistributorTasks';
 import './tasks/viewSuperNodeAccountTasks';
 

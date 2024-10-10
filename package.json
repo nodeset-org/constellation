@@ -48,6 +48,7 @@
     "bn-sqrt": "^1.0.0",
     "chai": "^4.3.7",
     "dotenv": "^16.1.1",
+    "eth-revert-reason": "^1.0.3",
     "ethereumjs-util": "^6.2.0",
     "find-config": "^1.0.0",
     "glob": "^7.1.7",

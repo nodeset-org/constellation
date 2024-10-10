@@ -21,8 +21,7 @@ const { ethers } = require('ethers');
 // };
 
 // make sure to change these to the correct values
-const OD_ADDRESS = '0x498A46Ef3EaD2D777cEF50Cb368c65FFb1c33f8E';
-const ORACLE_ADDRESS = '0x189CEd4F1a9Eae002bcdb04594E3dC91368AfFaF';
+const DIRECTORY_ADDRESS = '0x925D0700407fB0C855Ae9903B3a2727F1e88576c'
 const CHAIN_ID = 17000;
 
 //comment this out for deployment
@@ -52,7 +51,8 @@ exports.handler = async function(credentials) {
   //console.log('timestamp', timestamp);
   //console.log('latest timestamp', (await provider.getBlock('latest')).timestamp);
 
-  const od = new ethers.Contract(OD_ADDRESS, ['function oracleError() public view returns (uint256)'], provider);
+  const directory = new ethers.Contract(DIRECTORY_ADDRESS, ['function getOracleAddress() public view returns (address)','function getOperatorDistributorAddress() public view returns (address)'], provider);
+  const od = new ethers.Contract((await directory.getOperatorDistributorAddress()), ['function oracleError() public view returns (uint256)'], provider);
 
   const expectedOracleError = await od.oracleError();
   //console.log('expectedOracleError', expectedOracleError);
@@ -67,17 +67,16 @@ exports.handler = async function(credentials) {
     'function setTotalYieldAccrued(bytes calldata _sig, (int256 newTotalYieldAccrued, uint256 expectedOracleError, uint256 timeStamp) calldata sigData)',
   ];
 
-  const oracle = new ethers.Contract(ORACLE_ADDRESS, oracleABI, signer);
+  const oracle = new ethers.Contract((await directory.getOracleAddress()), oracleABI, signer);
 
   // use the callStatic line for local testing, the other for deployment
-  //const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData, { maxFeePerGas: 200, gasLimit: 1000000 });
-  const txResult = await oracle.setTotalYieldAccrued(sig, sigData, { maxFeePerGas: 200 });
+  //const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData);
+  const txResult = await oracle.setTotalYieldAccrued(sig, sigData);
   await txResult.wait();
+
   if(txResult.status === 0)
     throw new Error(`Transaction reverted: ${txResult}`)
   console.log(`Transaction successful: ${txResult}`);
-
-  //console.log(txResult);
 
   // uncomment this for deployment
   return txResult.hash;
