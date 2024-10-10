@@ -31,4 +31,12 @@ contract MockWETHVault {
     function setMissingLiquidity(uint256 _missingLiquidity) public {
         missingLiquidityValue = _missingLiquidity;
     }
+
+    function getTreasuryPortion(uint256 ethReward) public pure returns (uint256) {
+        return ethReward / 2;
+    }
+
+    function getOperatorPortion(uint256 ethReward) public pure returns (uint256) {
+        return ethReward / 2;
+    }
 }

@@ -121,7 +121,6 @@ exports.handler = async function(credentials) {
     try {
         // Fetch reward files from GitHub
         const rewardFiles = await fetchRewardFiles();
-        console.log('Fetched reward files:', rewardFiles.length);
 
         // Sort files by interval number and only process the last NUM_FILES_PROCESS files
         rewardFiles.sort((a, b) => {
@@ -135,11 +134,13 @@ exports.handler = async function(credentials) {
         for (const file of filesToProcess) {
             // Extract interval from filenames like 'rp-rewards-holesky-124.json' or 'rp-rewards-holesky-999.json'
             const intervalMatch = file.name.match(new RegExp(`rp-rewards-${NETWORK}-(\\d+)\\.json`));
+
             if (!intervalMatch) {
                 continue; // Skip if the filename doesn't match the expected pattern
             }
 
             const interval = parseInt(intervalMatch[1], 10); // Extracted interval number
+
             const indexWordIndex = Math.floor(interval / 256); // Get the word index
             const indexBitIndex = interval % 256; // Get the bit index within that word
 
@@ -156,16 +157,13 @@ exports.handler = async function(credentials) {
 
             const superNodeAddress = await directory.getSuperNodeAddress()
             // Create the key for checking whether the reward has been claimed
-            const claimedWordKey = ethers.utils.keccak256(
-                ethers.utils.defaultAbiCoder.encode(
-                    ['string', 'address', 'uint256'],
-                    ['rewards.interval.claimed', superNodeAddress.toLowerCase(), indexWordIndex]
-                )
+            const claimedWordKey = ethers.utils.solidityKeccak256(
+                ['string', 'address', 'uint256'],
+                ['rewards.interval.claimed', superNodeAddress, indexWordIndex]
             );
 
             // Get the claimedWord for this interval
             const claimedWord = await rocketStorage.getUint(claimedWordKey);
-
             // Check if the reward has been claimed
             if (isClaimed(claimedWord, indexBitIndex)) {
                 continue; // Skip to the next interval
@@ -225,10 +223,12 @@ exports.handler = async function(credentials) {
                 // uncomment this for deployment
                 return txResult.hash;
             } catch (error) {
+                throw new Error(`Error submitting Merkle claim: ${error.message}`);
             }
         } else {
+            // Nothing to claim
         }
     } catch (error) {
+        throw new Error(`Error processing rewards: ${error.message}`);
     }
-
 };
