@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # Capture the original working directory
 ORIGINAL_DIR=$(pwd)
 echo "Original directory: $ORIGINAL_DIR"
@@ -126,7 +127,7 @@ OTHER_ERROR_MESSAGES=()
 for (( i=0; i<$NUM_ADDRESSES; i++ )); do
   PROXY_ADDRESS=${ADDRESS_ARRAY[$i]}
   FACTORY_NAME=${FACTORY_NAMES[$i]}
-  
+
   echo "Running deployAndUpgrade for proxy: $PROXY_ADDRESS and factory: $FACTORY_NAME"
 
   # Run the command and capture output and error message
@@ -137,12 +138,12 @@ for (( i=0; i<$NUM_ADDRESSES; i++ )); do
     echo "Storage layout incompatibility error in $FACTORY_NAME"
     STORAGE_ERRORS+=("$FACTORY_NAME")
     # Extract the error message
-    ERROR_MSG=$(echo "$OUTPUT" | grep -A5 "Error: New storage layout is incompatible")
+    ERROR_MSG=$(echo "$OUTPUT" | grep -A5 -m1 "Error: New storage layout is incompatible")
     STORAGE_ERROR_MESSAGES+=("$ERROR_MSG")
   elif echo "$OUTPUT" | grep -q "An error occurred during the upgrade"; then
     echo "Error occurred during upgrade of $FACTORY_NAME"
     # Extract the error message
-    ERROR_MSG=$(echo "$OUTPUT" | grep -A5 "An error occurred during the upgrade")
+    ERROR_MSG=$(echo "$OUTPUT" | grep -A10 -m1 "An error occurred during the upgrade")
     OTHER_ERRORS+=("$FACTORY_NAME")
     OTHER_ERROR_MESSAGES+=("$ERROR_MSG")
   fi
@@ -157,31 +158,34 @@ echo "Extracting addresses from deploy and upgrade output:"
 grep -E "deployed to|address" deploy_upgrade_output.log
 
 # Output the recap of the tag used
-echo -e "\nRecap: The tag used for testing was '$SELECTED_TAG'"
+echo -e "\n========== SUMMARY =========="
+echo -e "Recap: The tag used for testing was '$SELECTED_TAG'"
 
 # Output the summary of errors
-echo -e "\nSummary of Errors:"
+echo -e "\n========== SUMMARY OF ERRORS =========="
 
 if [ ${#STORAGE_ERRORS[@]} -gt 0 ]; then
-  echo -e "\nContracts with storage layout incompatibility errors:"
+  echo -e "\nContracts with **Storage Layout Incompatibility** errors:"
   for idx in "${!STORAGE_ERRORS[@]}"; do
     CONTRACT="${STORAGE_ERRORS[$idx]}"
     ERROR_MSG="${STORAGE_ERROR_MESSAGES[$idx]}"
-    echo -e "\n- $CONTRACT"
-    echo "$ERROR_MSG"
+    echo -e "\n--- $CONTRACT ---"
+    echo -e "$ERROR_MSG"
   done
 else
   echo -e "\nNo contracts reported storage layout incompatibility errors."
 fi
 
 if [ ${#OTHER_ERRORS[@]} -gt 0 ]; then
-  echo -e "\nContracts with other errors:"
+  echo -e "\nContracts with **Other Errors**:"
   for idx in "${!OTHER_ERRORS[@]}"; do
     CONTRACT="${OTHER_ERRORS[$idx]}"
     ERROR_MSG="${OTHER_ERROR_MESSAGES[$idx]}"
-    echo -e "\n- $CONTRACT"
-    echo "$ERROR_MSG"
+    echo -e "\n--- $CONTRACT ---"
+    echo -e "$ERROR_MSG"
   done
 else
   echo -e "\nNo contracts reported other errors."
 fi
+
+echo -e "\n========== END OF SUMMARY =========="
