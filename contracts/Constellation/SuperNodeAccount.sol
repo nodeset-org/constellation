@@ -184,7 +184,7 @@ contract SuperNodeAccount is UpgradeableBase {
      *         It also checks for sufficient liquidity (both RPL and ETH) before proceeding with the creation.
      *         See the `CreateMinipoolConfig` struct for the parameters required for minipool creation.
      * @dev The function involves multiple steps:
-     *      1. Validates that the transaction contains the exact amount of ETH specified in the `lockThreshold` (to prevent depoist contract front-running).
+     *      1. Validates that the transaction contains the exact amount of ETH specified in the `lockThreshold` (to prevent deposit contract front-running).
      *      2. Checks if there is sufficient liquidity available for the required bond amount in both RPL and ETH.
      *      3. Validates that the sender (sub-node operator) is whitelisted.
      *      4. Ensures the signature provided has not been used before and marks it as used.
@@ -347,7 +347,7 @@ contract SuperNodeAccount is UpgradeableBase {
     }   
 
     /**
-     * @notice Allows dmins to delegate an upgrade to the minipool's contract.
+     * @notice Allows admins to delegate an upgrade to the minipool's contract.
      * @dev This function provides a mechanism for delegated upgrades of minipools, enhancing flexibility in maintenance and upgrades.
      * @param _minipool Address of the minipool which is to be upgraded.
      */
