@@ -10,8 +10,7 @@ import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol'
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 /// @title Treasury
-/// @notice A contract that allows a Treasuerer to manage and execute transfers of ETH and ERC20 tokens.
-/// @dev Inherits from UpgradeableBase to allow for future upgrades.
+/// @notice A contract that allows a Treasurer role to manage and execute transfers of ETH and ERC20 tokens.
 contract Treasury is UUPSUpgradeable, AccessControlUpgradeable, ReentrancyGuard {
     bytes32 public constant TREASURER_ROLE = keccak256('TREASURER_ROLE');
 
