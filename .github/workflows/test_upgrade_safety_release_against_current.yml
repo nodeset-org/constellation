@@ -1,4 +1,4 @@
-name: Test Release Against Current
+name: Test Upgrade Safety Against Provided Release
 
 on:
   workflow_dispatch:
