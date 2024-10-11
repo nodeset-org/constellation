@@ -1,4 +1,5 @@
-name: Test Upgrade Safety Against Provided Release
+#  Test Upgrade Safety Against Provided Release
+name: TUSAPR
 
 on:
   workflow_dispatch:
