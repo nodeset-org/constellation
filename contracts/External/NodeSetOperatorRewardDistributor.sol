@@ -24,7 +24,8 @@ contract NodeSetOperatorRewardDistributorV1Storage {
 /**
  * @title NodeSetOperatorRewardDistributor
  * @author Mike Leach, Theodore Clapp
- * @dev Distributes earned rewards to a decentralized operator set using a proof-of-authority model.
+ * @notice Standalone contract for distributing rewards to a distributed operator set using a proof-of-authority model.
+ * @dev
  * This is the first step for a rewards system. It allows for all use-cases and is cheap to use, yet centralized.
  * Potential future upgrades:
  * - categorized income streams
