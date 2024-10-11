@@ -71,14 +71,14 @@ contract Treasury is UUPSUpgradeable, AccessControlUpgradeable, ReentrancyGuard 
         _;
     }
 
-    /// @notice Allows the treasuerer to claim all ERC20 tokens of a particular type and send them to a specified address.
+    /// @notice Allows the treasurer to claim all ERC20 tokens of a particular type and send them to a specified address.
     /// @param _tokenAddress The address of the ERC20 token contract.
     /// @param _to The address to which the tokens will be sent.
     function claimToken(address _tokenAddress, address _to) external onlyTreasurer nonReentrant {
         _claimTokenInternal(_tokenAddress, _to, IERC20(_tokenAddress).balanceOf(address(this)));
     }
 
-    /// @notice Allows the treasuerer to claim a specified amount of ERC20 tokens and send them to a given address.
+    /// @notice Allows the treasurer to claim a specified amount of ERC20 tokens and send them to a given address.
     /// @param _tokenAddress The address of the ERC20 token.
     /// @param _to The recipient's address.
     /// @param _amount The amount of tokens to transfer.
@@ -86,13 +86,13 @@ contract Treasury is UUPSUpgradeable, AccessControlUpgradeable, ReentrancyGuard 
         _claimTokenInternal(_tokenAddress, _to, _amount);
     }
 
-    /// @notice Enables the treasuerer to claim all ETH held by the contract and send it to a specified address.
+    /// @notice Enables the treasurer to claim all ETH held by the contract and send it to a specified address.
     /// @param _to The payable address to which the ETH will be sent.
     function claimEth(address payable _to) external onlyTreasurer nonReentrant {
         _claimEthInternal(_to, address(this).balance);
     }
 
-    /// @notice Allows the treasuerer to claim a specified amount of ETH and send it to a given address.
+    /// @notice Allows the treasurer to claim a specified amount of ETH and send it to a given address.
     /// @param _to The payable address to which the ETH will be transferred.
     /// @param _amount The amount of ETH to transfer.
     function claimEthAmount(address payable _to, uint256 _amount) external onlyTreasurer nonReentrant {
@@ -100,7 +100,7 @@ contract Treasury is UUPSUpgradeable, AccessControlUpgradeable, ReentrancyGuard 
     }
 
     /// @notice Batch executes multiple calls to contracts with provided data and ETH.
-    /// @dev Useful for performing multiple treasuerer tasks in one transaction.
+    /// @dev Useful for performing multiple treasurer tasks in one transaction.
     /// @param _targets An array of contract addresses to execute the calls on.
     /// @param _functionData An array of calldata to send for the calls.
     /// @param _values msg.value per target
