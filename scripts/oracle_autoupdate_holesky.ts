@@ -3,7 +3,7 @@
 // To test locally, check the instructions below and run with `npx tsx run scripts/oracle_autoupdate.ts`
 // It's best to run via tsx and not via hardhat so you can emulate a similar TS environment that Defender would use
 
-import G from "glob";
+import G from 'glob';
 
 // INSTRUCTIONS
 // 1. Set the constants
@@ -23,7 +23,7 @@ const credentials = {
 };
 
 // make sure to change these to the correct values
-const DIRECTORY_ADDRESS = '0x925D0700407fB0C855Ae9903B3a2727F1e88576c'
+const DIRECTORY_ADDRESS = '0x925D0700407fB0C855Ae9903B3a2727F1e88576c';
 const CHAIN_ID = 17000;
 
 //comment this out for deployment
@@ -53,8 +53,19 @@ async function testFunction(credentials: any) {
   //console.log('timestamp', timestamp);
   //console.log('latest timestamp', (await provider.getBlock('latest')).timestamp);
 
-  const directory = new ethers.Contract(DIRECTORY_ADDRESS, ['function getOracleAddress() public view returns (address)','function getOperatorDistributorAddress() public view returns (address)'], provider);
-  const od = new ethers.Contract((await directory.getOperatorDistributorAddress()), ['function oracleError() public view returns (uint256)'], provider);
+  const directory = new ethers.Contract(
+    DIRECTORY_ADDRESS,
+    [
+      'function getOracleAddress() public view returns (address)',
+      'function getOperatorDistributorAddress() public view returns (address)',
+    ],
+    provider
+  );
+  const od = new ethers.Contract(
+    await directory.getOperatorDistributorAddress(),
+    ['function oracleError() public view returns (uint256)'],
+    provider
+  );
 
   const expectedOracleError = await od.oracleError();
   //console.log('expectedOracleError', expectedOracleError);
@@ -69,18 +80,18 @@ async function testFunction(credentials: any) {
     'function setTotalYieldAccrued(bytes calldata _sig, (int256 newTotalYieldAccrued, uint256 expectedOracleError, uint256 timeStamp) calldata sigData)',
   ];
 
-  const oracle = new ethers.Contract((await directory.getOracleAddress()), oracleABI, signer);
+  const oracle = new ethers.Contract(await directory.getOracleAddress(), oracleABI, signer);
 
   //console.log("gas needed: ", (await oracle.estimateGas.setTotalYieldAccrued(sig, sigData)).toString());
 
   //return;
   // use the callStatic line for local testing, the other for deployment
-  const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData, { gasLimit: 100000});
+  const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData, { gasLimit: 100000 });
+  // gas limit is set to 100000 because ethers estimated the required amount as 82684
   //const txResult = await oracle.setTotalYieldAccrued(sig, sigData, { gasLimit: 100000});
   await txResult.wait();
 
-  if(txResult.status === 0)
-    throw new Error(`Transaction reverted: ${txResult}`)
+  if (txResult.status === 0) throw new Error(`Transaction reverted: ${txResult}`);
   console.log(`Transaction successful: ${txResult}`);
 
   // uncomment this for deployment
