@@ -3,33 +3,35 @@
 // To test locally, check the instructions below and run with `npx tsx run scripts/oracle_autoupdate.ts`
 // It's best to run via tsx and not via hardhat so you can emulate a similar TS environment that Defender would use
 
+import G from "glob";
+
 // INSTRUCTIONS
 // 1. Set the constants
 // 2. Follow comment/uncomment instructions depending on if you are deploying or testing
 
 // comment this out for deployment
-//require('dotenv').config();
+require('dotenv').config();
 
 const { Defender } = require('@openzeppelin/defender-sdk');
 const { ethers } = require('ethers');
 
 // comment this out for deployment (Defender will provide the credentials)
 // if you're testing, you need these relayer API keys set in your .env file
-// const credentials = {
-//   relayerApiKey: `${process.env.DEFENDER_RELAY_KEY}`,
-//   relayerApiSecret: `${process.env.DEFENDER_RELAY_SECRET}`,
-// };
+const credentials = {
+  relayerApiKey: `${process.env.DEFENDER_RELAY_KEY}`,
+  relayerApiSecret: `${process.env.DEFENDER_RELAY_SECRET}`,
+};
 
 // make sure to change these to the correct values
 const DIRECTORY_ADDRESS = '0x925D0700407fB0C855Ae9903B3a2727F1e88576c'
 const CHAIN_ID = 17000;
 
 //comment this out for deployment
-//testFunction(credentials);
+testFunction(credentials);
 
 // use the exports.handler line for deployment, use the other one for testing
-exports.handler = async function(credentials) {
-//async function testFunction(credentials: any) {
+//exports.handler = async function(credentials) {
+async function testFunction(credentials: any) {
   const client = new Defender(credentials);
 
   const provider = client.relaySigner.getProvider();
@@ -69,9 +71,12 @@ exports.handler = async function(credentials) {
 
   const oracle = new ethers.Contract((await directory.getOracleAddress()), oracleABI, signer);
 
+  //console.log("gas needed: ", (await oracle.estimateGas.setTotalYieldAccrued(sig, sigData)).toString());
+
+  //return;
   // use the callStatic line for local testing, the other for deployment
-  //const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData);
-  const txResult = await oracle.setTotalYieldAccrued(sig, sigData);
+  const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData, { gasLimit: 100000});
+  //const txResult = await oracle.setTotalYieldAccrued(sig, sigData, { gasLimit: 100000});
   await txResult.wait();
 
   if(txResult.status === 0)

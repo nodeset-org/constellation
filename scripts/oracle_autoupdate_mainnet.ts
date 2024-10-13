@@ -21,15 +21,15 @@ const { ethers } = require('ethers');
 // };
 
 // make sure to change these to the correct values
-const DIRECTORY_ADDRESS = '0x4343743dBc46F67D3340b45286D8cdC13c8575DE'
+const DIRECTORY_ADDRESS = '0x4343743dBc46F67D3340b45286D8cdC13c8575DE';
 const CHAIN_ID = 1;
 
 //comment this out for deployment
 //testFunction(credentials);
 
 // use the exports.handler line for deployment, use the other one for testing
-exports.handler = async function(credentials) {
-//async function testFunction(credentials: any) {
+exports.handler = async function (credentials) {
+  //async function testFunction(credentials: any) {
   const client = new Defender(credentials);
 
   const provider = client.relaySigner.getProvider();
@@ -51,8 +51,19 @@ exports.handler = async function(credentials) {
   //console.log('timestamp', timestamp);
   //console.log('latest timestamp', (await provider.getBlock('latest')).timestamp);
 
-  const directory = new ethers.Contract(DIRECTORY_ADDRESS, ['function getOracleAddress() public view returns (address)','function getOperatorDistributorAddress() public view returns (address)'], provider);
-  const od = new ethers.Contract((await directory.getOperatorDistributorAddress()), ['function oracleError() public view returns (uint256)'], provider);
+  const directory = new ethers.Contract(
+    DIRECTORY_ADDRESS,
+    [
+      'function getOracleAddress() public view returns (address)',
+      'function getOperatorDistributorAddress() public view returns (address)',
+    ],
+    provider
+  );
+  const od = new ethers.Contract(
+    await directory.getOperatorDistributorAddress(),
+    ['function oracleError() public view returns (uint256)'],
+    provider
+  );
 
   const expectedOracleError = await od.oracleError();
   //console.log('expectedOracleError', expectedOracleError);
@@ -67,17 +78,16 @@ exports.handler = async function(credentials) {
     'function setTotalYieldAccrued(bytes calldata _sig, (int256 newTotalYieldAccrued, uint256 expectedOracleError, uint256 timeStamp) calldata sigData)',
   ];
 
-  const oracle = new ethers.Contract((await directory.getOracleAddress()), oracleABI, signer);
+  const oracle = new ethers.Contract(await directory.getOracleAddress(), oracleABI, signer);
 
   // use the callStatic line for local testing, the other for deployment
-  //const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData);
-  const txResult = await oracle.setTotalYieldAccrued(sig, sigData);
+  //const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData, { gasLimit: 100000});
+  const txResult = await oracle.setTotalYieldAccrued(sig, sigData, { gasLimit: 100000 });
   await txResult.wait();
 
-  if(txResult.status === 0)
-    throw new Error(`Transaction reverted: ${txResult}`)
+  if (txResult.status === 0) throw new Error(`Transaction reverted: ${txResult}`);
   console.log(`Transaction successful: ${txResult}`);
 
   // uncomment this for deployment
   return txResult.hash;
-}
+};
