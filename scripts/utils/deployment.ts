@@ -267,7 +267,7 @@ export async function fastDeployProtocol(
   const yieldDistributorProxy = await retryOperation(async function () {
     const yd = await upgrades.deployProxy(
       await ethers.getContractFactory('NodeSetOperatorRewardDistributor', deployer),
-      [nodesetAdmin, nodesetAdmin, nodesetAdminServer],
+      [nodesetAdmin, nodesetAdminServer],
       { initializer: 'initialize', kind: 'uups', unsafeAllow: ['constructor', 'delegatecall'] }
     );
     if (log) console.log('yield distributor deployed to', yd.address);
