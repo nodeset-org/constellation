@@ -122,6 +122,9 @@ export async function deployUsingEnv(environment: string) {
       process.env.DIRECTORY_DEPLOYER_PRIVATE_KEY_PATH as string
     );
 
+    console.log('deployer wallet balance:', ethers.utils.formatEther(await deployerWallet.getBalance()));
+    console.log('directory deployer wallet balance:', ethers.utils.formatEther(await directoryDeployerWallet.getBalance()));
+
     return await deployWithDirectory(
       process.env.TREASURER_ADDRESS as string,
       deployerWallet,
@@ -349,7 +352,7 @@ export async function fastDeployProtocol(
           oracleAdmin,
         ],
       ],
-      { initializer: 'initialize', kind: 'uups', unsafeAllow: ['constructor'] }
+      { initializer: 'initialize', kind: 'uups', unsafeAllow: ['constructor'], salt: directoryAddress }
     );
 
     if (log) console.log('directory deployed to', dir.address);
