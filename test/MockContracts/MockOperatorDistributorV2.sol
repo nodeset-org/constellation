@@ -6,9 +6,7 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 
 import '../../contracts/Constellation/Utils/UpgradeableBase.sol';
 import '../../contracts/Constellation/Whitelist.sol';
+import 'test/MockContracts/MockV2Logic.sol';
 
-contract MockOperatorDistributorV2 is OperatorDistributor {
-    function testUpgrade() public pure returns (uint) {
-        return 0;
-    }
+contract MockOperatorDistributorV2 is OperatorDistributor, MockV2Logic {
 }
