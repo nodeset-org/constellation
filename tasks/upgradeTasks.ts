@@ -6,55 +6,64 @@ import { Bytes32 } from '@chainsafe/lodestar-types';
 const { Defender } = require('@openzeppelin/defender-sdk');
 
 
-// WILL NOT WORK ON DEPLOYMENTS WITH A TIMELOCK
 task("upgradeProxy", "Upgrades a proxy contract to a new implementation using upgrades.upgradeProxy")
-    .addParam("proxy", "The address of the proxy contract", undefined, types.string)
-    .addParam("implementation", "The name of the new implementation contract factory", undefined, types.string)
-    .setAction(async ({ proxy, implementation }, hre) => {
-        try {
-            console.log(`Upgrading proxy at address: ${proxy} to new implementation: ${implementation}`);
+  .addParam("proxy", "The address of the proxy contract", undefined, types.string)
+  .addParam("implementation", "The name of the new implementation contract factory", undefined, types.string)
+  .setAction(async ({ proxy, implementation }, hre) => {
+    const signers = await ethers.getSigners();
+    let lastError: any = null;
 
-            const ImplFactory: any = await hre.ethers.getContractFactory(implementation);
-            const upgradedContract = await hre.upgrades.upgradeProxy(proxy, ImplFactory, { 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+    for (let index = 0; index < signers.length; index++) {
+      try {
+        console.log(`Attempting upgrade with signer index: ${index}`);
+        const ImplFactory: any = await hre.ethers.getContractFactory(implementation, signers[index]);
+        const upgradedContract = await hre.upgrades.upgradeProxy(proxy, ImplFactory, {
+          kind: 'uups',
+          unsafeAllow: ['constructor'],
+        });
+        console.log(`Proxy upgraded. Implementation is now at: ${upgradedContract.address}`);
+        return upgradedContract.address;
+      } catch (error) {
+        console.error(`Signer at index ${index} failed to upgrade:`, error);
+        lastError = error;
+      }
+    }
 
-            console.log(`Proxy upgraded. Implementation is now at: ${upgradedContract.address}`);
-            return upgradedContract.address;
-        } catch (error) {
-            console.error("An error occurred during the upgrade:", error);
-            throw error;
-        }
-    });
+    throw new Error(`Upgrade failed with all signers. Last error: ${lastError}`);
+  });
+
+
 
 task("deployContract", "Deploys a contract using the provided Factory address")
-    .addParam("factory", "The name of the Factory contract", undefined, types.string)
-    .setAction(async ({ factory }, hre) => {
-        console.log(`Deploying contract using Factory: ${factory}`);
+  .addParam("factory", "The name of the Factory contract", undefined, types.string)
+  .setAction(async ({ factory }, hre) => {
+    console.log(`Deploying contract using Factory: ${factory}`);
 
-        const FactoryContract: any = await hre.ethers.getContractFactory(factory);
+    const FactoryContract: any = await hre.ethers.getContractFactory(factory);
 
-        const deployedContract = await FactoryContract.deploy();
-        await deployedContract.deployed();
+    const deployedContract = await FactoryContract.deploy();
+    await deployedContract.deployed();
 
-        console.log(`Contract deployed at address: ${deployedContract.address}`);
-        return deployedContract.address;
-    });
+    console.log(`Contract deployed at address: ${deployedContract.address}`);
+    return deployedContract.address;
+  });
 
 task("deployAndUpgrade", "Deploys a new contract and then upgrades a proxy to the new implementation")
-    .addParam("proxy", "The address of the proxy contract", undefined, types.string)
-    .addParam("factory", "The name of the new implementation contract factory", undefined, types.string)
-    .setAction(async ({ proxy, factory }, hre) => {
-        // Deploy the new implementation contract using deployContract task
-        console.log(`Deploying a new implementation contract using Factory: ${factory}`);
-        const deployedContractAddress = await hre.run("deployContract", { factory });
+  .addParam("proxy", "The address of the proxy contract", undefined, types.string)
+  .addParam("factory", "The name of the new implementation contract factory", undefined, types.string)
+  .setAction(async ({ proxy, factory }, hre) => {
+    // Deploy the new implementation contract using deployContract task
+    console.log(`Deploying a new implementation contract using Factory: ${factory}`);
+    const deployedContractAddress = await hre.run("deployContract", { factory });
 
-        console.log(`New implementation contract deployed at address: ${deployedContractAddress}`);
+    console.log(`New implementation contract deployed at address: ${deployedContractAddress}`);
 
-        // Upgrade the proxy to the new implementation using upgradeProxy task
-        console.log(`Upgrading proxy at address: ${proxy} to new implementation at: ${deployedContractAddress}`);
-        await hre.run("upgradeProxy", { proxy, implementation: factory });
+    // Upgrade the proxy to the new implementation using upgradeProxy task
+    console.log(`Upgrading proxy at address: ${proxy} to new implementation at: ${deployedContractAddress}`);
+    await hre.run("upgradeProxy", { proxy, implementation: factory });
 
-        console.log(`Proxy successfully upgraded.`);
-    });
+    console.log(`Proxy successfully upgraded.`);
+  });
 
 task(
   'deployAndEncodeUpgrade',
@@ -219,16 +228,16 @@ task('submitNewUpgrade', 'Deploys new implementations, encodes them, and submits
     const networkName = hre.network.name;
     console.log(
       'Scheduled upgrade proposal with tx hash: ' +
-        tx.hash +
-        '\nhttps://' +
-        (networkName === 'mainnet' ? '' : networkName + '.') +
-        'etherscan.io/tx/' +
-        tx.hash
+      tx.hash +
+      '\nhttps://' +
+      (networkName === 'mainnet' ? '' : networkName + '.') +
+      'etherscan.io/tx/' +
+      tx.hash
     );
     return tx;
   });
 
-task('testPrepareFullUpgrade', 'Tests the prepareFullUpgrade task').setAction(async ({}, hre) => {
+task('testPrepareFullUpgrade', 'Tests the prepareFullUpgrade task').setAction(async ({ }, hre) => {
   const directory = await (await hre.ethers.deployContract('Directory')).deployed();
   await hre.run('prepareFullUpgrade', {
     directoryAddress: directory.address,
