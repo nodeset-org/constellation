@@ -448,7 +448,12 @@ contract SuperNodeAccount is UpgradeableBase {
      * @return bool Returns true if there is sufficient liquidity to cover the bond; false otherwise.
      */
     function hasSufficientLiquidity(uint256 _bond) public view returns (bool) {
+        // check ETH
         address payable od = _directory.getOperatorDistributorAddress();
+        bool hasEnoughEth = od.balance >= _bond;
+        if(hasEnoughEth == false) return false;
+
+        // check RPL
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
         uint256 rplStaking = rocketNodeStaking.getNodeRPLStake(address(this));
         uint256 newEthBorrowed = IRocketDAOProtocolSettingsMinipool(_directory.getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() - _bond;
@@ -456,7 +461,7 @@ contract SuperNodeAccount is UpgradeableBase {
             rplStaking,
             getEthMatched() + newEthBorrowed
         );
-        return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired && od.balance >= _bond;
+        return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired;
     }
 
     // Must receive ETH from OD for staking during the createMinipool process (pre-staking minipools)
