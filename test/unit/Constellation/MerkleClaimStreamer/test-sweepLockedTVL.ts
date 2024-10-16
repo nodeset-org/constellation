@@ -89,74 +89,96 @@ describe("MerkleClaimStreamer.sweepLockedTVL", function () {
             await mockDirectory.setRole(CoreProtocolRole, owner.address, true);
         });
 
-        describe("when the priorEthStreamAmount is zero", function() {
-            it("updates the stream amount variables", async function() {
-                // Set RPL token balance
-                await mockRplToken.setBalance(merkleClaimStreamer.address, ethers.utils.parseEther("1"));
+        describe("when the current streaming interval is not finished", function() {
+            it("reverts", async function () {
+                // Only way to set lastClaimTime is to actually claim
+                const tx1 = await mockRplToken.connect(owner).transfer(merkleClaimStreamer.address, ethers.utils.parseEther("1"));
+                await tx1.wait();
+                const tx2 = await mockRplToken.connect(owner).transfer(pusher.address, ethers.utils.parseEther("0.28"));
+                await tx2.wait();
+                await merkleClaimStreamer.connect(owner).submitMerkleClaim(
+                    [ethers.utils.parseEther("1")],
+                    [ethers.utils.parseEther("1")],
+                    [ethers.utils.parseEther("1")],
+                    [["0x0000000000000000000000000000000000000000000000000000000000000000"]]
+                )
 
-                expect(await merkleClaimStreamer.priorEthStreamAmount()).to.equal(0);
-
-                await merkleClaimStreamer.connect(owner).sweepLockedTVL();
-
-                expect(await merkleClaimStreamer.priorRplStreamAmount()).to.equal(
-                    ethers.utils.parseEther("1")
-                );
+                await expect(
+                    merkleClaimStreamer.connect(owner).sweepLockedTVL()
+                ).to.be.revertedWith("Current streaming interval is not finished");
             });
         });
 
-        describe("when the priorRplStreamAmount is zero", function() {
-            it("updates the stream amount variables", async function() {
-                // Set ETH balance
-                await owner.sendTransaction({
-                    to: merkleClaimStreamer.address,
-                    value: ethers.utils.parseEther("5"),
+        describe("when the current streaming interval is finished", function() {
+            describe("when the priorEthStreamAmount is zero", function() {
+                it("updates the stream amount variables", async function() {
+                    // Set RPL token balance
+                    await mockRplToken.setBalance(merkleClaimStreamer.address, ethers.utils.parseEther("1"));
+
+                    expect(await merkleClaimStreamer.priorEthStreamAmount()).to.equal(0);
+
+                    await merkleClaimStreamer.connect(owner).sweepLockedTVL();
+
+                    expect(await merkleClaimStreamer.priorRplStreamAmount()).to.equal(
+                        ethers.utils.parseEther("1")
+                    );
                 });
-
-                expect(await merkleClaimStreamer.priorRplStreamAmount()).to.equal(0);
-
-                await merkleClaimStreamer.connect(owner).sweepLockedTVL();
-
-                // Validate that ETH stream amount is updated
-                expect(await merkleClaimStreamer.priorEthStreamAmount()).to.equal(
-                    ethers.utils.parseEther("5")
-                );
-            });
-        });
-
-        describe("when neither priorEthStreamAmount nor priorRplStreamAmount is zero", function() {
-            beforeEach(async function () {
-                // Transfer ETH and RPL to the MerkleClaimStreamer contract
-                await owner.sendTransaction({
-                    to: merkleClaimStreamer.address,
-                    value: ethers.utils.parseEther("6"),
-                });
-                await mockRplToken.transfer(merkleClaimStreamer.address, ethers.utils.parseEther("9"));
-
-                // Initial call is to make sure that the prior amounts are non zero since there is no way to set them directly
-                await merkleClaimStreamer.connect(owner).sweepLockedTVL();
-
-                expect(await merkleClaimStreamer.priorEthStreamAmount()).to.equal(
-                    ethers.utils.parseEther("6")
-                );
-                expect(await merkleClaimStreamer.priorRplStreamAmount()).to.equal(
-                    ethers.utils.parseEther("9")
-                );
             });
 
-            it("transfers tokens and zeroes the stream amount variables", async function() {
-                await merkleClaimStreamer.connect(owner).sweepLockedTVL();
+            describe("when the priorRplStreamAmount is zero", function() {
+                it("updates the stream amount variables", async function() {
+                    // Set ETH balance
+                    await owner.sendTransaction({
+                        to: merkleClaimStreamer.address,
+                        value: ethers.utils.parseEther("5"),
+                    });
 
-                // Validate that the ETH/RPL were transferred
-                expect(await ethers.provider.getBalance(mockOperatorDistributor.address)).to.equal(
-                    ethers.utils.parseEther("6")
-                );
-                expect(await mockRplToken.balanceOf(mockOperatorDistributor.address)).to.equal(
-                    ethers.utils.parseEther("9")
-                );
+                    expect(await merkleClaimStreamer.priorRplStreamAmount()).to.equal(0);
 
-                // Ensure the stream variables are reset to zero
-                expect(await merkleClaimStreamer.priorEthStreamAmount()).to.equal(0);
-                expect(await merkleClaimStreamer.priorRplStreamAmount()).to.equal(0);
+                    await merkleClaimStreamer.connect(owner).sweepLockedTVL();
+
+                    // Validate that ETH stream amount is updated
+                    expect(await merkleClaimStreamer.priorEthStreamAmount()).to.equal(
+                        ethers.utils.parseEther("5")
+                    );
+                });
+            });
+
+            describe("when neither priorEthStreamAmount nor priorRplStreamAmount is zero", function() {
+                beforeEach(async function () {
+                    // Transfer ETH and RPL to the MerkleClaimStreamer contract
+                    await owner.sendTransaction({
+                        to: merkleClaimStreamer.address,
+                        value: ethers.utils.parseEther("6"),
+                    });
+                    await mockRplToken.transfer(merkleClaimStreamer.address, ethers.utils.parseEther("9"));
+
+                    // Initial call is to make sure that the prior amounts are non zero since there is no way to set them directly
+                    await merkleClaimStreamer.connect(owner).sweepLockedTVL();
+
+                    expect(await merkleClaimStreamer.priorEthStreamAmount()).to.equal(
+                        ethers.utils.parseEther("6")
+                    );
+                    expect(await merkleClaimStreamer.priorRplStreamAmount()).to.equal(
+                        ethers.utils.parseEther("9")
+                    );
+                });
+
+                it("transfers tokens and zeroes the stream amount variables", async function() {
+                    await merkleClaimStreamer.connect(owner).sweepLockedTVL();
+
+                    // Validate that the ETH/RPL were transferred
+                    expect(await ethers.provider.getBalance(mockOperatorDistributor.address)).to.equal(
+                        ethers.utils.parseEther("6")
+                    );
+                    expect(await mockRplToken.balanceOf(mockOperatorDistributor.address)).to.equal(
+                        ethers.utils.parseEther("9")
+                    );
+
+                    // Ensure the stream variables are reset to zero
+                    expect(await merkleClaimStreamer.priorEthStreamAmount()).to.equal(0);
+                    expect(await merkleClaimStreamer.priorRplStreamAmount()).to.equal(0);
+                });
             });
         });
     });
