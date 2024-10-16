@@ -143,7 +143,7 @@ describe("MerkleClaimStreamer.sweepLockedTVL", function () {
                 );
             });
 
-            it.only("transfers tokens and zeroes the stream amount variables", async function() {
+            it("transfers tokens and zeroes the stream amount variables", async function() {
                 await merkleClaimStreamer.connect(owner).sweepLockedTVL();
 
                 // Validate that the ETH/RPL were transferred
