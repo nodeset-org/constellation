@@ -64,6 +64,64 @@ Alternatively, specify a particular Git tag as an argument:
 ./test_release_against_current.sh <git-tag>
 ```
 
+### Using in GitHub Actions
+
+We have created a GitHub Actions workflow called **TUSAPR** to automate the process of testing upgrades against a provided release. This action allows for easy manual triggering from the GitHub UI.
+
+To use the workflow:
+
+1. Go to the **Actions** tab in your GitHub repository.
+2. Select the **TUSAPR** workflow from the list of workflows.
+3. Click on **Run workflow**.
+4. In the prompt that appears, you can select the branch (`main` by default) and specify an optional tag to use for the script.
+5. Click on the **Run workflow** button to start the process.
+
+Refer to the screenshot below for guidance:
+
+This workflow (`test_upgrade_safety_release_against_current.yml`) allows developers to easily test their current branch against a specific Git tag without having to run the script manually. The workflow has the following key parts:
+
+- **Inputs**: Accepts a `tag` input that specifies which Git tag to use for the test. If not provided, the script uses the latest tag.
+- **Steps**:
+  - **Checkout repository**: Uses `actions/checkout@v3` to check out the repository with the appropriate ref and history.
+  - **Set up Node.js**: Uses `actions/setup-node@v3` to set up Node.js version 18.
+  - **Run test release script**: Executes the script (`test_release_against_current.sh`) with the provided tag if specified.
+
+### Example YAML Workflow
+
+```yaml
+# Test Upgrade Safety Against Provided Release
+name: TUSAPR
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to use for the script'
+        required: false
+        default: ''
+
+jobs:
+  test-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}  # Updated to checkout the correct ref
+          fetch-depth: 0          # Fetch all history and tags
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Run test release script
+        run: |
+          chmod +x scripts/shell/test_release_against_current.sh
+          ./scripts/shell/test_release_against_current.sh ${{ github.event.inputs.tag }}
+```
+
 ## Step-by-step Explanation
 
 ### Constants
