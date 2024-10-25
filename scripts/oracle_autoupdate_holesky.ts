@@ -85,7 +85,7 @@ async function testFunction(credentials: any) {
 
   //return;
   // use the callStatic line for local testing, the other for deployment
-  const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData, { gasLimit: 100000 });
+  // const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData, { gasLimit: 100000 });
   // gas limit is set to 100000 because ethers estimated the required amount as 82684
   const txResult = await oracle.setTotalYieldAccrued(sig, sigData, { gasLimit: 100000});
   await txResult.wait();
