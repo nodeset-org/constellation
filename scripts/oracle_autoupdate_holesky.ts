@@ -52,6 +52,7 @@ async function testFunction(credentials: any) {
   const timestamp = data.timestamp;
   //console.log('timestamp', timestamp);
   //console.log('latest timestamp', (await provider.getBlock('latest')).timestamp);
+  const oracleOffset = data.oracleOffset;
 
   const directory = new ethers.Contract(
     DIRECTORY_ADDRESS,
@@ -67,11 +68,9 @@ async function testFunction(credentials: any) {
     provider
   );
 
-  // const expectedOracleError = await od.oracleError();
-  //console.log('expectedOracleError', expectedOracleError);
   const sigData = {
     newTotalYieldAccrued: totalYieldAccrued,
-    expectedOracleError: data.oracleOffset,
+    expectedOracleError: oracleOffset,
     timeStamp: timestamp,
   };
   //console.log('sigData', sigData);
@@ -88,7 +87,7 @@ async function testFunction(credentials: any) {
   // use the callStatic line for local testing, the other for deployment
   const txResult = await oracle.callStatic.setTotalYieldAccrued(sig, sigData, { gasLimit: 100000 });
   // gas limit is set to 100000 because ethers estimated the required amount as 82684
-  //const txResult = await oracle.setTotalYieldAccrued(sig, sigData, { gasLimit: 100000});
+  const txResult = await oracle.setTotalYieldAccrued(sig, sigData, { gasLimit: 100000});
   await txResult.wait();
 
   if (txResult.status === 0) throw new Error(`Transaction reverted: ${txResult}`);

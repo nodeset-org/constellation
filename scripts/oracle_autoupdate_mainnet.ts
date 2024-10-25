@@ -50,6 +50,7 @@ exports.handler = async function (credentials) {
   const timestamp = data.timestamp;
   //console.log('timestamp', timestamp);
   //console.log('latest timestamp', (await provider.getBlock('latest')).timestamp);
+  const oracleOffset = data.oracleOffset;
 
   const directory = new ethers.Contract(
     DIRECTORY_ADDRESS,
@@ -65,11 +66,9 @@ exports.handler = async function (credentials) {
     provider
   );
 
-  // const expectedOracleError = await od.oracleError();
-  //console.log('expectedOracleError', expectedOracleError);
   const sigData = {
     newTotalYieldAccrued: totalYieldAccrued,
-    expectedOracleError: data.oracleOffset,
+    expectedOracleError: oracleOffset,
     timeStamp: timestamp,
   };
   //console.log('sigData', sigData);
