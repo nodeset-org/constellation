@@ -67,11 +67,11 @@ async function testFunction(credentials: any) {
     provider
   );
 
-  const expectedOracleError = await od.oracleError();
+  // const expectedOracleError = await od.oracleError();
   //console.log('expectedOracleError', expectedOracleError);
   const sigData = {
     newTotalYieldAccrued: totalYieldAccrued,
-    expectedOracleError: expectedOracleError,
+    expectedOracleError: data.oracleOffset,
     timeStamp: timestamp,
   };
   //console.log('sigData', sigData);

@@ -65,11 +65,11 @@ exports.handler = async function (credentials) {
     provider
   );
 
-  const expectedOracleError = await od.oracleError();
+  // const expectedOracleError = await od.oracleError();
   //console.log('expectedOracleError', expectedOracleError);
   const sigData = {
     newTotalYieldAccrued: totalYieldAccrued,
-    expectedOracleError: expectedOracleError,
+    expectedOracleError: data.oracleOffset,
     timeStamp: timestamp,
   };
   //console.log('sigData', sigData);
