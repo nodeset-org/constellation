@@ -60,11 +60,6 @@ exports.handler = async function (credentials) {
     ],
     provider
   );
-  const od = new ethers.Contract(
-    await directory.getOperatorDistributorAddress(),
-    ['function oracleError() public view returns (uint256)'],
-    provider
-  );
 
   const sigData = {
     newTotalYieldAccrued: totalYieldAccrued,
