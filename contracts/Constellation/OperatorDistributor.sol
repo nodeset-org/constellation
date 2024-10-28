@@ -333,8 +333,8 @@ contract OperatorDistributor is UpgradeableBase {
         }
 
         this.rebalanceWethVault();
-        this.rebalanceRplStake(sna.getEthStaked());
         this.rebalanceRplVault();
+        this.rebalanceRplStake(sna.getEthStaked());
 
         emit MinipoolProcessed(address(minipool), rewards, minipool.getFinalised());
     }
