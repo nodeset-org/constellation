@@ -197,13 +197,8 @@ contract SuperNodeAccount is UpgradeableBase {
      *      10. Finally, it delegates the deposit to the `RocketNodeDeposit` contract with all the required parameters from the configuration.
      */
     function createMinipool(CreateMinipoolConfig calldata _config) public payable {
-        require(msg.value == lockThreshold, 'SuperNode: must set the message value to lockThreshold');
-        require(
-            IRocketMinipoolManager(_directory.getRocketMinipoolManagerAddress()).getMinipoolExists(
-                _config.expectedMinipoolAddress
-            ) == false,
-            'minipool already initialized'
-        );
+        // this is the most common reason why minipools can't be created, so it should be checked first in this gas-sensitive function
+        require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
         address subNodeOperator = msg.sender;
         require(
             Whitelist(_directory.getWhitelistAddress()).getIsAddressInWhitelist(subNodeOperator),
@@ -214,13 +209,15 @@ contract SuperNodeAccount is UpgradeableBase {
                 maxValidators,
             'Sub node operator has created too many minipools already'
         );
-        require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
+        require(msg.value == lockThreshold, 'SuperNode: must set the message value to lockThreshold');
+        require(
+            IRocketMinipoolManager(_directory.getRocketMinipoolManagerAddress()).getMinipoolExists(
+                _config.expectedMinipoolAddress
+            ) == false,
+            'minipool already initialized'
+        );
 
         uint256 salt = uint256(keccak256(abi.encodePacked(_config.salt, subNodeOperator)));
-        // move the necessary ETH to this contract for use
-        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        od.sendEthForMinipool();
-
         // verify admin server signature if required
         if (adminServerCheck) {
             address recoveredAddress = ECDSA.recover(
@@ -243,6 +240,10 @@ contract SuperNodeAccount is UpgradeableBase {
                 'bad signer role, params, or encoding'
             );
         }
+
+        // move the necessary ETH to this contract for use
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        od.sendEthForMinipool();
 
         lockedEth[_config.expectedMinipoolAddress] = msg.value;
 
@@ -459,7 +460,12 @@ contract SuperNodeAccount is UpgradeableBase {
      * @return bool Returns true if there is sufficient liquidity to cover the bond; false otherwise.
      */
     function hasSufficientLiquidity(uint256 _bond) public view returns (bool) {
+        // check ETH
         address payable od = _directory.getOperatorDistributorAddress();
+        bool hasEnoughEth = od.balance >= _bond;
+        if(hasEnoughEth == false) return false;
+
+        // check RPL
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
         uint256 rplStaking = rocketNodeStaking.getNodeRPLStake(address(this));
         uint256 newEthBorrowed = IRocketDAOProtocolSettingsMinipool(_directory.getRocketDAOProtocolSettingsMinipool())
@@ -468,7 +474,7 @@ contract SuperNodeAccount is UpgradeableBase {
             rplStaking,
             getEthMatched() + newEthBorrowed
         );
-        return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired && od.balance >= _bond;
+        return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired;
     }
 
     // Must receive ETH from OD for staking during the createMinipool process (pre-staking minipools)
