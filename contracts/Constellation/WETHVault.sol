@@ -98,7 +98,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         queuableDepositPercentLimit = 0.01e18; // 1% of TVL
     }
 
-    function _calculateTvlDepositLimit(OperatorDistributor od) internal view returns (uint256) {
+    function calculateTvlDepositLimit() public view returns (uint256) {
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+
         uint256 availableRETH = IRocketDepositPool(_directory.getRocketDepositPoolAddress()).getBalance(); // Total rETH available in RPL
         uint256 availableODBalance = address(od).balance; // amount of ETH available in Operator Distributor
         uint256 queueableTolerance = totalAssets() * queuableDepositPercentLimit;
@@ -134,12 +136,12 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         require(depositsEnabled, "deposits are disabled"); // emergency switch for deposits
         require(differingSenderRecipientEnabled || caller == receiver, 'caller must be receiver');
         require(!_directory.isSanctioned(caller, receiver), "WETHVault: cannot deposit from or to a sanctioned address");
-        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
 
         if(queueableDepositsLimitEnabled) {
-            require(msg.value <= _calculateTvlDepositLimit(od), "WETHVault: Deposit exceeds the TVL queueable limit.");
+            require(msg.value <= calculateTvlDepositLimit(), "WETHVault: Deposit exceeds the TVL queueable limit.");
         }
 
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
 
         require(tvlRatioEthRpl(assets, true) <= maxWethRplRatio, 'insufficient RPL coverage');
 
