@@ -54,9 +54,8 @@ describe("WETHVault.calculateTvlDepositLimit", function () {
         await mockDirectory.setRocketDepositPoolAddress(mockRocketDepositPool.address);
         await mockDirectory.setOperatorDistributorAddress(mockOperatorDistributor.address);
 
-        // Use an implementation of WETHVault with totalAssets mocked out for easier testing
-        // All other functions inherit from original contract
-        const WETHVault = await ethers.getContractFactory("MockWETHVaultTotalAssets");
+
+        const WETHVault = await ethers.getContractFactory("WETHVault");
         wethVault = await upgrades.deployProxy(
             WETHVault,
             [mockDirectory.address, mockWETHToken.address],
