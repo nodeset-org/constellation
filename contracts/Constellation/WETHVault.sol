@@ -29,7 +29,7 @@ import './Utils/UpgradeableBase.sol';
 import './MerkleClaimStreamer.sol';
 import '../Interfaces/IConstellationOracle.sol';
 import '../Interfaces/RocketPool/IRocketDepositPool.sol';
-
+import 'hardhat/console.sol';
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
@@ -99,11 +99,18 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     }
 
     function calculateTvlDepositLimit() public view returns (uint256) {
+        console.log("HI 1");
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        console.log("HI 2");
 
         uint256 availableRETH = IRocketDepositPool(_directory.getRocketDepositPoolAddress()).getBalance(); // Total rETH available in RPL
+        console.log("HI 3");
+
         uint256 availableODBalance = address(od).balance; // amount of ETH available in Operator Distributor
+        console.log("HI 4");
+
         uint256 queueableTolerance = totalAssets() * queuableDepositPercentLimit;
+        console.log("HI 5");
 
         // 8 constellation ETH for every 24 rETH
         uint256 effectiveRETH = availableRETH / 3;
