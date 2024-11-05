@@ -2,7 +2,6 @@ import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { Contract } from "ethers";
 import { approvedSalt } from "../../../utils/utils";
-import { Uint256 } from "@chainsafe/lodestar-types";
 
 const TimelockShortRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
 const AdminServerRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
