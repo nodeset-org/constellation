@@ -101,9 +101,18 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function _calculateTvlDepositLimit(OperatorDistributor od) internal view returns (uint256) {
         uint256 rETHAvailableInRP = IRocketDepositPool(_directory.getRocketDepositPoolAddress()).getBalance(); // Total rETH available in RPL
         uint256 odEthAvailable = address(od).balance; // amount of ETH available in Operator Distributor
-        uint256 tolerance = totalAssets() * queuableDepositPercentLimit; // Tolerance as defined by queuableDepositPercentLimit
-        uint256 tvlLimit = (rETHAvailableInRP / 3) - odEthAvailable + tolerance; // Calculate the TVL limit
-        return tvlLimit;
+        uint256 tolerance = totalAssets() * queuableDepositPercentLimit;
+
+        // 8 constellation ETH for every 24 rETH
+        uint256 rEthPortion = rETHAvailableInRP / 3;
+
+        // If the calculated portion is less than the available OD ETH, use the tolerance
+        if (rEthPortion < odEthAvailable) {
+            return tolerance; // If underflow occurs, we just use the tolerance
+        } else {
+            // Otherwise, calculate the TVL limit
+            return rEthPortion - odEthAvailable + tolerance;
+        }
     }
 
     /**
