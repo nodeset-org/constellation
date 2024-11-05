@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: GPL v3
 
 /**
-  *    /***        /***          /******                                  /**               /** /**             /**     /**
-  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/
-  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /*******
-  *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
-  * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
-  *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
-  *  |  ***|__/|__/***         |  ******||  ****** | **  | ** /*******   | ****  |  *******| **| **| ********  | ****  | **|  ****** | **  | **
-  *   \___/       |___/         \______/  \______/ |__/  |__/|_______/    \___/   \_______/|__/|__/ \_______/   \___/  |__/ \______/ |__/  |__/
-  *
-  *  A liquid staking protocol extending Rocket Pool.
-  *  Made w/ <3 by {::}
-  *
-  *  For more information, visit https://nodeset.io
-  *
-  *  @author Mike Leach (Wander), Nick Steinhilber (NickS), Theodore Clapp (mryamz), Joe Clapis (jcrtp), Huy Nguyen, Andy Rose (Barbalute)
-  *  @custom:security-info https://docs.nodeset.io/nodeset/security-notice
-  **/
+ *    /***        /***          /******                                  /**               /** /**             /**     /**
+ *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/
+ *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /*******
+ *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
+ * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
+ *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
+ *  |  ***|__/|__/***         |  ******||  ****** | **  | ** /*******   | ****  |  *******| **| **| ********  | ****  | **|  ****** | **  | **
+ *   \___/       |___/         \______/  \______/ |__/  |__/|_______/    \___/   \_______/|__/|__/ \_______/   \___/  |__/ \______/ |__/  |__/
+ *
+ *  A liquid staking protocol extending Rocket Pool.
+ *  Made w/ <3 by {::}
+ *
+ *  For more information, visit https://nodeset.io
+ *
+ *  @author Mike Leach (Wander), Nick Steinhilber (NickS), Theodore Clapp (mryamz), Joe Clapis (jcrtp), Huy Nguyen, Andy Rose (Barbalute)
+ *  @custom:security-info https://docs.nodeset.io/nodeset/security-notice
+ **/
 
 pragma solidity 0.8.17;
 
@@ -57,6 +57,7 @@ contract OperatorDistributor is UpgradeableBase {
     event RPLStakeRebalanceEnabledChanged(bool isAllowed);
 
     event MinipoolProcessed(address indexed minipool, uint256 ethRewards, bool indexed finalized);
+    event EthBeaconRewardsReceived(uint256 ethRewards, uint256 noPortion, uint256 treasuryPortion);
 
     event WarningMinipoolNotStaking(
         address indexed _minipoolAddress,
@@ -71,7 +72,10 @@ contract OperatorDistributor is UpgradeableBase {
     bool public rplStakeRebalanceEnabled;
 
     function setRplStakeRebalanceEnabled(bool _newValue) external onlyAdmin {
-        require(rplStakeRebalanceEnabled != _newValue, 'OperatorDistributor: new rplStakeRebalanceEnabled value must be different than existing value');
+        require(
+            rplStakeRebalanceEnabled != _newValue,
+            'OperatorDistributor: new rplStakeRebalanceEnabled value must be different than existing value'
+        );
         emit RPLStakeRebalanceEnabledChanged(_newValue);
         rplStakeRebalanceEnabled = _newValue;
     }
@@ -79,7 +83,10 @@ contract OperatorDistributor is UpgradeableBase {
     bool public minipoolProcessingEnabled;
 
     function setMinipoolProcessingEnabled(bool _newValue) external onlyAdmin {
-        require(minipoolProcessingEnabled != _newValue, 'OperatorDistributor: new minipoolProcessingEnabled value must be different than existing value');
+        require(
+            minipoolProcessingEnabled != _newValue,
+            'OperatorDistributor: new minipoolProcessingEnabled value must be different than existing value'
+        );
         emit MinipoolProcessingEnabledChanged(_newValue);
         minipoolProcessingEnabled = _newValue;
     }
@@ -95,7 +102,10 @@ contract OperatorDistributor is UpgradeableBase {
      * @param _targetStakeRatio The new target stake ratio to be set.
      */
     function setTargetStakeRatio(uint256 _targetStakeRatio) external onlyAdmin {
-        require(_targetStakeRatio != targetStakeRatio, 'OperatorDistributor: new targetStakeRatio must be different than existing value');
+        require(
+            _targetStakeRatio != targetStakeRatio,
+            'OperatorDistributor: new targetStakeRatio must be different than existing value'
+        );
         emit TargetStakeRatioUpdated(targetStakeRatio, _targetStakeRatio);
         targetStakeRatio = _targetStakeRatio;
     }
@@ -109,7 +119,10 @@ contract OperatorDistributor is UpgradeableBase {
      * @param _minimumStakeRatio The new minimum stake ratio to be set.
      */
     function setMinimumStakeRatio(uint256 _minimumStakeRatio) external onlyAdmin {
-        require(_minimumStakeRatio != minimumStakeRatio, 'OperatorDistributor: new minimumStakeRatio must be different than existing value');
+        require(
+            _minimumStakeRatio != minimumStakeRatio,
+            'OperatorDistributor: new minimumStakeRatio must be different than existing value'
+        );
         emit MinStakeRatioUpdated(minimumStakeRatio, _minimumStakeRatio);
         minimumStakeRatio = _minimumStakeRatio;
     }
@@ -418,10 +431,7 @@ contract OperatorDistributor is UpgradeableBase {
         address rocketNodeStakingAddress = _directory.getRocketNodeStakingAddress();
         SafeERC20.safeApprove(rpl, rocketNodeStakingAddress, 0);
         SafeERC20.safeApprove(rpl, rocketNodeStakingAddress, _amount);
-        IRocketNodeStaking(rocketNodeStakingAddress).stakeRPLFor(
-            getDirectory().getSuperNodeAddress(),
-            _amount
-        );
+        IRocketNodeStaking(rocketNodeStakingAddress).stakeRPLFor(getDirectory().getSuperNodeAddress(), _amount);
     }
 
     /// @notice Submits a merkle claim to RP on behalf of the SuperNode
@@ -517,6 +527,7 @@ contract OperatorDistributor is UpgradeableBase {
 
         uint256 xrETHPortion = rewardAmount - treasuryPortion - nodeOperatorPortion;
 
+        emit EthBeaconRewardsReceived(rewardAmount, nodeOperatorPortion, treasuryPortion);
         this.onIncreaseOracleError(xrETHPortion);
     }
 
@@ -573,18 +584,14 @@ contract OperatorDistributor is UpgradeableBase {
 
     function transferMerkleClaimToStreamer(uint256 ethAmount, uint256 rplAmount) external onlyProtocol {
         address payable mcsAddress = getDirectory().getMerkleClaimStreamerAddress();
-        
+
         if (ethAmount > 0) {
             (bool success, ) = mcsAddress.call{value: ethAmount}('');
             require(success, 'ETH transfer to MerkleClaimStreamer failed');
         }
 
         if (rplAmount > 0) {
-            SafeERC20.safeTransfer(
-                IERC20(_directory.getRPLAddress()),
-                mcsAddress,
-                rplAmount
-            );
+            SafeERC20.safeTransfer(IERC20(_directory.getRPLAddress()), mcsAddress, rplAmount);
         }
     }
 }
