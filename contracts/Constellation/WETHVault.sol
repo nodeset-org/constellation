@@ -128,7 +128,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
 
         if(queueableDepositsLimitEnabled) {
-            // Now, let's check if the deposit is valid based on the TVL limit
             require(msg.value <= _calculateTvlDepositLimit(od), "WETHVault: Deposit exceeds the TVL queueable limit.");
         }
 
