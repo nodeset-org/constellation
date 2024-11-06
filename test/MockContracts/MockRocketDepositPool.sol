@@ -2,13 +2,13 @@
 pragma solidity ^0.8.17;
 
 contract MockRocketDepositPool {
-    uint256 public balance;
+    uint256 public excessBalance;
 
-    function getBalance() public view returns (uint256) {
-        return balance;
+    function getExcessBalance() public view returns (uint256) {
+        return excessBalance;
     }
 
-    function setBalance(uint256 _balance) public {
-        balance = _balance;
+    function setExcessBalance(uint256 _excessBalance) public {
+        excessBalance = _excessBalance;
     }
 }

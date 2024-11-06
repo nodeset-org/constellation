@@ -98,30 +98,9 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         queuableDepositPercentLimit = 0.01e18; // 1% of TVL
     }
 
-    function calculateTvlDepositLimit() public view returns (uint256) {
-        console.log("HI 1");
-        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        console.log("HI 2");
-
-        uint256 availableRETH = IRocketDepositPool(_directory.getRocketDepositPoolAddress()).getBalance(); // Total rETH available in RPL
-        console.log("HI 3");
-
-        uint256 availableODBalance = address(od).balance; // amount of ETH available in Operator Distributor
-        console.log("HI 4");
-
-        uint256 queueableTolerance = totalAssets() * queuableDepositPercentLimit;
-        console.log("HI 5");
-
-        // 8 constellation ETH for every 24 rETH
-        uint256 effectiveRETH = availableRETH / 3;
-
-        if (effectiveRETH < availableODBalance) {
-            // If underflow occurs, we just use the tolerance
-            return queueableTolerance;
-        } else {
-            // Otherwise, calculate the TVL limit
-            return effectiveRETH - availableODBalance + queueableTolerance;
-        }
+    function calculateDepositLimit() public view returns (uint256) {
+        // 8 constellation ETH for every 24 rETH (i.e. 3 to 1 ratio)
+        return IRocketDepositPool(_directory.getRocketDepositPoolAddress()).getExcessBalance() / 3;
     }
 
     /**
@@ -145,7 +124,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         require(!_directory.isSanctioned(caller, receiver), "WETHVault: cannot deposit from or to a sanctioned address");
 
         if(queueableDepositsLimitEnabled) {
-            require(msg.value <= calculateTvlDepositLimit(), "WETHVault: Deposit exceeds the TVL queueable limit.");
+            require(msg.value <= calculateDepositLimit(), "WETHVault: Deposit exceeds the TVL queueable limit.");
         }
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
