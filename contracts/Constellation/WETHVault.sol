@@ -29,7 +29,7 @@ import './Utils/UpgradeableBase.sol';
 import './MerkleClaimStreamer.sol';
 import '../Interfaces/IConstellationOracle.sol';
 import '../Interfaces/RocketPool/IRocketDepositPool.sol';
-import 'hardhat/console.sol';
+
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     using Math for uint256;
@@ -72,7 +72,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     // prevent APR drag from large deposits that would only queue minipools
     bool public queueableDepositsLimitEnabled;
-    uint256 public queuableDepositPercentLimit;
 
     /**
      * @notice Initializes the vault with necessary parameters and settings.
@@ -468,10 +467,5 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function setQueueableDepositsLimitEnabled(bool _newValue) external onlyAdmin {
         require(_newValue != queueableDepositsLimitEnabled, 'WETHVault: new queueableDepositsLimitEnabled value must be different than existing value');
         queueableDepositsLimitEnabled = _newValue;
-    }
-
-    function setQueuableDepositPercentLimit(uint256 _newValue) external onlyAdmin {
-        require(_newValue != queuableDepositPercentLimit, 'WETHVault: new queuableDepositPercentLimit value must be different than existing value');
-        queuableDepositPercentLimit = _newValue;
     }
 }
