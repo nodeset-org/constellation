@@ -94,7 +94,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         mintFee = 0.0003e18; // .03% by default
         depositsEnabled = true;
         queueableDepositsLimitEnabled = false;
-        queuableDepositPercentLimit = 0.01e18; // 1% of TVL
     }
 
     function calculateDepositLimit() public view returns (uint256) {
