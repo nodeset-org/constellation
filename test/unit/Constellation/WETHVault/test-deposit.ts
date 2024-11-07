@@ -71,6 +71,7 @@ describe("WETHVault._deposit", function () {
         await mockDirectory.setMerkleClaimStreamerAddress(mockMerkleClaimStreamer.address);
         await mockDirectory.setOracleAddress(mockOracle.address);
 
+        // We have to use a mock contract to test the internal _deposit function
         const WETHVault = await ethers.getContractFactory("MockWETHVaultDeposit");
         wethVault = await upgrades.deployProxy(
             WETHVault,
