@@ -134,6 +134,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         uint256 lastOracleUpdate = IConstellationOracle(_directory.getOracleAddress()).getLastUpdatedTotalYieldAccrued();
         require(block.timestamp <= lastOracleUpdate + oracleUpdateThreshold, "WETHVault: Oracle is out of date.");
+
         if(queueableDepositsLimitEnabled) {
             require(msg.value <= calculateDepositLimit(), "WETHVault: Deposit exceeds the TVL queueable limit.");
         }
