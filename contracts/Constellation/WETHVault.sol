@@ -29,6 +29,7 @@ import './Utils/UpgradeableBase.sol';
 import './MerkleClaimStreamer.sol';
 import '../Interfaces/IConstellationOracle.sol';
 import '../Interfaces/RocketPool/IRocketDepositPool.sol';
+import 'hardhat/console.sol';
 
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
@@ -73,6 +74,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     // prevent APR drag from large deposits that would only queue minipools
     bool public queueableDepositsLimitEnabled;
 
+    uint256 public oracleUpdateThreshold;
+
     /**
      * @notice Initializes the vault with necessary parameters and settings.
      * @dev This function sets up the vault's token references, fee structures, and various configurations.
@@ -94,6 +97,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         mintFee = 0.0003e18; // .03% by default
         depositsEnabled = true;
         queueableDepositsLimitEnabled = false;
+        oracleUpdateThreshold = 86400; // 24 hrs in seconds
     }
 
     function calculateDepositLimit() public view returns (uint256) {
@@ -121,6 +125,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         require(differingSenderRecipientEnabled || caller == receiver, 'caller must be receiver');
         require(!_directory.isSanctioned(caller, receiver), "WETHVault: cannot deposit from or to a sanctioned address");
 
+        uint256 lastOracleUpdate = IConstellationOracle(_directory.getOracleAddress()).getLastUpdatedTotalYieldAccrued();
+        require(block.timestamp <= lastOracleUpdate + oracleUpdateThreshold, "WETHVault: Oracle is out of date.");
         if(queueableDepositsLimitEnabled) {
             require(msg.value <= calculateDepositLimit(), "WETHVault: Deposit exceeds the TVL queueable limit.");
         }
@@ -466,5 +472,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     function setQueueableDepositsLimitEnabled(bool _newValue) external onlyAdmin {
         require(_newValue != queueableDepositsLimitEnabled, 'WETHVault: new queueableDepositsLimitEnabled value must be different than existing value');
         queueableDepositsLimitEnabled = _newValue;
+    }
+
+    function setoracleUpdateThreshold(uint256 _newValue) external onlyAdmin {
+        require(_newValue != oracleUpdateThreshold, 'WETHVault: new oracleUpdateThreshold value must be different than existing value');
+        oracleUpdateThreshold = _newValue;
     }
 }
