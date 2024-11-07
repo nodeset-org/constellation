@@ -109,7 +109,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     function calculateDepositLimit() public view returns (uint256) {
         // 8 constellation ETH for every 24 rETH (i.e. 3 to 1 ratio)
-        return IRocketDepositPool(_directory.getRocketDepositPoolAddress()).getExcessBalance() / 3;
+        uint256 pairableEth = IRocketDepositPool(_directory.getRocketDepositPoolAddress()).getExcessBalance() / 3;
+        return pairableEth - address(_directory.getOperatorDistributorAddress()).balance;
     }
 
     /**
@@ -134,7 +135,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
         uint256 lastOracleUpdate = IConstellationOracle(_directory.getOracleAddress()).getLastUpdatedTotalYieldAccrued();
         require(block.timestamp <= lastOracleUpdate + oracleUpdateThreshold, "WETHVault: Oracle is out of date.");
-
         if(queueableDepositsLimitEnabled) {
             require(msg.value <= calculateDepositLimit(), "WETHVault: Deposit exceeds the TVL queueable limit.");
         }

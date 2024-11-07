@@ -30,7 +30,7 @@ describe("WETHVault._deposit", function () {
         const MockRocketDepositPool = await ethers.getContractFactory("MockRocketDepositPool");
         mockRocketDepositPool = await MockRocketDepositPool.deploy();
         await mockRocketDepositPool.deployed();
-        await mockRocketDepositPool.setExcessBalance(ethers.utils.parseEther("3"));
+        // await mockRocketDepositPool.setExcessBalance(ethers.utils.parseEther("3"));
 
         const MockMerkleClaimStreamer = await ethers.getContractFactory("MockMerkleClaimStreamer");
         mockMerkleClaimStreamer = await MockMerkleClaimStreamer.deploy();
@@ -110,35 +110,79 @@ describe("WETHVault._deposit", function () {
             await mockOracle.setLastUpdatedTotalYieldAccrued((await ethers.provider.getBlock("latest")).timestamp);
         });
 
+
         describe("when queableDepositsLimitEnabled is true", function () {
             beforeEach(async function () {
                 await wethVault.connect(owner).setQueueableDepositsLimitEnabled(true);
             });
+            describe("when there is no OD balance", function () {
+                describe("when the message value is less than the deposit limit", async function () {
+                    it("should allow deposits", async function () {
+                        const assets = ethers.utils.parseEther("0");
+                        const shares = 100;
+                        await mockRocketDepositPool.setExcessBalance(ethers.utils.parseEther("9"));
 
-            describe("when the message value is less than the deposit limit", async function () {
-                it("should allow deposits", async function () {
-                    const assets = ethers.utils.parseEther("0");
-                    const shares = 100;
+                        await expect(wethVault.proxyDeposit(owner.address, owner.address, assets, shares, { value: ethers.utils.parseEther("1") })).to.not.be.reverted;
+                    });
+                });
 
-                    await expect(wethVault.proxyDeposit(owner.address, owner.address, assets, shares, { value: ethers.utils.parseEther("0.1") })).to.not.be.reverted;
+                describe("when the message value is equal to the deposit limit", function () {
+                    it("should allow deposits", async function () {
+                        const assets = ethers.utils.parseEther("0");
+                        const shares = 100;
+                        await mockRocketDepositPool.setExcessBalance(ethers.utils.parseEther("3"));
+
+                        await expect(wethVault.proxyDeposit(owner.address, owner.address, assets, shares, { value: ethers.utils.parseEther("1") })).to.not.be.reverted;
+                    });
+                });
+
+                describe("when the message value is greater than the deposit limit", function () {
+                    it("should revert", async function () {
+                        const assets = ethers.utils.parseEther("0");
+                        const shares = 100;
+                        await mockRocketDepositPool.setExcessBalance(ethers.utils.parseEther("0.3"));
+
+                        await expect(wethVault.proxyDeposit(owner.address, owner.address, assets, shares, { value: ethers.utils.parseEther("1") })).to.be.revertedWith("WETHVault: Deposit exceeds the TVL queueable limit.");
+                    });
                 });
             });
 
-            describe("when the message value is equal to the deposit limit", function () {
-                it("should allow deposits", async function () {
-                    const assets = ethers.utils.parseEther("0");
-                    const shares = 100;
+            describe("when there is OD balance", function () {
+                beforeEach(async function () {
+                    // Send ETH to OD contract
+                    const tx = await owner.sendTransaction({
+                        to: mockOperatorDistributor.address,
+                        value: ethers.utils.parseEther("1"),
+                    });
+                    await tx.wait();
 
-                    await expect(wethVault.proxyDeposit(owner.address, owner.address, assets, shares, { value: ethers.utils.parseEther("1") })).to.not.be.reverted;
+                    await mockRocketDepositPool.setExcessBalance(ethers.utils.parseEther("9"));
                 });
-            });
+                describe("when the message value is less than the deposit limit", async function () {
+                    it("should allow deposits", async function () {
+                        const assets = ethers.utils.parseEther("0");
+                        const shares = 100;
 
-            describe("when the message value is greater than the deposit limit", function () {
-                it("should revert", async function () {
-                    const assets = ethers.utils.parseEther("0");
-                    const shares = 100;
+                        await expect(wethVault.proxyDeposit(owner.address, owner.address, assets, shares, { value: ethers.utils.parseEther("1") })).to.not.be.reverted;
+                    });
+                });
 
-                    await expect(wethVault.proxyDeposit(owner.address, owner.address, assets, shares, { value: ethers.utils.parseEther("3") })).to.be.revertedWith("WETHVault: Deposit exceeds the TVL queueable limit.");
+                describe("when the message value is equal to the deposit limit", function () {
+                    it("should allow deposits", async function () {
+                        const assets = ethers.utils.parseEther("0");
+                        const shares = 100;
+
+                        await expect(wethVault.proxyDeposit(owner.address, owner.address, assets, shares, { value: ethers.utils.parseEther("2") })).to.not.be.reverted;
+                    });
+                });
+
+                describe("when the message value is greater than the deposit limit", function () {
+                    it("should revert", async function () {
+                        const assets = ethers.utils.parseEther("0");
+                        const shares = 100;
+
+                        await expect(wethVault.proxyDeposit(owner.address, owner.address, assets, shares, { value: ethers.utils.parseEther("3") })).to.be.revertedWith("WETHVault: Deposit exceeds the TVL queueable limit.");
+                    });
                 });
             });
         });
