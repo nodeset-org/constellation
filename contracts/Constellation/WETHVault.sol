@@ -29,7 +29,6 @@ import './Utils/UpgradeableBase.sol';
 import './MerkleClaimStreamer.sol';
 import '../Interfaces/IConstellationOracle.sol';
 import '../Interfaces/RocketPool/IRocketDepositPool.sol';
-import 'hardhat/console.sol';
 
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
