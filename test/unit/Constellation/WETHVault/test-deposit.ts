@@ -78,6 +78,8 @@ describe("WETHVault._deposit", function () {
             [mockDirectory.address, mockWETHToken.address],
             { initializer: 'initializeVault', kind: 'uups', unsafeAllow: ['constructor', 'delegatecall'] }
         );
+        // Reinitializer to set the default oracle update threshold
+        await wethVault.reinitializeVault()
         // Do not care for tests to check this right now
         await wethVault.connect(owner).setMaxWethRplRatio(ethers.utils.parseEther("9999999999999999"));
 

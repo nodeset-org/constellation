@@ -37,7 +37,7 @@ describe("WETHVault.calculateDepositLimit", function () {
             [mockDirectory.address, mockWETHToken.address],
             { initializer: 'initializeVault', kind: 'uups', unsafeAllow: ['constructor', 'delegatecall'] }
         );
-
+        await wethVault.reinitializeVault();
         await mockDirectory.setWETHVaultAddress(wethVault.address);
     });
 

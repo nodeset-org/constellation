@@ -96,8 +96,16 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         mintFee = 0.0003e18; // .03% by default
         depositsEnabled = true;
         queueableDepositsLimitEnabled = false;
-        oracleUpdateThreshold = 86400; // 24 hrs in seconds
     }
+
+    /**
+     * @notice Reinitializer function to allow updates on contract upgrades specifically related to oracle update threshold
+     */
+    function reinitializeVault() public reinitializer(2) {
+        // This can be called on upgrade to set new values
+        oracleUpdateThreshold = 88200; // 24.5 hrs in seconds
+    }
+
 
     function calculateDepositLimit() public view returns (uint256) {
         // 8 constellation ETH for every 24 rETH (i.e. 3 to 1 ratio)
@@ -473,7 +481,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         queueableDepositsLimitEnabled = _newValue;
     }
 
-    function setoracleUpdateThreshold(uint256 _newValue) external onlyAdmin {
+    function setOracleUpdateThreshold(uint256 _newValue) external onlyAdmin {
         require(_newValue != oracleUpdateThreshold, 'WETHVault: new oracleUpdateThreshold value must be different than existing value');
         oracleUpdateThreshold = _newValue;
     }
