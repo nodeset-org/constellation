@@ -101,7 +101,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     /**
      * @notice Reinitializer function to allow updates on contract upgrades specifically related to oracle update threshold
      */
-    function reinitializeVault() public reinitializer(2) {
+    function reinitialize101() public reinitializer(2) {
         // This can be called on upgrade to set new values
         oracleUpdateThreshold = 88200; // 24.5 hrs in seconds
     }

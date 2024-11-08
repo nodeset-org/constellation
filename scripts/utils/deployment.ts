@@ -173,7 +173,7 @@ export async function fastDeployProtocol(
       [directoryAddress, weth],
       { initializer: 'initializeVault', kind: 'uups', unsafeAllow: ['constructor', 'delegatecall'] }
     );
-    await vCWETH.reinitializeVault();
+    await vCWETH.reinitialize101();
     if (log) console.log('vaulted constellation eth deployed to', vCWETH.address);
     return vCWETH;
   });

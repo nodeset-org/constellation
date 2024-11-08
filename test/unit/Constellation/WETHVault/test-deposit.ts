@@ -79,7 +79,7 @@ describe("WETHVault._deposit", function () {
             { initializer: 'initializeVault', kind: 'uups', unsafeAllow: ['constructor', 'delegatecall'] }
         );
         // Reinitializer to set the default oracle update threshold
-        await wethVault.reinitializeVault()
+        await wethVault.reinitialize101()
         // Do not care for tests to check this right now
         await wethVault.connect(owner).setMaxWethRplRatio(ethers.utils.parseEther("9999999999999999"));
 
