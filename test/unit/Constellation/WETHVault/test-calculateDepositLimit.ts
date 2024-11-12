@@ -23,7 +23,7 @@ describe("WETHVault.calculateDepositLimit", function () {
         const MockSuperNodeAccount = await ethers.getContractFactory("MockSuperNode");
         mockSuperNodeAccount = await MockSuperNodeAccount.deploy();
         await mockSuperNodeAccount.deployed();
-        await mockSuperNodeAccount.setBond(ethers.utils.parseEther("96"));
+        await mockSuperNodeAccount.setBond(ethers.utils.parseEther("8"));
 
         const MockRocketDepositPool = await ethers.getContractFactory("MockRocketDepositPool");
         mockRocketDepositPool = await MockRocketDepositPool.deploy();
@@ -49,8 +49,8 @@ describe("WETHVault.calculateDepositLimit", function () {
     });
 
     describe("when excess balance is greater than 0 ", function () {
-        it("should return excess balance divided by 3", async function () {
-            mockRocketDepositPool.setExcessBalance(ethers.utils.parseEther("30000"));
+        it("should return excess balance divided by 32/bond", async function () {
+            mockRocketDepositPool.setExcessBalance(ethers.utils.parseEther("40000"));
 
             const result = await wethVault.calculateDepositLimit();
             expect(result).to.equal(ethers.utils.parseEther("10000"));

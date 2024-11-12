@@ -110,7 +110,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
 
     function calculateDepositLimit() public view returns (uint256) {
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
-        uint256 pairableEth = IRocketDepositPool(_directory.getRocketDepositPoolAddress()).getExcessBalance() / (sna.bond() / 32 ether);
+        uint256 pairableEth = IRocketDepositPool(_directory.getRocketDepositPoolAddress()).getExcessBalance() / (32 ether / sna.bond());
         return pairableEth - address(_directory.getOperatorDistributorAddress()).balance;
     }
 
