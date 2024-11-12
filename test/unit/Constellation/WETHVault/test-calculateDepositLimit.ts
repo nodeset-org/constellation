@@ -50,7 +50,7 @@ describe("WETHVault.calculateDepositLimit", function () {
 
     describe("when excess balance is greater than 0 ", function () {
         it("should return excess balance divided by 32/bond", async function () {
-            mockRocketDepositPool.setExcessBalance(ethers.utils.parseEther("40000"));
+            mockRocketDepositPool.setExcessBalance(ethers.utils.parseEther("30000"));
 
             const result = await wethVault.calculateDepositLimit();
             expect(result).to.equal(ethers.utils.parseEther("10000"));
