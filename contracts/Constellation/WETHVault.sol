@@ -492,4 +492,23 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
         require(_newValue != oracleUpdateThreshold, 'WETHVault: new oracleUpdateThreshold value must be different than existing value');
         oracleUpdateThreshold = _newValue;
     }
+
+    // Overriding maxDeposit to follow the ERC-4626 specification
+    function maxDeposit(address receiver) public view override returns (uint256) {
+        // Check if the receiver is sanctioned
+        if (ISanctions(_directory.getSanctionsAddress()).isSanctioned(receiver)) {
+            return 0;
+        }
+
+        return getMaximumDeposit();
+    }
+
+    // Overriding maxMint to follow the ERC-4626 specification
+    function maxMint(address receiver) public view override returns (uint256) {
+        // Check if the receiver is sanctioned
+        if (ISanctions(_directory.getSanctionsAddress()).isSanctioned(receiver)) {
+            return 0;
+        }
+        return getMaximumDeposit();
+    }
 }
