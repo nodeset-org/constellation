@@ -51,10 +51,11 @@ const prepareStakeWithLockAmount = async (setupData: SetupData, lockAmount: BigN
 
 describe("Locking Mechanism", async () => {
     describe("When value is equal to lock amount", async () => {
+
         it("should pass", async () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers } = setupData;
-            await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
             const realLockAmount = await protocol.superNode.lockThreshold();
             const lockAmount = ethers.utils.parseEther("1");
             expect(lockAmount).equals(realLockAmount);
@@ -70,7 +71,7 @@ describe("Locking Mechanism", async () => {
         it("should revert", async () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers } = setupData;
-            await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
             const realLockAmount = await protocol.superNode.lockThreshold();
             const lockAmount = ethers.utils.parseEther("1.001");
             expect(lockAmount).gt(realLockAmount);
@@ -83,7 +84,7 @@ describe("Locking Mechanism", async () => {
         it("should revert", async () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers } = setupData;
-            await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
             const realLockAmount = await protocol.superNode.lockThreshold();
             const lockAmount = ethers.utils.parseEther(".9");
             expect(lockAmount).lt(realLockAmount);
@@ -98,7 +99,7 @@ describe("Unlocking Mechanism", async () => {
         it("should pass", async () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers } = setupData;
-            await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
             // lock 1 eth
             const realLockAmount = await protocol.superNode.lockThreshold();
             const lockAmount = ethers.utils.parseEther("1");
@@ -139,7 +140,7 @@ describe("Unlocking Mechanism", async () => {
         it("should reclaim lock for OD", async () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers } = setupData;
-            await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
             const realLockAmount = await protocol.superNode.lockThreshold();
             const lockAmount = ethers.utils.parseEther("1");
             expect(lockAmount).equals(realLockAmount);

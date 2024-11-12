@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers, upgrades, hardhatArguments } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { Protocol, protocolFixture, RocketPool, SetupData, Signers } from "../integration";
 import { prepareOperatorDistributionContract, registerNewValidator } from "../../utils/utils";
@@ -8,6 +8,7 @@ import { RocketMinipoolDelegate } from "../../../typechain-types";
 import { BigNumber } from "ethers";
 
 describe("Exiting Minipools", function () {
+
     let protocol: Protocol;
     let signers: Signers;
     let rocketPool: RocketPool;
@@ -26,7 +27,6 @@ describe("Exiting Minipools", function () {
         rocketPool = setupData.rocketPool;
 
         subNodeOperator = signers.random;
-        await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
         const initialDeposit = await prepareOperatorDistributionContract(setupData, 1);
         const minipools = await registerNewValidator(setupData, [subNodeOperator]);
@@ -40,7 +40,9 @@ describe("Exiting Minipools", function () {
     })
 
     describe("When Node Refund Balance is zero", async () => {
+
         describe("When caller is admin", async () => {
+
             beforeEach(async () => {
                 caller = signers.admin;
                 expect(nodeRefundBalance).equals(0)

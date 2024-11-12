@@ -108,7 +108,6 @@ describe("SuperNodeAccount", function () {
         const bond = ethers.utils.parseEther("8");
         const { rawSalt, pepperedSalt } = await approvedSalt(3, signers.hyperdriver.address);
 
-        await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
         expect(await protocol.superNode.hasSufficientLiquidity(bond)).to.equal(false);
         await prepareOperatorDistributionContract(setupData, 2);
         expect(await protocol.superNode.hasSufficientLiquidity(bond)).to.equal(true);
@@ -157,7 +156,7 @@ describe("SuperNodeAccount", function () {
     it("success - users given supplying 3 as salt will result in different minipool addresses", async function () {
         const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;
-        await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
         const bond = ethers.utils.parseEther("8");
 
         const { rawSalt: rawSalt0, pepperedSalt: pepperedSalt0 } = await approvedSalt(3, signers.random.address);
@@ -230,7 +229,7 @@ describe("SuperNodeAccount", function () {
     it("fails - sig cannot be reused", async function () {
         const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;
-        await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
         const bond = ethers.utils.parseEther("8");
         const { rawSalt, pepperedSalt } = await approvedSalt(3, signers.hyperdriver.address);
 
@@ -278,7 +277,7 @@ describe("SuperNodeAccount", function () {
     it("fails - not whitelisted", async function () {
         const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;
-        await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
         const bond = ethers.utils.parseEther("8");
         const { rawSalt, pepperedSalt } = await approvedSalt(3, signers.hyperdriver.address);
 
@@ -313,7 +312,7 @@ describe("SuperNodeAccount", function () {
     it("fails - bad predicted address", async function () {
         const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;
-        await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
         const bond = ethers.utils.parseEther("8");
         const { rawSalt, pepperedSalt } = await approvedSalt(3, signers.hyperdriver.address);
 
@@ -364,7 +363,7 @@ describe("SuperNodeAccount", function () {
     it("fails - forget to lock 1 eth", async function () {
         const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;
-        await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
         const bond = ethers.utils.parseEther("8");
         const { rawSalt, pepperedSalt } = await approvedSalt(3, signers.hyperdriver.address);
 
@@ -401,7 +400,7 @@ describe("SuperNodeAccount", function () {
     it("fails - no liquidity for given bond", async function () {
         const setupData = await loadFixture(protocolFixture);
         const { protocol, signers } = setupData;
-        await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
         const { rawSalt, pepperedSalt } = await approvedSalt(3, signers.hyperdriver.address);
 
 
@@ -435,7 +434,9 @@ describe("SuperNodeAccount", function () {
 
     describe("SetSmoothingPool", async () => {
         describe("When sender is admin", async () => {
+
             describe("When smoothing pool is true", async () => {
+
                 describe("When enough time has passed", async () => {
                     it("should pass", async () => {
                         const setupData = await loadFixture(protocolFixture);

@@ -2,12 +2,13 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { protocolFixture } from '../integration';
+import { assertAddOperator } from '../../utils/utils';
 
 describe('differing receiver', function () {
   it('can be toggled by admin, but not to the same value', async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers } = setupData;
-    await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
     expect(await protocol.vCWETH.differingSenderRecipientEnabled()).equals(false);
     await expect(protocol.vCWETH.connect(signers.admin).setDifferingSenderRecipientEnabled(false)).to.be.revertedWith(
       'WETHVault: new differingSenderRecipientEnabled value must be different than existing value'
@@ -32,7 +33,7 @@ describe('differing receiver', function () {
   it('cannot be updated by non-admin', async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers } = setupData;
-    await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
     expect(await protocol.vCWETH.differingSenderRecipientEnabled()).equals(false);
     await expect(protocol.vCWETH.connect(signers.random).setDifferingSenderRecipientEnabled(true)).to.be.revertedWith(
       'Can only be called by admin address!'
@@ -57,7 +58,7 @@ describe('differing receiver', function () {
   it('can be different receiver than sender if setting is true', async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
-    await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
     // WETH
     await protocol.vCWETH.connect(signers.admin).setDifferingSenderRecipientEnabled(true);
 
@@ -87,7 +88,7 @@ describe('differing receiver', function () {
   it('cannot be different receiver than sender if setting is false', async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
-    await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
     // WETH
     expect(await protocol.vCWETH.differingSenderRecipientEnabled()).equals(false);
 

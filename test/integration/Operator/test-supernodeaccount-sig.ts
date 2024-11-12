@@ -1,9 +1,14 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers, upgrades, hardhatArguments } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { protocolFixture,} from "../integration";
+import { Protocol, protocolFixture, RocketPool, SetupData, Signers } from "../integration";
 import { generateDepositData } from "../../rocketpool/_helpers/minipool";
 import { approvedSalt, approveHasSignedExitMessageSig, approveHasSignedExitMessageSigBadChainId, approveHasSignedExitMessageSigBadEncoding, approveHasSignedExitMessageSigBadNonce, approveHasSignedExitMessageSigBadTarget, assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract } from "../../utils/utils";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { TransactionResponse } from '@ethersproject/abstract-provider';
+import { BigNumber } from "ethers";
+import { Contract } from "@openzeppelin/upgrades";
+import { IMinipool } from "../../../typechain-types";
 
 
 describe("SuperNodeAccount creation sig", function () {
@@ -11,8 +16,7 @@ describe("SuperNodeAccount creation sig", function () {
         describe("When sig has been used", async () => {
             it("Should revert", async () => {
                 const setupData = await loadFixture(protocolFixture);
-                const { protocol, signers } = setupData;
-                await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+                const { protocol, signers, rocketPool } = setupData;
                 const nodeOperator = signers.hyperdriver;
                 const bond = await setupData.protocol.superNode.bond();
 
@@ -90,8 +94,7 @@ describe("SuperNodeAccount creation sig", function () {
                 describe("When user passes params matching sig", async () => {
                     it("Should pass", async () => {
                         const setupData = await loadFixture(protocolFixture);
-                        const { protocol, signers } = setupData;
-                        await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+                        const { protocol, signers, rocketPool } = setupData;
                         const nodeOperator = signers.hyperdriver;
                         const bond = await setupData.protocol.superNode.bond();
 
@@ -135,8 +138,7 @@ describe("SuperNodeAccount creation sig", function () {
                 describe("When user passes params matching many sigs", async () => {
                     it("Should pass for one sig and revert for all subsequent (proves nonce auto invalidates)", async () => {
                         const setupData = await loadFixture(protocolFixture);
-                        const { protocol, signers } = setupData;
-                        await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+                        const { protocol, signers, rocketPool } = setupData;
                         const nodeOperator = signers.hyperdriver;
                         const bond = await setupData.protocol.superNode.bond();
 
@@ -241,8 +243,7 @@ describe("SuperNodeAccount creation sig", function () {
                     describe("When expectedMinipool is invalid", async () => {
                         it("Should revert", async () => {
                             const setupData = await loadFixture(protocolFixture);
-                            const { protocol, signers } = setupData;
-                            await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+                            const { protocol, signers, rocketPool } = setupData;
                             const nodeOperator = signers.hyperdriver;
                             const bond = await setupData.protocol.superNode.bond();
 
@@ -287,8 +288,7 @@ describe("SuperNodeAccount creation sig", function () {
                     describe("When salt is invalid", async () => {
                         it("Should revert", async () => {
                             const setupData = await loadFixture(protocolFixture);
-                            const { protocol, signers } = setupData;
-                            await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+                            const { protocol, signers, rocketPool } = setupData;
                             const nodeOperator = signers.hyperdriver;
                             const bond = await setupData.protocol.superNode.bond();
 
@@ -333,8 +333,7 @@ describe("SuperNodeAccount creation sig", function () {
                     describe("When destination address is invalid", async () => {
                         it("Should revert", async () => {
                             const setupData = await loadFixture(protocolFixture);
-                            const { protocol, signers } = setupData;
-                            await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+                            const { protocol, signers, rocketPool } = setupData;
                             const nodeOperator = signers.hyperdriver;
                             const bond = await setupData.protocol.superNode.bond();
 
@@ -380,8 +379,7 @@ describe("SuperNodeAccount creation sig", function () {
                     describe("When per operator nonce is invalid", async () => {
                         it("Should revert", async () => {
                             const setupData = await loadFixture(protocolFixture);
-                            const { protocol, signers } = setupData;
-                            await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+                            const { protocol, signers, rocketPool } = setupData;
                             const nodeOperator = signers.hyperdriver;
                             const bond = await setupData.protocol.superNode.bond();
 
@@ -427,8 +425,7 @@ describe("SuperNodeAccount creation sig", function () {
                     describe("When chain.id is invalid", async () => {
                         it("Should revert", async () => {
                             const setupData = await loadFixture(protocolFixture);
-                            const { protocol, signers } = setupData;
-                            await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+                            const { protocol, signers, rocketPool } = setupData;
                             const nodeOperator = signers.hyperdriver;
                             const bond = await setupData.protocol.superNode.bond();
 
@@ -473,8 +470,7 @@ describe("SuperNodeAccount creation sig", function () {
                     describe("When per sig nonce is invalid", async () => {
                         it("Should revert due to having become invalidated", async () => {
                             const setupData = await loadFixture(protocolFixture);
-                            const { protocol, signers } = setupData;
-                            await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+                            const { protocol, signers, rocketPool } = setupData;
                             const nodeOperator = signers.hyperdriver;
                             const bond = await setupData.protocol.superNode.bond();
 
@@ -534,8 +530,7 @@ describe("SuperNodeAccount creation sig", function () {
                     describe("When per node operator nonce is invalid", async () => {
                         it("Should revert due to having become invalidated", async () => {
                             const setupData = await loadFixture(protocolFixture);
-                            const { protocol, signers } = setupData;
-                            await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+                            const { protocol, signers, rocketPool } = setupData;
                             const nodeOperator = signers.hyperdriver;
                             const bond = await setupData.protocol.superNode.bond();
 
@@ -599,8 +594,7 @@ describe("SuperNodeAccount creation sig", function () {
             describe("When params have not been encoded correctly", async () => {
                 it("Should revert", async () => {
                     const setupData = await loadFixture(protocolFixture);
-                    const { protocol, signers } = setupData;
-                    await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+                    const { protocol, signers, rocketPool } = setupData;
                     const nodeOperator = signers.hyperdriver;
                     const bond = await setupData.protocol.superNode.bond();
 
@@ -647,8 +641,7 @@ describe("SuperNodeAccount creation sig", function () {
     describe("When Admin Server Check disabled", async () => {
         it("Should pass with any sig", async () => {
             const setupData = await loadFixture(protocolFixture);
-            const { protocol, signers } = setupData;
-            await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+            const { protocol, signers, rocketPool } = setupData;
             const nodeOperator = signers.hyperdriver;
             const bond = await setupData.protocol.superNode.bond();
 

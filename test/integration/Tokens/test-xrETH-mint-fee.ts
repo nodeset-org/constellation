@@ -7,7 +7,7 @@ describe('xrETH Mint Fee', async function () {
   it('Assess the same fee when using deposit() and mint()', async function () {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers } = setupData;
-    await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
     // add between 1 and 10 random amount of ETH to total supply so it's not 0
       let randValue = Math.floor(Math.random() * 9 + 1);
     console.log('adding', randValue.toString(), 'ETH to supply');

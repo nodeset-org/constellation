@@ -18,12 +18,7 @@ contract MockDirectory {
     address rocketDaoProtocolSettingsMinipoolAddress;
     address treasuryAddress;
     address operatorReward;
-    address rocketDepositPoolAddress;
-    address merkleClaimStreamerAddress;
-    address oracleAddress;
-
     mapping(bytes32 => mapping(address => bool)) private roles;
-    bool public isSanctionedBool;
 
     function getRocketMinipoolManagerAddress() public view returns (address) {
         return rocketMinipoolManager;
@@ -154,35 +149,4 @@ contract MockDirectory {
         return operatorReward;
     }
 
-    function setRocketDepositPoolAddress(address _rocketDepositPoolAddress) public {
-        rocketDepositPoolAddress = _rocketDepositPoolAddress;
-    }
-
-    function getRocketDepositPoolAddress() public view returns (address) {
-        return rocketDepositPoolAddress;
-    }
-
-    function isSanctioned(address, address) public view returns (bool) {
-        return isSanctionedBool;
-    }
-
-    function setIsSanctioned(bool _isSanctionedBool) public {
-        isSanctionedBool = _isSanctionedBool;
-    }
-
-    function setMerkleClaimStreamerAddress(address _merkleClaimStreamerAddress) public {
-        merkleClaimStreamerAddress = _merkleClaimStreamerAddress;
-    }
-
-    function getMerkleClaimStreamerAddress() public view returns (address) {
-        return merkleClaimStreamerAddress;
-    }
-
-    function setOracleAddress(address _oracleAddress) public {
-        oracleAddress = _oracleAddress;
-    }
-
-    function getOracleAddress() public view returns (address) {
-        return oracleAddress;
-    }
 }

@@ -10,7 +10,7 @@ describe('CoverageRatio', async function () {
         it('should pass', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
@@ -44,7 +44,7 @@ describe('CoverageRatio', async function () {
         it('should pass', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
@@ -77,7 +77,7 @@ describe('CoverageRatio', async function () {
         it('should pass', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
@@ -110,7 +110,7 @@ describe('CoverageRatio', async function () {
         it('should revert', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
           // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
@@ -142,7 +142,7 @@ describe('CoverageRatio', async function () {
         it('should revert', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
           // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
@@ -176,7 +176,7 @@ describe('CoverageRatio', async function () {
         it('should pass', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
@@ -209,7 +209,7 @@ describe('CoverageRatio', async function () {
         it('should pass', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
@@ -242,7 +242,7 @@ describe('CoverageRatio', async function () {
         it('should revert', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
@@ -277,7 +277,7 @@ describe('CoverageRatio', async function () {
         it('should pass', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
           // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
@@ -308,7 +308,7 @@ describe('CoverageRatio', async function () {
         it('should pass', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
           // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
@@ -343,7 +343,7 @@ describe('CoverageRatio', async function () {
         it('should revert', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
           // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
@@ -379,7 +379,7 @@ describe('CoverageRatio', async function () {
         it('should revert', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
           // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
@@ -414,7 +414,7 @@ describe('CoverageRatio', async function () {
         it('should revert', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
           // Mint 100 xWETH + 10,000 xRPL (i.e. 100% ratio)
@@ -451,7 +451,7 @@ describe('CoverageRatio', async function () {
         it('should revert', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
@@ -490,7 +490,7 @@ describe('CoverageRatio', async function () {
         it('should revert', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
@@ -525,7 +525,7 @@ describe('CoverageRatio', async function () {
         it('should pass', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
@@ -564,7 +564,7 @@ describe('CoverageRatio', async function () {
         it('should pass', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
@@ -606,7 +606,7 @@ describe('CoverageRatio', async function () {
         it('should revert', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
@@ -644,7 +644,7 @@ describe('CoverageRatio', async function () {
         it('should pass', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
@@ -683,7 +683,7 @@ describe('CoverageRatio', async function () {
         it('should pass', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
@@ -725,7 +725,6 @@ describe('CoverageRatio', async function () {
         it('should revert', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
@@ -764,7 +763,7 @@ describe('CoverageRatio', async function () {
         it('should pass', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
@@ -803,7 +802,7 @@ describe('CoverageRatio', async function () {
         it('should pass', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
@@ -842,7 +841,7 @@ describe('CoverageRatio', async function () {
         it('should pass', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
@@ -881,7 +880,7 @@ describe('CoverageRatio', async function () {
         it('should pass', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
+
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
 
@@ -923,7 +922,6 @@ describe('CoverageRatio', async function () {
         it('should revert', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
-          await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
           expect(await protocol.vCRPL.minWethRplRatio()).to.equal(ethers.BigNumber.from(0));
           await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.constants.MaxUint256);
