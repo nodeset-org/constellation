@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL v3
 
 /**
-  *    /***        /***          /******                                  /**               /** /**             /**     /**                    
-  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/                    
-  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /******* 
+  *    /***        /***          /******                                  /**               /** /**             /**     /**
+  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/
+  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /*******
   *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
   * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
   *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
@@ -28,6 +28,7 @@ import './Utils/PriceFetcher.sol';
 import './Utils/UpgradeableBase.sol';
 import './MerkleClaimStreamer.sol';
 import '../Interfaces/IConstellationOracle.sol';
+import '../Interfaces/RocketPool/IRocketDepositPool.sol';
 
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
@@ -45,21 +46,21 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     string constant SYMBOL = 'xrETH';
 
     /**
-     * @notice Sets the liquidity reserve as a percentage of TVL. E.g. if set to 2% (0.02e18), then 2% of the 
+     * @notice Sets the liquidity reserve as a percentage of TVL. E.g. if set to 2% (0.02e18), then 2% of the
      * ETH backing xrETH will be reserved for withdrawals. If the reserve is below maximum, it will be refilled before assets are
      * put to work with the OperatorDistributor.
      */
     uint256 public liquidityReservePercent;
 
     /**
-     * @notice the maximum percentage of ETH/RPL TVL allowed 
+     * @notice the maximum percentage of ETH/RPL TVL allowed
      * @dev this is a simple percentage, because the RPL TVL is calculated using its price in ETH
      */
     uint256 public maxWethRplRatio;
 
     uint256 public treasuryFee; // Treasury fee in basis points
     uint256 public nodeOperatorFee; // NO fee in basis points
-    
+
     // To prevent oracle sandwich attacks, there is a small fee charged on mint
     // see the original issue for RP for more details: https://consensys.io/diligence/audits/2021/04/rocketpool/#rockettokenreth---sandwiching-opportunity-on-price-updates
     uint256 public mintFee;
@@ -69,9 +70,14 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     // can the recipient of a deposit be different than the caller? False by default for extra security
     bool public differingSenderRecipientEnabled;
 
+    // prevent APR drag from large deposits that would only queue minipools
+    bool public queueableDepositsLimitEnabled;
+
+    uint256 public oracleUpdateThreshold;
+
     /**
      * @notice Initializes the vault with necessary parameters and settings.
-     * @dev This function sets up the vault's token references, fee structures, and various configurations. 
+     * @dev This function sets up the vault's token references, fee structures, and various configurations.
      * It's intended to be called once after deployment.
      * @param directoryAddress Address of the directory contract to reference other platform contracts.
      * @param weth Address of the WETH token contract to be used in this vault.
@@ -85,15 +91,31 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         maxWethRplRatio = 4e18; // 400% at start (4 ETH of xrETH for 1 ETH of xRPL)
 
         // default fees with 14% rETH commission mean WETHVault share returns are equal to base ETH staking rewards
-        treasuryFee = 0.14788e18; 
+        treasuryFee = 0.14788e18;
         nodeOperatorFee = 0.14788e18;
         mintFee = 0.0003e18; // .03% by default
         depositsEnabled = true;
+        queueableDepositsLimitEnabled = false;
+    }
+
+    /**
+     * @notice Reinitializer function to allow updates on contract upgrades specifically related to oracle update threshold
+     */
+    function reinitialize101() public reinitializer(2) {
+        // This can be called on upgrade to set new values
+        oracleUpdateThreshold = 88200; // 24.5 hrs in seconds
+    }
+
+
+    function calculateDepositLimit() public view returns (uint256) {
+        // 8 constellation ETH for every 24 rETH (i.e. 3 to 1 ratio)
+        uint256 pairableEth = IRocketDepositPool(_directory.getRocketDepositPoolAddress()).getExcessBalance() / 3;
+        return pairableEth - address(_directory.getOperatorDistributorAddress()).balance;
     }
 
     /**
      * @notice Handles deposits into the vault, ensuring compliance with RPL coverage ratio and distribution of fees.
-     * @dev This function first checks if the RPL coverage ratio is below the maximum threshold, and then continues with the deposit process. 
+     * @dev This function first checks if the RPL coverage ratio is below the maximum threshold, and then continues with the deposit process.
      * It updates the depositor's position, and distributes the assets to the OperatorDistributor for utilization. Also processes a minipool
      * and rebalances ETH & WETH liquidity.
      * @param caller The address initiating the deposit.
@@ -110,14 +132,21 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         require(depositsEnabled, "deposits are disabled"); // emergency switch for deposits
         require(differingSenderRecipientEnabled || caller == receiver, 'caller must be receiver');
         require(!_directory.isSanctioned(caller, receiver), "WETHVault: cannot deposit from or to a sanctioned address");
+
+        uint256 lastOracleUpdate = IConstellationOracle(_directory.getOracleAddress()).getLastUpdatedTotalYieldAccrued();
+        require(block.timestamp <= lastOracleUpdate + oracleUpdateThreshold, "WETHVault: Oracle is out of date.");
+        if(queueableDepositsLimitEnabled) {
+            require(msg.value <= calculateDepositLimit(), "WETHVault: Deposit exceeds the TVL queueable limit.");
+        }
+
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        
+
         require(tvlRatioEthRpl(assets, true) <= maxWethRplRatio, 'insufficient RPL coverage');
 
         uint256 mintFeePortion = getMintFeePortion(assets);
 
         super._deposit(caller, receiver, assets, shares);
-        
+
         address treasuryAddress = getDirectory().getTreasuryAddress();
         if(mintFeePortion > 0 && treasuryAddress != address(this))
             SafeERC20.safeTransfer(IERC20(asset()), treasuryAddress, mintFeePortion); // transfer the mint fee to the treasury
@@ -146,7 +175,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 shares
     ) internal virtual override nonReentrant {
         require(caller == receiver, 'caller must be receiver');
-        
+
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         // first process a minipool to give the best chance at actually withdrawing
         od.processNextMinipool();
@@ -156,7 +185,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         super._withdraw(caller, receiver, owner, assets, shares);
 
         // rebalance again just in case there are no minipools to process, which skips the rebalance call in that function
-        od.rebalanceWethVault(); 
+        od.rebalanceWethVault();
     }
 
     function _transfer(
@@ -184,7 +213,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Retrieves the total yield available for distribution.
-     * @dev This function calculates the yield that can be distributed by subtracting the total yield already distributed 
+     * @dev This function calculates the yield that can be distributed by subtracting the total yield already distributed
      * from the total yield accrued as reported by the Oracle.
      * @return distributableYield The total yield available for distribution.
      */
@@ -209,7 +238,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
     /**
      * @notice Returns the total assets managed by this vault. That is, all the ETH backing xrETH.
      * @dev This function calculates the total assets by summing the vault's own assets, the distributable yield,
-     * and the assets held in OperatorDistributor. 
+     * and the assets held in OperatorDistributor.
      * @return The aggregated total assets managed by this vault.
      */
     function totalAssets() public view override returns (uint256) {
@@ -303,7 +332,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Calculates the missing liquidity needed to meet the liquidity reserve.
-     * @dev This function calculates the current assets needed to hit the liquidity reserve 
+     * @dev This function calculates the current assets needed to hit the liquidity reserve
      * based the current total assets of the vault.
      * @return The amount of liquidity required.
      */
@@ -358,7 +387,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
 
     /**
      * @notice Sets the minimum ETH/RPL coverage ratio for the vault.
-     * @dev This function allows the admin to update the RPL coverage ratio, which determines the 
+     * @dev This function allows the admin to update the RPL coverage ratio, which determines the
      * minimum ETH/RPL coverage required for the vault's health.
      * @param _maxWethRplRatio The new ETH/RPL coverage ratio to be set.
      */
@@ -403,19 +432,19 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
      */
     function setProtocolFees(uint256 _nodeOperatorFee, uint256 _treasuryFee) external onlyMediumTimelock {
         require(_treasuryFee + _nodeOperatorFee <= 1e18, 'Total fees cannot exceed 100%');
-        
+
         require(_nodeOperatorFee != nodeOperatorFee, 'WETHVault: new operator fee must be different than existing value');
         emit NodeOperatorFeeChanged(nodeOperatorFee, _nodeOperatorFee);
 
         require(_treasuryFee != treasuryFee, 'WETHVault: new treasury fee value must be different than existing value');
         emit TreasuryFeeChanged(treasuryFee, _treasuryFee);
-        
+
         nodeOperatorFee = _nodeOperatorFee;
         treasuryFee = _treasuryFee;
     }
 
     /**
-     * @notice Sets the liquidity reserve as a percentage of TVL. E.g. if set to 2% (0.02e18), then 2% of the 
+     * @notice Sets the liquidity reserve as a percentage of TVL. E.g. if set to 2% (0.02e18), then 2% of the
      * ETH backing xrETH will be reserved for withdrawals. If the reserve is below maximum, it will be refilled before assets are
      * put to work with the OperatorDistributor.
      * @dev This function allows the admin to update the liquidity reserve which determines the amount available for withdrawals.
@@ -446,5 +475,15 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
         require(_newValue != depositsEnabled, 'WETHVault: new depositsEnabled value must be different than existing value');
         emit DepositsEnabledChanged(depositsEnabled, _newValue);
         depositsEnabled = _newValue;
+    }
+
+    function setQueueableDepositsLimitEnabled(bool _newValue) external onlyAdmin {
+        require(_newValue != queueableDepositsLimitEnabled, 'WETHVault: new queueableDepositsLimitEnabled value must be different than existing value');
+        queueableDepositsLimitEnabled = _newValue;
+    }
+
+    function setOracleUpdateThreshold(uint256 _newValue) external onlyAdmin {
+        require(_newValue != oracleUpdateThreshold, 'WETHVault: new oracleUpdateThreshold value must be different than existing value');
+        oracleUpdateThreshold = _newValue;
     }
 }

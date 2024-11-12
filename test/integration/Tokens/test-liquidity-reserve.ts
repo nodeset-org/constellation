@@ -8,7 +8,7 @@ describe('Liquidity Reserve', async function () {
     it('should have proper ETH sent to vaults and OD', async function () {
       const setupData = await loadFixture(protocolFixture);
       const { protocol, signers, rocketPool } = setupData;
-
+      await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
       await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther('100')); // set max ratio to 10000%
 
       // Set the liquidity reserve ratio to 10%
@@ -95,7 +95,7 @@ describe('Liquidity Reserve', async function () {
     it('should not hav enough in reserve', async function () {
       const setupData = await loadFixture(protocolFixture);
       const { protocol, signers, rocketPool } = setupData;
-
+      await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
       await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther('100')); // set max ratio to 10000%
 
       // Set the liquidity reserve ratio to 10%
