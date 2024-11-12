@@ -7,8 +7,6 @@ contract MockOperatorDistributor {
     uint256 private rplStakeShortfall;
     uint256 public ethOut;
     address payable public pusherAddress;
-    uint256 public oracleErrorValue;
-    uint256 public tvlEth;
 
     function setPusherAddress(address payable _pusherAddress) external {
         pusherAddress = _pusherAddress;
@@ -28,14 +26,6 @@ contract MockOperatorDistributor {
         return rplStakeShortfall;
     }
 
-    function oracleError() public view returns(uint256) {
-        return oracleErrorValue;
-    }
-
-    function getTvlEth() public view returns (uint256) {
-        return tvlEth;
-    }
-
     function sendEthForMinipool() public pure {}
 
     function rebalanceRplStake(uint256) public pure {}
@@ -45,8 +35,6 @@ contract MockOperatorDistributor {
     function rebalanceRplVault() public pure {}
 
     function onIncreaseOracleError() public pure {}
-
-    function processNextMinipool() public pure {}
 
     function submitMerkleClaim(uint256[] calldata, uint256[] calldata, uint256[] calldata, bytes32[][] calldata) external {
         Pusher(pusherAddress).sendEther(payable(address(this)));

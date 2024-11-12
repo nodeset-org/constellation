@@ -241,7 +241,6 @@ async function deployProtocolLocalDev(signers: Signers, log = false): Promise<Pr
       true // localDev
   )
 
-
   const adminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_SERVER_ROLE"));
   let tx = await directory.connect(signers.admin).grantRole(ethers.utils.arrayify(adminRole), signers.adminServer.address);
   await tx.wait();

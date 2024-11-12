@@ -1,11 +1,12 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers, upgrades, hardhatArguments } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { Protocol, protocolFixture, RocketPool, SetupData, Signers } from "../integration";
 import { generateDepositData } from "../../rocketpool/_helpers/minipool";
 import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator } from "../../utils/utils";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
+import { Contract } from "@openzeppelin/upgrades";
 import { IMinipool } from "../../../typechain-types";
 
 const ethMintAmount = ethers.utils.parseEther("8");
@@ -31,7 +32,6 @@ describe("SuperNodeAccount close", function () {
         protocol = setupData.protocol;
         signers = setupData.signers;
         rocketPool = setupData.rocketPool;
-        await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
         // Set liquidity reserve to 0%
         await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
         await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(0);
@@ -188,8 +188,8 @@ describe("SuperNodeAccount close", function () {
             });
 
         });
-
-
+        
+        
         // NOTE this is old. close dissolved minipool function is now open to the public
 
         // describe("when subNodeOperator address is invalid", function () {
