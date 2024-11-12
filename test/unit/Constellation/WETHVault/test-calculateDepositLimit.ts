@@ -10,6 +10,7 @@ describe("WETHVault.calculateDepositLimit", function () {
     let mockDirectory: Contract;
     let mockWETHToken: Contract;
     let mockRocketDepositPool: Contract;
+    let mockSuperNodeAccount: Contract;
     let owner: any;
 
     beforeEach(async function () {
@@ -18,6 +19,11 @@ describe("WETHVault.calculateDepositLimit", function () {
         const MockWETHToken = await ethers.getContractFactory("MockWEth");
         mockWETHToken = await MockWETHToken.deploy();
         await mockWETHToken.deployed();
+
+        const MockSuperNodeAccount = await ethers.getContractFactory("MockSuperNode");
+        mockSuperNodeAccount = await MockSuperNodeAccount.deploy();
+        await mockSuperNodeAccount.deployed();
+        await mockSuperNodeAccount.setBond(ethers.utils.parseEther("8"));
 
         const MockRocketDepositPool = await ethers.getContractFactory("MockRocketDepositPool");
         mockRocketDepositPool = await MockRocketDepositPool.deploy();
@@ -30,6 +36,7 @@ describe("WETHVault.calculateDepositLimit", function () {
 
         await mockDirectory.setWETHAddress(mockWETHToken.address);
         await mockDirectory.setRocketDepositPoolAddress(mockRocketDepositPool.address);
+        await mockDirectory.setSuperNodeAddress(mockSuperNodeAccount.address);
 
         const WETHVault = await ethers.getContractFactory("WETHVault");
         wethVault = await upgrades.deployProxy(
@@ -42,7 +49,7 @@ describe("WETHVault.calculateDepositLimit", function () {
     });
 
     describe("when excess balance is greater than 0 ", function () {
-        it("should return excess balance divided by 3", async function () {
+        it("should return excess balance divided by (32-bond)/bond", async function () {
             mockRocketDepositPool.setExcessBalance(ethers.utils.parseEther("30000"));
 
             const result = await wethVault.calculateDepositLimit();
