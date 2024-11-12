@@ -17,6 +17,7 @@ describe("WETHVault._deposit", function () {
     let mockOperatorDistributor: Contract;
     let mockMerkleClaimStreamer: Contract;
     let mockOracle: Contract;
+    let mockSuperNodeAccount: Contract;
 
     let owner: any;
 
@@ -35,6 +36,11 @@ describe("WETHVault._deposit", function () {
         const MockMerkleClaimStreamer = await ethers.getContractFactory("MockMerkleClaimStreamer");
         mockMerkleClaimStreamer = await MockMerkleClaimStreamer.deploy();
         await mockMerkleClaimStreamer.deployed();
+
+        const MockSuperNodeAccount = await ethers.getContractFactory("MockSuperNode");
+        mockSuperNodeAccount = await MockSuperNodeAccount.deploy();
+        await mockSuperNodeAccount.deployed();
+        await mockSuperNodeAccount.setBond(ethers.utils.parseEther("8"));
 
         const MockRplToken = await ethers.getContractFactory("MockErc20");
         mockRplToken = await MockRplToken.deploy("Mock RPL", "RPL", ethers.utils.parseEther("1"));
@@ -70,6 +76,7 @@ describe("WETHVault._deposit", function () {
         await mockDirectory.setOperatorDistributorAddress(mockOperatorDistributor.address);
         await mockDirectory.setMerkleClaimStreamerAddress(mockMerkleClaimStreamer.address);
         await mockDirectory.setOracleAddress(mockOracle.address);
+        await mockDirectory.setSuperNodeAddress(mockSuperNodeAccount.address);
 
         // We have to use a mock contract to test the internal _deposit function
         const WETHVault = await ethers.getContractFactory("MockWETHVaultDeposit");
