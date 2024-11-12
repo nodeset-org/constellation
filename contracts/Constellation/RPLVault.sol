@@ -33,6 +33,7 @@ import './Utils/UpgradeableBase.sol';
 import './OperatorDistributor.sol';
 
 import './Utils/PriceFetcher.sol';
+import '../Interfaces/IRateProvider.sol';
 
 /**
  * @title RPLVault
@@ -40,7 +41,7 @@ import './Utils/PriceFetcher.sol';
  * @dev An ERC-4626 vault for staking RPL with a single node run by a decentralized operator set.
  * @notice These vault shares will increase or decrease in value according to the rewards or penalties applied to the SuperNodeAccount by Rocket Pool.
  */
-contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
+contract RPLVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
     using Math for uint256;
 
     event TreasuryFeeChanged(uint256 indexed oldFee, uint256 indexed newFee);
@@ -229,6 +230,12 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable {
         uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
 
         return ((tvlEth * rplPerEth) / minWethRplRatio) - tvlRpl;
+    }
+
+    /// @dev Shortcut for easier defi integration (e.g. Balancer)
+    /// @return The value of 1 xRPL in terms of RPL
+    function getRate() public view returns (uint256) {
+        return convertToAssets(1 ether);
     }
 
     /**ADMIN FUNCTIONS */

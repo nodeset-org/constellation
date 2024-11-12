@@ -28,9 +28,10 @@ import './Utils/PriceFetcher.sol';
 import './Utils/UpgradeableBase.sol';
 import './MerkleClaimStreamer.sol';
 import '../Interfaces/IConstellationOracle.sol';
+import '../Interfaces/IRateProvider.sol';
 
 /// @custom:security-contact info@nodeoperator.org
-contract WETHVault is UpgradeableBase, ERC4626Upgradeable {
+contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
     using Math for uint256;
 
     event MaxWethRplRatioChanged(uint256 indexed oldValue, uint256 indexed newValue);
