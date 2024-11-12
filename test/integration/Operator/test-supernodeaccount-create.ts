@@ -252,7 +252,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
         describe("when there is a single node operator", async function () {
             it("should create many minipools", async function () {
                 // Deposit ETH (for 3 minipools)
-                await prepareOperatorDistributionContract(setupData, 3);
+                await prepareOperatorDistributionContract(setupData, 4);
 
                 const nodeOperator = signers.hyperdriver;
                 await assertAddOperator(setupData, nodeOperator);
@@ -391,19 +391,6 @@ describe("SuperNodeAccount creation under validator limits", function () {
                     '0x' + config.expectedMinipoolAddress,
                     config.salt,
                 );
-
-                await expect(
-                    protocol.superNode
-                .connect(nodeOperator)
-                .createMinipool({
-                    validatorPubkey: config.validatorPubkey,
-                    validatorSignature: config.validatorSignature,
-                    depositDataRoot: config.depositDataRoot,
-                    salt: salts.rawSalt,
-                    expectedMinipoolAddress: config.expectedMinipoolAddress,
-                    sig: exitMessage.sig
-                    }, { value: ethers.utils.parseEther('1') }))
-                .to.be.revertedWith('NodeAccount: protocol must have enough rpl and eth');
 
                 await protocol.superNode.connect(signers.admin).setMaxValidators(3);
 

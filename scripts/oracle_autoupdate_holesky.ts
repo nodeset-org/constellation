@@ -52,6 +52,7 @@ async function testFunction(credentials: any) {
   const timestamp = data.timestamp;
   //console.log('timestamp', timestamp);
   //console.log('latest timestamp', (await provider.getBlock('latest')).timestamp);
+  const oracleOffset = data.oracleOffset;
 
   const directory = new ethers.Contract(
     DIRECTORY_ADDRESS,
@@ -61,17 +62,10 @@ async function testFunction(credentials: any) {
     ],
     provider
   );
-  const od = new ethers.Contract(
-    await directory.getOperatorDistributorAddress(),
-    ['function oracleError() public view returns (uint256)'],
-    provider
-  );
 
-  const expectedOracleError = await od.oracleError();
-  //console.log('expectedOracleError', expectedOracleError);
   const sigData = {
     newTotalYieldAccrued: totalYieldAccrued,
-    expectedOracleError: expectedOracleError,
+    expectedOracleError: oracleOffset,
     timeStamp: timestamp,
   };
   //console.log('sigData', sigData);

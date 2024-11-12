@@ -263,6 +263,8 @@ describe("SuperNodeAccount", function () {
             value: ethers.utils.parseEther("1")
         });
 
+        await protocol.superNode.connect(signers.admin).setMaxValidators(2);
+
         await expect(protocol.superNode.connect(signers.hyperdriver).createMinipool({
             validatorPubkey: config.validatorPubkey,
             validatorSignature: config.validatorSignature,
