@@ -61,8 +61,9 @@ task(
   'Deploys a new implementation contract and encodes the upgradeTo(address) function call for an upgradable contract'
 )
   .addParam('contractName', 'The name of the contract', undefined, types.string)
-  .addParam('environmentName', 'The name of the env file to use (.environmentName.env).', undefined, types.string, true)
-  .setAction(async ({ contractName, environmentName }, hre) => {
+  .addOptionalParam('environmentName', 'The name of the env file to use (.environmentName.env).', undefined, types.string)
+  .addOptionalParam('calldataAfter', 'The encoded data of the function to call after the upgrade', undefined, types.string)
+  .setAction(async ({ contractName, environmentName, callAfter }, hre) => {
     const dotenvPath = findConfig(`.${environmentName}.env`);
 
     let contract;
@@ -77,7 +78,12 @@ task(
     const address = contract.address;
     console.log(`Deployed new implementation contract for ${contractName}: ${address}`);
 
-    const encoding = await hre.run('upgradeTo', { newImplementation: address });
+
+    let encoding;
+    if (callAfter !== null)
+      encoding = await hre.run('upgradeToAndCall', { newImplementation: address, data: callAfter });
+    else
+      encoding = await hre.run('upgradeTo', { newImplementation: address });
 
     return { address, encoding };
   });
@@ -117,6 +123,8 @@ task('getProxyAddress', 'Gets the address of the proxy address for a given contr
     return address;
   });
 
+
+  
 task(
   'prepareFullUpgrade',
   'Deploys new implementations for all contracts, encodes them, and returns the addresses and encodings'
