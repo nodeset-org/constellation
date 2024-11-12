@@ -6,7 +6,6 @@ import { generateDepositData } from "../../rocketpool/_helpers/minipool";
 import { prepareOperatorDistributionContract } from "../../utils/utils";
 import { ethers } from 'hardhat';
 
-const ethMintAmount = ethers.utils.parseEther("8");
 const rplMintAmount = ethers.utils.parseEther("360");
 const salt = 3;
 
@@ -21,7 +20,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
         protocol = setupData.protocol;
         signers = setupData.signers;
         rocketPool = setupData.rocketPool;
-
+        await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
         // Set liquidity reserve to 0%
         await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
         await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(0);
