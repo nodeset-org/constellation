@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL v3
 
 /**
-  *    /***        /***          /******                                  /**               /** /**             /**     /**                    
-  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/                    
-  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /******* 
+  *    /***        /***          /******                                  /**               /** /**             /**     /**
+  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/
+  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /*******
   *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
   * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
   *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
@@ -55,14 +55,14 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
     uint256 public treasuryFee;
 
     /**
-     * @notice Sets the liquidity reserve as a percentage of TVL. E.g. if set to 2% (0.02e18), then 2% of the 
+     * @notice Sets the liquidity reserve as a percentage of TVL. E.g. if set to 2% (0.02e18), then 2% of the
      * RPL backing xRPL will be reserved for withdrawals. If the reserve is below maximum, it will be refilled before assets are
      * put to work with the OperatorDistributor.
      */
     uint256 public liquidityReservePercent;
 
     /**
-     * @notice the minimum percentage of ETH/RPL TVL allowed 
+     * @notice the minimum percentage of ETH/RPL TVL allowed
      * @dev this is a simple percentage, because the RPL TVL is calculated using its price in ETH
      */
     uint256 public minWethRplRatio;
@@ -71,7 +71,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
 
     // can the recipient of a deposit be different than the caller? False by default for extra security
     bool public differingSenderRecipientEnabled;
-    
+
     /**
      * @notice Initializes the vault with necessary parameters and settings.
      * @dev This function sets up the vault's token references, fee structures, and various configurations. It's intended to be called once after deployment.
@@ -91,7 +91,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
 
     /**
      * @notice Handles deposits into the vault, ensuring compliance with WETH coverage ratio.
-     * @dev This function first checks if the WETH coverage ratio after deposit will still be above the threshold, 
+     * @dev This function first checks if the WETH coverage ratio after deposit will still be above the threshold,
      * and then continues with the deposit process. The deposited amount is transferred to the OperatorDistributor for utilization.
      * This function overrides the `_deposit` function in the parent contract to ensure custom business logic is applied.
      * Processes a minipool after depositing, then rebalances the RPL liquidity.
@@ -136,7 +136,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
         uint256 shares
     ) internal virtual override {
         require(caller == receiver, 'caller must be receiver');
-        
+
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
         // first process a minipool to give the best chance at actually withdrawing
         od.processNextMinipool();
@@ -144,7 +144,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
         require(IERC20(asset()).balanceOf(address(this)) >= assets, 'Not enough liquidity to withdraw');
 
         super._withdraw(caller, receiver, owner, assets, shares);
-        
+
         od.rebalanceRplVault(); // just in case there are no minipools to process, rebalance anyway
     }
 
@@ -182,7 +182,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
 
     /**
      * @notice Calculates the missing liquidity needed to meet the liquidity reserve.
-     * @dev This function calculates the current assets needed to hit the liquidity reserve 
+     * @dev This function calculates the current assets needed to hit the liquidity reserve
      * based the current total assets of the vault.
      * @return The amount of liquidity required.
      */
@@ -279,7 +279,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
     }
 
     /**
-     * @notice Sets the liquidity reserve as a percentage of TVL. E.g. if set to 2% (0.02e18), then 2% of the 
+     * @notice Sets the liquidity reserve as a percentage of TVL. E.g. if set to 2% (0.02e18), then 2% of the
      * RPL backing xRPL will be reserved for withdrawals. If the reserve is below maximum, it will be refilled before assets are
      * put to work with the OperatorDistributor.
      * @dev This function allows the admin to update the liquidity reserve which determines the amount available for withdrawals.
@@ -304,5 +304,25 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
 
     function setDepositsEnabled(bool _newValue) external onlyAdmin {
         depositsEnabled = _newValue;
+    }
+
+    function maxDeposit(address receiver) public view override returns (uint256) {
+        // Check if deposits are enabled
+        if (!depositsEnabled) return 0;
+
+        // Check if the receiver is sanctioned
+        if (ISanctions(_directory.getSanctionsAddress()).isSanctioned(receiver)) return 0;
+
+        // Check if any deposit is allowed based on eth/rpl ratio
+        WETHVault wethVault = WETHVault(_directory.getWETHVaultAddress());
+        if (wethVault.tvlRatioEthRpl(0, false) < minWethRplRatio) return 0;
+
+        return getMaximumDeposit();
+    }
+
+    // Overriding maxMint to follow the ERC-4626 specification
+    function maxMint(address receiver) public view override returns (uint256) {
+        uint256 maxRplDeposit = maxDeposit(receiver);
+        return convertToShares(maxRplDeposit);
     }
 }

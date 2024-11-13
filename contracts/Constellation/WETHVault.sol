@@ -476,7 +476,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
 
     // Overriding maxMint to follow the ERC-4626 specification
     function maxMint(address receiver) public view override returns (uint256) {
-        // Mint is 1-1 so maxDeposit is the same as maxMint
-        return maxDeposit(receiver);
+        uint256 maxWethDeposit = maxDeposit(receiver);
+        return convertToShares(maxWethDeposit);
     }
 }
