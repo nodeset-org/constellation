@@ -217,20 +217,6 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
         return IERC20(asset()).balanceOf(address(this));
     }
 
-    /**
-     * @notice Convenience function for viewing the maximum deposit allowed
-     */
-    function getMaximumDeposit() public view returns (uint256) {
-        if(minWethRplRatio == 0) return type(uint256).max;
-        WETHVault wethVault = WETHVault(_directory.getWETHVaultAddress());
-        if(wethVault.tvlRatioEthRpl(0, false) < minWethRplRatio) return 0;
-
-        uint256 tvlRpl = totalAssets();
-        uint256 tvlEth = WETHVault(getDirectory().getWETHVaultAddress()).totalAssets();
-        uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
-
-        return ((tvlEth * rplPerEth) / minWethRplRatio) - tvlRpl;
-    }
 
     /// @dev Shortcut for easier defi integration (e.g. Balancer)
     /// @return The value of 1 xRPL in terms of RPL
@@ -307,17 +293,23 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
     }
 
     function maxDeposit(address receiver) public view override returns (uint256) {
-        // Check if deposits are enabled
+       // Check if deposits are enabled
         if (!depositsEnabled) return 0;
 
         // Check if the receiver is sanctioned
         if (ISanctions(_directory.getSanctionsAddress()).isSanctioned(receiver)) return 0;
 
+        if(minWethRplRatio == 0) return type(uint256).max;
+
         // Check if any deposit is allowed based on eth/rpl ratio
         WETHVault wethVault = WETHVault(_directory.getWETHVaultAddress());
         if (wethVault.tvlRatioEthRpl(0, false) < minWethRplRatio) return 0;
 
-        return getMaximumDeposit();
+        uint256 tvlRpl = totalAssets();
+        uint256 tvlEth = WETHVault(getDirectory().getWETHVaultAddress()).totalAssets();
+        uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+
+        return ((tvlEth * rplPerEth) / minWethRplRatio) - tvlRpl;
     }
 
     // Overriding maxMint to follow the ERC-4626 specification
