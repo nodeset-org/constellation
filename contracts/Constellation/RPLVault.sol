@@ -317,4 +317,16 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
         uint256 maxRplDeposit = maxDeposit(receiver);
         return convertToShares(maxRplDeposit);
     }
+
+    // Overriding maxWithdraw to follow  the ERC-4626 specification
+    function maxWithdraw(address owner) public view override returns (uint256) {
+        uint256 availableLiquidity = IERC20(asset()).balanceOf(address(this));
+        return availableLiquidity < convertToAssets(balanceOf(owner)) ? availableLiquidity : convertToAssets(balanceOf(owner));
+    }
+
+    // Overriding maxRedeem to follow the ERC-4626 specification
+    function maxRedeem(address owner) public view override returns (uint256) {
+        uint256 availableLiquidity = IERC20(asset()).balanceOf(address(this));
+        return availableLiquidity < convertToAssets(balanceOf(owner)) ? convertToShares(availableLiquidity) : balanceOf(owner);
+    }
 }

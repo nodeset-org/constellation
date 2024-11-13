@@ -466,10 +466,10 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
 
         // Check if any deposit is allowed based on eth/rpl ratio
         RPLVault rplVault = RPLVault(getDirectory().getRPLVaultAddress());
-        if(tvlRatioEthRpl(0, true) < rplVault.minWethRplRatio()) return 0;
+        if(tvlRatioEthRpl(0, true) < rplVault.minWethRplRatio()) return calculateRatioDepositLimit();
 
         // Return deposit limit if queueable deposits are enabled
-        if(queueableDepositsLimitEnabled) return calculateDepositLimit();
+        // if(queueableDepositsLimitEnabled) return calculateDepositLimit();
 
         return type(uint256).max;
     }
@@ -478,5 +478,37 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
     function maxMint(address receiver) public view override returns (uint256) {
         uint256 maxWethDeposit = maxDeposit(receiver);
         return convertToShares(maxWethDeposit);
+    }
+
+    function calculateRatioDepositLimit() internal view returns (uint256) {
+        uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress()).totalAssets();
+        uint256 tvlRplInEth = tvlRpl * PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice() / 1e18;
+        uint256 tvlEth = totalAssets();
+
+        uint256 minWethRplRatio = RPLVault(getDirectory().getRPLVaultAddress()).minWethRplRatio();
+
+        // Maximum ETH that can be deposited to stay within the required ratio
+        uint256 maxTvlEth = (tvlRplInEth * minWethRplRatio) / 1e18;
+
+        uint256 ratioLimitedDeposit = maxTvlEth > tvlEth ? maxTvlEth - tvlEth : 0;
+        if (queueableDepositsLimitEnabled) {
+            uint256 queueableDepositLimit = calculateDepositLimit();
+            // Return the lower limit between the ratio vs queueable deposit limits
+            return queueableDepositLimit < ratioLimitedDeposit ? queueableDepositLimit : ratioLimitedDeposit;
+        }
+        return ratioLimitedDeposit;
+
+    }
+
+    // Overriding maxWithdraw to follow  the ERC-4626 specification
+    function maxWithdraw(address owner) public view override returns (uint256) {
+        uint256 availableLiquidity = IERC20(asset()).balanceOf(address(this));
+        return availableLiquidity < convertToAssets(balanceOf(owner)) ? availableLiquidity : convertToAssets(balanceOf(owner));
+    }
+
+    // Overriding maxRedeem to follow the ERC-4626 specification
+    function maxRedeem(address owner) public view override returns (uint256) {
+        uint256 availableLiquidity = IERC20(asset()).balanceOf(address(this));
+        return availableLiquidity < convertToAssets(balanceOf(owner)) ? convertToShares(availableLiquidity) : balanceOf(owner);
     }
 }
