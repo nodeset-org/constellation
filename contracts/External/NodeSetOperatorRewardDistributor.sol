@@ -14,7 +14,7 @@ library RewardDistributorConstants {
 }
 
 contract NodeSetOperatorRewardDistributorV1Storage {
-    event RewardDistributed(bytes32 indexed _did, address indexed _rewardee);
+    event RewardDistributed(bytes32 indexed _did, address indexed _rewardee, uint256 _amount, address indexed _token);
 
     mapping(bytes32 => uint256) public nonces;
 
@@ -103,7 +103,7 @@ contract NodeSetOperatorRewardDistributor is
             SafeERC20.safeTransfer(IERC20(_token), _rewardee, _amount);
         }
 
-        emit RewardDistributed(_did, _rewardee);
+        emit RewardDistributed(_did, _rewardee, _amount, _token);
     }
 
     function invalidateAllOutstandingSigs() external {
