@@ -497,7 +497,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
             return queueableDepositLimit < ratioLimitedDeposit ? queueableDepositLimit : ratioLimitedDeposit;
         }
         return ratioLimitedDeposit;
-
     }
 
     // Overriding maxWithdraw to follow  the ERC-4626 specification
@@ -509,6 +508,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
     // Overriding maxRedeem to follow the ERC-4626 specification
     function maxRedeem(address owner) public view override returns (uint256) {
         uint256 availableLiquidity = IERC20(asset()).balanceOf(address(this));
-        return availableLiquidity < convertToAssets(balanceOf(owner)) ? convertToShares(availableLiquidity) : balanceOf(owner);
+        return availableLiquidity < balanceOf(owner) ? convertToShares(availableLiquidity) : balanceOf(owner);
     }
 }
