@@ -274,43 +274,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
     }
 
     /**
-     * @notice Convenience function for determining if a particular deposit amount will be allowed or rejected
-     */
-    function getIsDepositAllowed(uint256 amount) public view returns (bool) {
-        return tvlRatioEthRpl(amount, true) <= maxWethRplRatio;
-    }
-
-    /**
-     * @notice Convenience function for determining if a particular withdraw amount will be allowed or rejected
-     */
-    function getIsWithdrawAllowed(uint256 amount) public view returns (bool) {
-        return IERC20(asset()).balanceOf(address(this)) >= amount;
-    }
-
-    /**
-     * @notice Convenience function for viewing the maximum withdrawal allowed
-     */
-    function getMaximumWithdrawAmount() public view returns (uint256) {
-        return IERC20(asset()).balanceOf(address(this));
-    }
-
-    /**
-     * @notice Convenience function for viewing the maximum deposit allowed
-     */
-    function getMaximumDeposit() public view returns (uint256) {
-        RPLVault rplVault = RPLVault(getDirectory().getRPLVaultAddress());
-        if(tvlRatioEthRpl(0, false) < rplVault.minWethRplRatio()) return 0;
-
-        uint256 tvlRpl = rplVault.totalAssets();
-        uint256 tvlEth = totalAssets();
-        uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
-
-        if(rplPerEth == 0) return type(uint256).max;
-
-        return ((maxWethRplRatio * tvlRpl) / rplPerEth) - tvlEth;
-    }
-
-    /**
      * @notice Calculates the missing liquidity needed to meet the liquidity reserve after a specified deposit.
      * @dev Compares the current balance with the required liquidity based on the total assets including the deposit and mint fee.
      * @param deposit The amount of the new deposit to consider in the liquidity calculation.
@@ -495,20 +458,25 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
 
     // Overriding maxDeposit to follow the ERC-4626 specification
     function maxDeposit(address receiver) public view override returns (uint256) {
-        // Check if the receiver is sanctioned
-        if (ISanctions(_directory.getSanctionsAddress()).isSanctioned(receiver)) {
-            return 0;
-        }
+        // Check if deposits are enabled
+        if(!depositsEnabled) return 0;
 
-        return getMaximumDeposit();
+        // Check if the receiver is sanctioned
+        if (ISanctions(_directory.getSanctionsAddress()).isSanctioned(receiver)) return 0;
+
+        // Check if any deposit is allowed based on eth/rpl ratio
+        RPLVault rplVault = RPLVault(getDirectory().getRPLVaultAddress());
+        if(tvlRatioEthRpl(0, true) < rplVault.minWethRplRatio()) return 0;
+
+        // Return deposit limit if queueable deposits are enabled
+        if(queueableDepositsLimitEnabled) return calculateDepositLimit();
+
+        return type(uint256).max;
     }
 
     // Overriding maxMint to follow the ERC-4626 specification
     function maxMint(address receiver) public view override returns (uint256) {
-        // Check if the receiver is sanctioned
-        if (ISanctions(_directory.getSanctionsAddress()).isSanctioned(receiver)) {
-            return 0;
-        }
-        return getMaximumDeposit();
+        // Mint is 1-1 so maxDeposit is the same as maxMint
+        return maxDeposit(receiver);
     }
 }
