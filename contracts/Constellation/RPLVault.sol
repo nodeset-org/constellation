@@ -35,6 +35,8 @@ import './OperatorDistributor.sol';
 import './Utils/PriceFetcher.sol';
 import '../Interfaces/IRateProvider.sol';
 
+import 'hardhat/console.sol';
+
 /**
  * @title RPLVault
  * @author Theodore Clapp, Mike Leach
@@ -301,13 +303,23 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
 
         if(minWethRplRatio == 0) return type(uint256).max;
 
-        // Check if any deposit is allowed based on eth/rpl ratio
         WETHVault wethVault = WETHVault(_directory.getWETHVaultAddress());
-        if (wethVault.tvlRatioEthRpl(0, false) < minWethRplRatio) return 0;
+        console.log("!!! maxDeposit 1");
+
+        uint256 tvlEth = wethVault.totalAssets();
+        console.log("!!! maxDeposit 2");
 
         uint256 tvlRpl = totalAssets();
-        uint256 tvlEth = WETHVault(getDirectory().getWETHVaultAddress()).totalAssets();
-        uint256 rplPerEth = PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice();
+        console.log("!!! maxDeposit 3");
+
+        uint256 rplPerEth = PriceFetcher(_directory.getPriceFetcherAddress()).getPrice();
+        console.log("!!! maxDeposit 4");
+
+        uint256 rplToEthRatio = (tvlRpl * 1e18) / (tvlEth * rplPerEth);
+        console.log("!!! maxDeposit", rplToEthRatio, minWethRplRatio, rplToEthRatio >= minWethRplRatio);
+        // Check if any deposit is allowed based on eth/rpl ratio
+        if (rplToEthRatio >= minWethRplRatio) return 0;
+
 
         return ((tvlEth * rplPerEth) / minWethRplRatio) - tvlRpl;
     }

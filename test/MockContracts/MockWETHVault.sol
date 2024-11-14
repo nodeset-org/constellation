@@ -5,6 +5,7 @@ contract MockWETHVault {
     uint256 treasuryFeeValue;
     uint256 nodeOperatorFeeValue;
     uint256 missingLiquidityValue;
+    uint256 totalAssetsValue;
 
     receive() payable external {}
 
@@ -38,5 +39,13 @@ contract MockWETHVault {
 
     function getOperatorPortion(uint256 ethReward) public pure returns (uint256) {
         return ethReward / 2;
+    }
+
+    function totalAssets() public view returns (uint256) {
+        return totalAssetsValue;
+    }
+
+    function setTotalAssets(uint256 _totalAssets) public {
+        totalAssetsValue = _totalAssets;
     }
 }

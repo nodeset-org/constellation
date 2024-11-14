@@ -9,6 +9,7 @@ contract MockOperatorDistributor {
     address payable public pusherAddress;
     uint256 public oracleErrorValue;
     uint256 public tvlEth;
+    uint256 public tvlRpl;
 
     function setPusherAddress(address payable _pusherAddress) external {
         pusherAddress = _pusherAddress;
@@ -38,6 +39,14 @@ contract MockOperatorDistributor {
 
     function setTvlEth(uint256 _tvlEth) public {
         tvlEth = _tvlEth;
+    }
+
+    function getTvlRpl() public view returns (uint256) {
+        return tvlRpl;
+    }
+
+    function setTvlRpl(uint256 _tvlRpl) public {
+        tvlRpl = _tvlRpl;
     }
 
     function sendEthForMinipool() public pure {}
