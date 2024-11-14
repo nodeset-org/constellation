@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: GPL v3
 
 /**
-  *    /***        /***          /******                                  /**               /** /**             /**     /**                    
-  *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/                    
-  *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /******* 
-  *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
-  * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
-  *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
-  *  |  ***|__/|__/***         |  ******||  ****** | **  | ** /*******   | ****  |  *******| **| **| ********  | ****  | **|  ****** | **  | **
-  *   \___/       |___/         \______/  \______/ |__/  |__/|_______/    \___/   \_______/|__/|__/ \_______/   \___/  |__/ \______/ |__/  |__/
-  *
-  *  A liquid staking protocol extending Rocket Pool.
-  *  Made w/ <3 by {::}
-  *
-  *  For more information, visit https://nodeset.io
-  *
-  *  @author Mike Leach (Wander), Nick Steinhilber (NickS), Theodore Clapp (mryamz), Joe Clapis (jcrtp), Huy Nguyen, Andy Rose (Barbalute)
-  *  @custom:security-info https://docs.nodeset.io/nodeset/security-notice
-  **/
+ *    /***        /***          /******                                  /**               /** /**             /**     /**
+ *   /**_/       |_  **        /**__  **                                | **              | **| **            | **    |__/
+ *  | **   /** /** | **       | **  \__/  /******  /*******   /******* /******    /****** | **| **  /******  /******   /**  /******  /*******
+ *  /***  |__/|__/ | ***      | **       /**__  **| **__  ** /**_____/|_  **_/   /**__  **| **| ** |____  **|_  **_/  | ** /**__  **| **__  **
+ * |  **           | **       | **      | **  \ **| **  \ **|  ******   | **    | ********| **| **  /*******  | **    | **| **  \ **| **  \ **
+ *  \ **   /** /** | **       | **    **| **  | **| **  | ** \____  **  | ** /* | **_____/| **| ** /**__  **  | ** /* | **| **  | **| **  | **
+ *  |  ***|__/|__/***         |  ******||  ****** | **  | ** /*******   | ****  |  *******| **| **| ********  | ****  | **|  ****** | **  | **
+ *   \___/       |___/         \______/  \______/ |__/  |__/|_______/    \___/   \_______/|__/|__/ \_______/   \___/  |__/ \______/ |__/  |__/
+ *
+ *  A liquid staking protocol extending Rocket Pool.
+ *  Made w/ <3 by {::}
+ *
+ *  For more information, visit https://nodeset.io
+ *
+ *  @author Mike Leach (Wander), Nick Steinhilber (NickS), Theodore Clapp (mryamz), Joe Clapis (jcrtp), Huy Nguyen, Andy Rose (Barbalute)
+ *  @custom:security-info https://docs.nodeset.io/nodeset/security-notice
+ **/
 
 pragma solidity 0.8.17;
 
@@ -54,7 +54,7 @@ contract SuperNodeAccount is UpgradeableBase {
     event MinipoolCreated(address indexed minipoolAddress, address indexed operatorAddress);
     event MinipoolStaked(address indexed minipoolAddress, address indexed operatorAddress);
     event MinipoolDestroyed(address indexed minipoolAddress, address indexed operatorAddress);
-    
+
     // parameters
     event MaxValidatorsChanged(uint256 indexed oldValue, uint256 indexed newValue);
     event BondChanged(uint256 indexed oldValue, uint256 indexed newValue);
@@ -117,23 +117,23 @@ contract SuperNodeAccount is UpgradeableBase {
 
     /// @notice Modifier to ensure a function can only be called by a sub-node operator of a specific minipool
     modifier onlySubNodeOperator(address _minipool) {
-        require(
-            minipoolData[_minipool].subNodeOperator == msg.sender,
-            'Can only be called by SubNodeOperator!'
-        );
+        require(minipoolData[_minipool].subNodeOperator == msg.sender, 'Can only be called by SubNodeOperator!');
         _;
     }
 
     /// @notice Modifier to ensure a function can only be called by a sub-node operator or admin of a specific minipool
     modifier onlyAdminOrAllowedSNO(address _minipool) {
-        if(allowSubOpDelegateChanges) {
+        if (allowSubOpDelegateChanges) {
             require(
                 _directory.hasRole(Constants.ADMIN_ROLE, msg.sender) ||
                     minipoolData[_minipool].subNodeOperator == msg.sender,
                 'Can only be called by admin or sub node operator'
             );
         } else {
-            require(_directory.hasRole(Constants.ADMIN_ROLE, msg.sender), 'Minipool delegate changes only allowed by admin');
+            require(
+                _directory.hasRole(Constants.ADMIN_ROLE, msg.sender),
+                'Minipool delegate changes only allowed by admin'
+            );
         }
         _;
     }
@@ -172,9 +172,10 @@ contract SuperNodeAccount is UpgradeableBase {
         rnm.registerNode('Australia/Brisbane');
         address od = directory.getOperatorDistributorAddress();
         IRocketStorage(directory.getRocketStorageAddress()).setWithdrawalAddress(address(this), od, true);
-        lockThreshold = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool()).getPreLaunchValue();
+        lockThreshold = IRocketDAOProtocolSettingsMinipool(getDirectory().getRocketDAOProtocolSettingsMinipool())
+            .getPreLaunchValue();
         rnm.setSmoothingPoolRegistrationState(true);
-        
+
         lazyInit = true;
     }
 
@@ -196,6 +197,18 @@ contract SuperNodeAccount is UpgradeableBase {
      *      10. Finally, it delegates the deposit to the `RocketNodeDeposit` contract with all the required parameters from the configuration.
      */
     function createMinipool(CreateMinipoolConfig calldata _config) public payable {
+        // this is the most common reason why minipools can't be created, so it should be checked first in this gas-sensitive function
+        require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
+        address subNodeOperator = msg.sender;
+        require(
+            Whitelist(_directory.getWhitelistAddress()).getIsAddressInWhitelist(subNodeOperator),
+            'sub node operator must be whitelisted'
+        );
+        require(
+            Whitelist(_directory.getWhitelistAddress()).getActiveValidatorCountForOperator(subNodeOperator) <
+                maxValidators,
+            'Sub node operator has created too many minipools already'
+        );
         require(msg.value == lockThreshold, 'SuperNode: must set the message value to lockThreshold');
         require(
             IRocketMinipoolManager(_directory.getRocketMinipoolManagerAddress()).getMinipoolExists(
@@ -203,22 +216,8 @@ contract SuperNodeAccount is UpgradeableBase {
             ) == false,
             'minipool already initialized'
         );
-        address subNodeOperator = msg.sender;
-        require(
-            Whitelist(_directory.getWhitelistAddress()).getIsAddressInWhitelist(subNodeOperator),
-            'sub node operator must be whitelisted'
-        );
-        require(
-            Whitelist(_directory.getWhitelistAddress()).getActiveValidatorCountForOperator(subNodeOperator) < maxValidators,
-            'Sub node operator has created too many minipools already'
-        );
-        require(hasSufficientLiquidity(bond), 'NodeAccount: protocol must have enough rpl and eth');
 
         uint256 salt = uint256(keccak256(abi.encodePacked(_config.salt, subNodeOperator)));
-        // move the necessary ETH to this contract for use
-        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-        od.sendEthForMinipool();
-
         // verify admin server signature if required
         if (adminServerCheck) {
             address recoveredAddress = ECDSA.recover(
@@ -242,6 +241,10 @@ contract SuperNodeAccount is UpgradeableBase {
             );
         }
 
+        // move the necessary ETH to this contract for use
+        OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
+        od.sendEthForMinipool();
+
         lockedEth[_config.expectedMinipoolAddress] = msg.value;
 
         minipools.push(_config.expectedMinipoolAddress);
@@ -251,7 +254,7 @@ contract SuperNodeAccount is UpgradeableBase {
             subNodeOperator,
             wethVault.treasuryFee(),
             wethVault.nodeOperatorFee(),
-            minipools.length-1
+            minipools.length - 1
         );
 
         // register minipool with node operator
@@ -285,10 +288,10 @@ contract SuperNodeAccount is UpgradeableBase {
      *      This is used when a minipool is destroyed or decommissioned.
      * @param minipool The address of the minipool to be removed from tracking.
      */
-    function removeMinipool(address minipool) external onlyProtocol() onlyRecognizedMinipool(address(minipool)) {
+    function removeMinipool(address minipool) external onlyProtocol onlyRecognizedMinipool(address(minipool)) {
         uint256 index = minipoolData[minipool].index;
         // in case a minipool was dissolved or scrubbed, unlock the ETH and move it to the OD for later use
-        if(lockedEth[minipool] > 0) {
+        if (lockedEth[minipool] > 0) {
             uint256 lockupBalance = lockedEth[minipool];
             lockedEth[minipool] = 0;
             (bool success, ) = getDirectory().getOperatorDistributorAddress().call{value: lockupBalance}('');
@@ -344,14 +347,16 @@ contract SuperNodeAccount is UpgradeableBase {
         Whitelist(getDirectory().getWhitelistAddress()).removeValidator(minipoolData[minipoolAddress].subNodeOperator);
         this.removeMinipool(minipoolAddress);
         minipool.close();
-    }   
+    }
 
     /**
      * @notice Allows admins to delegate an upgrade to the minipool's contract.
      * @dev This function provides a mechanism for delegated upgrades of minipools, enhancing flexibility in maintenance and upgrades.
      * @param _minipool Address of the minipool which is to be upgraded.
      */
-    function minipoolDelegateUpgrade(address _minipool) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
+    function minipoolDelegateUpgrade(
+        address _minipool
+    ) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateUpgrade();
     }
@@ -361,7 +366,9 @@ contract SuperNodeAccount is UpgradeableBase {
      * @dev Provides a rollback mechanism for previously delegated upgrades, ensuring that upgrades can be reversed if necessary.
      * @param _minipool Address of the minipool whose upgrade is to be rolled back.
      */
-    function minipoolDelegateRollback(address _minipool) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
+    function minipoolDelegateRollback(
+        address _minipool
+    ) external onlyAdminOrAllowedSNO(_minipool) onlyRecognizedMinipool(_minipool) {
         IMinipool minipool = IMinipool(_minipool);
         minipool.delegateRollback();
     }
@@ -385,7 +392,9 @@ contract SuperNodeAccount is UpgradeableBase {
      * @dev Admin-only
      */
     function setSmoothingPoolParticipation(bool _useSmoothingPool) external onlyAdmin {
-        IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(_useSmoothingPool);
+        IRocketNodeManager(_directory.getRocketNodeManagerAddress()).setSmoothingPoolRegistrationState(
+            _useSmoothingPool
+        );
     }
 
     /**
@@ -393,7 +402,10 @@ contract SuperNodeAccount is UpgradeableBase {
      * @dev Admin-only
      */
     function setAllowSubNodeOpDelegateChanges(bool newValue) external onlyAdmin {
-        require(newValue != allowSubOpDelegateChanges, 'SuperNodeAccount: new allowSubOpDelegateChanges value must be different');
+        require(
+            newValue != allowSubOpDelegateChanges,
+            'SuperNodeAccount: new allowSubOpDelegateChanges value must be different'
+        );
         emit AllowSubNodeOperatorDelegateChangesChanged(allowSubOpDelegateChanges, newValue);
         allowSubOpDelegateChanges = newValue;
     }
@@ -448,15 +460,21 @@ contract SuperNodeAccount is UpgradeableBase {
      * @return bool Returns true if there is sufficient liquidity to cover the bond; false otherwise.
      */
     function hasSufficientLiquidity(uint256 _bond) public view returns (bool) {
+        // check ETH
         address payable od = _directory.getOperatorDistributorAddress();
+        bool hasEnoughEth = od.balance >= _bond;
+        if(hasEnoughEth == false) return false;
+
+        // check RPL
         IRocketNodeStaking rocketNodeStaking = IRocketNodeStaking(_directory.getRocketNodeStakingAddress());
         uint256 rplStaking = rocketNodeStaking.getNodeRPLStake(address(this));
-        uint256 newEthBorrowed = IRocketDAOProtocolSettingsMinipool(_directory.getRocketDAOProtocolSettingsMinipool()).getLaunchBalance() - _bond;
+        uint256 newEthBorrowed = IRocketDAOProtocolSettingsMinipool(_directory.getRocketDAOProtocolSettingsMinipool())
+            .getLaunchBalance() - _bond;
         uint256 rplRequired = OperatorDistributor(od).calculateRplStakeShortfall(
             rplStaking,
             getEthMatched() + newEthBorrowed
         );
-        return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired && od.balance >= _bond;
+        return IERC20(_directory.getRPLAddress()).balanceOf(od) >= rplRequired;
     }
 
     // Must receive ETH from OD for staking during the createMinipool process (pre-staking minipools)
@@ -492,7 +510,7 @@ contract SuperNodeAccount is UpgradeableBase {
      * @dev This function can only be called by the protocol admin.
      * Adjusting this parameter will change the reward distribution dynamics for validators.
      */
-    function setMaxValidators(uint256 _maxValidators) public onlyMediumTimelock {
+    function setMaxValidators(uint256 _maxValidators) public onlyAdmin {
         require(_maxValidators != maxValidators, 'SuperNodeAccount: new maxValidators value must be different');
         emit MaxValidatorsChanged(maxValidators, _maxValidators);
         maxValidators = _maxValidators;

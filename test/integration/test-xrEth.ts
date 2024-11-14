@@ -1,18 +1,14 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { protocolFixture, SetupData } from "./integration";
-import { BigNumber } from "ethers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { expectNumberE18ToBeApproximately, getEventNames, prepareOperatorDistributionContract, registerNewValidator, upgradePriceFetcherToMock, whitelistUserServerSig } from "../utils/utils";
-import { ContractTransaction } from "@ethersproject/contracts";
-import { wEth } from "../../typechain-types/factories/contracts/Testing";
+import { protocolFixture } from "./integration";
+import { expectNumberE18ToBeApproximately, prepareOperatorDistributionContract, registerNewValidator, whitelistUserServerSig } from "../utils/utils";
 
 describe("xrETH", function () {
-
   it("success - test initial xrETH values", async () => {
     const setupData = await loadFixture(protocolFixture);
-    const { protocol, signers, rocketPool } = setupData;
+    const { protocol, signers } = setupData;
+    await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
     const name = await protocol.vCWETH.name()
     const symbol = await protocol.vCWETH.symbol();
@@ -27,7 +23,8 @@ describe("xrETH", function () {
 
   it("fail - tries to deposit weth as 'bad actor' involved in AML or other flavors of bad", async () => {
     const setupData = await loadFixture(protocolFixture);
-    const { protocol, signers, rocketPool } = setupData;
+    const { protocol, signers } = setupData;
+    await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
     await protocol.sanctions.addBlacklist(signers.ethWhale.address);
     expect(await protocol.directory.getSanctionsEnabled()).equals(true);
@@ -45,6 +42,7 @@ describe("xrETH", function () {
   it("success - tries to deposit weth as 'good actor' not involved in AML or other flavors of bad", async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
+    await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
     const {sig} = await whitelistUserServerSig(setupData, signers.ethWhale);
 
@@ -64,7 +62,8 @@ describe("xrETH", function () {
 
   it("success - tries to deposit once, then redeem from weth vault multiple times", async () => {
     const setupData = await loadFixture(protocolFixture);
-    const { protocol, signers, rocketPool } = setupData;
+    const { protocol, signers } = setupData;
+    await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
     const depositAmount = await protocol.vCWETH.previewMint(ethers.utils.parseEther("100"));
     const depositAfterFee = depositAmount.sub(await protocol.vCWETH.getMintFeePortion(depositAmount));
@@ -122,9 +121,9 @@ describe("xrETH", function () {
   })
 
   it("success - tries to deposit and redeem from weth vault multiple times with minipool reward claims", async () => {
-
     const setupData = await loadFixture(protocolFixture);
-    const { protocol, signers, rocketPool } = setupData;
+    const { protocol, signers } = setupData;
+    await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
     // set the max weth rpl ratio to 10000% to allow for large ETH deposits
     await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("100"));
@@ -153,8 +152,6 @@ describe("xrETH", function () {
       to: minipools[0],
       value: executionLayerReward
     })
-
-    console.log('minipool balance', await ethers.provider.getBalance(minipools[0]));
 
     const minipoolData = await protocol.superNode.minipoolData(minipools[0]);
 
@@ -195,7 +192,8 @@ describe("xrETH", function () {
   it("success - tries to deposit and redeem from weth vault multiple times with a minipool reward claim, simulating a penalized exit", async () => {
 
     const setupData = await loadFixture(protocolFixture);
-    const { protocol, signers, rocketPool } = setupData;
+    const { protocol, signers } = setupData;
+    await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
     // set the max weth rpl ratio to 10000% to allow for large ETH deposits
     await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("100"));
@@ -262,9 +260,9 @@ describe("xrETH", function () {
   })
 
   it("success - tries to deposit and redeem from weth vault multiple times with a minipool reward claim, simulating an exit with rewards", async () => {
-
     const setupData = await loadFixture(protocolFixture);
-    const { protocol, signers, rocketPool } = setupData;
+    const { protocol, signers } = setupData;
+    await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
     // set the max weth rpl ratio to 10000% to allow for large ETH deposits
     await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(ethers.utils.parseEther("100"));
@@ -344,6 +342,7 @@ describe("xrETH", function () {
   describe("admin functions", () => {
     it("success - admin can set tvlCoverageRatio", async () => {
       const { protocol, signers } = await loadFixture(protocolFixture);
+      await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
       const tvlCoverageRatio = ethers.utils.parseEther("0.1542069");
       await protocol.vCWETH.connect(signers.admin).setMaxWethRplRatio(tvlCoverageRatio);
@@ -354,6 +353,7 @@ describe("xrETH", function () {
 
     it("fail - non-admin cannot set tvlCoverageRatio", async () => {
       const { protocol, signers } = await loadFixture(protocolFixture);
+      await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
       const tvlCoverageRatio = ethers.utils.parseEther("0.1542069");
       await expect(protocol.vCWETH.connect(signers.ethWhale).setMaxWethRplRatio(tvlCoverageRatio)).to.be.revertedWith("Can only be called by short timelock!");
@@ -361,7 +361,7 @@ describe("xrETH", function () {
 
     it("success - admin can enable or disable deposits", async () => {
       const { protocol, signers } = await loadFixture(protocolFixture);
-
+      await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
       expect(await protocol.vCWETH.depositsEnabled()).equals(true);
 
       let depositAmount =  ethers.utils.parseEther("1");
@@ -387,7 +387,7 @@ describe("xrETH", function () {
 
     it("fail - non-admin cannot set deposits enabled", async () => {
       const { protocol, signers } = await loadFixture(protocolFixture);
-
+      await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
       expect(await protocol.vCWETH.depositsEnabled()).equals(true);
 
       let depositAmount =  ethers.utils.parseEther("1");
@@ -399,10 +399,9 @@ describe("xrETH", function () {
   });
 
   describe("sanctions checks", () => {
-
     it("success - allows deposits from non-sanctioned senders and origins", async () => {
       const { protocol, signers } = await loadFixture(protocolFixture);
-
+      await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
       const depositAmountEth = ethers.utils.parseEther("5");
 
       await protocol.wETH.connect(signers.ethWhale).deposit({ value: depositAmountEth });
@@ -410,5 +409,4 @@ describe("xrETH", function () {
       const tx = await protocol.vCWETH.connect(signers.ethWhale).deposit(depositAmountEth, signers.ethWhale.address);
     })
   })
-
 });

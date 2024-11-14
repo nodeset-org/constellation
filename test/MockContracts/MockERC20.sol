@@ -21,4 +21,8 @@ contract MockErc20 is ERC20, Ownable {
         _mint(_account, _amount);
     }
 
+    function balanceof(address _account) public view returns (uint256) {
+        return balanceOf(_account);
+    }
+
 }

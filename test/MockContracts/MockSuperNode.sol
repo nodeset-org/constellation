@@ -9,11 +9,12 @@ contract MockSuperNode {
         uint256 noFee;
         uint256 index; // index in the minipool list
     }
-
+    uint256 public bond;
     uint256 public numMinipools;
     address[] public minipools;
     mapping(address => bool) public isMinipoolRecognized;
     mapping(address => Minipool) public minipoolData;
+
 
     function setNumMinipools(uint256 _numMinipools) public {
         numMinipools = _numMinipools;
@@ -50,5 +51,9 @@ contract MockSuperNode {
 
     function getEthStaked() public pure returns (uint256) {
         return 0;
+    }
+
+    function setBond(uint256 _bond) public {
+        bond = _bond;
     }
 }

@@ -4,10 +4,10 @@ pragma solidity ^0.8.17;
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
-contract MockWEth is ERC20, Ownable {
+contract MockRPL is ERC20, Ownable {
     mapping(address => uint256) balances;
 
-    constructor() ERC20("MockWeth", "WETH") {}
+    constructor() ERC20("MockRpl", "RPL") {}
 
     function mint(address _to, uint256 _amount) public onlyOwner {
         _mint(_to, _amount);
