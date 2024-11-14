@@ -3,7 +3,6 @@ import { ethers, upgrades } from "hardhat";
 import { Contract } from "ethers";
 
 const AdminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ROLE"));
-const ShortTimelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
 
 describe("WETHVault.maxMint", function () {
     let wethVault: Contract;
@@ -91,7 +90,7 @@ describe("WETHVault.maxMint", function () {
     });
 
     it("returns the share amount", async function () {
-        await mockSanctions.setSanctioned(owner.address, true);
+        await mockSanctions.setSanctioned(owner.address, false);
 
         await mockRplVault.setMinWethRplRatio(ethers.utils.parseEther("999"));
         await mockRplVault.setTotalAssets(ethers.utils.parseEther("1"));

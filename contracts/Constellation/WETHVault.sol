@@ -141,7 +141,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
         }
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
-
         require(tvlRatioEthRpl(assets, true) <= maxWethRplRatio, 'insufficient RPL coverage');
 
         uint256 mintFeePortion = getMintFeePortion(assets);
@@ -149,12 +148,14 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
         super._deposit(caller, receiver, assets, shares);
 
         address treasuryAddress = getDirectory().getTreasuryAddress();
-        if(mintFeePortion > 0 && treasuryAddress != address(this))
+        if(mintFeePortion > 0 && treasuryAddress != address(this)) {
             SafeERC20.safeTransfer(IERC20(asset()), treasuryAddress, mintFeePortion); // transfer the mint fee to the treasury
+        }
 
         // move everything to operator distributor in anticipation of rebalancing everything
         SafeERC20.safeTransfer(IERC20(asset()), address(od), IERC20(asset()).balanceOf(address(this)));
         od.processNextMinipool();
+
         od.rebalanceWethVault(); // just in case there is no minipool balances to process, rebalance anyway
     }
 
@@ -461,7 +462,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
         // Check if deposits are enabled
         if(!depositsEnabled) return 0;
         // Check if the receiver is sanctioned
-        if (!ISanctions(_directory.getSanctionsAddress()).isSanctioned(receiver)) return 0;
+        if (ISanctions(_directory.getSanctionsAddress()).isSanctioned(receiver)) return 0;
 
         // Check if any deposit is allowed based on eth/rpl ratio
         RPLVault rplVault = RPLVault(getDirectory().getRPLVaultAddress());

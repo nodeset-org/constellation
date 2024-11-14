@@ -297,7 +297,7 @@ contract RPLVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
         if (!depositsEnabled) return 0;
 
         // Check if the receiver is sanctioned
-        if (!ISanctions(_directory.getSanctionsAddress()).isSanctioned(receiver)) return 0;
+        if (ISanctions(_directory.getSanctionsAddress()).isSanctioned(receiver)) return 0;
 
         if(minWethRplRatio == 0) return type(uint256).max;
 

@@ -3,7 +3,6 @@ import { ethers, upgrades } from "hardhat";
 import { Contract } from "ethers";
 
 const AdminRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ROLE"));
-const ShortTimelockRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TIMELOCK_SHORT"));
 
 describe("WETHVault.maxDeposit", function () {
     let wethVault: Contract;
@@ -98,9 +97,9 @@ describe("WETHVault.maxDeposit", function () {
         });
     });
     describe("when deposits are enabled", function () {
-        describe("when receiver is not sanctioned", function () {
+        describe("when receiver is sanctioned", function () {
             it("returns 0", async function () {
-                await mockSanctions.setSanctioned(owner.address, false);
+                await mockSanctions.setSanctioned(owner.address, true);
                 const maxDeposit = await wethVault.maxDeposit(owner.address);
 
                 expect(maxDeposit).to.equal(0);
@@ -108,9 +107,9 @@ describe("WETHVault.maxDeposit", function () {
             });
         });
 
-        describe("when receiver is sanctioned", function () {
+        describe("when receiver is not sanctioned", function () {
             beforeEach(async function () {
-                await mockSanctions.setSanctioned(owner.address, true);
+                await mockSanctions.setSanctioned(owner.address, false);
             });
 
             describe("when any deposit is above or equal to the eth/rpl ratio", function () {

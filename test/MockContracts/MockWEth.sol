@@ -9,6 +9,10 @@ contract MockWEth is ERC20, Ownable {
 
     constructor() ERC20("MockWeth", "WETH") {}
 
+    function mint(address _to, uint256 _amount) public onlyOwner {
+        _mint(_to, _amount);
+    }
+
     function deposit() external payable {
         balances[msg.sender] += msg.value;
     }
