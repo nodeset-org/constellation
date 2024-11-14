@@ -36,6 +36,10 @@ contract MockOperatorDistributor {
         return tvlEth;
     }
 
+    function setTvlEth(uint256 _tvlEth) public {
+        tvlEth = _tvlEth;
+    }
+
     function sendEthForMinipool() public pure {}
 
     function rebalanceRplStake(uint256) public pure {}

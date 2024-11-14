@@ -460,10 +460,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
     function maxDeposit(address receiver) public view override returns (uint256) {
         // Check if deposits are enabled
         if(!depositsEnabled) return 0;
-        console.log("!! maxDeposit 1");
         // Check if the receiver is sanctioned
         if (!ISanctions(_directory.getSanctionsAddress()).isSanctioned(receiver)) return 0;
-        console.log("!! maxDeposit 2");
 
         // Check if any deposit is allowed based on eth/rpl ratio
         RPLVault rplVault = RPLVault(getDirectory().getRPLVaultAddress());
@@ -482,13 +480,14 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
         uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress()).totalAssets();
         uint256 tvlRplInEth = tvlRpl * PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice() / 1e18;
         uint256 tvlEth = totalAssets();
-
+        console.log("!!! calculateRatioDepositLimit 1", tvlRpl, tvlRplInEth, tvlEth);
         uint256 minWethRplRatio = RPLVault(getDirectory().getRPLVaultAddress()).minWethRplRatio();
 
         // Maximum ETH that can be deposited to stay within the required ratio
         uint256 maxTvlEth = (tvlRplInEth * minWethRplRatio) / 1e18;
 
         uint256 ratioLimitedDeposit = maxTvlEth > tvlEth ? maxTvlEth - tvlEth : 0;
+        console.log("!!! calculateRatioDepositLimit 2", maxTvlEth, ratioLimitedDeposit);
         if (queueableDepositsLimitEnabled) {
             uint256 queueableDepositLimit = calculateDepositLimit();
             // Return the lower limit between the ratio vs queueable deposit limits
