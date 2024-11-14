@@ -30,7 +30,7 @@ import './MerkleClaimStreamer.sol';
 import '../Interfaces/IConstellationOracle.sol';
 import '../Interfaces/RocketPool/IRocketDepositPool.sol';
 import '../Interfaces/IRateProvider.sol';
-import "hardhat/console.sol";
+
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
     using Math for uint256;
@@ -481,14 +481,12 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
         uint256 tvlRpl = RPLVault(getDirectory().getRPLVaultAddress()).totalAssets();
         uint256 tvlRplInEth = tvlRpl * PriceFetcher(getDirectory().getPriceFetcherAddress()).getPrice() / 1e18;
         uint256 tvlEth = totalAssets();
-        console.log("!!! calculateRatioDepositLimit 1", tvlRpl, tvlRplInEth, tvlEth);
         uint256 minWethRplRatio = RPLVault(getDirectory().getRPLVaultAddress()).minWethRplRatio();
 
         // Maximum ETH that can be deposited to stay within the required ratio
         uint256 maxTvlEth = (tvlRplInEth * minWethRplRatio) / 1e18;
 
         uint256 ratioLimitedDeposit = maxTvlEth > tvlEth ? maxTvlEth - tvlEth : 0;
-        console.log("!!! calculateRatioDepositLimit 2", maxTvlEth, ratioLimitedDeposit);
         if (queueableDepositsLimitEnabled) {
             uint256 queueableDepositLimit = calculateDepositLimit();
             // Return the lower limit between the ratio vs queueable deposit limits
@@ -505,9 +503,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
 
     // Overriding maxRedeem to follow the ERC-4626 specification
     function maxRedeem(address owner) public view override returns (uint256) {
-
         uint256 availableLiquidity = IERC20(asset()).balanceOf(address(this));
-        console.log("!!! availableLiquidity", availableLiquidity < balanceOf(owner) );
         return availableLiquidity < balanceOf(owner) ? convertToShares(availableLiquidity) : balanceOf(owner);
     }
 }
