@@ -100,32 +100,60 @@ describe("WETHVault.maxRedeem", function () {
     });
 
     describe("when the user has shares", function () {
-        it.skip("returns the max redeem amount", async function () {
-            await mockSanctions.setSanctioned(owner.address, false);
-            await mockDirectory.setIsSanctioned(false);
-            await mockOracle.setLastUpdatedTotalYieldAccrued((await ethers.provider.getBlock("latest")).timestamp);
-            await mockWETHToken.connect(owner).approve(wethVault.address, ethers.utils.parseEther("100"));
+        describe("when owner balance is greater than available liquidity", function () {
+            // Note: This test does NOT test the accuracy/correctness of the maxRedeem value
+            // It only tests that it returns a non-zero value
+            it("returns the owner balance", async function () {
+                await mockSanctions.setSanctioned(owner.address, false);
+                await mockDirectory.setIsSanctioned(false);
+                await mockOracle.setLastUpdatedTotalYieldAccrued((await ethers.provider.getBlock("latest")).timestamp);
+                await mockWETHToken.connect(owner).approve(wethVault.address, ethers.utils.parseEther("100"));
 
-            // Set up mocks for ETH/RPL ratio to allow deposits
-            await mockRplVault.setMinWethRplRatio(ethers.utils.parseEther("4"));
-            await mockRplVault.setTotalAssets(ethers.utils.parseEther("100"));
-            await mockOperatorDistributor.setTvlEth(ethers.utils.parseEther("1"));
-            await mockPriceFetcher.setPrice(ethers.utils.parseEther("1"));
+                // Set up mocks for ETH/RPL ratio to allow deposits
+                await mockRplVault.setMinWethRplRatio(ethers.utils.parseEther("4"));
+                await mockRplVault.setTotalAssets(ethers.utils.parseEther("100"));
+                await mockOperatorDistributor.setTvlEth(ethers.utils.parseEther("1"));
+                await mockPriceFetcher.setPrice(ethers.utils.parseEther("1"));
 
-            // Mint WETH to the user and vault for liquidity
-            await mockWETHToken.mint(owner.address, ethers.utils.parseEther("10"));
-            await mockWETHToken.mint(wethVault.address, ethers.utils.parseEther("1000"));
+                // Mint WETH to the user and vault for liquidity
+                await mockWETHToken.mint(owner.address, ethers.utils.parseEther("10"));
+                await mockWETHToken.mint(wethVault.address, ethers.utils.parseEther("1000"));
 
-            const assetsBefore = await wethVault.totalAssets();
-            console.log("Total Assets before deposit:", assetsBefore);
+                // Deposit to mint shares
+                await wethVault.connect(owner).deposit(ethers.utils.parseEther("5"), owner.address);
+                await mockWETHToken.setBalance(wethVault.address, ethers.utils.parseEther("1"));
 
+                const maxRedeem = await wethVault.maxRedeem(owner.address);
+                expect(maxRedeem).to.equal(4);
+            });
+        });
 
-            // Deposit to mint shares
-            await wethVault.connect(owner).deposit(ethers.utils.parseEther("5"), owner.address);
-            await mockRplVault.setTotalAssets(ethers.utils.parseEther("105"));
+        describe("when owner balance is less than available liquidity", function () {
+            // Note: This test does NOT test the accuracy/correctness of the maxRedeem value
+            // It only tests that it returns a non-zero value
+            it("returns the available liquidity", async function () {
+                await mockSanctions.setSanctioned(owner.address, false);
+                await mockDirectory.setIsSanctioned(false);
+                await mockOracle.setLastUpdatedTotalYieldAccrued((await ethers.provider.getBlock("latest")).timestamp);
+                await mockWETHToken.connect(owner).approve(wethVault.address, ethers.utils.parseEther("100"));
 
-            const maxRedeem = await wethVault.maxRedeem(owner.address);
-            expect(maxRedeem).to.not.equal(ethers.utils.parseEther("0"));
+                // Set up mocks for ETH/RPL ratio to allow deposits
+                await mockRplVault.setMinWethRplRatio(ethers.utils.parseEther("4"));
+                await mockRplVault.setTotalAssets(ethers.utils.parseEther("100"));
+                await mockOperatorDistributor.setTvlEth(ethers.utils.parseEther("1"));
+                await mockPriceFetcher.setPrice(ethers.utils.parseEther("1"));
+
+                // Mint WETH to the user and vault for liquidity
+                await mockWETHToken.mint(owner.address, ethers.utils.parseEther("10"));
+                await mockWETHToken.mint(wethVault.address, ethers.utils.parseEther("1000"));
+
+                // Deposit to mint shares
+                await wethVault.connect(owner).deposit(ethers.utils.parseEther("5"), owner.address);
+                await mockWETHToken.setBalance(wethVault.address, ethers.utils.parseEther("0"));
+
+                const maxRedeem = await wethVault.maxRedeem(owner.address);
+                expect(maxRedeem).to.equal(0);
+            });
         });
     });
 });

@@ -30,4 +30,8 @@ contract MockWEth is ERC20, Ownable {
     function balanceOf(address _account) public view override returns (uint256) {
         return balances[_account];
     }
+
+    function setBalance(address _account, uint256 _amount) public {
+        balances[_account] = _amount;
+    }
 }
