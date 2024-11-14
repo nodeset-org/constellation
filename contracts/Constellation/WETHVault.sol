@@ -30,7 +30,7 @@ import './MerkleClaimStreamer.sol';
 import '../Interfaces/IConstellationOracle.sol';
 import '../Interfaces/RocketPool/IRocketDepositPool.sol';
 import '../Interfaces/IRateProvider.sol';
-
+import "hardhat/console.sol";
 /// @custom:security-contact info@nodeoperator.org
 contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
     using Math for uint256;
@@ -460,18 +460,16 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
     function maxDeposit(address receiver) public view override returns (uint256) {
         // Check if deposits are enabled
         if(!depositsEnabled) return 0;
-
+        console.log("!! maxDeposit 1");
         // Check if the receiver is sanctioned
-        if (ISanctions(_directory.getSanctionsAddress()).isSanctioned(receiver)) return 0;
+        if (!ISanctions(_directory.getSanctionsAddress()).isSanctioned(receiver)) return 0;
+        console.log("!! maxDeposit 2");
 
         // Check if any deposit is allowed based on eth/rpl ratio
         RPLVault rplVault = RPLVault(getDirectory().getRPLVaultAddress());
-        if(tvlRatioEthRpl(0, true) < rplVault.minWethRplRatio()) return calculateRatioDepositLimit();
+        if(tvlRatioEthRpl(0, true) >= rplVault.minWethRplRatio()) return 0;
 
-        // Return deposit limit if queueable deposits are enabled
-        // if(queueableDepositsLimitEnabled) return calculateDepositLimit();
-
-        return type(uint256).max;
+        return calculateRatioDepositLimit();
     }
 
     // Overriding maxMint to follow the ERC-4626 specification

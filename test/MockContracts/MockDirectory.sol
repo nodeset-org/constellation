@@ -21,6 +21,7 @@ contract MockDirectory {
     address rocketDepositPoolAddress;
     address merkleClaimStreamerAddress;
     address oracleAddress;
+    address sanctionsAddress;
 
     mapping(bytes32 => mapping(address => bool)) private roles;
     bool public isSanctionedBool;
@@ -184,5 +185,13 @@ contract MockDirectory {
 
     function getOracleAddress() public view returns (address) {
         return oracleAddress;
+    }
+
+    function getSanctionsAddress() public view returns (address) {
+        return sanctionsAddress;
+    }
+
+    function setSanctionsAddress(address _sanctionsAddress) public {
+        sanctionsAddress = _sanctionsAddress;
     }
 }

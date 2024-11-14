@@ -8,7 +8,7 @@ contract MockSanctions {
         return blacklist[addr];
     }
 
-    function addBlacklist(address _account) public {
-        blacklist[_account] = true;
+    function setSanctioned(address _account, bool _sanctioned) public {
+        blacklist[_account] = _sanctioned;
     }
 }
