@@ -202,18 +202,6 @@ describe("Operator Distributor", function () {
 		expect(await protocol.vCWETH.totalAssets()).to.equal(priorAssets.add(xrETHPortion));
 	});
 
-	it.skip("TODO: Tops up the RPL stake if it is below the minimum", async function () {
-		const setupData = await loadFixture(protocolFixture);
-		const { protocol, signers, rocketPool } = setupData;
-		const { operatorDistributor } = protocol;
-	});
-
-	it.skip("TODO: Returns silently if rpl stake rebalancing is disabled", async function (){
-		const setupData = await loadFixture(protocolFixture);
-		const { protocol, signers, rocketPool } = setupData;
-		const { operatorDistributor } = protocol;
-	})
-
 	// test target stake ratio logic
 	it("success - target stake ratio may be set above 100%", async function () {
 		// load fixture
