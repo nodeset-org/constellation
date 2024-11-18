@@ -308,6 +308,13 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
      * @notice Convenience function for viewing the maximum deposit allowed
      */
     function getMaximumDeposit() public view returns (uint256) {
+        uint256 lastOracleUpdate = IConstellationOracle(_directory.getOracleAddress()).getLastUpdatedTotalYieldAccrued();
+        if(block.timestamp > lastOracleUpdate + oracleUpdateThreshold) return 0;
+        
+        uint queuableMax = 0;
+        if(queueableDepositsLimitEnabled)
+            queuableMax = calculateQueueableDepositLimit();
+
         RPLVault rplVault = RPLVault(getDirectory().getRPLVaultAddress());
         if(tvlRatioEthRpl(0, false) < rplVault.minWethRplRatio()) return 0;
 
@@ -317,7 +324,8 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
 
         if(rplPerEth == 0) return type(uint256).max;
 
-        return ((maxWethRplRatio * tvlRpl) / rplPerEth) - tvlEth;
+        uint ratioMax = ((maxWethRplRatio * tvlRpl) / rplPerEth) - tvlEth;
+        return queuableMax > ratioMax ? ratioMax : queuableMax;
     }
 
     /**
