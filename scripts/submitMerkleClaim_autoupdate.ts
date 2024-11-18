@@ -12,13 +12,13 @@ const { ethers } = require('ethers');
 // };
 
 // Fill in network (i.e. holesky/mainnet) prior to running
-const NETWORK = process.env.NETWORK || "holesky";
+const NETWORK = "holesky";
 
 // Fill in github token prior to running
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GITHUB_TOKEN = 'CHANGE_ME';
 
 // Fill in directory contract address prior to running
-const DIRECTORY_ADDRESS = process.env.DIRECTORY_ADDRESS;
+const DIRECTORY_ADDRESS = '0x925D0700407fB0C855Ae9903B3a2727F1e88576c'; 
 
 // Fill in the number of files to process prior to running
 const NUM_FILES_PROCESS = process.env.NUM_FILES_PROCESS || 50; // Default to 50 files if not set in environment
@@ -121,6 +121,7 @@ exports.handler = async function(credentials) {
     try {
         // Fetch reward files from GitHub
         const rewardFiles = await fetchRewardFiles();
+        //console.log('Fetched reward files:', rewardFiles.length);
 
         // Sort files by interval number and only process the last NUM_FILES_PROCESS files
         rewardFiles.sort((a, b) => {
@@ -164,6 +165,7 @@ exports.handler = async function(credentials) {
 
             // Get the claimedWord for this interval
             const claimedWord = await rocketStorage.getUint(claimedWordKey);
+
             // Check if the reward has been claimed
             if (isClaimed(claimedWord, indexBitIndex)) {
                 continue; // Skip to the next interval
@@ -198,15 +200,16 @@ exports.handler = async function(credentials) {
             merkleProofsArray.push(merkleProof);
         }
 
-        if (rewardIndexes.length === 0)
-            console.log('No rewards to claim');
-            return;
-    } catch (error) {
+        if (rewardIndexes.length === 0) {
+          console.log("Found no reward intervals ready to claim");
+          return;
+        }
+      } catch (error) {
         throw new Error(`Error processing rewards: ${error.message}`);
     }
-
-    // Submit all claims in a single transaction
-    try {
+  
+      // Submit all claims in a single transaction
+      try {
         console.log(`Submitting batch Merkle claim for ${rewardIndexes.length} intervals...`);
         // use the callStatic line for local testing, the other for deployment
         // const txResult = await merkleClaimStreamer.callStatic.submitMerkleClaim(
@@ -216,21 +219,19 @@ exports.handler = async function(credentials) {
         //     merkleProofsArray,
         // );
         const txResult = await merkleClaimStreamer.submitMerkleClaim(
-            rewardIndexes,
-            amountsRPL,
-            amountsETH,
-            merkleProofsArray,
+          rewardIndexes,
+          amountsRPL,
+          amountsETH,
+          merkleProofsArray, 
+          { gasLimit: 1000000 }
         );
-        await txResult.wait();
-
-        if(txResult.status === 0)
-            throw new Error(`Transaction reverted: ${txResult}`)
+		await txResult.wait();
+  		if(txResult.status === 0)
+    		throw new Error(`Transaction reverted: ${txResult}`)
         console.log(`Transaction successful: ${txResult}`);
 
-        // uncomment this for deployment
         return txResult.hash;
-    } catch (error) {
+      } catch (error) {
         throw new Error(`Error submitting Merkle claim: ${error.message}`);
-    }
-
-};
+      }
+}
