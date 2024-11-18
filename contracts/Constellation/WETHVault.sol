@@ -311,7 +311,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
         uint256 lastOracleUpdate = IConstellationOracle(_directory.getOracleAddress()).getLastUpdatedTotalYieldAccrued();
         if(block.timestamp > lastOracleUpdate + oracleUpdateThreshold) return 0;
         
-        uint queuableMax = 0;
+        uint queuableMax = type(uint256).max;
         if(queueableDepositsLimitEnabled)
             queuableMax = calculateQueueableDepositLimit();
 
