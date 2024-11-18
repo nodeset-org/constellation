@@ -109,14 +109,14 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
 
 
     function calculateQueueableDepositLimit() public view returns (uint256) {
-        SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
+        uint snaBond = SuperNodeAccount(_directory.getSuperNodeAddress()).bond();
         
         uint availableREth = IRocketDepositPool(_directory.getRocketDepositPoolAddress()).getExcessBalance();
         // if there's no rETH available, queuable deposit limit is 0
         if(availableREth == 0) return 0;
 
         // this is the amount of ETH from constellations that can be paired with the available rETH
-        uint256 pairableEth = availableREth / ((32 ether - sna.bond()) / sna.bond());
+        uint256 pairableEth = availableREth / ((32 ether - snaBond) / snaBond);
         uint odBalance = address(_directory.getOperatorDistributorAddress()).balance;
 
         // if there's already more than enough ETH in the OD to match, queuable deposit limit is 0
