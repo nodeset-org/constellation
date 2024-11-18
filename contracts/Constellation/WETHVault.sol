@@ -147,7 +147,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
         uint256 lastOracleUpdate = IConstellationOracle(_directory.getOracleAddress()).getLastUpdatedTotalYieldAccrued();
         require(block.timestamp <= lastOracleUpdate + oracleUpdateThreshold, "WETHVault: Oracle is out of date.");
         if(queueableDepositsLimitEnabled) {
-            require(msg.value <= calculateQueueableDepositLimit(), "WETHVault: Deposit exceeds the TVL queueable limit.");
+            require(assets <= calculateQueueableDepositLimit(), "WETHVault: Deposit exceeds the TVL queueable limit.");
         }
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
