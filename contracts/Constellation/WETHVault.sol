@@ -115,7 +115,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
         // if there's no rETH available, queuable deposit limit is 0
         if(availableREth == 0) return 0;
 
-        // this is the amount of ETH from constellations that can be paired with the available rETH
+        // this is the amount of ETH from constellation that can be paired with the available rETH
         uint256 pairableEth = availableREth / ((32 ether - snaBond) / snaBond);
         uint odBalance = address(_directory.getOperatorDistributorAddress()).balance;
 
