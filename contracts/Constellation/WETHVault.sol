@@ -108,10 +108,20 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
     }
 
 
-    function calculateDepositLimit() public view returns (uint256) {
+    function calculateQueueableDepositLimit() public view returns (uint256) {
         SuperNodeAccount sna = SuperNodeAccount(_directory.getSuperNodeAddress());
-        uint256 pairableEth = IRocketDepositPool(_directory.getRocketDepositPoolAddress()).getExcessBalance() / ((32 ether - sna.bond()) / sna.bond());
-        return pairableEth - address(_directory.getOperatorDistributorAddress()).balance;
+        
+        uint availableREth = IRocketDepositPool(_directory.getRocketDepositPoolAddress()).getExcessBalance();
+        // if there's no rETH available, queuable deposit limit is 0
+        if(availableREth == 0) return 0;
+
+        // this is the amount of ETH from constellations that can be paired with the available rETH
+        uint256 pairableEth = availableREth / ((32 ether - sna.bond()) / sna.bond());
+        uint odBalance = address(_directory.getOperatorDistributorAddress()).balance;
+
+        // if there's already more than enough ETH in the OD to match, queuable deposit limit is 0
+        if(pairableEth <= odBalance) return 0;
+        return pairableEth - odBalance;
     }
 
     /**
@@ -137,7 +147,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
         uint256 lastOracleUpdate = IConstellationOracle(_directory.getOracleAddress()).getLastUpdatedTotalYieldAccrued();
         require(block.timestamp <= lastOracleUpdate + oracleUpdateThreshold, "WETHVault: Oracle is out of date.");
         if(queueableDepositsLimitEnabled) {
-            require(msg.value <= calculateDepositLimit(), "WETHVault: Deposit exceeds the TVL queueable limit.");
+            require(msg.value <= calculateQueueableDepositLimit(), "WETHVault: Deposit exceeds the TVL queueable limit.");
         }
 
         OperatorDistributor od = OperatorDistributor(_directory.getOperatorDistributorAddress());
