@@ -223,7 +223,7 @@ exports.handler = async function(credentials) {
           amountsRPL,
           amountsETH,
           merkleProofsArray, 
-          { gasLimit: 470000}
+          { gasLimit: 1000000 }
         );
 		await txResult.wait();
   		if(txResult.status === 0)
