@@ -96,7 +96,6 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
         nodeOperatorFee = 0.14788e18;
         mintFee = 0.0003e18; // .03% by default
         depositsEnabled = true;
-        queueableDepositsLimitEnabled = false;
     }
 
     /**
@@ -105,6 +104,7 @@ contract WETHVault is UpgradeableBase, ERC4626Upgradeable, IRateProvider {
     function reinitialize101() public reinitializer(2) {
         // This can be called on upgrade to set new values
         oracleUpdateThreshold = 88200; // 24.5 hrs in seconds
+        queueableDepositsLimitEnabled = true;
     }
 
 
