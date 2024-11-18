@@ -52,7 +52,7 @@ describe("WETHVault.calculateDepositLimit", function () {
         it("should return excess balance divided by (32-bond)/bond", async function () {
             mockRocketDepositPool.setExcessBalance(ethers.utils.parseEther("30000"));
 
-            const result = await wethVault.calculateDepositLimit();
+            const result = await wethVault.calculateQueueableDepositLimit();
             expect(result).to.equal(ethers.utils.parseEther("10000"));
         });
     });
@@ -61,7 +61,7 @@ describe("WETHVault.calculateDepositLimit", function () {
         it("should return 0", async function () {
             mockRocketDepositPool.setExcessBalance(ethers.utils.parseEther("0"));
 
-            const result = await wethVault.calculateDepositLimit();
+            const result = await wethVault.calculateQueueableDepositLimit();
             expect(result).to.equal(ethers.utils.parseEther("0"));
         });
     });
