@@ -57,6 +57,7 @@ describe('differing receiver', function () {
   it('can be different receiver than sender if setting is true', async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
+    await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
     await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
     // WETH
     await protocol.vCWETH.connect(signers.admin).setDifferingSenderRecipientEnabled(true);
@@ -87,6 +88,7 @@ describe('differing receiver', function () {
   it('cannot be different receiver than sender if setting is false', async () => {
     const setupData = await loadFixture(protocolFixture);
     const { protocol, signers, rocketPool } = setupData;
+    await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
     await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
     // WETH
     expect(await protocol.vCWETH.differingSenderRecipientEnabled()).equals(false);

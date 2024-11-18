@@ -10,6 +10,7 @@ describe(`RPL staking`, () => {
         it("success - protocol stakes rpl for random node", async () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
+            await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
             await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
             await prepareOperatorDistributionContract(setupData, 2);
             await registerNewValidator(setupData, [signers.random]);
@@ -29,6 +30,7 @@ describe(`RPL staking`, () => {
         it("success - protocol unstakes rpl for random node", async () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
+            await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
             await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
             await prepareOperatorDistributionContract(setupData, 2);

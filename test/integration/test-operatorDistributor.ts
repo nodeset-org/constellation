@@ -105,6 +105,7 @@ describe("Operator Distributor", function () {
 	it("Returns silently if minipool processing is disabled", async function (){
 		const setupData = await loadFixture(protocolFixture);
 		const { protocol, signers } = setupData;
+		await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
 		await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
 		// disable processing
@@ -136,6 +137,7 @@ describe("Operator Distributor", function () {
 		const setupData = await loadFixture(protocolFixture);
 		const { protocol, signers, rocketPool } = setupData;
 
+		await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
 		await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 		// create 1 minipool
 		await prepareOperatorDistributionContract(setupData, 1);
@@ -167,6 +169,7 @@ describe("Operator Distributor", function () {
 	it("Processes minipool rewards correctly even when nodeRefundBalance > 0  (exit)", async function (){
 		const setupData = await loadFixture(protocolFixture);
 		const { protocol, signers } = setupData;
+		await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
 		await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 		// create 1 minipool
 		await prepareOperatorDistributionContract(setupData, 1);
@@ -209,7 +212,7 @@ describe("Operator Distributor", function () {
 		const { protocol, signers } = setupData;
 		const { admin } = signers;
 		const { operatorDistributor } = protocol;
-
+		await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
 		await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
 
@@ -230,7 +233,7 @@ describe("Operator Distributor", function () {
 		const { protocol, signers, rocketPool } = setupData;
 		const { admin } = signers;
 		const { operatorDistributor } = protocol;
-
+		await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
 		await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
 
@@ -253,7 +256,7 @@ describe("Operator Distributor", function () {
 		const { protocol, signers, rocketPool } = setupData;
 		const { admin } = signers;
 		const { operatorDistributor } = protocol;
-
+		await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
 		await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
 

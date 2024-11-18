@@ -12,6 +12,7 @@ describe("SuperNodeAccount creation sig", function () {
             it("Should revert", async () => {
                 const setupData = await loadFixture(protocolFixture);
                 const { protocol, signers } = setupData;
+                await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
                 await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
                 const nodeOperator = signers.hyperdriver;
                 const bond = await setupData.protocol.superNode.bond();
@@ -91,6 +92,7 @@ describe("SuperNodeAccount creation sig", function () {
                     it("Should pass", async () => {
                         const setupData = await loadFixture(protocolFixture);
                         const { protocol, signers } = setupData;
+                        await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
                         await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
                         const nodeOperator = signers.hyperdriver;
                         const bond = await setupData.protocol.superNode.bond();
@@ -136,6 +138,7 @@ describe("SuperNodeAccount creation sig", function () {
                     it("Should pass for one sig and revert for all subsequent (proves nonce auto invalidates)", async () => {
                         const setupData = await loadFixture(protocolFixture);
                         const { protocol, signers } = setupData;
+                        await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
                         await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
                         const nodeOperator = signers.hyperdriver;
                         const bond = await setupData.protocol.superNode.bond();
@@ -242,6 +245,7 @@ describe("SuperNodeAccount creation sig", function () {
                         it("Should revert", async () => {
                             const setupData = await loadFixture(protocolFixture);
                             const { protocol, signers } = setupData;
+                            await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
                             await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
                             const nodeOperator = signers.hyperdriver;
                             const bond = await setupData.protocol.superNode.bond();
@@ -288,6 +292,7 @@ describe("SuperNodeAccount creation sig", function () {
                         it("Should revert", async () => {
                             const setupData = await loadFixture(protocolFixture);
                             const { protocol, signers } = setupData;
+                            await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
                             await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
                             const nodeOperator = signers.hyperdriver;
                             const bond = await setupData.protocol.superNode.bond();
@@ -334,6 +339,7 @@ describe("SuperNodeAccount creation sig", function () {
                         it("Should revert", async () => {
                             const setupData = await loadFixture(protocolFixture);
                             const { protocol, signers } = setupData;
+                            await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
                             await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
                             const nodeOperator = signers.hyperdriver;
                             const bond = await setupData.protocol.superNode.bond();
@@ -381,6 +387,7 @@ describe("SuperNodeAccount creation sig", function () {
                         it("Should revert", async () => {
                             const setupData = await loadFixture(protocolFixture);
                             const { protocol, signers } = setupData;
+                            await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
                             await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
                             const nodeOperator = signers.hyperdriver;
                             const bond = await setupData.protocol.superNode.bond();
@@ -428,6 +435,7 @@ describe("SuperNodeAccount creation sig", function () {
                         it("Should revert", async () => {
                             const setupData = await loadFixture(protocolFixture);
                             const { protocol, signers } = setupData;
+                            await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
                             await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
                             const nodeOperator = signers.hyperdriver;
                             const bond = await setupData.protocol.superNode.bond();
@@ -474,6 +482,7 @@ describe("SuperNodeAccount creation sig", function () {
                         it("Should revert due to having become invalidated", async () => {
                             const setupData = await loadFixture(protocolFixture);
                             const { protocol, signers } = setupData;
+                            await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
                             await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
                             const nodeOperator = signers.hyperdriver;
                             const bond = await setupData.protocol.superNode.bond();
@@ -535,6 +544,7 @@ describe("SuperNodeAccount creation sig", function () {
                         it("Should revert due to having become invalidated", async () => {
                             const setupData = await loadFixture(protocolFixture);
                             const { protocol, signers } = setupData;
+                            await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
                             await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
                             const nodeOperator = signers.hyperdriver;
                             const bond = await setupData.protocol.superNode.bond();
@@ -600,6 +610,7 @@ describe("SuperNodeAccount creation sig", function () {
                 it("Should revert", async () => {
                     const setupData = await loadFixture(protocolFixture);
                     const { protocol, signers } = setupData;
+                    await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
                     await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
                     const nodeOperator = signers.hyperdriver;
                     const bond = await setupData.protocol.superNode.bond();
@@ -648,6 +659,7 @@ describe("SuperNodeAccount creation sig", function () {
         it("Should pass with any sig", async () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers } = setupData;
+            await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
             await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
             const nodeOperator = signers.hyperdriver;
             const bond = await setupData.protocol.superNode.bond();

@@ -26,6 +26,7 @@ describe("Exiting Minipools", function () {
         rocketPool = setupData.rocketPool;
 
         subNodeOperator = signers.random;
+        await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
         await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
         const initialDeposit = await prepareOperatorDistributionContract(setupData, 1);
@@ -48,6 +49,9 @@ describe("Exiting Minipools", function () {
 
             describe("When received amount is greater than original bond", async () => {
                 it("rewards should be positive", async () => {
+
+                    //await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
+
                     // simulate an exit with rewards
                     const baconReward = ethers.utils.parseEther("1")
                     await signers.ethWhale.sendTransaction({

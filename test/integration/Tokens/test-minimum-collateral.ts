@@ -10,6 +10,7 @@ describe('Minimum Collateral', async function () {
     it('should fail', async function () {
       const setupData = await loadFixture(protocolFixture);
       const { protocol, signers, rocketPool } = setupData;
+      await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
       await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
       // Set liquidity reserve to 0%
       await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
@@ -78,6 +79,7 @@ describe('Minimum Collateral', async function () {
         it('should fail', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
+          await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
           await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
           // Set liquidity reserve to 0%
           await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
@@ -170,6 +172,7 @@ describe('Minimum Collateral', async function () {
         it('should create a minipool', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
+          await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
           await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
           // Set liquidity reserve to 0%
           await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
@@ -265,6 +268,7 @@ describe('Minimum Collateral', async function () {
         it('should create a minipool', async function () {
           const setupData = await loadFixture(protocolFixture);
           const { protocol, signers, rocketPool } = setupData;
+          await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
           await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
           // Set liquidity reserve to 0%
           await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
@@ -363,6 +367,7 @@ describe('Minimum Collateral', async function () {
       it('should create a minipool', async function () {
         const setupData = await loadFixture(protocolFixture);
         const { protocol, signers, rocketPool } = setupData;
+        await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
         await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
         // Set liquidity reserve to 0%
         await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
@@ -434,6 +439,7 @@ describe('Minimum Collateral', async function () {
       it('should create a minipool', async function () {
         const setupData = await loadFixture(protocolFixture);
         const { protocol, signers, rocketPool } = setupData;
+        await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
         await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
         // Set liquidity reserve to 0%
         await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);

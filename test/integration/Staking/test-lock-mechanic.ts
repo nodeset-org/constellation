@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { protocolFixture, SetupData } from "../integration";
+import { protocolFixture, SetupData, Protocol, Signers } from "../integration";
 import { approvedSalt, approveHasSignedExitMessageSig, assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract } from "../../utils/utils";
 import { generateDepositData, generateDepositDataForStake } from "../../rocketpool/_helpers/minipool";
 import { BigNumber } from "ethers";
@@ -52,8 +52,9 @@ const prepareStakeWithLockAmount = async (setupData: SetupData, lockAmount: BigN
 describe("Locking Mechanism", async () => {
     describe("When value is equal to lock amount", async () => {
         it("should pass", async () => {
-            const setupData = await loadFixture(protocolFixture);
-            const { protocol, signers } = setupData;
+            let setupData = await loadFixture(protocolFixture);
+            let { protocol, signers } = setupData;
+            await expect(protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false)).to.not.be.reverted;
             await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
             const realLockAmount = await protocol.superNode.lockThreshold();
             const lockAmount = ethers.utils.parseEther("1");
@@ -68,8 +69,9 @@ describe("Locking Mechanism", async () => {
 
     describe("When value is more than lock amount", async () => {
         it("should revert", async () => {
-            const setupData = await loadFixture(protocolFixture);
-            const { protocol, signers } = setupData;
+            let setupData = await loadFixture(protocolFixture);
+            let { protocol, signers } = setupData;
+            await expect(protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false)).to.not.be.reverted;
             await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
             const realLockAmount = await protocol.superNode.lockThreshold();
             const lockAmount = ethers.utils.parseEther("1.001");
@@ -81,8 +83,9 @@ describe("Locking Mechanism", async () => {
 
     describe("When value is less than lock amount", async () => {
         it("should revert", async () => {
-            const setupData = await loadFixture(protocolFixture);
-            const { protocol, signers } = setupData;
+            let setupData = await loadFixture(protocolFixture);
+            let { protocol, signers } = setupData;
+            await expect(protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false)).to.not.be.reverted;
             await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
             const realLockAmount = await protocol.superNode.lockThreshold();
             const lockAmount = ethers.utils.parseEther(".9");
@@ -96,8 +99,9 @@ describe("Locking Mechanism", async () => {
 describe("Unlocking Mechanism", async () => {
     describe("When user locked equal to lock amount", async () => {
         it("should pass", async () => {
-            const setupData = await loadFixture(protocolFixture);
-            const { protocol, signers } = setupData;
+            let setupData = await loadFixture(protocolFixture);
+            let { protocol, signers } = setupData;
+            await expect(protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false)).to.not.be.reverted;
             await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
             // lock 1 eth
             const realLockAmount = await protocol.superNode.lockThreshold();
@@ -137,8 +141,9 @@ describe("Unlocking Mechanism", async () => {
 
     describe("When minipool is closed", async () => {
         it("should reclaim lock for OD", async () => {
-            const setupData = await loadFixture(protocolFixture);
-            const { protocol, signers } = setupData;
+            let setupData = await loadFixture(protocolFixture);
+            let { protocol, signers } = setupData;
+            await expect(protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false)).to.not.be.reverted;
             await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
             const realLockAmount = await protocol.superNode.lockThreshold();
             const lockAmount = ethers.utils.parseEther("1");

@@ -31,6 +31,7 @@ describe("SuperNodeAccount close", function () {
         protocol = setupData.protocol;
         signers = setupData.signers;
         rocketPool = setupData.rocketPool;
+        await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
         await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
         // Set liquidity reserve to 0%
         await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
