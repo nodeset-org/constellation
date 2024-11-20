@@ -35,6 +35,8 @@ describe("Node Operator Onboarding", function () {
         xrETH = protocol.vCWETH;
         xRPL = protocol.vCRPL;
         weth = protocol.wETH;
+        await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
+        await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
         rpl = await ethers.getContractAt("@openzeppelin/contracts/token/ERC20/IERC20.sol:IERC20", await protocol.directory.getRPLAddress()) as IERC20;
 
     });

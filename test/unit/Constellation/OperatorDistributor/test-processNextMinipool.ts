@@ -245,6 +245,21 @@ describe("OperatorDistributor.processNextMinipool", function () {
                             });
                         });
                     });
+
+                    describe("when there is RPL in the RPLVault and the OD, the liquidity is below the threshold, and the RPL staked is below the target stake ratio", function () {
+                        beforeEach(async function () {
+                            await expect(mockRplToken.setBalance(mockRPLVault.address, ethers.utils.parseEther("1"))).to.not.be.reverted;
+                            await expect(operatorDistributor.connect(owner).setTargetStakeRatio(ethers.utils.parseEther("0.5"))).to.not.be.reverted;
+                            await expect(mockRplToken.setBalance(operatorDistributor.address, ethers.utils.parseEther("1"))).to.not.be.reverted;
+                            await expect(mockRPLVault.setMissingLiquidity(ethers.utils.parseEther("100"))).to.not.be.reverted;
+                        });
+
+                        it("does not stake and instead moves everything to RPLVault", async function () {
+                            await expect(operatorDistributor.processNextMinipool()).to.not.be.reverted;
+                            expect((await mockRplToken.balanceOf(mockRPLVault.address)).eq(ethers.utils.parseEther("2")));
+                            expect((await mockRplToken.balanceOf(operatorDistributor.address)).eq(ethers.utils.parseEther("0")));
+                        });
+                    });
                 });
             });
         });

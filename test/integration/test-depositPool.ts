@@ -1,21 +1,17 @@
 import { expect } from "chai";
-import { ethers, network, web3 } from "hardhat";
+import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { protocolFixture, SetupData } from "./integration";
-import { BigNumber as BN } from "ethers";
-import { assertAddOperator, increaseEVMTime, prepareOperatorDistributionContract, registerNewValidator } from "../utils/utils";
+import { protocolFixture } from "./integration";
+import { increaseEVMTime, prepareOperatorDistributionContract, registerNewValidator } from "../utils/utils";
 import { parseRewardsMap } from "../utils/merkleClaim";
-import { submitRewards } from "../rocketpool/rewards/scenario-submit-rewards";
 
 describe(`RPL staking`, () => {
-
     describe('stakeRPLFor', () => {
-
         it("success - protocol stakes rpl for random node", async () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
-
+            await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
+            await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
             await prepareOperatorDistributionContract(setupData, 2);
             await registerNewValidator(setupData, [signers.random]);
 
@@ -27,15 +23,15 @@ describe(`RPL staking`, () => {
             const finalStake = await rp.rocketNodeStakingContract.getNodeRPLStake(protocol.superNode.address);
 
             expect(finalStake.sub(initialStake)).equals(amountStaked);
-
         })
     })
 
     describe('unstakeRpl', () => {
-
         it("success - protocol unstakes rpl for random node", async () => {
             const setupData = await loadFixture(protocolFixture);
             const { protocol, signers, rocketPool: rp } = setupData;
+            await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
+            await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
             await prepareOperatorDistributionContract(setupData, 2);
             await registerNewValidator(setupData, [signers.random]);

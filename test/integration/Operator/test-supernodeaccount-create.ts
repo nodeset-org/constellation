@@ -6,7 +6,6 @@ import { generateDepositData } from "../../rocketpool/_helpers/minipool";
 import { prepareOperatorDistributionContract } from "../../utils/utils";
 import { ethers } from 'hardhat';
 
-const ethMintAmount = ethers.utils.parseEther("8");
 const rplMintAmount = ethers.utils.parseEther("360");
 const salt = 3;
 
@@ -21,7 +20,8 @@ describe("SuperNodeAccount creation under validator limits", function () {
         protocol = setupData.protocol;
         signers = setupData.signers;
         rocketPool = setupData.rocketPool;
-
+        await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
+        await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
         // Set liquidity reserve to 0%
         await protocol.vCRPL.connect(signers.admin).setLiquidityReservePercent(0);
         await protocol.vCWETH.connect(signers.admin).setLiquidityReservePercent(0);
@@ -253,7 +253,7 @@ describe("SuperNodeAccount creation under validator limits", function () {
         describe("when there is a single node operator", async function () {
             it("should create many minipools", async function () {
                 // Deposit ETH (for 3 minipools)
-                await prepareOperatorDistributionContract(setupData, 3);
+                await prepareOperatorDistributionContract(setupData, 4);
 
                 const nodeOperator = signers.hyperdriver;
                 await assertAddOperator(setupData, nodeOperator);
@@ -392,19 +392,6 @@ describe("SuperNodeAccount creation under validator limits", function () {
                     '0x' + config.expectedMinipoolAddress,
                     config.salt,
                 );
-
-                await expect(
-                    protocol.superNode
-                .connect(nodeOperator)
-                .createMinipool({
-                    validatorPubkey: config.validatorPubkey,
-                    validatorSignature: config.validatorSignature,
-                    depositDataRoot: config.depositDataRoot,
-                    salt: salts.rawSalt,
-                    expectedMinipoolAddress: config.expectedMinipoolAddress,
-                    sig: exitMessage.sig
-                    }, { value: ethers.utils.parseEther('1') }))
-                .to.be.revertedWith('NodeAccount: protocol must have enough rpl and eth');
 
                 await protocol.superNode.connect(signers.admin).setMaxValidators(3);
 

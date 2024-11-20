@@ -61,8 +61,9 @@ task(
   'Deploys a new implementation contract and encodes the upgradeTo(address) function call for an upgradable contract'
 )
   .addParam('contractName', 'The name of the contract', undefined, types.string)
-  .addParam('environmentName', 'The name of the env file to use (.environmentName.env).', undefined, types.string, true)
-  .setAction(async ({ contractName, environmentName }, hre) => {
+  .addOptionalParam('environmentName', 'The name of the env file to use (.environmentName.env).', undefined, types.string)
+  .addOptionalParam('calldataAfter', 'The encoded data of the function to call after the upgrade', undefined, types.string)
+  .setAction(async ({ contractName, environmentName, callAfter }, hre) => {
     const dotenvPath = findConfig(`.${environmentName}.env`);
 
     let contract;
@@ -77,7 +78,15 @@ task(
     const address = contract.address;
     console.log(`Deployed new implementation contract for ${contractName}: ${address}`);
 
-    const encoding = await hre.run('upgradeTo', { newImplementation: address });
+    let encoding;
+    if (callAfter && callAfter !== null) {
+      console.log(`Encoding upgradeToAndCall for ${contractName} at ${address} and function data: ${callAfter}`);
+      encoding = await hre.run('upgradeToAndCall', { newImplementation: address, data: callAfter });
+    }
+    else {
+      console.log(`Encoding upgradeTo for ${contractName} at ${address}`);
+      encoding = await hre.run('upgradeTo', { newImplementation: address });
+    }
 
     return { address, encoding };
   });
@@ -118,12 +127,93 @@ task('getProxyAddress', 'Gets the address of the proxy address for a given contr
   });
 
 task(
+  'prepare101Upgrade',
+  'Deploys new implementations for contracts changed in v1.0.1, encodes them, and returns the addresses and encodings'
+)
+  .addParam('directoryAddress', 'The directory address for the deployment to be upgraded', undefined, types.string)
+  .addOptionalParam('environmentName', 'The name of the env file to use (.environmentName.env)', undefined, types.string)
+  .addOptionalParam('timelockAddress', 'Optional: the address of the timelock to log', undefined, types.string)
+  .setAction(async ({ directoryAddress, environmentName, timelockAddress }, hre) => {
+    const contractNames = [
+      'SuperNodeAccount',
+      'OperatorDistributor',
+      'RPLVault'
+    ];
+
+    // todo: this could be done in parallel, but we'd have to increment the tx nonce manually
+    // (this functionality would need to be added to deployAndEncodeUpgrade)
+    let targets: string[] = [];
+    let encodings: Bytes32[] = [];
+    for (const contract of contractNames) {
+      targets.push(
+        await hre.run('getProxyAddress', {
+          contractName: contract,
+          directoryAddress: directoryAddress,
+        })
+      );
+
+      encodings.push(
+        (
+          await hre.run('deployAndEncodeUpgrade', {
+            contractName: contract,
+            environmentName
+          })
+        ).encoding[0] // encodings come in as an array with 1 element due to the way encodeProposal works
+      );
+    }
+
+    // do WETHVault separately because it requires reinitialization
+    const wethVaultReinitEncoding: string =
+      await hre.run("encodeProposal", { sigs: JSON.stringify(["reinitialize101()"]), params: JSON.stringify([[]]) });
+    encodings.push(
+      (
+        await hre.run('deployAndEncodeUpgrade', {
+          contractName: 'WETHVault',
+          environmentName,
+          callAfter: wethVaultReinitEncoding.toString()
+        })
+      ).encoding[0] // encodings come in as an array with 1 element due to the way encodeProposal works
+    );
+
+    const values: number[] = Array(targets.length).fill(0);
+    const predecessor = ethers.utils.hexZeroPad('0x0', 32);
+    const salt = ethers.utils.hexZeroPad('0x0', 32);
+    const txData: UpgradeTxData = { targets, values, payloads: encodings, predecessor, salt };
+
+    console.log('\n==== TRANSACTION DATA ====');
+    let output =
+      'Timelock:\n' +
+      timelockAddress +
+      '\nTargets:\n[' +
+      targets +
+      ']\nValues\n[' +
+      values +
+      ']\nPayloads:\n[' +
+      encodings +
+      ']\nPredecessor:\n' +
+      predecessor +
+      '\nSalt:\n' +
+      salt;
+    console.log(output);
+
+    const fs = require('fs');
+    const dir = __dirname + '/../.upgrades';
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir);
+    }
+    fs.writeFileSync(dir + '/' + Date.now() + '.log', output);
+
+    return txData;
+
+  });
+
+task(
   'prepareFullUpgrade',
   'Deploys new implementations for all contracts, encodes them, and returns the addresses and encodings'
 )
   .addParam('directoryAddress', 'The directory address for the deployment to be upgraded', undefined, types.string)
-  .addParam('environmentName', 'The name of the env file to use (.environmentName.env)', undefined, types.string, true)
-  .addParam('timelockAddress', 'Optional: the address of the timelock to log', undefined, types.string, true)
+  .addOptionalParam('environmentName', 'The name of the env file to use (.environmentName.env)', undefined, types.string)
+  .addOptionalParam('timelockAddress', 'Optional: the address of the timelock to log', undefined, types.string)
   .setAction(async ({ directoryAddress, environmentName, timelockAddress }, hre) => {
     const contractNames = [
       'Directory',
@@ -190,6 +280,7 @@ task(
     return txData;
   });
 
+// This only works if the defender relayer is set as a proposer on the timelock
 task('submitNewUpgrade', 'Deploys new implementations, encodes them, and submits the scheduled proposal')
   .addParam('timelockAddress', 'The address of the TIMELOCK_LONG contract', undefined, types.string)
   .addParam('directoryAddress', 'The directory address for the deployment to be upgraded', undefined, types.string)
@@ -228,10 +319,16 @@ task('submitNewUpgrade', 'Deploys new implementations, encodes them, and submits
     return tx;
   });
 
-task('testPrepareFullUpgrade', 'Tests the prepareFullUpgrade task').setAction(async ({}, hre) => {
+task('testPrepareFullUpgrade', 'Tests the prepareFullUpgrade task using the default HH network (usually local)').setAction(async ({}, hre) => {
   const directory = await (await hre.ethers.deployContract('Directory')).deployed();
   await hre.run('prepareFullUpgrade', {
     directoryAddress: directory.address,
   });
 });
 
+task('test101Upgrade', 'Tests the prepare101Upgrade task using the default HH network (usually local)').setAction(async ({}, hre) => {
+  const directory = await (await hre.ethers.deployContract('Directory')).deployed();
+  await hre.run('prepare101Upgrade', {
+    directoryAddress: directory.address,
+  });
+});

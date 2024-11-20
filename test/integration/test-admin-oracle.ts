@@ -57,7 +57,7 @@ describe("XRETHOracle", function () {
             const { protocol, signers } = await loadFixture(protocolFixture);
             const { oracle, directory } = protocol;
             const { admin, random } = signers;
-            
+
             const adminOracleRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ORACLE_ROLE"));
 
             await directory.connect(admin).grantRole(adminOracleRole, random.address);
@@ -72,7 +72,7 @@ describe("XRETHOracle", function () {
             const messageHash = ethers.utils.solidityKeccak256(["int256", "uint256", "uint256", "address", "uint256"], [newTotalYield, currentOracleError, timestamp, oracle.address, chainId]);
             const signature = await random.signMessage(ethers.utils.arrayify(messageHash));
 
-            await expect(oracle.connect(admin).setTotalYieldAccrued(signature, sigData)).to.be.revertedWith("cannot update oracle using future data");            
+            await expect(oracle.connect(admin).setTotalYieldAccrued(signature, sigData)).to.be.revertedWith("cannot update oracle using future data");
         })
 
         it("Should set total yield accrued with valid signature", async function () {
@@ -226,6 +226,8 @@ describe("XRETHOracle", function () {
                     const { protocol, signers } = setupData;
                     const { oracle, directory } = protocol;
                     const { admin, random } = signers;
+                    await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
+                    await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
                     const adminOracleRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ORACLE_ROLE"));
                     await directory.connect(admin).grantRole(adminOracleRole, random.address);
@@ -264,6 +266,8 @@ describe("XRETHOracle", function () {
                     const { protocol, signers } = setupData;
                     const { oracle, directory } = protocol;
                     const { admin, random } = signers;
+                    await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
+                    await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
                     const adminOracleRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ORACLE_ROLE"));
                     await directory.connect(admin).grantRole(adminOracleRole, random.address);
@@ -302,7 +306,8 @@ describe("XRETHOracle", function () {
                     const { protocol, signers } = setupData;
                     const { oracle, directory } = protocol;
                     const { admin, random } = signers;
-
+                    await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
+                    await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
                     const adminOracleRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN_ORACLE_ROLE"));
                     await directory.connect(admin).grantRole(adminOracleRole, random.address);
 

@@ -105,6 +105,8 @@ describe("Operator Distributor", function () {
 	it("Returns silently if minipool processing is disabled", async function (){
 		const setupData = await loadFixture(protocolFixture);
 		const { protocol, signers } = setupData;
+		await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
+		await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 
 		// disable processing
 		expect(await protocol.operatorDistributor.connect(signers.admin).setMinipoolProcessingEnabled(false)).to.not.be.reverted;
@@ -134,8 +136,9 @@ describe("Operator Distributor", function () {
 	it("Processes minipool rewards correctly even when nodeRefundBalance > 0 (no exit)", async function (){
 		const setupData = await loadFixture(protocolFixture);
 		const { protocol, signers, rocketPool } = setupData;
-		const { operatorDistributor } = protocol;
 
+		await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
+		await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 		// create 1 minipool
 		await prepareOperatorDistributionContract(setupData, 1);
 		const minipools = await registerNewValidator(setupData, [signers.random]);
@@ -165,9 +168,9 @@ describe("Operator Distributor", function () {
 
 	it("Processes minipool rewards correctly even when nodeRefundBalance > 0  (exit)", async function (){
 		const setupData = await loadFixture(protocolFixture);
-		const { protocol, signers, rocketPool } = setupData;
-		const { operatorDistributor } = protocol;
-
+		const { protocol, signers } = setupData;
+		await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
+		await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 		// create 1 minipool
 		await prepareOperatorDistributionContract(setupData, 1);
 		const minipools = await registerNewValidator(setupData, [signers.random]);
@@ -202,25 +205,15 @@ describe("Operator Distributor", function () {
 		expect(await protocol.vCWETH.totalAssets()).to.equal(priorAssets.add(xrETHPortion));
 	});
 
-	it.skip("TODO: Tops up the RPL stake if it is below the minimum", async function () {
-		const setupData = await loadFixture(protocolFixture);
-		const { protocol, signers, rocketPool } = setupData;
-		const { operatorDistributor } = protocol;
-	});
-
-	it.skip("TODO: Returns silently if rpl stake rebalancing is disabled", async function (){
-		const setupData = await loadFixture(protocolFixture);
-		const { protocol, signers, rocketPool } = setupData;
-		const { operatorDistributor } = protocol;
-	})
-
 	// test target stake ratio logic
 	it("success - target stake ratio may be set above 100%", async function () {
 		// load fixture
 		const setupData = await loadFixture(protocolFixture);
-		const { protocol, signers, rocketPool } = setupData;
+		const { protocol, signers } = setupData;
 		const { admin } = signers;
 		const { operatorDistributor } = protocol;
+		await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
+		await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
 
 
@@ -238,8 +231,10 @@ describe("Operator Distributor", function () {
 		// load fixture
 		const setupData = await loadFixture(protocolFixture);
 		const { protocol, signers, rocketPool } = setupData;
-		const { admin, rplWhale } = signers;
+		const { admin } = signers;
 		const { operatorDistributor } = protocol;
+		await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
+		await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
 
 		// getSettingUint('node.per.minipool.stake.minimum');
@@ -259,8 +254,10 @@ describe("Operator Distributor", function () {
 		// load fixture
 		const setupData = await loadFixture(protocolFixture);
 		const { protocol, signers, rocketPool } = setupData;
-		const { admin, rplWhale } = signers;
+		const { admin } = signers;
 		const { operatorDistributor } = protocol;
+		await protocol.vCWETH.connect(signers.admin).setQueueableDepositsLimitEnabled(false);
+		await protocol.vCWETH.connect(signers.admin).setOracleUpdateThreshold(9999999999);
 		const rocketNodeStaking = await ethers.getContractAt("RocketNodeStaking", await protocol.directory.getRocketNodeStakingAddress());
 
 		// getSettingUint('node.per.minipool.stake.minimum');
@@ -279,8 +276,7 @@ describe("Operator Distributor", function () {
 	it("calculateRplStakeShortfall", async function () {
 		// load fixture
 		const setupData = await loadFixture(protocolFixture);
-		const { protocol, signers, rocketPool } = setupData;
-		const { admin, rplWhale } = signers;
+		const { protocol, signers } = setupData;
 		const { operatorDistributor } = protocol;
 
 		expect(await operatorDistributor.minimumStakeRatio()).equals(ethers.utils.parseEther('0.15'));
