@@ -5,64 +5,78 @@ import { getWalletFromPath } from '../scripts/utils/keyReader';
 import { Bytes32 } from '@chainsafe/lodestar-types';
 const { Defender } = require('@openzeppelin/defender-sdk');
 
-
 // WILL NOT WORK ON DEPLOYMENTS WITH A TIMELOCK
-task("upgradeProxy", "Upgrades a proxy contract to a new implementation using upgrades.upgradeProxy")
-    .addParam("proxy", "The address of the proxy contract", undefined, types.string)
-    .addParam("implementation", "The name of the new implementation contract factory", undefined, types.string)
-    .setAction(async ({ proxy, implementation }, hre) => {
-        try {
-            console.log(`Upgrading proxy at address: ${proxy} to new implementation: ${implementation}`);
+task('upgradeProxy', 'Upgrades a proxy contract to a new implementation using upgrades.upgradeProxy')
+  .addParam('proxy', 'The address of the proxy contract', undefined, types.string)
+  .addParam('implementation', 'The name of the new implementation contract factory', undefined, types.string)
+  .setAction(async ({ proxy, implementation }, hre) => {
+    try {
+      console.log(`Upgrading proxy at address: ${proxy} to new implementation: ${implementation}`);
 
-            const ImplFactory: any = await hre.ethers.getContractFactory(implementation);
-            const upgradedContract = await hre.upgrades.upgradeProxy(proxy, ImplFactory, { 'kind': 'uups', 'unsafeAllow': ['constructor'] });
+      const ImplFactory: any = await hre.ethers.getContractFactory(implementation);
+      const upgradedContract = await hre.upgrades.upgradeProxy(proxy, ImplFactory, {
+        kind: 'uups',
+        unsafeAllow: ['constructor'],
+      });
 
-            console.log(`Proxy upgraded. Implementation is now at: ${upgradedContract.address}`);
-            return upgradedContract.address;
-        } catch (error) {
-            console.error("An error occurred during the upgrade:", error);
-            throw error;
-        }
-    });
+      console.log(`Proxy upgraded. Implementation is now at: ${upgradedContract.address}`);
+      return upgradedContract.address;
+    } catch (error) {
+      console.error('An error occurred during the upgrade:', error);
+      throw error;
+    }
+  });
 
-task("deployContract", "Deploys a contract using the provided Factory address")
-    .addParam("factory", "The name of the Factory contract", undefined, types.string)
-    .setAction(async ({ factory }, hre) => {
-        console.log(`Deploying contract using Factory: ${factory}`);
+task('deployContract', 'Deploys a contract using the provided Factory address')
+  .addParam('factory', 'The name of the Factory contract', undefined, types.string)
+  .setAction(async ({ factory }, hre) => {
+    console.log(`Compiling contracts...`);
+    await hre.run('compile');
+    console.log(`Deploying contract using Factory: ${factory}`);
 
-        const FactoryContract: any = await hre.ethers.getContractFactory(factory);
+    const FactoryContract: any = await hre.ethers.getContractFactory(factory);
 
-        const deployedContract = await FactoryContract.deploy();
-        await deployedContract.deployed();
+    const deployedContract = await FactoryContract.deploy();
+    await deployedContract.deployed();
 
-        console.log(`Contract deployed at address: ${deployedContract.address}`);
-        return deployedContract.address;
-    });
+    console.log(`Contract deployed at address: ${deployedContract.address}`);
+    return deployedContract.address;
+  });
 
-task("deployAndUpgrade", "Deploys a new contract and then upgrades a proxy to the new implementation")
-    .addParam("proxy", "The address of the proxy contract", undefined, types.string)
-    .addParam("factory", "The name of the new implementation contract factory", undefined, types.string)
-    .setAction(async ({ proxy, factory }, hre) => {
-        // Deploy the new implementation contract using deployContract task
-        console.log(`Deploying a new implementation contract using Factory: ${factory}`);
-        const deployedContractAddress = await hre.run("deployContract", { factory });
+task('deployAndUpgrade', 'Deploys a new contract and then upgrades a proxy to the new implementation')
+  .addParam('proxy', 'The address of the proxy contract', undefined, types.string)
+  .addParam('factory', 'The name of the new implementation contract factory', undefined, types.string)
+  .setAction(async ({ proxy, factory }, hre) => {
+    // Deploy the new implementation contract using deployContract task
+    console.log(`Deploying a new implementation contract using Factory: ${factory}`);
+    const deployedContractAddress = await hre.run('deployContract', { factory });
 
-        console.log(`New implementation contract deployed at address: ${deployedContractAddress}`);
+    console.log(`New implementation contract deployed at address: ${deployedContractAddress}`);
 
-        // Upgrade the proxy to the new implementation using upgradeProxy task
-        console.log(`Upgrading proxy at address: ${proxy} to new implementation at: ${deployedContractAddress}`);
-        await hre.run("upgradeProxy", { proxy, implementation: factory });
+    // Upgrade the proxy to the new implementation using upgradeProxy task
+    console.log(`Upgrading proxy at address: ${proxy} to new implementation at: ${deployedContractAddress}`);
+    await hre.run('upgradeProxy', { proxy, implementation: factory });
 
-        console.log(`Proxy successfully upgraded.`);
-    });
+    console.log(`Proxy successfully upgraded.`);
+  });
 
 task(
   'deployAndEncodeUpgrade',
   'Deploys a new implementation contract and encodes the upgradeTo(address) function call for an upgradable contract'
 )
   .addParam('contractName', 'The name of the contract', undefined, types.string)
-  .addOptionalParam('environmentName', 'The name of the env file to use (.environmentName.env).', undefined, types.string)
-  .addOptionalParam('calldataAfter', 'The encoded data of the function to call after the upgrade', undefined, types.string)
+  .addOptionalParam(
+    'environmentName',
+    'The name of the env file to use (.environmentName.env).',
+    undefined,
+    types.string
+  )
+  .addOptionalParam(
+    'calldataAfter',
+    'The encoded data of the function to call after the upgrade',
+    undefined,
+    types.string
+  )
   .setAction(async ({ contractName, environmentName, callAfter }, hre) => {
     const dotenvPath = findConfig(`.${environmentName}.env`);
 
@@ -82,8 +96,7 @@ task(
     if (callAfter && callAfter !== null) {
       console.log(`Encoding upgradeToAndCall for ${contractName} at ${address} and function data: ${callAfter}`);
       encoding = await hre.run('upgradeToAndCall', { newImplementation: address, data: callAfter });
-    }
-    else {
+    } else {
       console.log(`Encoding upgradeTo for ${contractName} at ${address}`);
       encoding = await hre.run('upgradeTo', { newImplementation: address });
     }
@@ -131,14 +144,18 @@ task(
   'Deploys new implementations for contracts changed in v1.0.1, encodes them, and returns the addresses and encodings'
 )
   .addParam('directoryAddress', 'The directory address for the deployment to be upgraded', undefined, types.string)
-  .addOptionalParam('environmentName', 'The name of the env file to use (.environmentName.env)', undefined, types.string)
+  .addOptionalParam(
+    'environmentName',
+    'The name of the env file to use (.environmentName.env)',
+    undefined,
+    types.string
+  )
   .addOptionalParam('timelockAddress', 'Optional: the address of the timelock to log', undefined, types.string)
   .setAction(async ({ directoryAddress, environmentName, timelockAddress }, hre) => {
-    const contractNames = [
-      'SuperNodeAccount',
-      'OperatorDistributor',
-      'RPLVault'
-    ];
+    console.log(`Compiling contracts...`);
+    await hre.run('compile');
+
+    const contractNames = ['SuperNodeAccount', 'OperatorDistributor', 'RPLVault'];
 
     // todo: this could be done in parallel, but we'd have to increment the tx nonce manually
     // (this functionality would need to be added to deployAndEncodeUpgrade)
@@ -163,8 +180,17 @@ task(
     }
 
     // do WETHVault separately because it requires reinitialization
-    const wethVaultReinitEncoding: string =
-      await hre.run("encodeProposal", { sigs: JSON.stringify(["reinitialize101()"]), params: JSON.stringify([[]]) });
+    contractNames.push('WETHVault');
+		targets.push(
+      await hre.run('getProxyAddress', {
+        contractName: 'WETHVault',
+        directoryAddress: directoryAddress,
+      })
+    );
+    const wethVaultReinitEncoding: string = await hre.run('encodeProposal', {
+      sigs: JSON.stringify(['reinitialize101()']),
+      params: JSON.stringify([[]]),
+    });
     encodings.push(
       (
         await hre.run('deployAndEncodeUpgrade', {
@@ -180,20 +206,21 @@ task(
     const salt = ethers.utils.hexZeroPad('0x0', 32);
     const txData: UpgradeTxData = { targets, values, payloads: encodings, predecessor, salt };
 
-    console.log('\n==== TRANSACTION DATA ====');
-    let output =
-      'Timelock:\n' +
-      timelockAddress +
-      '\nTargets:\n[' +
-      targets +
-      ']\nValues\n[' +
-      values +
-      ']\nPayloads:\n[' +
-      encodings +
-      ']\nPredecessor:\n' +
-      predecessor +
-      '\nSalt:\n' +
-      salt;
+		console.log('\n==== TRANSACTION DATA ====');
+		let output =
+			'Timelock:\n' +
+			timelockAddress +
+			'\nTargets:\n[' +
+			targets +
+			']\nValues:\n[' +
+			values +
+			']\nPayloads:\n[' +
+			encodings +
+			']\nPredecessor:\n' +
+			predecessor +
+			'\nSalt:\n' +
+			salt;
+		
     console.log(output);
 
     const fs = require('fs');
@@ -204,7 +231,6 @@ task(
     fs.writeFileSync(dir + '/' + Date.now() + '.log', output);
 
     return txData;
-
   });
 
 task(
@@ -212,9 +238,17 @@ task(
   'Deploys new implementations for all contracts, encodes them, and returns the addresses and encodings'
 )
   .addParam('directoryAddress', 'The directory address for the deployment to be upgraded', undefined, types.string)
-  .addOptionalParam('environmentName', 'The name of the env file to use (.environmentName.env)', undefined, types.string)
+  .addOptionalParam(
+    'environmentName',
+    'The name of the env file to use (.environmentName.env)',
+    undefined,
+    types.string
+  )
   .addOptionalParam('timelockAddress', 'Optional: the address of the timelock to log', undefined, types.string)
   .setAction(async ({ directoryAddress, environmentName, timelockAddress }, hre) => {
+    console.log(`Compiling contracts...`);
+    await hre.run('compile');
+
     const contractNames = [
       'Directory',
       'MerkleClaimStreamer',
@@ -319,16 +353,21 @@ task('submitNewUpgrade', 'Deploys new implementations, encodes them, and submits
     return tx;
   });
 
-task('testPrepareFullUpgrade', 'Tests the prepareFullUpgrade task using the default HH network (usually local)').setAction(async ({}, hre) => {
+task(
+  'testPrepareFullUpgrade',
+  'Tests the prepareFullUpgrade task using the default HH network (usually local)'
+).setAction(async ({}, hre) => {
   const directory = await (await hre.ethers.deployContract('Directory')).deployed();
   await hre.run('prepareFullUpgrade', {
     directoryAddress: directory.address,
   });
 });
 
-task('test101Upgrade', 'Tests the prepare101Upgrade task using the default HH network (usually local)').setAction(async ({}, hre) => {
-  const directory = await (await hre.ethers.deployContract('Directory')).deployed();
-  await hre.run('prepare101Upgrade', {
-    directoryAddress: directory.address,
-  });
-});
+task('test101Upgrade', 'Tests the prepare101Upgrade task using the default HH network (usually local)').setAction(
+  async ({}, hre) => {
+    const directory = await (await hre.ethers.deployContract('Directory')).deployed();
+    await hre.run('prepare101Upgrade', {
+      directoryAddress: directory.address,
+    });
+  }
+);
