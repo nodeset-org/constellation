@@ -334,7 +334,7 @@ contract OperatorDistributor is UpgradeableBase {
                 return;
             }
 
-            this.distributeExitedMinipool(minipool);
+            rewards = this.distributeExitedMinipool(minipool);
         } else if (balanceAfterRefund < depositBalance) {
             // it's still staking
             uint256 priorBalance = address(this).balance;
@@ -535,12 +535,13 @@ contract OperatorDistributor is UpgradeableBase {
     /// @dev Callable by the admin in case there is a need for manual finalization of an exited minipool.
     /// This should only happen if the minipool was slashed or otherwise penalized so the balance is below 32 ETH upon exit.
     /// Otherwise, the processNextMinipool() function would finalize the minipool normally with this function.
-    function distributeExitedMinipool(IMinipool minipool) public onlyProtocolOrAdmin {
+    /// @return rewards Amount of rewards distributed to Constellation for the minipool.
+    function distributeExitedMinipool(IMinipool minipool) public onlyProtocolOrAdmin returns (uint256) {
         SuperNodeAccount sna = SuperNodeAccount(getDirectory().getSuperNodeAddress());
 
         if (address(minipool).balance < minipool.getNodeRefundBalance()) {
             emit WarningEthBalanceSmallerThanRefundBalance(address(minipool));
-            return;
+            return 0;
         }
 
         uint256 originalBalance = address(this).balance;
@@ -556,6 +557,7 @@ contract OperatorDistributor is UpgradeableBase {
         sna.removeMinipool(address(minipool));
         // account for rewards
         this.onEthBeaconRewardsReceived(rewards, treasuryFee, noFee);
+        return rewards;
     }
 
     /**
