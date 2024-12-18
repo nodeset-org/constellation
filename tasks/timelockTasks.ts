@@ -135,3 +135,13 @@ task('setMaxWethRplRatio', 'Encodes the setMaxWethRplRatio(uint256) function cal
     console.log(`Encoding setOperatorRewards for Directory with ratio: ${operatorRewardsAddress}`);
     return await hre.run('encodeProposal', { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
+
+  task('updateDelay', 'Encodes the updateDelay(uint256) function call for ConstellationTimelock')
+  .addParam('delay', 'The new delay in seconds (uint256)', undefined, types.string)
+  .setAction(async ({ delay }, hre) => {
+    const sigs = ['updateDelay(uint256)'];
+    const params = [[delay]];
+
+    console.log(`Encoding updateDelay for ConstellationTimelock with delay: ${delay}`);
+    return await hre.run('encodeProposal', { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
+  });
