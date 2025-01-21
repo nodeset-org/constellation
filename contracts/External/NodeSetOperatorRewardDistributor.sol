@@ -61,7 +61,11 @@ contract NodeSetOperatorRewardDistributor is
     /**
      * @notice Distributes rewards accrued for a specific rewardee.
      * @param _sig The claim data, including amount and the authoritative signature
-     * @param _did The unique, unchanging id of the operator making the claim.
+     * @param _did The unique, unchanging id of the account associated with an income stream.
+     * For example, in Constellation, operators only have one node address, so the DID is a 32-byte hash of that address.
+     * Note that individual operators may have multiple DIDs -- one associated with each income stream.
+     * This contract only reports claims, not their source, so in order to recalculate how much a user is owed, the DID must 
+     * must be generated from the income stream itself.
      */
     function claimRewards(
         bytes calldata _sig,
