@@ -1,13 +1,16 @@
 {
   "name": "@nodeset/contracts",
-  "version": "0.0.7-alpha",
+  "version": "0.0.10-alpha",
   "description": "Protocol for accessing NodeSet's Constellation Ethereum staking network",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint:sol": "prettier --write 'contracts/**/*.sol'",
     "codegen": "wagmi generate",
+    "build": "tsc -p tsconfig.package.json",
     "hardhat": "hardhat",
-    "prepublish": "npm run codegen"
+    "prepublish": "npm run codegen && npm run build"
   },
   "keywords": [
     "nodeset",
