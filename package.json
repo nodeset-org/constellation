@@ -21,7 +21,7 @@
     "rocket pool"
   ],
   "publishConfig": {
-    "access": "restricted"
+    "access": "public"
   },
   "author": "Theodore Clapp (mryamz), Mike Leach (Wander) <info@nodeset.io>",
   "dependencies": {
