@@ -83,7 +83,7 @@ task(
     const sigs = ['setLiquidityReservePercent(uint256)'];
     const params = [[liquidityReservePercent]];
 
-    console.log(`Encoding setLiquidityReservePercent for MerkleClaimStreamer with percent: ${liquidityReservePercent}`);
+    console.log(`Encoding setLiquidityReservePercent for WETHVault or RPLVault with percent: ${liquidityReservePercent}`);
     return await hre.run('encodeProposal', { sigs: JSON.stringify(sigs), params: JSON.stringify(params) });
   });
 

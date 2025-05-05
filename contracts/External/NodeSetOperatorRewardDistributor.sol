@@ -15,7 +15,7 @@ library RewardDistributorConstants {
 
 contract NodeSetOperatorRewardDistributorV1Storage {
     event RewardDistributed(bytes32 indexed _did, address indexed _rewardee, uint256 _amount, address indexed _token);
-
+    
     mapping(bytes32 => uint256) public nonces;
 
     uint256 public nonce;
@@ -37,6 +37,9 @@ contract NodeSetOperatorRewardDistributor is
     AccessControlUpgradeable,
     NodeSetOperatorRewardDistributorV1Storage
 {
+
+    event ETHReceived(bytes32 indexed _did, address indexed _rewardee, uint256 _amount, address indexed _token);
+
     constructor() {
         _disableInitializers();
     }

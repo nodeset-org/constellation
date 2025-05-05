@@ -2895,6 +2895,20 @@ export const iMinipoolAbi = [
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// IRateProvider
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export const iRateProviderAbi = [
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getRate',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+] as const
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // IRocketDAOProtocolProposal
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2990,6 +3004,20 @@ export const iRocketDaoProtocolSettingsRewardsAbi = [
     type: 'function',
     inputs: [],
     name: 'getRewardsClaimIntervalTime',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+] as const
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// IRocketDepositPool
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export const iRocketDepositPoolAbi = [
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getExcessBalance',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
@@ -3821,6 +3849,18 @@ export const nodeSetOperatorRewardDistributorAbi = [
         type: 'address',
         indexed: true,
       },
+      {
+        name: '_amount',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+      {
+        name: '_token',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
     ],
     name: 'RewardDistributed',
   },
@@ -4054,6 +4094,18 @@ export const nodeSetOperatorRewardDistributorV1StorageAbi = [
         type: 'address',
         indexed: true,
       },
+      {
+        name: '_amount',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+      {
+        name: '_token',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
     ],
     name: 'RewardDistributed',
   },
@@ -4117,6 +4169,31 @@ export const operatorDistributorAbi = [
       },
     ],
     name: 'BeaconUpgraded',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: 'ethRewards',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+      {
+        name: 'noPortion',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+      {
+        name: 'treasuryPortion',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+    ],
+    name: 'EthBeaconRewardsReceived',
   },
   {
     type: 'event',
@@ -5269,6 +5346,13 @@ export const rplVaultAbi = [
     type: 'function',
     inputs: [{ name: 'deposit', internalType: 'uint256', type: 'uint256' }],
     name: 'getMissingLiquidityAfterDeposit',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getRate',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
@@ -30228,6 +30312,13 @@ export const wethVaultAbi = [
   },
   {
     type: 'function',
+    inputs: [],
+    name: 'calculateQueueableDepositLimit',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [{ name: 'shares', internalType: 'uint256', type: 'uint256' }],
     name: 'convertToAssets',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
@@ -30386,6 +30477,13 @@ export const wethVaultAbi = [
   },
   {
     type: 'function',
+    inputs: [],
+    name: 'getRate',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
     name: 'getTreasuryPortion',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
@@ -30495,6 +30593,13 @@ export const wethVaultAbi = [
   },
   {
     type: 'function',
+    inputs: [],
+    name: 'oracleUpdateThreshold',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [{ name: 'assets', internalType: 'uint256', type: 'uint256' }],
     name: 'previewDeposit',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
@@ -30530,6 +30635,13 @@ export const wethVaultAbi = [
   },
   {
     type: 'function',
+    inputs: [],
+    name: 'queueableDepositsLimitEnabled',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [
       { name: 'shares', internalType: 'uint256', type: 'uint256' },
       { name: 'receiver', internalType: 'address', type: 'address' },
@@ -30537,6 +30649,13 @@ export const wethVaultAbi = [
     ],
     name: 'redeem',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'reinitialize101',
+    outputs: [],
     stateMutability: 'nonpayable',
   },
   {
@@ -30593,11 +30712,25 @@ export const wethVaultAbi = [
   },
   {
     type: 'function',
+    inputs: [{ name: '_newValue', internalType: 'uint256', type: 'uint256' }],
+    name: 'setOracleUpdateThreshold',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     inputs: [
       { name: '_nodeOperatorFee', internalType: 'uint256', type: 'uint256' },
       { name: '_treasuryFee', internalType: 'uint256', type: 'uint256' },
     ],
     name: 'setProtocolFees',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_newValue', internalType: 'bool', type: 'bool' }],
+    name: 'setQueueableDepositsLimitEnabled',
     outputs: [],
     stateMutability: 'nonpayable',
   },
