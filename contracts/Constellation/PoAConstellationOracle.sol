@@ -55,6 +55,7 @@ contract PoAConstellationOracle is IConstellationOracle, UpgradeableBase {
      */
     function initializeOracle(address _directoryAddress) public virtual initializer {
         super.initialize(_directoryAddress);
+        _lastUpdatedTotalYieldAccrued = block.timestamp;
     }
 
     /**
